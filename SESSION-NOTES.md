@@ -1,5 +1,18 @@
 # text_back — Session Notes
 
+## 2026-08-20 — environment-backed app configuration
+
+Added an environment loader for every documented `TEXT_BACK_*` setting.
+`create_app()` now reads webhook secret, public base URL, SQLite path, and
+`wiring_mode` from the process environment while preserving explicit keyword
+arguments as the higher-precedence test/adapter seam. The SQLite path is wired
+into `Store`, and `/health` reports only non-secret effective configuration.
+
+### Evidence
+- Focused configuration tests: 2 passed.
+- Full suite: `.venv/bin/pytest tests/` — 52 passed.
+- No credentials or production values added to the repository.
+
 ## 2026-08-20 — wiring_mode: attach to a client's existing number via forwarding
 
 Added `wiring_mode` support so text_back can wire onto a client's existing

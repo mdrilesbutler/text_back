@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from fastapi import FastAPI, Form, Header, HTTPException, Request
 
+from text_back.config import load_config
 from text_back.handlers import handle_sms_event, handle_voice_event
-from text_back.policy import WIRING_MODE_FORWARDED, WIRING_MODES
+from text_back.policy import WIRING_MODES
 from text_back.signatures import SignatureError, verify_twilio_compat
 from text_back.store import Store
 from text_back.telecom import FakeTelecom
@@ -11,12 +12,20 @@ from text_back.telecom import FakeTelecom
 
 def create_app(
     *,
-    webhook_secret: str = "dev-secret-not-for-production",
-    public_base_url: str = "http://127.0.0.1:8000",
+    webhook_secret: str | None = None,
+    public_base_url: str | None = None,
+    db_path: str | None = None,
     telecom: FakeTelecom | None = None,
     store: Store | None = None,
-    wiring_mode: str = WIRING_MODE_FORWARDED,
+    wiring_mode: str | None = None,
 ) -> FastAPI:
+    config = load_config()
+    webhook_secret = webhook_secret if webhook_secret is not None else config.webhook_secret
+    public_base_url = (
+        public_base_url if public_base_url is not None else config.public_base_url
+    )
+    db_path = db_path if db_path is not None else config.db_path
+    wiring_mode = wiring_mode if wiring_mode is not None else config.wiring_mode
     if wiring_mode not in WIRING_MODES:
         raise ValueError(
             f"invalid wiring_mode: {wiring_mode!r}; must be one of {sorted(WIRING_MODES)}"
@@ -25,7 +34,8 @@ def create_app(
     app.state.webhook_secret = webhook_secret
     app.state.public_base_url = public_base_url.rstrip("/")
     app.state.telecom = telecom or FakeTelecom()
-    app.state.store = store or Store()
+    app.state.store = store or Store(db_path)
+    app.state.db_path = db_path
     app.state.wiring_mode = wiring_mode
 
     @app.get("/health")
@@ -34,6 +44,7 @@ def create_app(
             "status": "ok",
             "production": False,
             "telecom": "stub",
+            "public_base_url": app.state.public_base_url,
             "wiring_mode": app.state.wiring_mode,
         }
 

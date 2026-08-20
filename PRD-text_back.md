@@ -1,6 +1,6 @@
 # text_back — Product Requirements Document
 
-Status: Local core implemented and tested (50 tests); telecom + Google credentials pending human gates  
+Status: Local core implemented and tested (52 tests); telecom + Google credentials pending human gates
 Updated: 2026-08-20  
 Owner: Michael Riley  
 Canonical path: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror: `/home/mdriles/projects/text_back`)  
@@ -122,7 +122,7 @@ No telecom account activation, number purchase, paid usage, production messaging
 1. Michael: SignalWire signup in browser (spend approval GIVEN 2026-08-20, $15/month ceiling): create Space, add card, fund $5, buy one local number, start 10DLC brand registration. Also answer: does he have an EIN? (Decides the cheap 10DLC tier vs. possibly flipping to Twilio's sole-prop path.)
 2. Michael: Google sign-in for `mdrilesbutler@gmail.com` hit an "access blocked" page mid-flow (2026-08-20); exact error wording still unreported. Fallbacks documented in NEXT-SESSION.md.
 3. After gcloud auth lands: scripted GCP setup — create project, enable `calendar-json.googleapis.com`, create service account + key to `~/.config/text_back/sa_key.json` (never git), Michael shares the pilot calendar with the SA email.
-4. Code, unblocked now: env-loader (config documented in `.env.example` but nothing reads the environment yet); voicemail-style greeting on forwarded calls (conditional forwarding replaces carrier voicemail); parse `preferred_time` into a slot and wire collected fields into `booking.py`.
+4. Code, unblocked now: voicemail-style greeting on forwarded calls (conditional forwarding replaces carrier voicemail); parse `preferred_time` into a slot and wire collected fields into `booking.py`.
 5. Live SignalWire + Google Calendar adapters once credentials exist; keep confirmation gated on provider event ID.
 6. Deploy through Paperclip Hermes on Hostinger; real-phone end-to-end smoke test.
 7. Before first client launch: replace pilot identity/calendar/phone with client-owned values; per-client 10DLC registration.

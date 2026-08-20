@@ -6,22 +6,22 @@ When Michael starts an agent from this project directory and says "continue proj
 ## Where everything stands (verified 2026-08-20, fresh)
 - Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
 - Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`, pushed through commit `2421ced` (verify with `git log --oneline -5`; the handoff commit follows it).
-- Test suite: `.venv/bin/pytest tests/` → **50 passed**, rerun this session after every change.
+- Test suite: `.venv/bin/pytest tests/` → **52 passed**, rerun this session after every change.
 - Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
 - Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
 - gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
 - Approvals given by Michael 2026-08-20: SignalWire purchase path with a **$15/month ceiling**; product must attach to customers' actual existing phone numbers (drove `wiring_mode`); everything must be reproducible for the **fluxworks catalog**.
 - SignalWire estimate (researched 2026-08-20): ≈ $9.44/month all-in at pilot volume; setup ≈ $12 one-time + $5 minimum funding; 10DLC approval ~1–2 weeks; cheap $1.50/month tier needs an EIN. Details in `PRD-text_back.md` § Cost refresh.
-- NOT done: no SignalWire account/number, no Google auth/credentials, no env-loader, no live adapters, no deploy, no production traffic.
+- Environment loader is implemented: `create_app()` reads all documented `TEXT_BACK_*` settings, explicit arguments override environment values, and `/health` reports non-secret effective config.
+- NOT done: no SignalWire account/number, no Google auth/credentials, no live adapters, no deploy, no production traffic.
 
 ## Open items, in order
 1. **Michael (browser)**: SignalWire signup — create Space, add card, fund $5 to exit trial, buy one local voice+SMS number, start 10DLC brand registration. Blocker: needs his email + payment. Also needed from him: does he have an **EIN**? No EIN may flip 10DLC registration to Twilio's verified sole-prop path.
 2. **Michael + agent**: finish Google auth for `mdrilesbutler@gmail.com`. Last attempt: `~/google-cloud-sdk/bin/gcloud auth login --no-launch-browser` run in background with stdin held open; Michael's browser showed "access blocked" (exact wording never reported). Restart the flow fresh (the old background process/scratchpad is disposable). Fallback ladder: (a) plain desktop browser, not an in-app webview; (b) incognito signed in only as mdrilesbutler; (c) Plan B — Michael creates project/SA in console by hand, downloads key; (d) Plan C — `gcloud auth login --no-browser` remote-bootstrap if he has gcloud locally.
 3. **Agent (after auth)**: scripted GCP setup — `gcloud projects create <unique-id>`, enable `calendar-json.googleapis.com`, create service account, key to `~/.config/text_back/sa_key.json` (chmod 600, NEVER git); then Michael shares the pilot calendar with the SA email ("Make changes to events").
-4. **Agent (unblocked code, TDD)**: env-loader — `.env.example` documents `TEXT_BACK_*` vars but nothing reads the environment; wire `create_app` kwargs (`webhook_secret`, `public_base_url`, `wiring_mode`) to env.
-5. **Agent (unblocked code, TDD)**: voicemail-style greeting on forwarded calls — the voice webhook should return LaML/TwiML (`<Say>`/`<Record>` or at minimum a polite hangup) since conditional forwarding replaces the client's carrier voicemail.
-6. **Agent (unblocked code, TDD)**: parse `preferred_time` (kept as raw text on purpose) into a concrete slot and wire the four collected fields into `booking.py`; keep confirmation gated on event ID.
-7. Live SignalWire adapter + live Calendar adapter once credentials exist; then Hostinger/Paperclip deploy and a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md` checklist.
+4. **Agent (unblocked code, TDD)**: voicemail-style greeting on forwarded calls — the voice webhook should return LaML/TwiML (`<Say>`/`<Record>` or at minimum a polite hangup) since conditional forwarding replaces the client's carrier voicemail.
+5. **Agent (unblocked code, TDD)**: parse `preferred_time` (kept as raw text on purpose) into a concrete slot and wire the four collected fields into `booking.py`; keep confirmation gated on event ID.
+6. Live SignalWire adapter + live Calendar adapter once credentials exist; then Hostinger/Paperclip deploy and a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md` checklist.
 
 ## Session gotchas (hard-won)
 - The `!` bash-input runner is NOT interactive: `gcloud auth login --no-launch-browser` crashes with EOFError waiting for the code. Fix: `: > code.txt; tail -f code.txt | gcloud auth login --no-launch-browser > login.log 2>&1 &`, hand the URL from the log to Michael, append his verification code to `code.txt`.
