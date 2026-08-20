@@ -1,5 +1,25 @@
 # text_back — Session Notes
 
+## 2026-08-14 — hermes-cloud local TDD core
+
+Built and verified locally on `hermes-vcn-0`. No paid telecom, number, OAuth, or production SMS.
+
+### Implemented
+- FastAPI app with `GET /health`, `POST /webhooks/voice`, `POST /webhooks/sms`
+- Twilio-compatible signature verification; missing/invalid signatures return 403
+- Terminal unanswered (`no-answer`/`busy`/`failed`/`canceled`) sends exactly one intro SMS
+- Ringing/initiated does not text
+- Idempotency via SQLite `(source, event_id, action)`
+- Deterministic STOP/HELP policy; STOP suppresses later missed-call intros
+- Calendar stub: free/busy, recheck, persist event ID, confirmation only after event ID
+- Opt-out blocks booking confirmation
+
+### Evidence
+- `.venv/bin/pytest tests/` — 19 passed on 2026-08-14
+
+### External actions not taken
+No number purchased, paid service activated, credentials stored, OAuth grant created, production traffic sent, or Hostinger deploy.
+
 ## 2026-08-06 — Project creation
 
 Michael approved `text_back` as a legitimate project under `/home/mdriles/projects`.
