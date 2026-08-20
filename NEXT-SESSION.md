@@ -1,48 +1,109 @@
-# text_back — next session prompt (updated 2026-08-14, hermes-cloud)
+# text_back — next session prompt (written 2026-08-20, hermes-vcn-0 session, Claude → handoff for Codex)
 
 ## Continue-project contract
-When Michael starts an agent from this project directory and says “continue project”, “continue”, “pick up”, or equivalent, read this `NEXT-SESSION.md` completely before taking action. Then read the files it names, briefly state the recovered state, and begin the highest-priority open item unless a newer user instruction overrides the handoff.
+When Michael starts an agent from this project directory and says "continue project", "continue", "pick up", or equivalent, read this `NEXT-SESSION.md` completely before taking action. Then read the files it names, briefly state the recovered state, and begin the highest-priority open item unless a newer user instruction overrides the handoff.
 
-## Where everything stands (verified 2026-08-20)
-- Canonical folder on this host: `/home/ubuntu/projects/text_back` (piclaw path remains `/home/mdriles/projects/text_back`).
-- Local TDD core exists: webhooks, signature fail-closed, idempotency, STOP/HELP, Calendar stub, `wiring_mode` (forwarded/managed).
-- Evidence: `.venv/bin/pytest tests/` → 50 passed on 2026-08-20 (see below).
-- No carrier account activation, number purchase, OAuth grant, deployment, production message, or customer traffic.
-- Cost-first provider recommendation: SignalWire; Twilio is fallback.
-- Pilot calendar account: `mdrilesbutler@gmail.com`.
-- Application/operator target: Paperclip Hermes on Hostinger (not done).
+## Where everything stands (verified 2026-08-20, fresh)
+- Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
+- Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`, pushed through commit `2421ced` (verify with `git log --oneline -5`; the handoff commit follows it).
+- Test suite: `.venv/bin/pytest tests/` → **50 passed**, rerun this session after every change.
+- Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
+- Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
+- gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
+- Approvals given by Michael 2026-08-20: SignalWire purchase path with a **$15/month ceiling**; product must attach to customers' actual existing phone numbers (drove `wiring_mode`); everything must be reproducible for the **fluxworks catalog**.
+- SignalWire estimate (researched 2026-08-20): ≈ $9.44/month all-in at pilot volume; setup ≈ $12 one-time + $5 minimum funding; 10DLC approval ~1–2 weeks; cheap $1.50/month tier needs an EIN. Details in `PRD-text_back.md` § Cost refresh.
+- NOT done: no SignalWire account/number, no Google auth/credentials, no env-loader, no live adapters, no deploy, no production traffic.
 
 ## Open items, in order
-1. Michael: explicit approval for SignalWire purchase/activation and a spend ceiling (recommended $15/month). Owner: Michael. Blocker: paid external action.
-2. After approval: refresh live SignalWire pricing/10DLC requirements, then create/verify telecom account and buy one local voice/SMS number. Owner: Hermes + Michael browser. Do not purchase from hermes-cloud without approval.
-3. Complete Google Calendar OAuth for `mdrilesbutler@gmail.com`. Owner: Hermes + Michael browser.
-4. Replace Calendar stub with live free/busy + event create; keep confirmation gated on provider event ID.
-5. ~~Add conversation field collection (service, location, preferred time, name) still under deterministic policy.~~ Done 2026-08-20: sequential slot-filling in `handlers.py`/`policy.py`/`store.py`, no LLM/NLP extraction. See SESSION-NOTES.md.
-6. ~~Add `wiring_mode` (forwarded/managed) so text_back can attach to a client's existing number via conditional call forwarding.~~ Done 2026-08-20: `app.py`/`handlers.py`/`policy.py`, default is `forwarded`. See SESSION-NOTES.md and `tests/test_wiring_mode.py`.
-7. Deploy through Paperclip Hermes on Hostinger and run a real-phone end-to-end smoke test only after approval.
+1. **Michael (browser)**: SignalWire signup — create Space, add card, fund $5 to exit trial, buy one local voice+SMS number, start 10DLC brand registration. Blocker: needs his email + payment. Also needed from him: does he have an **EIN**? No EIN may flip 10DLC registration to Twilio's verified sole-prop path.
+2. **Michael + agent**: finish Google auth for `mdrilesbutler@gmail.com`. Last attempt: `~/google-cloud-sdk/bin/gcloud auth login --no-launch-browser` run in background with stdin held open; Michael's browser showed "access blocked" (exact wording never reported). Restart the flow fresh (the old background process/scratchpad is disposable). Fallback ladder: (a) plain desktop browser, not an in-app webview; (b) incognito signed in only as mdrilesbutler; (c) Plan B — Michael creates project/SA in console by hand, downloads key; (d) Plan C — `gcloud auth login --no-browser` remote-bootstrap if he has gcloud locally.
+3. **Agent (after auth)**: scripted GCP setup — `gcloud projects create <unique-id>`, enable `calendar-json.googleapis.com`, create service account, key to `~/.config/text_back/sa_key.json` (chmod 600, NEVER git); then Michael shares the pilot calendar with the SA email ("Make changes to events").
+4. **Agent (unblocked code, TDD)**: env-loader — `.env.example` documents `TEXT_BACK_*` vars but nothing reads the environment; wire `create_app` kwargs (`webhook_secret`, `public_base_url`, `wiring_mode`) to env.
+5. **Agent (unblocked code, TDD)**: voicemail-style greeting on forwarded calls — the voice webhook should return LaML/TwiML (`<Say>`/`<Record>` or at minimum a polite hangup) since conditional forwarding replaces the client's carrier voicemail.
+6. **Agent (unblocked code, TDD)**: parse `preferred_time` (kept as raw text on purpose) into a concrete slot and wire the four collected fields into `booking.py`; keep confirmation gated on event ID.
+7. Live SignalWire adapter + live Calendar adapter once credentials exist; then Hostinger/Paperclip deploy and a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md` checklist.
 
-## Session gotchas
-- Google Voice is not the production carrier backend.
-- The "terminal unanswered/no-answer call status only" trigger rule applies
-  to `wiring_mode="managed"` only (our number is the client's own number).
-  In `wiring_mode="forwarded"` (the default, added 2026-08-20), the carrier
-  only ever forwards to us after no-answer/busy on the client's real line,
-  so ANY first voice webhook for a call_sid is already a missed call —
-  trigger on arrival regardless of CallStatus. Idempotency still comes from
-  `claim_event` keyed on `call_sid`, guaranteeing exactly one SMS across
-  ringing/completed webhook retries for the same call. See README.md
-  "Wiring mode" section and `tests/test_wiring_mode.py`.
-- A forwarded call has inbound and outbound telecom legs.
-- SMS is billed per segment and carrier fees/10DLC registration apply.
-- AI must not control consent, STOP/HELP, booking truth, or handoff policy.
-- Webhook retries can duplicate texts/events unless every side effect is idempotent.
-- Pricing snapshots are temporary; refresh before purchase.
+## Session gotchas (hard-won)
+- The `!` bash-input runner is NOT interactive: `gcloud auth login --no-launch-browser` crashes with EOFError waiting for the code. Fix: `: > code.txt; tail -f code.txt | gcloud auth login --no-launch-browser > login.log 2>&1 &`, hand the URL from the log to Michael, append his verification code to `code.txt`.
+- Google "access blocked" on the OAuth page — most common cause is an in-app webview (link tapped in Telegram/email). Have Michael copy the URL into full Chrome/Safari. Unresolved this session.
+- No git identity on hermes-vcn-0: commit with `git -c user.name="Michael Riley" -c user.email="mdriles@gmail.com" commit ...` (matches the repo's existing author).
+- Trigger semantics are MODE-SPECIFIC: `managed` = text only on terminal unanswered status (`no-answer`/`busy`/`failed`/`canceled`); `forwarded` = the first voice event per `call_sid` triggers, whatever the status, because carrier CF only forwards already-missed calls. Idempotency in both modes comes from `claim_event` keyed on `call_sid` (exactly one SMS across ringing/completed retries). Don't "fix" one mode with the other's rule. See README "Wiring mode" and `tests/test_wiring_mode.py`.
+- Caller-ID passthrough on forwarded calls is documented by NO carrier — the live test call in the onboarding checklist is the only proof. Never skip it.
+- Conditional forwarding replaces the client's carrier voicemail for missed calls (open item 5 exists because of this).
+- SignalWire's live site hides per-unit prices; number/SMS rates were verified from 2026 archive snapshots. Refresh before purchase regardless.
+- SMS bills per segment plus carrier passthrough; a forwarded call bills both an inbound and an outbound leg.
+- Google Voice is not the production carrier backend. AI never controls consent, STOP/HELP, booking truth, or handoff. Webhook retries duplicate side effects unless idempotent.
+- On this host there is no Obsidian vault and no `/home/mdriles`; Codex memory here is sqlite (do not edit directly). The repo + GitHub push IS the cross-machine handoff; vault mirroring happens from piclaw.
+
+## Improvements backlog
+- Env-loader with validation and a startup log of effective (non-secret) config.
+- Structured audit log (inbound/outbound/booking/consent events) — PRD requires it, not built.
+- Quiet-hours enforcement has no clock-driven tests; add freeze-time tests.
+- Human-handoff path (pause + operator alert) is unimplemented.
+- `docs/ONBOARDING-FORWARDING.md`: add a client-facing one-pager variant per carrier.
+- GitHub Actions CI (none exists) running the suite on push.
+
+## Session recommendations (2026-08-20)
+### Hooks (5)
+1. PostToolUse(Edit|Write on `src/**` or `tests/**` in text_back) → run `.venv/bin/pytest -q`; surface failures immediately. Every lane this session ended with a manual pytest. `recommended, priority: high, effort: S`
+2. PreToolUse(Bash `git commit`) secret gate: block if staged files match `.env`, `*sa_key*.json`, `*token*.json`. A service-account key lands next session — one slip is unrecoverable. `recommended, priority: high, effort: S`
+3. SessionStart on hermes-vcn-0: warn "no git identity configured; use -c flags" for any repo whose commits would fail. Bit us this session. `recommended, priority: medium, effort: S`
+4. Pre-push hook: refuse push if `pytest` fails — keeps the GitHub mirror (the cross-machine sync) always green. `recommended, priority: medium, effort: S`
+5. Port piclaw's past-tense-claim hook to hermes-vcn-0 handoff docs — this session had to avoid "has been deployed"-style claims by hand. `recommended, priority: medium, effort: M`
+
+### Automation (5)
+1. GitHub Actions: pytest on every push to any branch (repo has zero CI; suite is 50 tests and fast). `recommended, priority: high, effort: S`
+2. Add text_back to the piclaw fleet-sync daily pull-before-push sweep so both checkouts converge. `recommended, priority: high, effort: S`
+3. Weekly pricing-drift check: re-fetch SignalWire/Twilio rates, diff vs `PRD-text_back.md` cost snapshot, alert only on >10% drift (stale pricing has now needed manual refresh twice). `recommended, priority: medium, effort: M`
+4. Once a SignalWire account exists: daily 10DLC registration-status poll during the 1–2 week approval window; notify only on state change (no-status-dumps compliant). `recommended, priority: medium, effort: M`
+5. Nightly text_back health cron: pytest + dirty-tree check on both hosts, alert on failure only. `recommended, priority: low, effort: S`
+
+### Workflows (5)
+1. Approval ledger: a repo file recording human gates granted (e.g. "SignalWire ≤$15/mo approved 2026-08-20") so no agent re-asks or, worse, assumes. `recommended, priority: high, effort: S`
+2. Client onboarding workflow: runbook steps + mandatory live-call verification + recorded sign-off. Runbook `built` this session; sign-off record `recommended`. `priority: high, effort: S`
+3. Credential intake: keys go browser → `~/.config/text_back/` → verified via `/health`, never through chat or git; document as the standard for every fluxworks product. `recommended, priority: high, effort: S`
+4. Google-auth fallback ladder (paste-code → console click-path → remote-bootstrap) as a reusable doc for all Google integrations; discovered the hard way this session. `recommended, priority: medium, effort: S`
+5. Per-client deploy runbook generated from the PRD when fluxworks client #1 signs (mirror the engine-deploy pattern). `recommended, priority: medium, effort: M`
+
+### Skills (5)
+1. `deploy-client` (text_back): stamp out a per-client config — number, wiring mode, business identity, calendar, hours — the fluxworks reproducibility requirement made executable. `recommended, priority: high, effort: M`
+2. Extend `google-oauth-repair` with the headless `tail -f | gcloud auth login` pattern + access-blocked triage from this session. `recommended, priority: medium, effort: S`
+3. `signalwire-ops`: signup checklist, number purchase, 10DLC steps, spend-ceiling verification against the approval ledger. `recommended, priority: medium, effort: M`
+4. `carrier-forwarding`: wrap `docs/ONBOARDING-FORWARDING.md` into guided activate/verify/deactivate steps per carrier. `recommended, priority: low, effort: S`
+5. Make `next-session` host-aware: detect missing vault/`/home/mdriles` (as on hermes-vcn-0) and degrade gracefully instead of assuming piclaw paths. `recommended, priority: medium, effort: S`
 
 ## Resume prompt
 ```text
-Continue-project contract: read NEXT-SESSION.md completely first, then PRD.md, SESSION-NOTES.md, AGENTS.md, README.md.
+Continue-project contract: read /home/ubuntu/projects/text_back/NEXT-SESSION.md completely first (piclaw path: /home/mdriles/projects/text_back).
 
-Local core is implemented and tested. Remaining work is human gates (paid telecom + Google OAuth) then live adapters.
+Cold start:
+  cd ~/projects/text_back   # branch local/tdd-core, remote github.com:mdrilesbutler/text_back
+  Read in order: NEXT-SESSION.md, PRD-text_back.md, SESSION-NOTES.md, AGENTS.md,
+  docs/ONBOARDING-FORWARDING.md, src/text_back/handlers.py, .env.example
 
-Do not: buy a number; send production SMS; use Google Voice; store secrets in Git; claim booking without a Calendar event ID.
+Verified state (2026-08-20): .venv/bin/pytest tests/ -> 50 passed. Local core complete
+including conversation slot-filling and wiring_mode (forwarded default / managed).
+No telecom account, no Google credentials, no env-loader, no deploy.
+
+Approvals already given (2026-08-20): SignalWire purchase, $15/month ceiling;
+attach to clients' existing numbers (forwarded mode); build for fluxworks catalog
+reproducibility (business specifics in config only).
+
+Next work, in order (acceptance = commands, not vibes):
+1. If Michael is present: SignalWire signup (his browser) and the EIN question;
+   restart Google auth via the fallback ladder in NEXT-SESSION open item 2.
+2. Else TDD, one at a time, full suite green after each:
+   a. Env-loader for TEXT_BACK_* vars -> pytest passes, /health reflects env config.
+   b. Voice webhook returns a LaML/TwiML voicemail-style response in forwarded mode.
+   c. Parse preferred_time to a slot; wire collected fields into booking.py;
+      confirmation still gated on calendar event ID.
+   Commit each (git -c user.name="Michael Riley" -c user.email="mdriles@gmail.com")
+   and push to origin local/tdd-core.
+
+Do not: buy/activate anything without checking the $15 approval scope; send
+production SMS; use Google Voice; store any credential in git; claim a booking
+without a Calendar event ID; apply managed-mode trigger rules to forwarded mode.
+
+Done for next session = at least one unblocked code item shipped green + pushed,
+and any human-gate progress recorded in PRD-text_back.md and this file.
 ```

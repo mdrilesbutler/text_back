@@ -2,7 +2,7 @@
 
 Missed-call recovery and scheduling assistant for field-service businesses.
 
-Canonical requirements: `PRD.md`
+Canonical requirements: `PRD-text_back.md`
 Cold resume: `NEXT-SESSION.md`
 Session history: `SESSION-NOTES.md`
 Local implementation plan: `IMPLEMENTATION-PLAN.md`
