@@ -30,6 +30,17 @@ class Store:
         )
         self.conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS conversation_fields (
+                phone TEXT NOT NULL,
+                field TEXT NOT NULL,
+                value TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (phone, field)
+            )
+            """
+        )
+        self.conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS appointments (
                 conversation_id TEXT PRIMARY KEY,
                 event_id TEXT NOT NULL UNIQUE,
@@ -72,6 +83,28 @@ class Store:
             "SELECT opted_out FROM contacts WHERE phone = ?", (phone,)
         ).fetchone()
         return bool(row["opted_out"]) if row else False
+
+    def get_conversation_fields(self, phone: str) -> dict[str, str]:
+        rows = self.conn.execute(
+            "SELECT field, value FROM conversation_fields WHERE phone = ?", (phone,)
+        ).fetchall()
+        return {row["field"]: row["value"] for row in rows}
+
+    def set_conversation_field(self, phone: str, field: str, value: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            """
+            INSERT INTO conversation_fields (phone, field, value, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(phone, field) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at
+            """,
+            (phone, field, value, now),
+        )
+        self.conn.commit()
+
+    def clear_conversation_fields(self, phone: str) -> None:
+        self.conn.execute("DELETE FROM conversation_fields WHERE phone = ?", (phone,))
+        self.conn.commit()
 
     def save_appointment(
         self,

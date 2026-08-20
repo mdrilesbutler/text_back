@@ -17,7 +17,7 @@ When Michael starts an agent from this project directory and says “continue pr
 2. After approval: refresh live SignalWire pricing/10DLC requirements, then create/verify telecom account and buy one local voice/SMS number. Owner: Hermes + Michael browser. Do not purchase from hermes-cloud without approval.
 3. Complete Google Calendar OAuth for `mdrilesbutler@gmail.com`. Owner: Hermes + Michael browser.
 4. Replace Calendar stub with live free/busy + event create; keep confirmation gated on provider event ID.
-5. Add conversation field collection (service, location, preferred time, name) still under deterministic policy.
+5. ~~Add conversation field collection (service, location, preferred time, name) still under deterministic policy.~~ Done 2026-08-20: sequential slot-filling in `handlers.py`/`policy.py`/`store.py`, no LLM/NLP extraction. See SESSION-NOTES.md.
 6. Deploy through Paperclip Hermes on Hostinger and run a real-phone end-to-end smoke test only after approval.
 
 ## Session gotchas

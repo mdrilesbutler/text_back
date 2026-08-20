@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from text_back.policy import INTRO_SMS, HELP_SMS, OPT_OUT_ACK, classify_inbound_sms, is_terminal_unanswered
+from text_back.policy import (
+    HELP_SMS,
+    INTRO_SMS,
+    OPT_OUT_ACK,
+    classify_inbound_sms,
+    conversation_prompt,
+    conversation_summary_sms,
+    is_terminal_unanswered,
+    next_missing_field,
+)
 from text_back.store import Store
 from text_back.telecom import FakeTelecom
 
@@ -52,4 +61,70 @@ def handle_sms_event(
         return {"accepted": True, "duplicate": False, "action": "help"}
     if store.is_opted_out(from_number):
         return {"accepted": True, "duplicate": False, "action": "suppressed", "reason": "opted_out"}
-    return {"accepted": True, "duplicate": False, "action": "conversation"}
+    return _collect_conversation_field(
+        store=store,
+        telecom=telecom,
+        from_number=from_number,
+        to_number=to_number,
+        body=body,
+    )
+
+
+def _collect_conversation_field(
+    *,
+    store: Store,
+    telecom: FakeTelecom,
+    from_number: str,
+    to_number: str,
+    body: str,
+) -> dict:
+    """Deterministic slot-filling: each reply answers the next missing field
+    in a fixed order (service, location, preferred_time, name). No LLM or
+    free-text extraction is used; policy owns what field is asked for next.
+    """
+    fields = store.get_conversation_fields(from_number)
+    pending_field = next_missing_field(fields)
+    if pending_field is None:
+        return {"accepted": True, "duplicate": False, "action": "conversation", "fields_complete": True}
+
+    value = body.strip()
+    if not value:
+        telecom.send_sms(
+            to=from_number,
+            body=conversation_prompt(pending_field),
+            from_number=to_number,
+            kind="field_prompt",
+        )
+        return {"accepted": True, "duplicate": False, "action": "field_prompt_repeated", "field": pending_field}
+
+    store.set_conversation_field(from_number, pending_field, value)
+    updated_fields = {**fields, pending_field: value}
+    next_field = next_missing_field(updated_fields)
+    if next_field is None:
+        telecom.send_sms(
+            to=from_number,
+            body=conversation_summary_sms(updated_fields),
+            from_number=to_number,
+            kind="collection_complete",
+        )
+        return {
+            "accepted": True,
+            "duplicate": False,
+            "action": "field_collected",
+            "field": pending_field,
+            "fields_complete": True,
+        }
+
+    telecom.send_sms(
+        to=from_number,
+        body=conversation_prompt(next_field),
+        from_number=to_number,
+        kind="field_prompt",
+    )
+    return {
+        "accepted": True,
+        "duplicate": False,
+        "action": "field_collected",
+        "field": pending_field,
+        "next_field": next_field,
+    }

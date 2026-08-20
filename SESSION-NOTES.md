@@ -1,5 +1,34 @@
 # text_back — Session Notes
 
+## 2026-08-20 — conversation field collection (deterministic)
+
+Added slot-filling collection of service, location, preferred time, and name
+to inbound SMS "conversation" replies. Test-first (RED confirmed before
+implementation).
+
+### Implemented
+- `policy.py`: `CONVERSATION_FIELDS` (fixed order: service, location,
+  preferred_time, name), `FIELD_PROMPTS`, `next_missing_field()`,
+  `conversation_prompt()`, `conversation_summary_sms()`.
+- `store.py`: `conversation_fields` table keyed `(phone, field)`; added
+  `get_conversation_fields`, `set_conversation_field`, `clear_conversation_fields`.
+- `handlers.py`: `_collect_conversation_field()` — each non-STOP/HELP,
+  non-opted-out inbound SMS is treated as the verbatim answer to the next
+  missing field, in fixed order. STOP/HELP/opt-out still short-circuit ahead
+  of field collection (unchanged). Blank replies re-prompt the same field
+  without storing an empty value. Once all four fields are collected, further
+  replies neither overwrite fields nor re-prompt.
+- No LLM or NLP extraction — deterministic sequencing only, per project
+  non-goals.
+
+### Evidence
+- `.venv/bin/pytest tests/` — 38 passed (19 prior + 19 new) on 2026-08-20.
+
+### Not done
+- No wiring from collected fields into `booking.py` (still requires a
+  parsed `datetime`, which `preferred_time` is deliberately kept as raw
+  text, not parsed). No conversation reset after a booking is made.
+
 ## 2026-08-14 — hermes-cloud local TDD core
 
 Built and verified locally on `hermes-vcn-0`. No paid telecom, number, OAuth, or production SMS.
