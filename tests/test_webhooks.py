@@ -20,10 +20,16 @@ def _sign(url: str, params: dict[str, str], token: str = WEBHOOK_SECRET) -> str:
 
 def _client(telecom: FakeTelecom | None = None) -> tuple[TestClient, FakeTelecom]:
     telecom = telecom or FakeTelecom()
+    # This suite documents "managed" wiring_mode behavior specifically: our
+    # number is the client's own number, so only terminal-unanswered call
+    # statuses represent a missed call. See test_wiring_mode.py for
+    # "forwarded" mode (the app-level default), where the first voice event
+    # for a call_sid triggers regardless of call_status.
     app = create_app(
         webhook_secret=WEBHOOK_SECRET,
         public_base_url="https://example.test",
         telecom=telecom,
+        wiring_mode="managed",
     )
     return TestClient(app), telecom
 

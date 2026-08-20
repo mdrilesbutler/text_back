@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI, Form, Header, HTTPException, Request
 
 from text_back.handlers import handle_sms_event, handle_voice_event
+from text_back.policy import WIRING_MODE_FORWARDED, WIRING_MODES
 from text_back.signatures import SignatureError, verify_twilio_compat
 from text_back.store import Store
 from text_back.telecom import FakeTelecom
@@ -14,16 +15,27 @@ def create_app(
     public_base_url: str = "http://127.0.0.1:8000",
     telecom: FakeTelecom | None = None,
     store: Store | None = None,
+    wiring_mode: str = WIRING_MODE_FORWARDED,
 ) -> FastAPI:
+    if wiring_mode not in WIRING_MODES:
+        raise ValueError(
+            f"invalid wiring_mode: {wiring_mode!r}; must be one of {sorted(WIRING_MODES)}"
+        )
     app = FastAPI(title="text_back", version="0.1.0")
     app.state.webhook_secret = webhook_secret
     app.state.public_base_url = public_base_url.rstrip("/")
     app.state.telecom = telecom or FakeTelecom()
     app.state.store = store or Store()
+    app.state.wiring_mode = wiring_mode
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "production": False, "telecom": "stub"}
+        return {
+            "status": "ok",
+            "production": False,
+            "telecom": "stub",
+            "wiring_mode": app.state.wiring_mode,
+        }
 
     @app.post("/webhooks/voice")
     async def voice_webhook(
@@ -49,6 +61,7 @@ def create_app(
             call_status=call_status,
             from_number=from_number,
             to_number=to_number,
+            wiring_mode=request.app.state.wiring_mode,
         )
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
         return result

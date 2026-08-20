@@ -1,5 +1,51 @@
 # text_back — Session Notes
 
+## 2026-08-20 — wiring_mode: attach to a client's existing number via forwarding
+
+Added `wiring_mode` support so text_back can wire onto a client's existing
+public phone number via conditional call forwarding, instead of requiring
+the client to hand out our number directly. Test-first (RED confirmed
+before implementation).
+
+### Implemented
+- `policy.py`: `WIRING_MODE_FORWARDED` ("forwarded"), `WIRING_MODE_MANAGED`
+  ("managed"), `WIRING_MODES`.
+- `app.py`: `create_app(..., wiring_mode: str = WIRING_MODE_FORWARDED)` —
+  same config-flow pattern as `webhook_secret`/`public_base_url`; invalid
+  values raise `ValueError`; `app.state.wiring_mode` is threaded into
+  `handle_voice_event`; `/health` now reports `wiring_mode`.
+- `handlers.py`: `handle_voice_event` takes `wiring_mode` as a required
+  keyword argument. In `managed` mode, behavior is unchanged from before —
+  only a terminal-unanswered `CallStatus` triggers the intro SMS. In
+  `forwarded` mode, the terminal-status check is skipped entirely: the
+  first voice webhook for a given `call_sid` triggers exactly one intro SMS
+  regardless of `CallStatus`, because the carrier only ever forwards to us
+  after no-answer/busy on the client's real line — an inbound call to our
+  number already IS a missed call. Exactly-once delivery across
+  ringing/completed webhook retries for the same call still comes from the
+  existing `store.claim_event("voice", call_sid, "missed_call_intro")`
+  idempotency gate (unchanged). Opt-out suppression and the
+  from/to direction (text the original caller, from our number) are
+  unchanged and apply in both modes.
+- `.env.example`: documented `TEXT_BACK_WIRING_MODE` (forwarded/managed).
+- `README.md`: new "Wiring mode" section.
+- `NEXT-SESSION.md`: gotcha that "terminal status only" is a `managed`-mode
+  rule; `forwarded` mode triggers on arrival.
+- No LLM — deterministic mode dispatch only, per project non-goals.
+
+### Evidence
+- `.venv/bin/pytest tests/` — 50 passed (38 prior + 12 new, in
+  `tests/test_wiring_mode.py`) on 2026-08-20. Existing
+  `tests/test_webhooks.py` now pins `wiring_mode="managed"` explicitly
+  since it documents the (unchanged) legacy/managed behavior; the app-level
+  default flipped to `forwarded`.
+
+### Not done
+- No env-var loader reads `TEXT_BACK_WIRING_MODE` yet — same as the other
+  `.env.example` values, which are documented but not yet parsed from the
+  environment anywhere in this repo (see `__main__.py`); wiring env parsing
+  is a pre-existing gap, not introduced here.
+
 ## 2026-08-20 — conversation field collection (deterministic)
 
 Added slot-filling collection of service, location, preferred time, and name

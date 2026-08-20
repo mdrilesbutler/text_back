@@ -4,6 +4,18 @@ TERMINAL_UNANSWERED = frozenset({"no-answer", "busy", "failed", "canceled"})
 STOP_KEYWORDS = frozenset({"stop", "stopall", "unsubscribe", "cancel", "end", "quit"})
 HELP_KEYWORDS = frozenset({"help", "info"})
 
+# wiring_mode: how our number relates to the client's real phone line.
+# - "forwarded" (default): our number is not the client's public number. The
+#   carrier only forwards a call to us after no-answer/busy on the client's
+#   real line, so ANY inbound voice webhook we receive already represents a
+#   missed call — trigger on arrival, regardless of CallStatus.
+# - "managed": our number IS the client's public number (current/legacy
+#   behavior). Only terminal-unanswered statuses represent a missed call;
+#   ringing/in-progress/answered must not trigger an intro SMS.
+WIRING_MODE_FORWARDED = "forwarded"
+WIRING_MODE_MANAGED = "managed"
+WIRING_MODES = frozenset({WIRING_MODE_FORWARDED, WIRING_MODE_MANAGED})
+
 INTRO_SMS = (
     "Hey, sorry we missed your call—this is Mike’s scheduling assistant. "
     "What were you calling about?"

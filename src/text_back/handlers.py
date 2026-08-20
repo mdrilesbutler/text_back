@@ -4,6 +4,7 @@ from text_back.policy import (
     HELP_SMS,
     INTRO_SMS,
     OPT_OUT_ACK,
+    WIRING_MODE_MANAGED,
     classify_inbound_sms,
     conversation_prompt,
     conversation_summary_sms,
@@ -22,8 +23,15 @@ def handle_voice_event(
     call_status: str,
     from_number: str,
     to_number: str,
+    wiring_mode: str,
 ) -> dict:
-    if not is_terminal_unanswered(call_status):
+    # "managed": our number is the client's own number, so only a terminal
+    # unanswered status (no-answer/busy/failed/canceled) is a missed call.
+    # "forwarded": our number only ever rings after the carrier's
+    # conditional call forwarding already decided the client didn't answer,
+    # so the first voice webhook for this call_sid IS the missed call,
+    # regardless of call_status — fall through unconditionally below.
+    if wiring_mode == WIRING_MODE_MANAGED and not is_terminal_unanswered(call_status):
         return {"accepted": True, "action": "ignored", "reason": "not_terminal_unanswered"}
     if store.is_opted_out(from_number):
         return {"accepted": True, "action": "suppressed", "reason": "opted_out"}
