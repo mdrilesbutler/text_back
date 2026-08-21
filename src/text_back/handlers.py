@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from text_back.policy import (
-    HELP_SMS,
-    INTRO_SMS,
     OPT_OUT_ACK,
     WIRING_MODE_MANAGED,
     classify_inbound_sms,
     conversation_prompt,
     conversation_summary_sms,
+    help_sms,
+    intro_sms,
     is_terminal_unanswered,
     next_missing_field,
 )
@@ -24,6 +24,7 @@ def handle_voice_event(
     from_number: str,
     to_number: str,
     wiring_mode: str,
+    business_name: str,
 ) -> dict:
     # "managed": our number is the client's own number, so only a terminal
     # unanswered status (no-answer/busy/failed/canceled) is a missed call.
@@ -40,7 +41,7 @@ def handle_voice_event(
         return {"accepted": True, "duplicate": True, "action": "noop"}
     telecom.send_sms(
         to=from_number,
-        body=INTRO_SMS,
+        body=intro_sms(business_name),
         from_number=to_number,
         kind="missed_call_intro",
     )
@@ -55,6 +56,7 @@ def handle_sms_event(
     from_number: str,
     to_number: str,
     body: str,
+    business_name: str,
 ) -> dict:
     claimed = store.claim_event("sms", message_sid, "inbound")
     if not claimed:
@@ -65,7 +67,12 @@ def handle_sms_event(
         telecom.send_sms(to=from_number, body=OPT_OUT_ACK, from_number=to_number, kind="opt_out_ack")
         return {"accepted": True, "duplicate": False, "action": "opt_out"}
     if kind == "help":
-        telecom.send_sms(to=from_number, body=HELP_SMS, from_number=to_number, kind="help")
+        telecom.send_sms(
+            to=from_number,
+            body=help_sms(business_name),
+            from_number=to_number,
+            kind="help",
+        )
         return {"accepted": True, "duplicate": False, "action": "help"}
     if store.is_opted_out(from_number):
         return {"accepted": True, "duplicate": False, "action": "suppressed", "reason": "opted_out"}
@@ -75,6 +82,7 @@ def handle_sms_event(
         from_number=from_number,
         to_number=to_number,
         body=body,
+        business_name=business_name,
     )
 
 
@@ -85,6 +93,7 @@ def _collect_conversation_field(
     from_number: str,
     to_number: str,
     body: str,
+    business_name: str,
 ) -> dict:
     """Deterministic slot-filling: each reply answers the next missing field
     in a fixed order (service, location, preferred_time, name). No LLM or
@@ -111,7 +120,7 @@ def _collect_conversation_field(
     if next_field is None:
         telecom.send_sms(
             to=from_number,
-            body=conversation_summary_sms(updated_fields),
+            body=conversation_summary_sms(updated_fields, business_name),
             from_number=to_number,
             kind="collection_complete",
         )

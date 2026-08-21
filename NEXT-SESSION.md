@@ -6,7 +6,7 @@ When Michael starts an agent from this project directory and says "continue proj
 ## Where everything stands (verified 2026-08-20, fresh)
 - Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
 - Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`, pushed through commit `2421ced` (verify with `git log --oneline -5`; the handoff commit follows it).
-- Test suite: `.venv/bin/pytest tests/` → **60 passed**, rerun this session after every change.
+- Test suite: `.venv/bin/pytest tests/` → **67 passed**, rerun this session after every change.
 - Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
 - Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
 - gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
@@ -22,9 +22,9 @@ When Michael starts an agent from this project directory and says "continue proj
 1. **Michael (browser)**: enable SignalWire Platform Free Trial under Messaging Campaigns by verifying his personal mobile. This permits REST API test messages only between the purchased pilot number and that one verified mobile (200/day, trial prefix); it does not enable cXML/SWML messaging. Michael is operating as a sole proprietor while an LLC is pending. Do not submit a paid Brand/Campaign yet unless he explicitly chooses that path after seeing the displayed fees.
 2. **Michael + agent**: finish Google auth for `mdrilesbutler@gmail.com`. Last attempt: `~/google-cloud-sdk/bin/gcloud auth login --no-launch-browser` run in background with stdin held open; Michael's browser showed "access blocked" (exact wording never reported). Restart the flow fresh (the old background process/scratchpad is disposable). Fallback ladder: (a) plain desktop browser, not an in-app webview; (b) incognito signed in only as mdrilesbutler; (c) Plan B — Michael creates project/SA in console by hand, downloads key; (d) Plan C — `gcloud auth login --no-browser` remote-bootstrap if he has gcloud locally.
 3. **Agent (after auth)**: scripted GCP setup — `gcloud projects create <unique-id>`, enable `calendar-json.googleapis.com`, create service account, key to `~/.config/text_back/sa_key.json` (chmod 600, NEVER git); then Michael shares the pilot calendar with the SA email ("Make changes to events").
-4. **Agent (unblocked code, TDD)**: voicemail-style greeting on forwarded calls — the voice webhook should return LaML/TwiML (`<Say>`/`<Record>` or at minimum a polite hangup) since conditional forwarding replaces the client's carrier voicemail.
-5. **Agent (unblocked code, TDD)**: parse `preferred_time` (kept as raw text on purpose) into a concrete slot and wire the four collected fields into `booking.py`; keep confirmation gated on event ID.
-6. Store SignalWire Space URL, least-privilege API token, Project ID, and signing key outside Git; deploy and attach the HTTPS handlers. The outbound REST adapter is built; inbound live configuration and the Calendar adapter remain. Then run a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`.
+4. **Agent (done locally 2026-08-21)**: SignalWire callbacks now require `X-SignalWire-Signature`, return cXML, and forwarded calls receive branded `<Say>` + `<Hangup>` with no retained recording. Live attachment/testing remains gated.
+5. **Agent (next unblocked code, TDD)**: parse `preferred_time` (kept as raw text on purpose) into a concrete slot and wire the four collected fields into `booking.py`; keep confirmation gated on event ID.
+6. Store SignalWire Space URL, least-privilege API token, Project ID, and signing key outside Git; deploy and attach the HTTPS handlers. The outbound REST adapter and inbound boundary are built; live provider configuration and the Calendar adapter remain. Then run a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`.
 
 ## Session gotchas (hard-won)
 - The `!` bash-input runner is NOT interactive: `gcloud auth login --no-launch-browser` crashes with EOFError waiting for the code. Fix: `: > code.txt; tail -f code.txt | gcloud auth login --no-launch-browser > login.log 2>&1 &`, hand the URL from the log to Michael, append his verification code to `code.txt`.
@@ -97,7 +97,7 @@ Next work, in order (acceptance = commands, not vibes):
    restart Google auth via the fallback ladder in NEXT-SESSION open item 2.
 2. Else TDD, one at a time, full suite green after each:
    a. Env-loader for TEXT_BACK_* vars -> pytest passes, /health reflects env config.
-   b. Voice webhook returns a LaML/TwiML voicemail-style response in forwarded mode.
+   b. Voice webhook returns a LaML/TwiML voicemail-style response in forwarded mode. (done 2026-08-21)
    c. Parse preferred_time to a slot; wire collected fields into booking.py;
       confirmation still gated on calendar event ID.
    Commit each (git -c user.name="Michael Riley" -c user.email="mdriles@gmail.com")

@@ -25,6 +25,7 @@ def _app():
         webhook_secret=WEBHOOK_SECRET,
         public_base_url="https://example.test",
         telecom=telecom,
+        business_name="Mike",
     )
     return TestClient(app), telecom
 

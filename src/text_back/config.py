@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 from text_back.policy import WIRING_MODE_FORWARDED
 
+DEFAULT_WEBHOOK_SECRET = "dev-secret-not-for-production"
+
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -17,13 +19,14 @@ class AppConfig:
     signalwire_project_id: str
     signalwire_api_token: str = field(repr=False)
     signalwire_from_number: str
+    business_name: str
 
 
 def load_config() -> AppConfig:
     """Load app configuration from the process environment."""
     return AppConfig(
         webhook_secret=os.environ.get(
-            "TEXT_BACK_WEBHOOK_SECRET", "dev-secret-not-for-production"
+            "TEXT_BACK_WEBHOOK_SECRET", DEFAULT_WEBHOOK_SECRET
         ),
         public_base_url=os.environ.get(
             "TEXT_BACK_PUBLIC_BASE_URL", "http://127.0.0.1:8000"
@@ -35,4 +38,5 @@ def load_config() -> AppConfig:
         signalwire_project_id=os.environ.get("TEXT_BACK_SIGNALWIRE_PROJECT_ID", ""),
         signalwire_api_token=os.environ.get("TEXT_BACK_SIGNALWIRE_API_TOKEN", ""),
         signalwire_from_number=os.environ.get("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", ""),
+        business_name=os.environ.get("TEXT_BACK_BUSINESS_NAME", "the business"),
     )

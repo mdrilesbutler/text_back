@@ -13,9 +13,19 @@ uses environment-injected credentials, requires a provider message ID, and
 redacts provider response bodies and credentials from errors. The app selects
 `stub` or `signalwire` through `TEXT_BACK_TELECOM_MODE` and fails closed when
 SignalWire configuration is incomplete. `/health` reports only the provider
-name. Full suite: `.venv/bin/pytest tests/` — 60 passed.
+name.
 
-No live SMS was sent and no webhook was attached. Next human action: verify
+The local inbound boundary now requires `X-SignalWire-Signature` against the
+exact configured public URL and returns valid cXML. Forwarded calls receive a
+business-configured `<Say>` followed by `<Hangup>`; no recording is retained.
+SMS and voice copy now receive identity from `TEXT_BACK_BUSINESS_NAME` rather
+than embedding a client identity in policy code. The protected runtime and
+pre-live contract is documented in `docs/SIGNALWIRE-INTEGRATION.md`.
+
+Full suite: `.venv/bin/pytest tests/` — 67 passed.
+
+No live SMS was sent, no provider callback was received, and no webhook was
+attached. Next human action: verify
 Michael's personal mobile in SignalWire Messaging Campaigns to enable Platform
 Free Trial. PFT is REST-only between the assigned SignalWire number and that
 verified mobile; cXML/SWML messaging remains unavailable until registration.

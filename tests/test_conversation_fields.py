@@ -28,6 +28,7 @@ def _send(store, telecom, message_sid, body, from_number=CALLER, to_number=BUSIN
         from_number=from_number,
         to_number=to_number,
         body=body,
+        business_name="Mike",
     )
 
 
@@ -72,7 +73,7 @@ def test_conversation_summary_sms_includes_all_collected_values():
         "preferred_time": "tomorrow afternoon",
         "name": "John",
     }
-    summary = conversation_summary_sms(fields)
+    summary = conversation_summary_sms(fields, "Mike")
     for value in fields.values():
         assert value in summary
 

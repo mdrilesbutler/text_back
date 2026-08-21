@@ -141,12 +141,12 @@ Why $299/month: Goodcall’s self-serve voice plans establish a low-cost softwar
 ### P0 — before pilot
 
 - [x] Local fail-closed Twilio-compatible webhook signature validation and tests.
-- [ ] Live SignalWire Compatibility boundary: validate `X-SignalWire-Signature` against the exact public URL and return cXML where required.
+- [x] Local SignalWire Compatibility boundary: validate `X-SignalWire-Signature` against the exact public URL and return cXML where required. Live attachment/testing remains gated.
 - [x] Exactly-once missed-call trigger (`call_sid`).
 - [x] Forwarded and managed wiring modes.
 - [x] STOP / HELP deterministic policy.
 - [x] One-question-at-a-time field collection.
-- [ ] Voicemail-style forwarded-call response.
+- [x] Voicemail-style forwarded-call response (`<Say>` + `<Hangup>`; no retained recording).
 - [ ] Parse requested time and book only after free/busy check.
 - [ ] Human handoff state + operator alert payload.
 - [ ] Append-only outcome events for the lead lifecycle.

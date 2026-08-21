@@ -16,14 +16,6 @@ WIRING_MODE_FORWARDED = "forwarded"
 WIRING_MODE_MANAGED = "managed"
 WIRING_MODES = frozenset({WIRING_MODE_FORWARDED, WIRING_MODE_MANAGED})
 
-INTRO_SMS = (
-    "Hey, sorry we missed your call—this is Mike’s scheduling assistant. "
-    "What were you calling about?"
-)
-HELP_SMS = (
-    "Mike’s scheduling assistant. Reply with the job type, location, and a time that works. "
-    "For a person, call the business line. Reply STOP to opt out."
-)
 OPT_OUT_ACK = "You are unsubscribed and will not receive more automated texts. Reply START only if you want scheduling messages again. STOP request recorded."
 
 # Deterministic conversation field collection. No LLM/NLP extraction: each
@@ -50,10 +42,26 @@ def conversation_prompt(field: str) -> str:
     return FIELD_PROMPTS[field]
 
 
-def conversation_summary_sms(fields: dict[str, str]) -> str:
+def intro_sms(business_name: str) -> str:
+    return (
+        f"Hey, sorry we missed your call—this is {business_name}'s scheduling assistant. "
+        "What were you calling about?"
+    )
+
+
+def help_sms(business_name: str) -> str:
+    return (
+        f"{business_name}'s scheduling assistant. Reply with the job type, location, "
+        "and a time that works. For a person, call the business line. "
+        "Reply STOP to opt out."
+    )
+
+
+def conversation_summary_sms(fields: dict[str, str], business_name: str) -> str:
     return (
         f"Thanks {fields['name']}! We've got: {fields['service']} at {fields['location']}, "
-        f"preferred time {fields['preferred_time']}. Mike will confirm your appointment shortly."
+        f"preferred time {fields['preferred_time']}. "
+        f"{business_name} will confirm your appointment shortly."
     )
 
 

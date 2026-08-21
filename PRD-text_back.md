@@ -143,8 +143,8 @@ No telecom account activation, number purchase, paid usage, production messaging
 1. SignalWire Space is funded and one local voice/SMS-capable pilot number was purchased 2026-08-21 at $0.50/month under the existing $15/month approval. Exact number is config-only outside Git. Next browser gate: verify Michael's personal mobile for Platform Free Trial; do not submit a paid Brand/Campaign without reviewing its displayed fees. Michael is currently a sole proprietor and the LLC is pending.
 2. Michael: Google sign-in for `mdrilesbutler@gmail.com` hit an "access blocked" page mid-flow (2026-08-20); exact error wording still unreported. Fallbacks documented in NEXT-SESSION.md.
 3. After gcloud auth lands: scripted GCP setup — create project, enable `calendar-json.googleapis.com`, create service account + key to `~/.config/text_back/sa_key.json` (never git), Michael shares the pilot calendar with the SA email.
-4. Code, unblocked now: voicemail-style greeting on forwarded calls (conditional forwarding replaces carrier voicemail); parse `preferred_time` into a slot and wire collected fields into `booking.py`.
-5. Finish the live SignalWire inbound boundary and Google Calendar adapter once credentials exist. The outbound SignalWire REST adapter is implemented but not configured or exercised against a live account. Compatibility callbacks must validate `X-SignalWire-Signature` against the exact public URL and return cXML where required; keep confirmation gated on the Calendar event ID.
+4. Code, unblocked now: parse `preferred_time` into a slot and wire collected fields into `booking.py`. The local voicemail-style forwarded greeting is implemented with `<Say>` + `<Hangup>` and no retained recording.
+5. Finish live SignalWire attachment and the Google Calendar adapter once credentials exist. The outbound REST adapter and inbound `X-SignalWire-Signature`/cXML boundary are implemented locally but not configured or exercised against a live account; keep confirmation gated on the Calendar event ID.
 6. Deploy through Paperclip Hermes on Hostinger; real-phone end-to-end smoke test.
 7. Before first client launch: replace pilot identity/calendar/phone with client-owned values; per-client 10DLC registration.
 
@@ -155,7 +155,7 @@ No telecom account activation, number purchase, paid usage, production messaging
 - Added a SignalWire Compatibility REST outbound-SMS adapter with HTTPS enforcement, least-secret configuration, configured-sender enforcement, provider message-ID validation, and redacted provider failures.
 - Added environment selection via `TEXT_BACK_TELECOM_MODE=stub|signalwire`; SignalWire mode fails closed when required settings are missing, and `/health` exposes only the non-secret provider name.
 - SignalWire's documented Platform Free Trial is the selected no-EIN proof path: one assigned SignalWire number to one verified mobile, REST API only. Personal-mobile verification is still pending.
-- Evidence: `.venv/bin/pytest tests/` — 60 passed. No API token, signing key, EIN, customer message content, or production value was committed.
+- Evidence: `.venv/bin/pytest tests/` — 67 passed. No API token, signing key, EIN, customer message content, or production value was committed.
 
 ## Session record — 2026-08-20 (hermes-vcn-0, Claude)
 

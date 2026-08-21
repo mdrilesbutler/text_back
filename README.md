@@ -26,13 +26,18 @@ cd /home/ubuntu/projects/text_back
 .venv/bin/python -m text_back   # 127.0.0.1:8000 only
 ```
 
-Covered locally: environment-backed configuration, a guarded SignalWire outbound REST adapter, Twilio-compatible webhook signature fail-closed, missed-call intro (both wiring modes), idempotent retries, STOP/HELP policy, deterministic field collection, and Calendar stub booking with event-ID gate.
+Covered locally: environment-backed configuration, guarded SignalWire outbound
+REST and inbound Compatibility boundaries, provider-specific fail-closed
+webhook signatures, valid cXML responses, a forwarded-call greeting,
+missed-call intro (both wiring modes), idempotent retries, STOP/HELP policy,
+deterministic field collection, and Calendar stub booking with event-ID gate.
+See `docs/SIGNALWIRE-INTEGRATION.md` for the protected configuration contract.
 
 Human gates remaining: verify Michael's personal mobile for SignalWire Platform
 Free Trial; add credentials through the protected deployment/local secret
-store; and complete Google Cloud authentication/service-account setup for the
-pilot calendar. Before live SignalWire traffic, the app also needs
-`X-SignalWire-Signature` validation and cXML responses.
+store; expose an approved HTTPS deployment and attach its webhook URLs; and
+complete Google Cloud authentication/service-account setup for the pilot
+calendar. No live SignalWire callback or REST request has been exercised.
 
 ## Wiring mode
 

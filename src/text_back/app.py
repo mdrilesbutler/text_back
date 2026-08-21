@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, Form, Header, HTTPException, Request
+from urllib.parse import urlsplit
 
-from text_back.config import load_config
+from fastapi import FastAPI, Form, Header, HTTPException, Request, Response
+
+from text_back.config import DEFAULT_WEBHOOK_SECRET, load_config
+from text_back.cxml import empty_response, forwarded_call_response
 from text_back.handlers import handle_sms_event, handle_voice_event
-from text_back.policy import WIRING_MODES
+from text_back.policy import WIRING_MODES, WIRING_MODE_FORWARDED
 from text_back.signatures import SignatureError, verify_twilio_compat
 from text_back.store import Store
 from text_back.telecom import FakeTelecom, SignalWireTelecom, Telecom
@@ -37,6 +40,17 @@ def _telecom_from_config(config) -> Telecom:
     )
 
 
+def _validate_signalwire_boundary(*, webhook_secret: str, public_base_url: str) -> None:
+    if not webhook_secret or webhook_secret == DEFAULT_WEBHOOK_SECRET:
+        raise ValueError(
+            "SignalWire mode requires TEXT_BACK_WEBHOOK_SECRET to contain "
+            "the Project signing key"
+        )
+    parsed = urlsplit(public_base_url)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ValueError("SignalWire mode requires an HTTPS public base URL")
+
+
 def create_app(
     *,
     webhook_secret: str | None = None,
@@ -45,6 +59,7 @@ def create_app(
     telecom: Telecom | None = None,
     store: Store | None = None,
     wiring_mode: str | None = None,
+    business_name: str | None = None,
 ) -> FastAPI:
     config = load_config()
     webhook_secret = webhook_secret if webhook_secret is not None else config.webhook_secret
@@ -53,17 +68,28 @@ def create_app(
     )
     db_path = db_path if db_path is not None else config.db_path
     wiring_mode = wiring_mode if wiring_mode is not None else config.wiring_mode
+    business_name = business_name if business_name is not None else config.business_name
+    if not business_name.strip():
+        raise ValueError("business_name is required")
     if wiring_mode not in WIRING_MODES:
         raise ValueError(
             f"invalid wiring_mode: {wiring_mode!r}; must be one of {sorted(WIRING_MODES)}"
         )
+    selected_telecom = telecom if telecom is not None else _telecom_from_config(config)
+    if selected_telecom.provider_name == "signalwire":
+        _validate_signalwire_boundary(
+            webhook_secret=webhook_secret,
+            public_base_url=public_base_url,
+        )
+
     app = FastAPI(title="text_back", version="0.1.0")
     app.state.webhook_secret = webhook_secret
     app.state.public_base_url = public_base_url.rstrip("/")
-    app.state.telecom = telecom if telecom is not None else _telecom_from_config(config)
+    app.state.telecom = selected_telecom
     app.state.store = store or Store(db_path)
     app.state.db_path = db_path
     app.state.wiring_mode = wiring_mode
+    app.state.business_name = business_name.strip()
 
     @app.get("/health")
     def health() -> dict:
@@ -84,12 +110,20 @@ def create_app(
         to_number: str = Form(alias="To"),
         direction: str = Form(default="", alias="Direction"),
         x_twilio_signature: str | None = Header(default=None, alias="X-Twilio-Signature"),
-    ) -> dict:
+        x_signalwire_signature: str | None = Header(
+            default=None, alias="X-SignalWire-Signature"
+        ),
+    ):
         form = await request.form()
         params = {str(k): str(v) for k, v in form.items()}
         url = f"{request.app.state.public_base_url}/webhooks/voice"
         try:
-            verify_twilio_compat(url, params, x_twilio_signature, request.app.state.webhook_secret)
+            signature = (
+                x_signalwire_signature
+                if request.app.state.telecom.provider_name == "signalwire"
+                else x_twilio_signature
+            )
+            verify_twilio_compat(url, params, signature, request.app.state.webhook_secret)
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         result = handle_voice_event(
@@ -100,8 +134,16 @@ def create_app(
             from_number=from_number,
             to_number=to_number,
             wiring_mode=request.app.state.wiring_mode,
+            business_name=request.app.state.business_name,
         )
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
+        if request.app.state.telecom.provider_name == "signalwire":
+            content = (
+                forwarded_call_response(request.app.state.business_name)
+                if request.app.state.wiring_mode == WIRING_MODE_FORWARDED
+                else empty_response()
+            )
+            return Response(content=content, media_type="application/xml")
         return result
 
     @app.post("/webhooks/sms")
@@ -112,12 +154,20 @@ def create_app(
         to_number: str = Form(alias="To"),
         body: str = Form(alias="Body"),
         x_twilio_signature: str | None = Header(default=None, alias="X-Twilio-Signature"),
-    ) -> dict:
+        x_signalwire_signature: str | None = Header(
+            default=None, alias="X-SignalWire-Signature"
+        ),
+    ):
         form = await request.form()
         params = {str(k): str(v) for k, v in form.items()}
         url = f"{request.app.state.public_base_url}/webhooks/sms"
         try:
-            verify_twilio_compat(url, params, x_twilio_signature, request.app.state.webhook_secret)
+            signature = (
+                x_signalwire_signature
+                if request.app.state.telecom.provider_name == "signalwire"
+                else x_twilio_signature
+            )
+            verify_twilio_compat(url, params, signature, request.app.state.webhook_secret)
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         result = handle_sms_event(
@@ -127,8 +177,11 @@ def create_app(
             from_number=from_number,
             to_number=to_number,
             body=body,
+            business_name=request.app.state.business_name,
         )
         result["message_sid"] = message_sid
+        if request.app.state.telecom.provider_name == "signalwire":
+            return Response(content=empty_response(), media_type="application/xml")
         return result
 
     return app
