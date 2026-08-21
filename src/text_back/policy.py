@@ -1,8 +1,22 @@
 from __future__ import annotations
 
+import re
+
 TERMINAL_UNANSWERED = frozenset({"no-answer", "busy", "failed", "canceled"})
 STOP_KEYWORDS = frozenset({"stop", "stopall", "unsubscribe", "cancel", "end", "quit"})
 HELP_KEYWORDS = frozenset({"help", "info"})
+HANDOFF_SAFETY_TERMS = frozenset(
+    {"danger", "emergency", "fire", "injured", "injury", "urgent"}
+)
+HANDOFF_SAFETY_PHRASES = ("downed line", "gas leak", "power line")
+HANDOFF_REQUEST_TERMS = frozenset({"human", "representative"})
+HANDOFF_REQUEST_PHRASES = (
+    "a person",
+    "call me",
+    "person please",
+    "speak to someone",
+    "talk to someone",
+)
 
 # wiring_mode: how our number relates to the client's real phone line.
 # - "forwarded" (default): our number is not the client's public number. The
@@ -63,6 +77,32 @@ def booking_error_sms() -> str:
     return (
         "We couldn't confirm that appointment. No booking was made. "
         "Please call the business line for help."
+    )
+
+
+def classify_handoff_request(body: str) -> str | None:
+    words = re.findall(r"[a-z0-9']+", body.lower())
+    tokens = frozenset(words)
+    normalized = " ".join(words)
+    if tokens & HANDOFF_SAFETY_TERMS or any(
+        phrase in normalized for phrase in HANDOFF_SAFETY_PHRASES
+    ):
+        return "safety"
+    if tokens & HANDOFF_REQUEST_TERMS or any(
+        phrase in normalized for phrase in HANDOFF_REQUEST_PHRASES
+    ):
+        return "customer_requested"
+    return None
+
+
+def handoff_ack_sms(reason: str) -> str:
+    if reason == "safety":
+        return (
+            "Automated scheduling is paused. Please call the business line for a person. "
+            "If anyone is in immediate danger, call 911 now."
+        )
+    return (
+        "Automated scheduling is paused. Please call the business line to reach a person."
     )
 
 

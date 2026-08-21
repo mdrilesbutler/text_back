@@ -8,14 +8,24 @@ def empty_response() -> str:
     return _serialize(ElementTree.Element("Response"))
 
 
-def forwarded_call_response(business_name: str) -> str:
+def forwarded_call_response(
+    business_name: str,
+    *,
+    text_will_follow: bool,
+) -> str:
     """Tell a forwarded caller what happens next, then end the call politely."""
     response = ElementTree.Element("Response")
     say = ElementTree.SubElement(response, "Say")
-    say.text = (
-        f"Thanks for calling {business_name}. We couldn't answer, "
-        "but we'll text you shortly. Goodbye."
-    )
+    if text_will_follow:
+        say.text = (
+            f"Thanks for calling {business_name}. We couldn't answer, "
+            "but we'll text you shortly. Goodbye."
+        )
+    else:
+        say.text = (
+            f"Thanks for calling {business_name}. We couldn't answer right now. "
+            "Please try the business line again later. Goodbye."
+        )
     ElementTree.SubElement(response, "Hangup")
     return _serialize(response)
 

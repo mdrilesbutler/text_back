@@ -4,13 +4,20 @@ from datetime import datetime
 
 from text_back.booking import BookingError, SlotUnavailableError, book_appointment
 from text_back.calendar_stub import CalendarStub
+from text_back.handoff import (
+    HandoffAlert,
+    HandoffNotifier,
+    build_handoff_summary,
+)
 from text_back.policy import (
     OPT_OUT_ACK,
     WIRING_MODE_MANAGED,
     booking_error_sms,
+    classify_handoff_request,
     classify_inbound_sms,
     conversation_prompt,
     help_sms,
+    handoff_ack_sms,
     intro_sms,
     is_terminal_unanswered,
     next_missing_field,
@@ -43,6 +50,8 @@ def handle_voice_event(
         return {"accepted": True, "action": "ignored", "reason": "not_terminal_unanswered"}
     if store.is_opted_out(from_number):
         return {"accepted": True, "action": "suppressed", "reason": "opted_out"}
+    if store.active_handoff(from_number) is not None:
+        return {"accepted": True, "action": "suppressed", "reason": "handoff_active"}
     claimed = store.claim_event("voice", call_sid, "missed_call_intro")
     if not claimed:
         return {"accepted": True, "duplicate": True, "action": "noop"}
@@ -60,6 +69,8 @@ def handle_sms_event(
     store: Store,
     calendar: CalendarStub,
     telecom: Telecom,
+    handoff_notifier: HandoffNotifier,
+    handoff_destination: str,
     message_sid: str,
     from_number: str,
     to_number: str,
@@ -85,8 +96,40 @@ def handle_sms_event(
             kind="help",
         )
         return {"accepted": True, "duplicate": False, "action": "help"}
+    handoff_reason = classify_handoff_request(body)
     if store.is_opted_out(from_number):
+        if handoff_reason is not None:
+            return _request_handoff(
+                store=store,
+                telecom=telecom,
+                handoff_notifier=handoff_notifier,
+                handoff_destination=handoff_destination,
+                from_number=from_number,
+                to_number=to_number,
+                body=body,
+                reason=handoff_reason,
+                acknowledge_customer=False,
+            )
         return {"accepted": True, "duplicate": False, "action": "suppressed", "reason": "opted_out"}
+    if handoff_reason is not None:
+        return _request_handoff(
+            store=store,
+            telecom=telecom,
+            handoff_notifier=handoff_notifier,
+            handoff_destination=handoff_destination,
+            from_number=from_number,
+            to_number=to_number,
+            body=body,
+            reason=handoff_reason,
+            acknowledge_customer=True,
+        )
+    if store.active_handoff(from_number) is not None:
+        return {
+            "accepted": True,
+            "duplicate": False,
+            "action": "suppressed",
+            "reason": "handoff_active",
+        }
     return _collect_conversation_field(
         store=store,
         calendar=calendar,
@@ -99,6 +142,62 @@ def handle_sms_event(
         appointment_duration_minutes=appointment_duration_minutes,
         now=now,
     )
+
+
+def _request_handoff(
+    *,
+    store: Store,
+    telecom: Telecom,
+    handoff_notifier: HandoffNotifier,
+    handoff_destination: str,
+    from_number: str,
+    to_number: str,
+    body: str,
+    reason: str,
+    acknowledge_customer: bool,
+) -> dict:
+    if not store.request_handoff(from_number, reason):
+        current = store.active_handoff(from_number)
+        return {
+            "accepted": True,
+            "duplicate": True,
+            "action": "handoff_active",
+            "reason": current["reason"] if current else reason,
+        }
+
+    fields = store.get_conversation_fields(from_number)
+    summary = build_handoff_summary(
+        caller=from_number,
+        reason=reason,
+        latest_message=body,
+        collected_fields=fields,
+    )
+    alert_id = handoff_notifier.notify(
+        HandoffAlert(
+            destination=handoff_destination,
+            caller=from_number,
+            business_number=to_number,
+            reason=reason,
+            latest_message=body,
+            collected_fields=fields,
+            summary=summary,
+        )
+    )
+    store.set_handoff_alert_id(from_number, alert_id)
+    if acknowledge_customer:
+        telecom.send_sms(
+            to=from_number,
+            body=handoff_ack_sms(reason),
+            from_number=to_number,
+            kind="handoff_ack",
+        )
+    return {
+        "accepted": True,
+        "duplicate": False,
+        "action": "handoff_requested",
+        "reason": reason,
+        "alert_id": alert_id,
+    }
 
 
 def _collect_conversation_field(

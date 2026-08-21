@@ -10,6 +10,7 @@ from fastapi import FastAPI, Form, Header, HTTPException, Request, Response
 from text_back.config import DEFAULT_WEBHOOK_SECRET, load_config
 from text_back.cxml import empty_response, forwarded_call_response
 from text_back.calendar_stub import CalendarStub
+from text_back.handoff import FakeHandoffNotifier, HandoffNotifier
 from text_back.handlers import handle_sms_event, handle_voice_event
 from text_back.policy import WIRING_MODES, WIRING_MODE_FORWARDED
 from text_back.signatures import SignatureError, verify_twilio_compat
@@ -67,6 +68,8 @@ def create_app(
     calendar: CalendarStub | None = None,
     timezone_name: str | None = None,
     appointment_duration_minutes: int | None = None,
+    handoff_notifier: HandoffNotifier | None = None,
+    handoff_destination: str | None = None,
     now_provider: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     config = load_config()
@@ -82,6 +85,11 @@ def create_app(
         appointment_duration_minutes
         if appointment_duration_minutes is not None
         else config.appointment_duration_minutes
+    )
+    handoff_destination = (
+        handoff_destination
+        if handoff_destination is not None
+        else config.handoff_destination
     )
     if not business_name.strip():
         raise ValueError("business_name is required")
@@ -113,6 +121,8 @@ def create_app(
     app.state.timezone_name = timezone_name
     app.state.appointment_duration_minutes = appointment_duration_minutes
     app.state.calendar = calendar or CalendarStub(timezone_name=timezone_name)
+    app.state.handoff_notifier = handoff_notifier or FakeHandoffNotifier()
+    app.state.handoff_destination = handoff_destination
     app.state.now_provider = now_provider
 
     @app.get("/health")
@@ -125,6 +135,11 @@ def create_app(
             "wiring_mode": app.state.wiring_mode,
             "timezone": app.state.timezone_name,
             "appointment_duration_minutes": app.state.appointment_duration_minutes,
+            "handoff_notifier": app.state.handoff_notifier.provider_name,
+            "handoff_destination_configured": (
+                bool(app.state.handoff_destination)
+                and app.state.handoff_destination != "unconfigured"
+            ),
         }
 
     @app.post("/webhooks/voice")
@@ -165,7 +180,10 @@ def create_app(
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
         if request.app.state.telecom.provider_name == "signalwire":
             content = (
-                forwarded_call_response(request.app.state.business_name)
+                forwarded_call_response(
+                    request.app.state.business_name,
+                    text_will_follow=result.get("action") == "sent_intro",
+                )
                 if request.app.state.wiring_mode == WIRING_MODE_FORWARDED
                 else empty_response()
             )
@@ -200,6 +218,8 @@ def create_app(
             store=request.app.state.store,
             calendar=request.app.state.calendar,
             telecom=request.app.state.telecom,
+            handoff_notifier=request.app.state.handoff_notifier,
+            handoff_destination=request.app.state.handoff_destination,
             message_sid=message_sid,
             from_number=from_number,
             to_number=to_number,

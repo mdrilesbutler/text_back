@@ -148,7 +148,7 @@ Why $299/month: Goodcall’s self-serve voice plans establish a low-cost softwar
 - [x] One-question-at-a-time field collection.
 - [x] Voicemail-style forwarded-call response (`<Say>` + `<Hangup>`; no retained recording).
 - [x] Parse explicit requested times and book only after a free/busy recheck (local Calendar stub; live Google adapter remains gated).
-- [ ] Human handoff state + operator alert payload.
+- [x] Human handoff state + operator alert payload (local in-memory notifier; external delivery remains gated).
 - [ ] Append-only outcome events for the lead lifecycle.
 - [ ] Bounded no-response sequence (suggested: immediate, +15m, next business morning; configurable).
 - [ ] Recovered Revenue Brief generator.

@@ -7,6 +7,7 @@ from xml.etree import ElementTree
 from fastapi.testclient import TestClient
 
 from text_back.app import create_app
+from text_back.store import Store
 from text_back.telecom import FakeTelecom
 
 
@@ -34,6 +35,7 @@ def _client(
     *,
     business_name: str = "Mike",
     wiring_mode: str = "forwarded",
+    store: Store | None = None,
 ) -> tuple[TestClient, FakeSignalWireTelecom]:
     telecom = FakeSignalWireTelecom()
     app = create_app(
@@ -42,6 +44,7 @@ def _client(
         telecom=telecom,
         wiring_mode=wiring_mode,
         business_name=business_name,
+        store=store,
     )
     return TestClient(app), telecom
 
@@ -144,3 +147,21 @@ def test_signalwire_sms_returns_empty_cxml_response_after_policy_side_effect():
     assert list(root) == []
     assert len(telecom.outbound) == 1
     assert telecom.outbound[0].kind == "help"
+
+
+def test_signalwire_handoff_pause_does_not_promise_a_followup_text():
+    store = Store()
+    assert store.request_handoff(CALLER, "customer_requested") is True
+    client, telecom = _client(store=store)
+    params = _voice_params("CA-signalwire-paused")
+
+    response = client.post(
+        "/webhooks/voice",
+        data=params,
+        headers={"X-SignalWire-Signature": _sign(VOICE_URL, params)},
+    )
+
+    assert response.status_code == 200
+    say_text = ElementTree.fromstring(response.text).findtext("Say") or ""
+    assert "text you" not in say_text.lower()
+    assert telecom.outbound == []

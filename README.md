@@ -39,6 +39,12 @@ values, rechecks free/busy, and uses the configurable appointment duration.
 The in-process Calendar stub is test-only; a live Google Calendar adapter is
 still required before customer traffic.
 
+Deterministic handoff recognizes explicit requests for a person and a bounded
+set of safety terms. It persists an active pause, suppresses further automated
+collection and missed-call intros, and builds a concise operator payload with
+the caller, reason, latest message, and fields collected so far. The notifier
+is currently an in-memory stub; external operator delivery is not implemented.
+
 Human gates remaining: verify Michael's personal mobile for SignalWire Platform
 Free Trial; add credentials through the protected deployment/local secret
 store; expose an approved HTTPS deployment and attach its webhook URLs; and

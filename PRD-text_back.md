@@ -1,6 +1,6 @@
 # text_back — Product Requirements Document
 
-Status: Local core + SignalWire adapters implemented and tested (85 tests); live Google Calendar, credentials, and deploy pending human gates
+Status: Local core + SignalWire adapters implemented and tested (104 tests); live Google Calendar, operator notification delivery, credentials, and deploy pending human gates
 Updated: 2026-08-21
 Owner: Michael Riley  
 Canonical path: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror: `/home/mdriles/projects/text_back`)  
@@ -147,6 +147,7 @@ No telecom account activation, number purchase, paid usage, production messaging
 5. Finish live SignalWire attachment and the Google Calendar adapter once credentials exist. The outbound REST adapter and inbound `X-SignalWire-Signature`/cXML boundary are implemented locally but not configured or exercised against a live account; keep confirmation gated on the Calendar event ID.
 6. Deploy through Paperclip Hermes on Hostinger; real-phone end-to-end smoke test.
 7. Before first client launch: replace pilot identity/calendar/phone with client-owned values; per-client 10DLC registration.
+8. Connect the tested handoff payload to an approved operator delivery adapter; the current notifier is in-memory only and sends nothing externally.
 
 ## Session record — 2026-08-21 (hermes-vcn-0, Codex)
 
@@ -155,8 +156,9 @@ No telecom account activation, number purchase, paid usage, production messaging
 - Added a SignalWire Compatibility REST outbound-SMS adapter with HTTPS enforcement, least-secret configuration, configured-sender enforcement, provider message-ID validation, and redacted provider failures.
 - Added environment selection via `TEXT_BACK_TELECOM_MODE=stub|signalwire`; SignalWire mode fails closed when required settings are missing, and `/health` exposes only the non-secret provider name.
 - Added deterministic preferred-time parsing, configurable timezone/duration, and end-to-end conversation-to-Calendar-stub booking. Confirmations remain gated on an event ID; the live Google adapter is not implemented.
+- Added deterministic customer-requested/safety handoff state, automation pause/resume, and concise operator alert payloads. The notifier is an in-memory stub; no operator alert was delivered.
 - SignalWire's documented Platform Free Trial is the selected no-EIN proof path: one assigned SignalWire number to one verified mobile, REST API only. Personal-mobile verification is still pending.
-- Evidence: `.venv/bin/pytest tests/` — 85 passed. No API token, signing key, EIN, customer message content, or production value was committed.
+- Evidence: `.venv/bin/pytest tests/` — 104 passed. No API token, signing key, EIN, customer message content, or production value was committed.
 
 ## Session record — 2026-08-20 (hermes-vcn-0, Claude)
 

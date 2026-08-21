@@ -22,6 +22,7 @@ class AppConfig:
     business_name: str
     timezone_name: str
     appointment_duration_minutes: int
+    handoff_destination: str
 
 
 def load_config() -> AppConfig:
@@ -44,5 +45,8 @@ def load_config() -> AppConfig:
         timezone_name=os.environ.get("TEXT_BACK_TIMEZONE", "UTC"),
         appointment_duration_minutes=int(
             os.environ.get("TEXT_BACK_APPOINTMENT_DURATION_MINUTES", "60")
+        ),
+        handoff_destination=os.environ.get(
+            "TEXT_BACK_HANDOFF_DESTINATION", "unconfigured"
         ),
     )

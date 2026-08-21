@@ -31,7 +31,15 @@ business-configured confirmation. Timezone and appointment duration are env
 configuration. The stub remains test-only; no Google Calendar adapter or
 credential is configured.
 
-Full suite: `.venv/bin/pytest tests/` — 85 passed.
+Deterministic handoff now recognizes explicit human requests and bounded safety
+terms, stores active/resolved state, pauses subsequent SMS collection and
+missed-call intros, and preserves STOP/HELP precedence. It produces one concise
+operator payload containing the reason, caller, latest message, and fields
+collected so far. `TEXT_BACK_HANDOFF_DESTINATION` is config-only and `/health`
+reveals only whether it is configured. The notifier is in-memory; no external
+operator alert was sent.
+
+Full suite: `.venv/bin/pytest tests/` — 104 passed.
 
 No live SMS was sent, no provider callback was received, and no webhook was
 attached. Next human action: verify

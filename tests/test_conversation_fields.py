@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from text_back.app import create_app
 from text_back.calendar_stub import CalendarStub
+from text_back.handoff import FakeHandoffNotifier
 from text_back.handlers import handle_sms_event
 from text_back.policy import (
     CONVERSATION_FIELDS,
@@ -28,6 +29,8 @@ def _send(store, telecom, message_sid, body, from_number=CALLER, to_number=BUSIN
         store=store,
         calendar=CalendarStub(),
         telecom=telecom,
+        handoff_notifier=FakeHandoffNotifier(),
+        handoff_destination="operator-queue",
         message_sid=message_sid,
         from_number=from_number,
         to_number=to_number,

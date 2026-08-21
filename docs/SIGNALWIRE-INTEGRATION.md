@@ -22,6 +22,7 @@ TEXT_BACK_TELECOM_MODE=signalwire
 TEXT_BACK_BUSINESS_NAME=replace-me
 TEXT_BACK_TIMEZONE=America/New_York
 TEXT_BACK_APPOINTMENT_DURATION_MINUTES=60
+TEXT_BACK_HANDOFF_DESTINATION=replace-with-operator-queue-label
 TEXT_BACK_PUBLIC_BASE_URL=https://public-host.example
 TEXT_BACK_WEBHOOK_SECRET=replace-with-project-signing-key
 TEXT_BACK_SIGNALWIRE_SPACE_URL=https://your-space.signalwire.com
@@ -60,6 +61,8 @@ internal URL into this setting.
   existing terminal-unanswered policy remains unchanged.
 - `call_sid` and `message_sid` idempotency gates remain in front of duplicate
   outbound messages.
+- Handoff pauses automated replies and builds an operator alert payload, but its
+  notifier is currently an in-memory stub. No external operator delivery exists.
 
 ## Pre-live checklist
 
@@ -70,11 +73,14 @@ internal URL into this setting.
    and no secret values.
 4. Replace the in-process Calendar stub with the real, credentialed Google
    Calendar adapter. Do not route customer traffic to the stub.
-5. Expose HTTPS and attach the two exact webhook URLs in SignalWire.
-6. Use only approved non-customer test numbers.
-7. Complete every live-call check in `docs/ONBOARDING-FORWARDING.md`, including
+5. Replace the in-memory handoff notifier with an approved operator delivery
+   adapter and verify its stable alert ID. Do not promise monitored handoff
+   while the notifier is a stub.
+6. Expose HTTPS and attach the two exact webhook URLs in SignalWire.
+7. Use only approved non-customer test numbers.
+8. Complete every live-call check in `docs/ONBOARDING-FORWARDING.md`, including
    caller-ID passthrough, exactly-one SMS behavior, STOP suppression, and
    forwarding deactivation.
 
-Steps 5–7 mutate live telecom configuration or create traffic and therefore
+Steps 6–8 mutate live telecom configuration or create traffic and therefore
 require Michael's explicit approval at execution time.

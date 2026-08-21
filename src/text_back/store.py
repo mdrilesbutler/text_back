@@ -52,6 +52,18 @@ class Store:
             )
             """
         )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS handoffs (
+                phone TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                alert_id TEXT NOT NULL,
+                requested_at TEXT NOT NULL,
+                resolved_at TEXT
+            )
+            """
+        )
         self.conn.commit()
 
     def claim_event(self, source: str, event_id: str, action: str) -> bool:
@@ -145,3 +157,50 @@ class Store:
             "SELECT * FROM appointments WHERE conversation_id = ?", (conversation_id,)
         ).fetchone()
         return dict(row) if row else None
+
+    def request_handoff(self, phone: str, reason: str) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            INSERT INTO handoffs
+                (phone, status, reason, alert_id, requested_at, resolved_at)
+            VALUES (?, 'active', ?, '', ?, NULL)
+            ON CONFLICT(phone) DO UPDATE SET
+                status = 'active',
+                reason = excluded.reason,
+                alert_id = '',
+                requested_at = excluded.requested_at,
+                resolved_at = NULL
+            WHERE handoffs.status = 'resolved'
+            """,
+            (phone, reason, now),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    def set_handoff_alert_id(self, phone: str, alert_id: str) -> None:
+        self.conn.execute(
+            "UPDATE handoffs SET alert_id = ? WHERE phone = ? AND status = 'active'",
+            (alert_id, phone),
+        )
+        self.conn.commit()
+
+    def active_handoff(self, phone: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM handoffs WHERE phone = ? AND status = 'active'",
+            (phone,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def resolve_handoff(self, phone: str) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            UPDATE handoffs
+            SET status = 'resolved', resolved_at = ?
+            WHERE phone = ? AND status = 'active'
+            """,
+            (now, phone),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1

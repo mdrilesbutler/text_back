@@ -14,6 +14,7 @@ def test_create_app_loads_text_back_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("TEXT_BACK_BUSINESS_NAME", "Oak & Pine Tree Care")
     monkeypatch.setenv("TEXT_BACK_TIMEZONE", "America/New_York")
     monkeypatch.setenv("TEXT_BACK_APPOINTMENT_DURATION_MINUTES", "90")
+    monkeypatch.setenv("TEXT_BACK_HANDOFF_DESTINATION", "operator-queue")
 
     app = create_app()
     health = TestClient(app).get("/health").json()
@@ -25,11 +26,15 @@ def test_create_app_loads_text_back_environment(monkeypatch, tmp_path):
     assert app.state.business_name == "Oak & Pine Tree Care"
     assert app.state.timezone_name == "America/New_York"
     assert app.state.appointment_duration_minutes == 90
+    assert app.state.handoff_destination == "operator-queue"
     assert db_path.exists()
     assert health["public_base_url"] == "https://calls.example.test"
     assert health["wiring_mode"] == "managed"
     assert health["timezone"] == "America/New_York"
     assert health["appointment_duration_minutes"] == 90
+    assert health["handoff_notifier"] == "stub"
+    assert health["handoff_destination_configured"] is True
+    assert "operator-queue" not in str(health)
     assert "webhook_secret" not in health
 
 
@@ -41,6 +46,7 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("TEXT_BACK_BUSINESS_NAME", "Environment Business")
     monkeypatch.setenv("TEXT_BACK_TIMEZONE", "America/Chicago")
     monkeypatch.setenv("TEXT_BACK_APPOINTMENT_DURATION_MINUTES", "120")
+    monkeypatch.setenv("TEXT_BACK_HANDOFF_DESTINATION", "environment-queue")
 
     app = create_app(
         webhook_secret="explicit-secret",
@@ -50,6 +56,7 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
         business_name="Explicit Business",
         timezone_name="America/New_York",
         appointment_duration_minutes=45,
+        handoff_destination="explicit-queue",
     )
 
     assert app.state.webhook_secret == "explicit-secret"
@@ -59,6 +66,7 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
     assert app.state.business_name == "Explicit Business"
     assert app.state.timezone_name == "America/New_York"
     assert app.state.appointment_duration_minutes == 45
+    assert app.state.handoff_destination == "explicit-queue"
 
 
 def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch):
