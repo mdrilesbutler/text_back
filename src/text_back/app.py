@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Callable
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import FastAPI, Form, Header, HTTPException, Request, Response
 
 from text_back.config import DEFAULT_WEBHOOK_SECRET, load_config
 from text_back.cxml import empty_response, forwarded_call_response
+from text_back.calendar_stub import CalendarStub
 from text_back.handlers import handle_sms_event, handle_voice_event
 from text_back.policy import WIRING_MODES, WIRING_MODE_FORWARDED
 from text_back.signatures import SignatureError, verify_twilio_compat
@@ -60,6 +64,10 @@ def create_app(
     store: Store | None = None,
     wiring_mode: str | None = None,
     business_name: str | None = None,
+    calendar: CalendarStub | None = None,
+    timezone_name: str | None = None,
+    appointment_duration_minutes: int | None = None,
+    now_provider: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     config = load_config()
     webhook_secret = webhook_secret if webhook_secret is not None else config.webhook_secret
@@ -69,8 +77,20 @@ def create_app(
     db_path = db_path if db_path is not None else config.db_path
     wiring_mode = wiring_mode if wiring_mode is not None else config.wiring_mode
     business_name = business_name if business_name is not None else config.business_name
+    timezone_name = timezone_name if timezone_name is not None else config.timezone_name
+    appointment_duration_minutes = (
+        appointment_duration_minutes
+        if appointment_duration_minutes is not None
+        else config.appointment_duration_minutes
+    )
     if not business_name.strip():
         raise ValueError("business_name is required")
+    try:
+        ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        raise ValueError("timezone_name must be a valid IANA timezone") from None
+    if appointment_duration_minutes <= 0:
+        raise ValueError("appointment_duration_minutes must be positive")
     if wiring_mode not in WIRING_MODES:
         raise ValueError(
             f"invalid wiring_mode: {wiring_mode!r}; must be one of {sorted(WIRING_MODES)}"
@@ -90,6 +110,10 @@ def create_app(
     app.state.db_path = db_path
     app.state.wiring_mode = wiring_mode
     app.state.business_name = business_name.strip()
+    app.state.timezone_name = timezone_name
+    app.state.appointment_duration_minutes = appointment_duration_minutes
+    app.state.calendar = calendar or CalendarStub(timezone_name=timezone_name)
+    app.state.now_provider = now_provider
 
     @app.get("/health")
     def health() -> dict:
@@ -99,6 +123,8 @@ def create_app(
             "telecom": app.state.telecom.provider_name,
             "public_base_url": app.state.public_base_url,
             "wiring_mode": app.state.wiring_mode,
+            "timezone": app.state.timezone_name,
+            "appointment_duration_minutes": app.state.appointment_duration_minutes,
         }
 
     @app.post("/webhooks/voice")
@@ -172,12 +198,20 @@ def create_app(
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         result = handle_sms_event(
             store=request.app.state.store,
+            calendar=request.app.state.calendar,
             telecom=request.app.state.telecom,
             message_sid=message_sid,
             from_number=from_number,
             to_number=to_number,
             body=body,
             business_name=request.app.state.business_name,
+            timezone_name=request.app.state.timezone_name,
+            appointment_duration_minutes=request.app.state.appointment_duration_minutes,
+            now=(
+                request.app.state.now_provider()
+                if request.app.state.now_provider is not None
+                else None
+            ),
         )
         result["message_sid"] = message_sid
         if request.app.state.telecom.provider_name == "signalwire":

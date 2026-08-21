@@ -106,6 +106,13 @@ class Store:
         self.conn.execute("DELETE FROM conversation_fields WHERE phone = ?", (phone,))
         self.conn.commit()
 
+    def delete_conversation_field(self, phone: str, field: str) -> None:
+        self.conn.execute(
+            "DELETE FROM conversation_fields WHERE phone = ? AND field = ?",
+            (phone, field),
+        )
+        self.conn.commit()
+
     def save_appointment(
         self,
         *,

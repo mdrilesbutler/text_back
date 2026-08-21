@@ -20,6 +20,8 @@ secret store. Never commit a populated environment file.
 ```dotenv
 TEXT_BACK_TELECOM_MODE=signalwire
 TEXT_BACK_BUSINESS_NAME=replace-me
+TEXT_BACK_TIMEZONE=America/New_York
+TEXT_BACK_APPOINTMENT_DURATION_MINUTES=60
 TEXT_BACK_PUBLIC_BASE_URL=https://public-host.example
 TEXT_BACK_WEBHOOK_SECRET=replace-with-project-signing-key
 TEXT_BACK_SIGNALWIRE_SPACE_URL=https://your-space.signalwire.com
@@ -66,11 +68,13 @@ internal URL into this setting.
    config/secret file is mode `600`.
 3. Confirm `/health` reports `telecom: signalwire`, the intended wiring mode,
    and no secret values.
-4. Expose HTTPS and attach the two exact webhook URLs in SignalWire.
-5. Use only approved non-customer test numbers.
-6. Complete every live-call check in `docs/ONBOARDING-FORWARDING.md`, including
+4. Replace the in-process Calendar stub with the real, credentialed Google
+   Calendar adapter. Do not route customer traffic to the stub.
+5. Expose HTTPS and attach the two exact webhook URLs in SignalWire.
+6. Use only approved non-customer test numbers.
+7. Complete every live-call check in `docs/ONBOARDING-FORWARDING.md`, including
    caller-ID passthrough, exactly-one SMS behavior, STOP suppression, and
    forwarding deactivation.
 
-Steps 4–6 mutate live telecom configuration or create traffic and therefore
+Steps 5–7 mutate live telecom configuration or create traffic and therefore
 require Michael's explicit approval at execution time.

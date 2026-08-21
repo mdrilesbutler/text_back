@@ -22,7 +22,16 @@ SMS and voice copy now receive identity from `TEXT_BACK_BUSINESS_NAME` rather
 than embedding a client identity in policy code. The protected runtime and
 pre-live contract is documented in `docs/SIGNALWIRE-INTEGRATION.md`.
 
-Full suite: `.venv/bin/pytest tests/` — 67 passed.
+Explicit preferred times now parse deterministically in the configured IANA
+timezone. The parser accepts documented date/time forms and `tomorrow at TIME`,
+while rejecting vague, past, nonexistent, and DST-ambiguous values. The SMS
+flow sends all four collected fields through the existing double free/busy
+check, creates one Calendar-stub event, persists its ID, and only then sends a
+business-configured confirmation. Timezone and appointment duration are env
+configuration. The stub remains test-only; no Google Calendar adapter or
+credential is configured.
+
+Full suite: `.venv/bin/pytest tests/` — 85 passed.
 
 No live SMS was sent, no provider callback was received, and no webhook was
 attached. Next human action: verify

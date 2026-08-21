@@ -33,6 +33,12 @@ missed-call intro (both wiring modes), idempotent retries, STOP/HELP policy,
 deterministic field collection, and Calendar stub booking with event-ID gate.
 See `docs/SIGNALWIRE-INTEGRATION.md` for the protected configuration contract.
 
+Booking accepts explicit local times such as `2026-08-25 2:00 PM` or
+`tomorrow at 2 PM`, applies `TEXT_BACK_TIMEZONE`, rejects vague/past/DST-unsafe
+values, rechecks free/busy, and uses the configurable appointment duration.
+The in-process Calendar stub is test-only; a live Google Calendar adapter is
+still required before customer traffic.
+
 Human gates remaining: verify Michael's personal mobile for SignalWire Platform
 Free Trial; add credentials through the protected deployment/local secret
 store; expose an approved HTTPS deployment and attach its webhook URLs; and

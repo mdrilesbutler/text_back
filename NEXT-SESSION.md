@@ -5,8 +5,8 @@ When Michael starts an agent from this project directory and says "continue proj
 
 ## Where everything stands (verified 2026-08-20, fresh)
 - Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
-- Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`, pushed through commit `2421ced` (verify with `git log --oneline -5`; the handoff commit follows it).
-- Test suite: `.venv/bin/pytest tests/` → **67 passed**, rerun this session after every change.
+- Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`; completed items are pushed to origin (verify with `git log --oneline -5`).
+- Test suite: `.venv/bin/pytest tests/` → **85 passed**, rerun this session after every change.
 - Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
 - Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
 - gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
@@ -23,7 +23,8 @@ When Michael starts an agent from this project directory and says "continue proj
 2. **Michael + agent**: finish Google auth for `mdrilesbutler@gmail.com`. Last attempt: `~/google-cloud-sdk/bin/gcloud auth login --no-launch-browser` run in background with stdin held open; Michael's browser showed "access blocked" (exact wording never reported). Restart the flow fresh (the old background process/scratchpad is disposable). Fallback ladder: (a) plain desktop browser, not an in-app webview; (b) incognito signed in only as mdrilesbutler; (c) Plan B — Michael creates project/SA in console by hand, downloads key; (d) Plan C — `gcloud auth login --no-browser` remote-bootstrap if he has gcloud locally.
 3. **Agent (after auth)**: scripted GCP setup — `gcloud projects create <unique-id>`, enable `calendar-json.googleapis.com`, create service account, key to `~/.config/text_back/sa_key.json` (chmod 600, NEVER git); then Michael shares the pilot calendar with the SA email ("Make changes to events").
 4. **Agent (done locally 2026-08-21)**: SignalWire callbacks now require `X-SignalWire-Signature`, return cXML, and forwarded calls receive branded `<Say>` + `<Hangup>` with no retained recording. Live attachment/testing remains gated.
-5. **Agent (next unblocked code, TDD)**: parse `preferred_time` (kept as raw text on purpose) into a concrete slot and wire the four collected fields into `booking.py`; keep confirmation gated on event ID.
+5. **Agent (done locally 2026-08-21)**: explicit `preferred_time` input is parsed in the configured timezone; vague/past/DST-unsafe input is re-prompted; the four fields feed free/busy-rechecked Calendar-stub booking; confirmation remains gated on event ID. Live Google Calendar is still pending.
+5a. **Agent (next unblocked P0 code, TDD)**: implement human-handoff state and an operator alert payload; deterministic policy must pause automation on the handoff path.
 6. Store SignalWire Space URL, least-privilege API token, Project ID, and signing key outside Git; deploy and attach the HTTPS handlers. The outbound REST adapter and inbound boundary are built; live provider configuration and the Calendar adapter remain. Then run a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`.
 
 ## Session gotchas (hard-won)
@@ -99,7 +100,7 @@ Next work, in order (acceptance = commands, not vibes):
    a. Env-loader for TEXT_BACK_* vars -> pytest passes, /health reflects env config.
    b. Voice webhook returns a LaML/TwiML voicemail-style response in forwarded mode. (done 2026-08-21)
    c. Parse preferred_time to a slot; wire collected fields into booking.py;
-      confirmation still gated on calendar event ID.
+      confirmation still gated on calendar event ID. (done locally 2026-08-21)
    Commit each (git -c user.name="Michael Riley" -c user.email="mdriles@gmail.com")
    and push to origin local/tdd-core.
 

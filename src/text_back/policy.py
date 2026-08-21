@@ -26,7 +26,10 @@ CONVERSATION_FIELDS: tuple[str, ...] = ("service", "location", "preferred_time",
 FIELD_PROMPTS: dict[str, str] = {
     "service": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?",
     "location": "What's the address or location for the job?",
-    "preferred_time": "What day and time works best for you?",
+    "preferred_time": (
+        "What day and start time works best? "
+        "Please use YYYY-MM-DD with a time, or say tomorrow at 2 PM."
+    ),
     "name": "Last thing—what name should we put the appointment under?",
 }
 
@@ -42,6 +45,27 @@ def conversation_prompt(field: str) -> str:
     return FIELD_PROMPTS[field]
 
 
+def preferred_time_reprompt() -> str:
+    return (
+        "Please send a specific future date and time, like YYYY-MM-DD 2:00 PM "
+        "or tomorrow at 2 PM."
+    )
+
+
+def slot_unavailable_sms() -> str:
+    return (
+        "That time is unavailable. Please send another future date and time, "
+        "like YYYY-MM-DD 2:00 PM."
+    )
+
+
+def booking_error_sms() -> str:
+    return (
+        "We couldn't confirm that appointment. No booking was made. "
+        "Please call the business line for help."
+    )
+
+
 def intro_sms(business_name: str) -> str:
     return (
         f"Hey, sorry we missed your call—this is {business_name}'s scheduling assistant. "
@@ -54,14 +78,6 @@ def help_sms(business_name: str) -> str:
         f"{business_name}'s scheduling assistant. Reply with the job type, location, "
         "and a time that works. For a person, call the business line. "
         "Reply STOP to opt out."
-    )
-
-
-def conversation_summary_sms(fields: dict[str, str], business_name: str) -> str:
-    return (
-        f"Thanks {fields['name']}! We've got: {fields['service']} at {fields['location']}, "
-        f"preferred time {fields['preferred_time']}. "
-        f"{business_name} will confirm your appointment shortly."
     )
 
 

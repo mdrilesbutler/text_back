@@ -1,15 +1,16 @@
 import base64
 import hashlib
 import hmac
+from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
 from text_back.app import create_app
+from text_back.calendar_stub import CalendarStub
 from text_back.handlers import handle_sms_event
 from text_back.policy import (
     CONVERSATION_FIELDS,
     conversation_prompt,
-    conversation_summary_sms,
     next_missing_field,
 )
 from text_back.store import Store
@@ -18,17 +19,23 @@ from text_back.telecom import FakeTelecom
 
 CALLER = "+15551112222"
 BUSINESS = "+15553334444"
+PREFERRED_TIME = "2026-08-25 2:00 PM"
+NOW = datetime(2026, 8, 21, 10, 0, tzinfo=timezone.utc)
 
 
 def _send(store, telecom, message_sid, body, from_number=CALLER, to_number=BUSINESS):
     return handle_sms_event(
         store=store,
+        calendar=CalendarStub(),
         telecom=telecom,
         message_sid=message_sid,
         from_number=from_number,
         to_number=to_number,
         body=body,
         business_name="Mike",
+        timezone_name="UTC",
+        appointment_duration_minutes=60,
+        now=NOW,
     )
 
 
@@ -64,18 +71,6 @@ def test_conversation_prompt_exists_for_every_field():
         prompt = conversation_prompt(field)
         assert isinstance(prompt, str)
         assert prompt.strip()
-
-
-def test_conversation_summary_sms_includes_all_collected_values():
-    fields = {
-        "service": "tree removal",
-        "location": "12 Oak St",
-        "preferred_time": "tomorrow afternoon",
-        "name": "John",
-    }
-    summary = conversation_summary_sms(fields, "Mike")
-    for value in fields.values():
-        assert value in summary
 
 
 # --- store: per-phone persistence -------------------------------------------
@@ -134,31 +129,30 @@ def test_full_conversation_collects_all_four_fields_in_order():
     store, telecom = Store(), FakeTelecom()
     _send(store, telecom, "SM-1", "tree removal")
     _send(store, telecom, "SM-2", "12 Oak St")
-    _send(store, telecom, "SM-3", "tomorrow afternoon")
+    _send(store, telecom, "SM-3", PREFERRED_TIME)
     result = _send(store, telecom, "SM-4", "John Smith")
 
-    assert result["action"] == "field_collected"
+    assert result["action"] == "booked"
     assert result["fields_complete"] is True
     fields = store.get_conversation_fields(CALLER)
     assert fields == {
         "service": "tree removal",
         "location": "12 Oak St",
-        "preferred_time": "tomorrow afternoon",
+        "preferred_time": PREFERRED_TIME,
         "name": "John Smith",
     }
     assert len(telecom.outbound) == 4
-    assert telecom.outbound[-1].kind == "collection_complete"
-    assert "John Smith" in telecom.outbound[-1].body
+    assert telecom.outbound[-1].kind == "booking_confirmation"
     assert "tree removal" in telecom.outbound[-1].body
     assert "12 Oak St" in telecom.outbound[-1].body
-    assert "tomorrow afternoon" in telecom.outbound[-1].body
+    assert "02:00 PM" in telecom.outbound[-1].body
 
 
 def test_replies_after_completion_do_not_overwrite_fields_or_reprompt():
     store, telecom = Store(), FakeTelecom()
     _send(store, telecom, "SM-1", "tree removal")
     _send(store, telecom, "SM-2", "12 Oak St")
-    _send(store, telecom, "SM-3", "tomorrow afternoon")
+    _send(store, telecom, "SM-3", PREFERRED_TIME)
     _send(store, telecom, "SM-4", "John Smith")
     telecom.outbound.clear()
 
@@ -167,7 +161,7 @@ def test_replies_after_completion_do_not_overwrite_fields_or_reprompt():
     assert result["action"] == "conversation"
     assert result.get("fields_complete") is True
     assert telecom.outbound == []
-    assert store.get_conversation_fields(CALLER)["preferred_time"] == "tomorrow afternoon"
+    assert store.get_conversation_fields(CALLER)["preferred_time"] == PREFERRED_TIME
 
 
 def test_blank_reply_repeats_current_prompt_without_storing_empty_value():

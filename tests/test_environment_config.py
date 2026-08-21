@@ -12,6 +12,8 @@ def test_create_app_loads_text_back_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("TEXT_BACK_DB_PATH", str(db_path))
     monkeypatch.setenv("TEXT_BACK_WIRING_MODE", "managed")
     monkeypatch.setenv("TEXT_BACK_BUSINESS_NAME", "Oak & Pine Tree Care")
+    monkeypatch.setenv("TEXT_BACK_TIMEZONE", "America/New_York")
+    monkeypatch.setenv("TEXT_BACK_APPOINTMENT_DURATION_MINUTES", "90")
 
     app = create_app()
     health = TestClient(app).get("/health").json()
@@ -21,9 +23,13 @@ def test_create_app_loads_text_back_environment(monkeypatch, tmp_path):
     assert app.state.db_path == str(db_path)
     assert app.state.wiring_mode == "managed"
     assert app.state.business_name == "Oak & Pine Tree Care"
+    assert app.state.timezone_name == "America/New_York"
+    assert app.state.appointment_duration_minutes == 90
     assert db_path.exists()
     assert health["public_base_url"] == "https://calls.example.test"
     assert health["wiring_mode"] == "managed"
+    assert health["timezone"] == "America/New_York"
+    assert health["appointment_duration_minutes"] == 90
     assert "webhook_secret" not in health
 
 
@@ -33,6 +39,8 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("TEXT_BACK_DB_PATH", str(tmp_path / "environment.sqlite3"))
     monkeypatch.setenv("TEXT_BACK_WIRING_MODE", "managed")
     monkeypatch.setenv("TEXT_BACK_BUSINESS_NAME", "Environment Business")
+    monkeypatch.setenv("TEXT_BACK_TIMEZONE", "America/Chicago")
+    monkeypatch.setenv("TEXT_BACK_APPOINTMENT_DURATION_MINUTES", "120")
 
     app = create_app(
         webhook_secret="explicit-secret",
@@ -40,6 +48,8 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
         db_path=":memory:",
         wiring_mode="forwarded",
         business_name="Explicit Business",
+        timezone_name="America/New_York",
+        appointment_duration_minutes=45,
     )
 
     assert app.state.webhook_secret == "explicit-secret"
@@ -47,6 +57,8 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
     assert app.state.db_path == ":memory:"
     assert app.state.wiring_mode == "forwarded"
     assert app.state.business_name == "Explicit Business"
+    assert app.state.timezone_name == "America/New_York"
+    assert app.state.appointment_duration_minutes == 45
 
 
 def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch):
@@ -109,3 +121,11 @@ def test_explicit_telecom_does_not_require_environment_credentials(monkeypatch):
     app = create_app(telecom=telecom)
 
     assert app.state.telecom is telecom
+
+
+def test_invalid_booking_configuration_fails_at_startup():
+    with pytest.raises(ValueError, match="IANA timezone"):
+        create_app(timezone_name="Not/A_Timezone")
+
+    with pytest.raises(ValueError, match="must be positive"):
+        create_app(appointment_duration_minutes=0)

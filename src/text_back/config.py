@@ -20,6 +20,8 @@ class AppConfig:
     signalwire_api_token: str = field(repr=False)
     signalwire_from_number: str
     business_name: str
+    timezone_name: str
+    appointment_duration_minutes: int
 
 
 def load_config() -> AppConfig:
@@ -39,4 +41,8 @@ def load_config() -> AppConfig:
         signalwire_api_token=os.environ.get("TEXT_BACK_SIGNALWIRE_API_TOKEN", ""),
         signalwire_from_number=os.environ.get("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", ""),
         business_name=os.environ.get("TEXT_BACK_BUSINESS_NAME", "the business"),
+        timezone_name=os.environ.get("TEXT_BACK_TIMEZONE", "UTC"),
+        appointment_duration_minutes=int(
+            os.environ.get("TEXT_BACK_APPOINTMENT_DURATION_MINUTES", "60")
+        ),
     )
