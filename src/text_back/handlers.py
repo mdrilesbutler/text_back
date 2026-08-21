@@ -12,13 +12,13 @@ from text_back.policy import (
     next_missing_field,
 )
 from text_back.store import Store
-from text_back.telecom import FakeTelecom
+from text_back.telecom import Telecom
 
 
 def handle_voice_event(
     *,
     store: Store,
-    telecom: FakeTelecom,
+    telecom: Telecom,
     call_sid: str,
     call_status: str,
     from_number: str,
@@ -50,7 +50,7 @@ def handle_voice_event(
 def handle_sms_event(
     *,
     store: Store,
-    telecom: FakeTelecom,
+    telecom: Telecom,
     message_sid: str,
     from_number: str,
     to_number: str,
@@ -81,7 +81,7 @@ def handle_sms_event(
 def _collect_conversation_field(
     *,
     store: Store,
-    telecom: FakeTelecom,
+    telecom: Telecom,
     from_number: str,
     to_number: str,
     body: str,

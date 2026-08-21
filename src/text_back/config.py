@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from text_back.policy import WIRING_MODE_FORWARDED
 
@@ -12,6 +12,11 @@ class AppConfig:
     public_base_url: str
     db_path: str
     wiring_mode: str
+    telecom_mode: str
+    signalwire_space_url: str
+    signalwire_project_id: str
+    signalwire_api_token: str = field(repr=False)
+    signalwire_from_number: str
 
 
 def load_config() -> AppConfig:
@@ -25,4 +30,9 @@ def load_config() -> AppConfig:
         ),
         db_path=os.environ.get("TEXT_BACK_DB_PATH", ":memory:"),
         wiring_mode=os.environ.get("TEXT_BACK_WIRING_MODE", WIRING_MODE_FORWARDED),
+        telecom_mode=os.environ.get("TEXT_BACK_TELECOM_MODE", "stub"),
+        signalwire_space_url=os.environ.get("TEXT_BACK_SIGNALWIRE_SPACE_URL", ""),
+        signalwire_project_id=os.environ.get("TEXT_BACK_SIGNALWIRE_PROJECT_ID", ""),
+        signalwire_api_token=os.environ.get("TEXT_BACK_SIGNALWIRE_API_TOKEN", ""),
+        signalwire_from_number=os.environ.get("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", ""),
     )

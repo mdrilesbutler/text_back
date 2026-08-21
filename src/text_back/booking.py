@@ -4,7 +4,7 @@ from datetime import datetime
 
 from text_back.calendar_stub import CalendarStub, slot_end
 from text_back.store import Store
-from text_back.telecom import FakeTelecom
+from text_back.telecom import Telecom
 
 
 class BookingError(Exception):
@@ -15,7 +15,7 @@ def book_appointment(
     *,
     calendar: CalendarStub,
     store: Store,
-    telecom: FakeTelecom,
+    telecom: Telecom,
     caller: str,
     business_number: str,
     service: str,

@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
+import pytest
 
 from text_back.app import create_app
+from text_back.telecom import FakeTelecom, SignalWireTelecom
 
 
 def test_create_app_loads_text_back_environment(monkeypatch, tmp_path):
@@ -40,3 +42,37 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
     assert app.state.public_base_url == "https://explicit.example.test"
     assert app.state.db_path == ":memory:"
     assert app.state.wiring_mode == "forwarded"
+
+
+def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_TELECOM_MODE", "signalwire")
+    monkeypatch.setenv(
+        "TEXT_BACK_SIGNALWIRE_SPACE_URL", "https://pilot.signalwire.com/"
+    )
+    monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_API_TOKEN", "secret-token")
+    monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", "+15551234567")
+
+    app = create_app()
+    health = TestClient(app).get("/health").json()
+
+    assert isinstance(app.state.telecom, SignalWireTelecom)
+    assert health["telecom"] == "signalwire"
+    assert "secret-token" not in str(health)
+    assert "signalwire_api_token" not in health
+
+
+def test_signalwire_mode_fails_closed_when_credentials_are_missing(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_TELECOM_MODE", "signalwire")
+
+    with pytest.raises(ValueError, match="TEXT_BACK_SIGNALWIRE_SPACE_URL"):
+        create_app()
+
+
+def test_explicit_telecom_does_not_require_environment_credentials(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_TELECOM_MODE", "signalwire")
+    telecom = FakeTelecom()
+
+    app = create_app(telecom=telecom)
+
+    assert app.state.telecom is telecom

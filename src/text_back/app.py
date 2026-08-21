@@ -7,7 +7,34 @@ from text_back.handlers import handle_sms_event, handle_voice_event
 from text_back.policy import WIRING_MODES
 from text_back.signatures import SignatureError, verify_twilio_compat
 from text_back.store import Store
-from text_back.telecom import FakeTelecom
+from text_back.telecom import FakeTelecom, SignalWireTelecom, Telecom
+
+
+def _telecom_from_config(config) -> Telecom:
+    if config.telecom_mode == "stub":
+        return FakeTelecom()
+    if config.telecom_mode != "signalwire":
+        raise ValueError(
+            "invalid TEXT_BACK_TELECOM_MODE; must be 'stub' or 'signalwire'"
+        )
+    required = {
+        "TEXT_BACK_SIGNALWIRE_SPACE_URL": config.signalwire_space_url,
+        "TEXT_BACK_SIGNALWIRE_PROJECT_ID": config.signalwire_project_id,
+        "TEXT_BACK_SIGNALWIRE_API_TOKEN": config.signalwire_api_token,
+        "TEXT_BACK_SIGNALWIRE_FROM_NUMBER": config.signalwire_from_number,
+    }
+    missing = [name for name, value in required.items() if not value]
+    if missing:
+        raise ValueError(
+            "SignalWire telecom mode is missing required configuration: "
+            + ", ".join(missing)
+        )
+    return SignalWireTelecom(
+        space_url=config.signalwire_space_url,
+        project_id=config.signalwire_project_id,
+        api_token=config.signalwire_api_token,
+        allowed_from_number=config.signalwire_from_number,
+    )
 
 
 def create_app(
@@ -15,7 +42,7 @@ def create_app(
     webhook_secret: str | None = None,
     public_base_url: str | None = None,
     db_path: str | None = None,
-    telecom: FakeTelecom | None = None,
+    telecom: Telecom | None = None,
     store: Store | None = None,
     wiring_mode: str | None = None,
 ) -> FastAPI:
@@ -33,7 +60,7 @@ def create_app(
     app = FastAPI(title="text_back", version="0.1.0")
     app.state.webhook_secret = webhook_secret
     app.state.public_base_url = public_base_url.rstrip("/")
-    app.state.telecom = telecom or FakeTelecom()
+    app.state.telecom = telecom if telecom is not None else _telecom_from_config(config)
     app.state.store = store or Store(db_path)
     app.state.db_path = db_path
     app.state.wiring_mode = wiring_mode
@@ -43,7 +70,7 @@ def create_app(
         return {
             "status": "ok",
             "production": False,
-            "telecom": "stub",
+            "telecom": app.state.telecom.provider_name,
             "public_base_url": app.state.public_base_url,
             "wiring_mode": app.state.wiring_mode,
         }
