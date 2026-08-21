@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import datetime, timezone
 
@@ -62,6 +63,25 @@ class Store:
                 requested_at TEXT NOT NULL,
                 resolved_at TEXT
             )
+            """
+        )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS outcome_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                lead_id TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                idempotency_key TEXT NOT NULL UNIQUE,
+                evidence_id TEXT NOT NULL,
+                metadata_json TEXT NOT NULL,
+                occurred_at TEXT NOT NULL
+            )
+            """
+        )
+        self.conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_outcome_events_lead_id_id
+            ON outcome_events (lead_id, id)
             """
         )
         self.conn.commit()
@@ -204,3 +224,55 @@ class Store:
         )
         self.conn.commit()
         return cursor.rowcount == 1
+
+    def record_outcome(
+        self,
+        *,
+        lead_id: str,
+        event_type: str,
+        idempotency_key: str,
+        evidence_id: str,
+        metadata: dict[str, object] | None = None,
+    ) -> bool:
+        if not lead_id or not event_type or not idempotency_key or not evidence_id:
+            raise ValueError("outcome events require lead, type, idempotency, and evidence")
+        now = datetime.now(timezone.utc).isoformat()
+        metadata_json = json.dumps(metadata or {}, sort_keys=True, separators=(",", ":"))
+        try:
+            self.conn.execute(
+                """
+                INSERT INTO outcome_events
+                    (lead_id, event_type, idempotency_key, evidence_id,
+                     metadata_json, occurred_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    lead_id,
+                    event_type,
+                    idempotency_key,
+                    evidence_id,
+                    metadata_json,
+                    now,
+                ),
+            )
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def list_outcome_events(self, lead_id: str | None = None) -> list[dict]:
+        if lead_id is None:
+            rows = self.conn.execute(
+                "SELECT * FROM outcome_events ORDER BY id"
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM outcome_events WHERE lead_id = ? ORDER BY id",
+                (lead_id,),
+            ).fetchall()
+        events: list[dict] = []
+        for row in rows:
+            event = dict(row)
+            event["metadata"] = json.loads(event.pop("metadata_json"))
+            events.append(event)
+        return events

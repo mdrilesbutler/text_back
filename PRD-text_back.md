@@ -1,6 +1,6 @@
 # text_back — Product Requirements Document
 
-Status: Local core + SignalWire adapters implemented and tested (104 tests); live Google Calendar, operator notification delivery, credentials, and deploy pending human gates
+Status: Local core + SignalWire adapters implemented and tested (111 tests); live Google Calendar, operator notification delivery, credentials, and deploy pending human gates
 Updated: 2026-08-21
 Owner: Michael Riley  
 Canonical path: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror: `/home/mdriles/projects/text_back`)  
@@ -157,8 +157,9 @@ No telecom account activation, number purchase, paid usage, production messaging
 - Added environment selection via `TEXT_BACK_TELECOM_MODE=stub|signalwire`; SignalWire mode fails closed when required settings are missing, and `/health` exposes only the non-secret provider name.
 - Added deterministic preferred-time parsing, configurable timezone/duration, and end-to-end conversation-to-Calendar-stub booking. Confirmations remain gated on an event ID; the live Google adapter is not implemented.
 - Added deterministic customer-requested/safety handoff state, automation pause/resume, and concise operator alert payloads. The notifier is an in-memory stub; no operator alert was delivered.
+- Added an append-only outcome ledger with retry-safe evidence IDs for missed/contacted/engaged/field/qualified/handoff/slot/event/confirmed lifecycle facts. It does not infer completed work or revenue.
 - SignalWire's documented Platform Free Trial is the selected no-EIN proof path: one assigned SignalWire number to one verified mobile, REST API only. Personal-mobile verification is still pending.
-- Evidence: `.venv/bin/pytest tests/` — 104 passed. No API token, signing key, EIN, customer message content, or production value was committed.
+- Evidence: `.venv/bin/pytest tests/` — 111 passed. No API token, signing key, EIN, customer message content, or production value was committed.
 
 ## Session record — 2026-08-20 (hermes-vcn-0, Claude)
 

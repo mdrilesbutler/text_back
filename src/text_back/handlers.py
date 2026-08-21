@@ -48,6 +48,13 @@ def handle_voice_event(
     # regardless of call_status — fall through unconditionally below.
     if wiring_mode == WIRING_MODE_MANAGED and not is_terminal_unanswered(call_status):
         return {"accepted": True, "action": "ignored", "reason": "not_terminal_unanswered"}
+    store.record_outcome(
+        lead_id=from_number,
+        event_type="call.missed",
+        idempotency_key=f"call:{call_sid}:missed",
+        evidence_id=call_sid,
+        metadata={"wiring_mode": wiring_mode},
+    )
     if store.is_opted_out(from_number):
         return {"accepted": True, "action": "suppressed", "reason": "opted_out"}
     if store.active_handoff(from_number) is not None:
@@ -55,11 +62,18 @@ def handle_voice_event(
     claimed = store.claim_event("voice", call_sid, "missed_call_intro")
     if not claimed:
         return {"accepted": True, "duplicate": True, "action": "noop"}
-    telecom.send_sms(
+    message_id = telecom.send_sms(
         to=from_number,
         body=intro_sms(business_name),
         from_number=to_number,
         kind="missed_call_intro",
+    )
+    store.record_outcome(
+        lead_id=from_number,
+        event_type="sms.initial_sent",
+        idempotency_key=f"call:{call_sid}:initial_sms",
+        evidence_id=message_id,
+        metadata={},
     )
     return {"accepted": True, "duplicate": False, "action": "sent_intro"}
 
@@ -83,6 +97,13 @@ def handle_sms_event(
     claimed = store.claim_event("sms", message_sid, "inbound")
     if not claimed:
         return {"accepted": True, "duplicate": True, "action": "noop"}
+    store.record_outcome(
+        lead_id=from_number,
+        event_type="sms.customer_replied",
+        idempotency_key=f"sms:{message_sid}:customer_replied",
+        evidence_id=message_sid,
+        metadata={},
+    )
     kind = classify_inbound_sms(body)
     if kind == "stop":
         store.set_opted_out(from_number, True)
@@ -137,6 +158,7 @@ def handle_sms_event(
         from_number=from_number,
         to_number=to_number,
         body=body,
+        message_sid=message_sid,
         business_name=business_name,
         timezone_name=timezone_name,
         appointment_duration_minutes=appointment_duration_minutes,
@@ -184,6 +206,13 @@ def _request_handoff(
         )
     )
     store.set_handoff_alert_id(from_number, alert_id)
+    store.record_outcome(
+        lead_id=from_number,
+        event_type="lead.handoff_requested",
+        idempotency_key=f"handoff:{alert_id}:requested",
+        evidence_id=alert_id,
+        metadata={"reason": reason},
+    )
     if acknowledge_customer:
         telecom.send_sms(
             to=from_number,
@@ -208,6 +237,7 @@ def _collect_conversation_field(
     from_number: str,
     to_number: str,
     body: str,
+    message_sid: str,
     business_name: str,
     timezone_name: str,
     appointment_duration_minutes: int,
@@ -250,9 +280,23 @@ def _collect_conversation_field(
             }
 
     store.set_conversation_field(from_number, pending_field, value)
+    store.record_outcome(
+        lead_id=from_number,
+        event_type="lead.field_captured",
+        idempotency_key=f"sms:{message_sid}:field:{pending_field}",
+        evidence_id=message_sid,
+        metadata={"field": pending_field},
+    )
     updated_fields = {**fields, pending_field: value}
     next_field = next_missing_field(updated_fields)
     if next_field is None:
+        store.record_outcome(
+            lead_id=from_number,
+            event_type="lead.qualified",
+            idempotency_key=f"lead:{from_number}:qualified",
+            evidence_id=message_sid,
+            metadata={},
+        )
         return _book_collected_fields(
             store=store,
             calendar=calendar,

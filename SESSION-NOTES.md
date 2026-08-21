@@ -39,7 +39,15 @@ collected so far. `TEXT_BACK_HANDOFF_DESTINATION` is config-only and `/health`
 reveals only whether it is configured. The notifier is in-memory; no external
 operator alert was sent.
 
-Full suite: `.venv/bin/pytest tests/` — 104 passed.
+An append-only `outcome_events` ledger now records missed calls, accepted
+initial SMS, customer replies, field captures, qualification, handoff alerts,
+slot checks, calendar event creation, and appointment confirmation. Every fact
+has a unique idempotency key and non-empty call/message/alert/slot/calendar
+evidence ID. Raw message bodies are not copied into event metadata. A failed
+confirmation transport produces no `appointment.confirmed` event. The contract
+is documented in `docs/OUTCOME-EVENTS.md`.
+
+Full suite: `.venv/bin/pytest tests/` — 111 passed.
 
 No live SMS was sent, no provider callback was received, and no webhook was
 attached. Next human action: verify

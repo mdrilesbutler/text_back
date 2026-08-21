@@ -6,7 +6,7 @@ When Michael starts an agent from this project directory and says "continue proj
 ## Where everything stands (verified 2026-08-20, fresh)
 - Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
 - Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`; completed items are pushed to origin (verify with `git log --oneline -5`).
-- Test suite: `.venv/bin/pytest tests/` → **104 passed**, rerun this session after every change.
+- Test suite: `.venv/bin/pytest tests/` → **111 passed**, rerun this session after every change.
 - Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
 - Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
 - gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
@@ -25,7 +25,8 @@ When Michael starts an agent from this project directory and says "continue proj
 4. **Agent (done locally 2026-08-21)**: SignalWire callbacks now require `X-SignalWire-Signature`, return cXML, and forwarded calls receive branded `<Say>` + `<Hangup>` with no retained recording. Live attachment/testing remains gated.
 5. **Agent (done locally 2026-08-21)**: explicit `preferred_time` input is parsed in the configured timezone; vague/past/DST-unsafe input is re-prompted; the four fields feed free/busy-rechecked Calendar-stub booking; confirmation remains gated on event ID. Live Google Calendar is still pending.
 5a. **Agent (done locally 2026-08-21)**: deterministic customer-requested/safety handoff persists active state, pauses SMS and missed-call automation, preserves STOP/HELP, supports explicit resolution, and emits an idempotent concise operator payload to an in-memory notifier. External operator delivery remains unimplemented.
-5b. **Agent (next unblocked P0 code, TDD)**: add append-only outcome events for the lead lifecycle, beginning with missed/contacted/engaged/field/qualified/handoff/slot/event/confirmed evidence.
+5b. **Agent (done locally 2026-08-21)**: append-only outcome events now capture missed/contacted/engaged/field/qualified/handoff/slot/event/confirmed facts with stable evidence IDs and retry-safe idempotency keys. See `docs/OUTCOME-EVENTS.md`.
+5c. **Agent (next unblocked P0 code, TDD)**: implement the bounded no-response sequence with configurable attempts/timing, quiet-hours gating, and immediate cancellation on response/opt-out/booking/handoff/expiry.
 6. Store SignalWire Space URL, least-privilege API token, Project ID, and signing key outside Git; deploy and attach the HTTPS handlers. The outbound REST adapter and inbound boundary are built; live provider configuration and the Calendar adapter remain. Then run a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`.
 
 ## Session gotchas (hard-won)
@@ -42,7 +43,7 @@ When Michael starts an agent from this project directory and says "continue proj
 
 ## Improvements backlog
 - Env-loader with validation and a startup log of effective (non-secret) config.
-- Structured audit log (inbound/outbound/booking/consent events) — PRD requires it, not built.
+- Outcome audit ledger is built for core lifecycle evidence; generic outbound, consent-change, and operational events remain.
 - Quiet-hours enforcement has no clock-driven tests; add freeze-time tests.
 - External delivery for the tested human-handoff alert payload is unimplemented.
 - `docs/ONBOARDING-FORWARDING.md`: add a client-facing one-pager variant per carrier.

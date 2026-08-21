@@ -45,6 +45,11 @@ collection and missed-call intros, and builds a concise operator payload with
 the caller, reason, latest message, and fields collected so far. The notifier
 is currently an in-memory stub; external operator delivery is not implemented.
 
+An append-only outcome ledger now backs lifecycle claims with call SIDs,
+provider message IDs, handoff alert IDs, requested slots, and calendar event
+IDs. It never treats a booking as completed work or revenue. See
+`docs/OUTCOME-EVENTS.md` for the event/evidence contract.
+
 Human gates remaining: verify Michael's personal mobile for SignalWire Platform
 Free Trial; add credentials through the protected deployment/local secret
 store; expose an approved HTTPS deployment and attach its webhook URLs; and
