@@ -1,4 +1,4 @@
-# text_back — next session prompt (written 2026-08-20, hermes-vcn-0 session, Claude → handoff for Codex)
+# text_back — next session prompt (updated 2026-08-21, hermes-vcn-0)
 
 ## Continue-project contract
 When Michael starts an agent from this project directory and says "continue project", "continue", "pick up", or equivalent, read this `NEXT-SESSION.md` completely before taking action. Then read the files it names, briefly state the recovered state, and begin the highest-priority open item unless a newer user instruction overrides the handoff.
@@ -84,32 +84,46 @@ Continue-project contract: read /home/ubuntu/projects/text_back/NEXT-SESSION.md 
 
 Cold start:
   cd ~/projects/text_back   # branch local/tdd-core, remote github.com:mdrilesbutler/text_back
-  Read in order: NEXT-SESSION.md, PRD-text_back.md, SESSION-NOTES.md, AGENTS.md,
-  docs/ONBOARDING-FORWARDING.md, src/text_back/handlers.py, .env.example
+  Read in order: AGENTS.md, PRD-text_back.md, NEXT-SESSION.md, SESSION-NOTES.md,
+  docs/ONBOARDING-FORWARDING.md, docs/PRODUCT-MODEL.md,
+  docs/SIGNALWIRE-INTEGRATION.md, docs/OUTCOME-EVENTS.md.
+  Verify git status/log, then run .venv/bin/pytest tests/ before changing code.
 
-Verified state (2026-08-20): .venv/bin/pytest tests/ -> 50 passed. Local core complete
-including conversation slot-filling and wiring_mode (forwarded default / managed).
-No telecom account, no Google credentials, no env-loader, no deploy.
+Verified state (2026-08-21): 111 tests pass. Branch local/tdd-core is synced to
+origin. The environment loader, forwarded/managed wiring modes, fail-closed
+SignalWire signature boundary and cXML, deterministic time parsing and Calendar
+stub booking gate, human-handoff state/payload, and append-only outcome ledger
+are implemented. One voice/SMS-capable SignalWire pilot number was purchased by
+Michael and is config-only in ~/.config/text_back/pilot.env. There are no
+SignalWire credentials, live webhooks/messages/calls, Google credentials, real
+Calendar adapter, external handoff delivery, or deployment.
 
-Approvals already given (2026-08-20): SignalWire purchase, $15/month ceiling;
-attach to clients' existing numbers (forwarded mode); build for fluxworks catalog
-reproducibility (business specifics in config only).
+Start automatically with the next unblocked Recover P0 item: build a bounded
+no-response follow-up sequence using TDD. It must have configurable maximum
+attempts and delays, enforce configured timezone/business quiet hours, schedule
+only after an accepted initial SMS with provider evidence, and cancel immediately
+on any customer response, STOP, successful booking, active handoff, expiry, or
+the attempt ceiling. Retries must be idempotent. Record evidence-backed
+followup.sent and lead.expired outcome facts without storing raw message bodies.
+Use an injected clock/scheduler seam and stub transport only; do not add a live
+cron, queue, or provider send. Run focused tests and the full suite, update the
+PRD/handoff/docs, commit with the repo's existing author flags, and push
+local/tdd-core.
 
-Next work, in order (acceptance = commands, not vibes):
-1. If Michael is present: SignalWire signup (his browser) and the EIN question;
-   restart Google auth via the fallback ladder in NEXT-SESSION open item 2.
-2. Else TDD, one at a time, full suite green after each:
-   a. Env-loader for TEXT_BACK_* vars -> pytest passes, /health reflects env config.
-   b. Voice webhook returns a LaML/TwiML voicemail-style response in forwarded mode. (done 2026-08-21)
-   c. Parse preferred_time to a slot; wire collected fields into booking.py;
-      confirmation still gated on calendar event ID. (done locally 2026-08-21)
-   Commit each (git -c user.name="Michael Riley" -c user.email="mdriles@gmail.com")
-   and push to origin local/tdd-core.
+Human gates remain: Michael's Platform Free Trial mobile verification; Google
+authentication and Calendar sharing; SignalWire least-privilege credentials;
+external operator-notifier choice; deploy/webhook attachment; and the mandatory
+non-customer live-call checklist. Record progress if Michael completes one, but
+do not wait for a gate before doing the local follow-up-sequence work.
 
-Do not: buy/activate anything without checking the $15 approval scope; send
-production SMS; use Google Voice; store any credential in git; claim a booking
-without a Calendar event ID; apply managed-mode trigger rules to forwarded mode.
+Do not purchase/activate more telecom service, exceed the approved $15/month
+SignalWire ceiling, send live/production SMS, route calls, attach webhooks, use
+Google Voice, store credentials or the purchased number in Git, let an LLM
+control policy, mix forwarded/managed trigger semantics, or claim a booking
+without a successful Calendar event ID.
 
-Done for next session = at least one unblocked code item shipped green + pushed,
-and any human-gate progress recorded in PRD-text_back.md and this file.
+Done for next session = bounded no-response sequence shipped test-first with the
+full suite green and pushed, with factual notes updated. If that item finishes
+early, begin the deterministic Recovered Revenue Brief generator from the
+append-only outcome ledger; never infer revenue from a booking alone.
 ```

@@ -1,5 +1,21 @@
 # text_back — Session Notes
 
+## 2026-08-21 — durable handoff and next-session focus
+
+Refreshed the canonical resume prompt after the SignalWire boundary, booking,
+handoff, and outcome-ledger work. The next unblocked Recover P0 build is a
+test-driven bounded no-response follow-up sequence: configurable attempts and
+timing, quiet-hours deferral, deterministic cancellation, retry idempotency, and
+evidence-backed `followup.sent` / `lead.expired` facts. It must use injected
+clock/scheduler and stub-transport seams only; no live cron, provider send, call
+routing, webhook attachment, or deployment is authorized by this handoff.
+
+Human gates remain Platform Free Trial mobile verification, Google auth and
+real Calendar sharing, SignalWire least-privilege credentials, an external
+handoff-notifier choice, deployment, and the mandatory non-customer live-call
+verification checklist. The full local suite was green at 111 tests before this
+documentation-only handoff.
+
 ## 2026-08-21 — SignalWire pilot number and outbound REST adapter
 
 Michael purchased one local voice/SMS-capable SignalWire pilot number for
