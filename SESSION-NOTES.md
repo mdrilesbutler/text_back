@@ -1,5 +1,55 @@
 # text_back — Session Notes
 
+## 2026-08-21 — SignalWire pilot number and outbound REST adapter
+
+Michael purchased one local voice/SMS-capable SignalWire pilot number for
+$0.50/month under the existing $15/month approval. The exact number is stored
+only in `~/.config/text_back/pilot.env` with mode 600; no business-specific
+number, token, or signing key was added to Git.
+
+Implemented a direct SignalWire Compatibility REST outbound-SMS adapter for
+the Platform Free Trial path. It enforces HTTPS, scopes the configured sender,
+uses environment-injected credentials, requires a provider message ID, and
+redacts provider response bodies and credentials from errors. The app selects
+`stub` or `signalwire` through `TEXT_BACK_TELECOM_MODE` and fails closed when
+SignalWire configuration is incomplete. `/health` reports only the provider
+name. Full suite: `.venv/bin/pytest tests/` — 60 passed.
+
+No live SMS was sent and no webhook was attached. Next human action: verify
+Michael's personal mobile in SignalWire Messaging Campaigns to enable Platform
+Free Trial. PFT is REST-only between the assigned SignalWire number and that
+verified mobile; cXML/SWML messaging remains unavailable until registration.
+
+## 2026-08-20 — product model synthesized from Podium, Hatch, Goodcall, Koerner, and Tra brief
+
+Created the canonical `docs/PRODUCT-MODEL.md` and `docs/COMPETITOR-MATRIX.md` from primary public product pages (fetched 2026-08-20), with citation evidence verified. Product decision:
+
+- **Recover first:** missed call → immediate SMS → deterministic qualification → Calendar booking or human handoff → outcome brief.
+- **Answer later:** optional after-hours/overflow AI voice + directory routing.
+- **Grow later:** estimate/no-show/review journeys, separately consent-scoped.
+- Borrow Podium conversation continuity, Hatch speed-to-conversion + bounded persistence, Goodcall structured logic/routing, and Koerner assessment → install → care.
+- Borrow only the reporting structure from the supplied Tra macro brief: snapshot, drivers, what to watch, bottom line, evidence appendix.
+- Added `docs/gtm/RECOVERED-REVENUE-BRIEF-TEMPLATE.md`; revenue is never claimed from a booking alone.
+
+No product code changed in this decision pass. The full suite remains the verification gate.
+
+## 2026-08-20 — Koerner GTM model adopted for text_back commercial packaging
+
+Michael pointed at https://www.youtube.com/watch?v=g4-3AxelI_Y
+(*This Might Be the Easiest Way to Sell AI to Businesses*, Chris Koerner).
+Full YouTube captions remain blocked from this cloud IP.
+
+Adopted commercial model from matching public Koerner materials
+(assessment ladder + speed-to-lead as highest-ROI SMB install):
+
+- Canonical: `docs/gtm/KOERNER-MODEL.md`
+- Templates: `docs/gtm/assessment-template.md`, `docs/gtm/leave-behind.md`
+- PRD section + README pointer updated
+- SKUs: `TB-ASSESS` ($500–$1k) → `TB-RECOVER` ($1.5–3k) → `TB-CARE` ($200–500/mo)
+- Positioning: sell missed-call recovery / calendar booking, not “AI agents”
+
+No product code changes required — GTM maps onto existing forwarded wiring + deterministic policy.
+
 ## 2026-08-20 — environment-backed app configuration
 
 Added an environment loader for every documented `TEXT_BACK_*` setting.

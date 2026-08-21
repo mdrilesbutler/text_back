@@ -1,7 +1,7 @@
 # text_back — Product Requirements Document
 
-Status: Local core implemented and tested (52 tests); telecom + Google credentials pending human gates
-Updated: 2026-08-20  
+Status: Local core + SignalWire outbound adapter implemented and tested (60 tests); live credentials/deploy pending human gates
+Updated: 2026-08-21
 Owner: Michael Riley  
 Canonical path: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror: `/home/mdriles/projects/text_back`)  
 Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`  
@@ -13,19 +13,38 @@ A production missed-call recovery and scheduling assistant for arborists, guides
 
 ## Customer flow
 
-1. A customer calls the business's programmable local number.
-2. The telecom provider rings the operator's normal mobile phone.
-3. If unanswered, the system texts: “Hey, sorry we missed your call—this is Mike’s scheduling assistant. What were you calling about?”
-4. AI replies naturally and gathers job/service type, location, and preferred time.
-5. The system checks Google Calendar availability and books the appointment.
-6. It confirms the appointment by SMS.
-7. STOP, HELP, consent, quiet-hour, and human-handoff rules are enforced.
+1. A customer calls the business's existing public number.
+2. The carrier rings the operator's normal mobile phone.
+3. If the operator does not answer, conditional forwarding sends the call to the client's dedicated programmable number. The first voice event for that `call_sid` is the missed-call trigger in `forwarded` mode.
+4. The system sends one branded transactional SMS, such as: “Sorry we missed your call—this is {{business_name}}'s scheduling assistant. What were you calling about?”
+5. A bounded conversational layer gathers job/service type, location, preferred time, and name; deterministic policy controls consent, STOP/HELP, booking, quiet hours, and handoff.
+6. The system checks Google Calendar availability and books only after receiving an event ID.
+7. It confirms the appointment by SMS or routes the conversation to a human.
 
 ## Product objective
 
 Recover missed-call revenue without forcing the operator to adopt a new phone, app, or CRM. The system must be inexpensive, reliable, auditable, and simple enough for a small service business.
 
+## Commercial / GTM model (adopted 2026-08-20)
+
+**Canonical writeup:** `docs/gtm/KOERNER-MODEL.md`
+**Seed video (Michael):** https://www.youtube.com/watch?v=g4-3AxelI_Y — *This Might Be the Easiest Way to Sell AI to Businesses* (Chris Koerner). Full captions unavailable on hermes-cloud; model is grounded in matching public Koerner playbooks (assessment ladder + speed-to-lead).
+
+**Sell the outcome, not “AI”:** after-hours / missed-call recovery with calendar-truth booking.
+
+| SKU | What | Starter price band |
+|---|---|---|
+| `TB-ASSESS` | 45-min discovery → written plan in 48h | $500–$1,000 |
+| `TB-RECOVER` | Recover install (forwarded number + calendar) | $1,500–$3,000 one-time |
+| `TB-CARE` | Managed monthly (monitor + recovered-leads report) | $200–$500 / mo |
+
+Default path for field-service ICP: assessment → **text_back install** as the Stage-2 product (not a custom agent build). Templates: `docs/gtm/assessment-template.md`, `docs/gtm/leave-behind.md`.
+
 ## Recommended architecture
+
+**Canonical product model:** `docs/PRODUCT-MODEL.md` — combines Koerner’s assessment/install/care ladder, Podium’s missed-call continuity, Hatch’s speed-to-conversion journeys, Goodcall’s structured routing, and an evidence-backed Recovered Revenue Brief modeled on Tra’s reporting structure. Competitive matrix: `docs/COMPETITOR-MATRIX.md`.
+
+**Scope decision:** Ship **Recover** first (missed call → SMS → qualify → booked/handoff → outcome brief). **Answer** (AI voice) and **Grow** (estimate/no-show/review journeys) are later add-ons only after a real-phone Recover pilot proves conversion.
 
 - Application/runtime: Paperclip Hermes-operated application on Hostinger.
 - Telecom: SignalWire is the current cost-first recommendation; Twilio remains the documentation/ecosystem fallback.
@@ -41,8 +60,8 @@ Recover missed-call revenue without forcing the operator to adopt a new phone, a
 
 ### Voice and missed-call detection
 - Provision one local voice/SMS-capable number.
-- Forward/ring the configured operator phone.
-- Send the initial text only after an unanswered/failed/no-answer disposition.
+- Default `forwarded` mode: attach to the client's existing number with conditional forwarding and treat the first provider voice event per `call_sid` as the already-missed call.
+- Optional `managed` mode: ring the configured operator and send the initial text only after a terminal `no-answer`/`busy`/`failed`/`canceled` disposition.
 - Prevent duplicate texts from webhook retries.
 - Allow configurable ring timeout and business hours.
 
@@ -87,9 +106,11 @@ Recover missed-call revenue without forcing the operator to adopt a new phone, a
 - Telecom webhook signatures are rejected when invalid.
 - End-to-end production smoke test passes from a real phone after explicit paid-service approval.
 
-## Cost refresh (2026-08-20)
+## Cost planning snapshot (2026-08-20; recheck required)
 
-Re-verified before purchase, as required. SignalWire estimate for 100 forwarded 3-min calls + 400 SMS segments, INCLUDING carrier passthrough and the Low Volume Mixed 10DLC campaign: **≈ $9.44/month** — fits the approved $15/month ceiling. One-time setup ≈ $12 (brand $4.50 + DCA vetting $7.50) plus $5 minimum account funding (stays as credit). Twilio equivalent ≈ $14.10/month. Caveats: SignalWire's live site now hides per-unit rates (number/SMS rates archive-verified from 2026 snapshots of SignalWire's own pricing pages); the $1.50/month Low Volume Mixed tier requires an **EIN** — whether SignalWire's dashboard offers a sole-proprietor tier (no EIN, $2/month at registry level) is UNVERIFIED, and Twilio verifiably does offer it. 10DLC approval takes ~1–2 weeks (brand 3–5 business days + campaign 3–5 days). New accounts start in trial mode; exiting requires a card + ≥$5 funding.
+The planning estimate for 100 forwarded 3-min calls + 400 SMS segments, including the previously researched carrier passthrough and Low Volume Mixed 10DLC campaign assumptions, was **≈ $9.44/month**. That fits the approved $15/month ceiling, but it is not a purchase quote. Some unit rates came from archived 2026 snapshots, and SignalWire's current registration guide (checked 2026-08-21) lists a $4 Brand submission fee rather than the $4.50 used in the earlier estimate. Recheck the authenticated dashboard's exact funding, registration, recurring, per-segment, carrier, and voice charges immediately before any paid action; stop for renewed approval if the displayed commitment exceeds the ceiling. The prior research also found that the Low Volume Mixed path requires an **EIN**; a SignalWire sole-proprietor path remains unverified.
+
+Current official references: [Campaign Registry registration](https://signalwire.com/docs/platform/messaging/campaign-registry/registration), [phone numbers](https://signalwire.com/docs/platform/phone-numbers), and [webhook security](https://signalwire.com/docs/compatibility-api/guides/webhook-security).
 
 ## Cost decision (verified from public pricing on 2026-08-06)
 
@@ -115,17 +136,26 @@ Pricing can change and must be rechecked before purchase. Sources:
 
 ## Approval gates
 
-No telecom account activation, number purchase, paid usage, production messaging, or customer traffic without Michael’s explicit approval. After approval, SignalWire/Twilio authentication and Google Calendar OAuth require Michael’s one-time browser actions. No credential values belong in project files.
+No telecom account activation, number purchase, paid usage, production messaging, or customer traffic without Michael’s explicit approval. The SignalWire path has a $15/month ceiling, but Michael must still perform the purchase/payment steps in his browser. Google Cloud authentication and service-account setup also require his participation. No credential values belong in project files.
 
 ## Current open items (2026-08-20)
 
-1. Michael: SignalWire signup in browser (spend approval GIVEN 2026-08-20, $15/month ceiling): create Space, add card, fund $5, buy one local number, start 10DLC brand registration. Also answer: does he have an EIN? (Decides the cheap 10DLC tier vs. possibly flipping to Twilio's sole-prop path.)
+1. SignalWire Space is funded and one local voice/SMS-capable pilot number was purchased 2026-08-21 at $0.50/month under the existing $15/month approval. Exact number is config-only outside Git. Next browser gate: verify Michael's personal mobile for Platform Free Trial; do not submit a paid Brand/Campaign without reviewing its displayed fees. Michael is currently a sole proprietor and the LLC is pending.
 2. Michael: Google sign-in for `mdrilesbutler@gmail.com` hit an "access blocked" page mid-flow (2026-08-20); exact error wording still unreported. Fallbacks documented in NEXT-SESSION.md.
 3. After gcloud auth lands: scripted GCP setup — create project, enable `calendar-json.googleapis.com`, create service account + key to `~/.config/text_back/sa_key.json` (never git), Michael shares the pilot calendar with the SA email.
 4. Code, unblocked now: voicemail-style greeting on forwarded calls (conditional forwarding replaces carrier voicemail); parse `preferred_time` into a slot and wire collected fields into `booking.py`.
-5. Live SignalWire + Google Calendar adapters once credentials exist; keep confirmation gated on provider event ID.
+5. Finish the live SignalWire inbound boundary and Google Calendar adapter once credentials exist. The outbound SignalWire REST adapter is implemented but not configured or exercised against a live account. Compatibility callbacks must validate `X-SignalWire-Signature` against the exact public URL and return cXML where required; keep confirmation gated on the Calendar event ID.
 6. Deploy through Paperclip Hermes on Hostinger; real-phone end-to-end smoke test.
 7. Before first client launch: replace pilot identity/calendar/phone with client-owned values; per-client 10DLC registration.
+
+## Session record — 2026-08-21 (hermes-vcn-0, Codex)
+
+- Michael purchased one SignalWire local voice/SMS-capable pilot number at $0.50/month. No production traffic was routed and no message was sent.
+- Stored the exact pilot number only in protected local config at `~/.config/text_back/pilot.env` (mode 600), preserving the catalog rule that client-specific values stay out of code and Git.
+- Added a SignalWire Compatibility REST outbound-SMS adapter with HTTPS enforcement, least-secret configuration, configured-sender enforcement, provider message-ID validation, and redacted provider failures.
+- Added environment selection via `TEXT_BACK_TELECOM_MODE=stub|signalwire`; SignalWire mode fails closed when required settings are missing, and `/health` exposes only the non-secret provider name.
+- SignalWire's documented Platform Free Trial is the selected no-EIN proof path: one assigned SignalWire number to one verified mobile, REST API only. Personal-mobile verification is still pending.
+- Evidence: `.venv/bin/pytest tests/` — 60 passed. No API token, signing key, EIN, customer message content, or production value was committed.
 
 ## Session record — 2026-08-20 (hermes-vcn-0, Claude)
 

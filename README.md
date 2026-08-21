@@ -2,14 +2,23 @@
 
 Missed-call recovery and scheduling assistant for field-service businesses.
 
-Canonical requirements: `PRD-text_back.md`
-Cold resume: `NEXT-SESSION.md`
-Session history: `SESSION-NOTES.md`
-Local implementation plan: `IMPLEMENTATION-PLAN.md`
+- Canonical requirements: `PRD-text_back.md`
+- **Product model:** `docs/PRODUCT-MODEL.md` (Recover first; Answer/Grow later)
+- **Competitive synthesis:** `docs/COMPETITOR-MATRIX.md`
+- **GTM / sales model:** `docs/gtm/KOERNER-MODEL.md` (assessment → Recover install → Care; sell recovery, not “AI”)
+- **Client outcome report:** `docs/gtm/RECOVERED-REVENUE-BRIEF-TEMPLATE.md`
+- Cold resume: `NEXT-SESSION.md`
+- Session history: `SESSION-NOTES.md`
+- Local implementation plan: `IMPLEMENTATION-PLAN.md`
 
-## Current state (2026-08-14, hermes-cloud)
+## Current state (2026-08-21, hermes-vcn-0)
 
-Local core exists and is tested on this host. No production number, no paid telecom, no Google OAuth.
+Local core and a SignalWire Compatibility REST outbound-SMS adapter exist and
+are tested on this host. The product path is assessment → **Recover install**
+(`TB-RECOVER`) → Care; Answer voice and Grow journeys wait until a real-phone
+Recover pilot proves conversion. Michael purchased one pilot number, but no
+API token, webhook routing, production message, customer call, Google
+credential, or deployment is configured.
 
 ```bash
 cd /home/ubuntu/projects/text_back
@@ -17,9 +26,13 @@ cd /home/ubuntu/projects/text_back
 .venv/bin/python -m text_back   # 127.0.0.1:8000 only
 ```
 
-Covered locally: webhook signature fail-closed, missed-call intro (both wiring modes), idempotent retries, STOP/HELP policy, Calendar stub booking with event-id gate.
+Covered locally: environment-backed configuration, a guarded SignalWire outbound REST adapter, Twilio-compatible webhook signature fail-closed, missed-call intro (both wiring modes), idempotent retries, STOP/HELP policy, deterministic field collection, and Calendar stub booking with event-ID gate.
 
-Human gates remaining: paid telecom approval + number; Google Calendar OAuth for `mdrilesbutler@gmail.com`.
+Human gates remaining: verify Michael's personal mobile for SignalWire Platform
+Free Trial; add credentials through the protected deployment/local secret
+store; and complete Google Cloud authentication/service-account setup for the
+pilot calendar. Before live SignalWire traffic, the app also needs
+`X-SignalWire-Signature` validation and cXML responses.
 
 ## Wiring mode
 
