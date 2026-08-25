@@ -360,10 +360,11 @@ class Store:
         idempotency_key: str,
         evidence_id: str,
         metadata: dict[str, object] | None = None,
+        occurred_at: str | None = None,
     ) -> bool:
         if not lead_id or not event_type or not idempotency_key or not evidence_id:
             raise ValueError("outcome events require lead, type, idempotency, and evidence")
-        now = datetime.now(timezone.utc).isoformat()
+        when = occurred_at or datetime.now(timezone.utc).isoformat()
         metadata_json = json.dumps(metadata or {}, sort_keys=True, separators=(",", ":"))
         try:
             self.conn.execute(
@@ -379,7 +380,7 @@ class Store:
                     idempotency_key,
                     evidence_id,
                     metadata_json,
-                    now,
+                    when,
                 ),
             )
             self.conn.commit()

@@ -46,11 +46,23 @@ cancels immediately on any customer reply, STOP/opt-out, successful booking,
 or active handoff, and re-running the processor at the same instant is
 idempotent via `claim_event`. Follow-up bodies contain no customer content.
 
+## Recovered Revenue Brief (src/text_back/brief.py)
+
+`build_brief_data`/`render_brief` are deterministic projections of this ledger
+for a period. Funnel counts are unique-lead based (missed calls count raw
+events); confirmed appointments list calendar + confirmation evidence IDs; the
+revenue section sums only explicit `revenue.attributed` events carrying an
+integer `amount_cents` and an external evidence ID (invoice/payment ref) and
+says "No attributed revenue recorded" otherwise — it never estimates from
+bookings. `record_outcome` accepts an optional `occurred_at` for backdated
+attribution entries.
+
 ## Not implemented yet
 
-- `job.completed` and `revenue.attributed`;
-- operator/CRM evidence for completion and job value;
-- a derived current-state projection and Recovered Revenue Brief.
+- `job.completed`;
+- operator/CRM evidence capture for completion and job value (the
+  `revenue.attributed` write path is manual/operator-driven for now);
+- a derived current-state projection.
 
 Future projections and reports must read this ledger without rewriting its
 history. A booking is pipeline evidence, not completed work or recovered
