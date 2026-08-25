@@ -84,6 +84,21 @@ class Store:
             ON outcome_events (lead_id, id)
             """
         )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS followups (
+                phone TEXT PRIMARY KEY,
+                call_sid TEXT NOT NULL,
+                status TEXT NOT NULL,
+                attempts_sent INTEGER NOT NULL DEFAULT 0,
+                next_action TEXT NOT NULL,
+                next_action_at TEXT NOT NULL,
+                cancel_reason TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
         self.conn.commit()
 
     def claim_event(self, source: str, event_id: str, action: str) -> bool:
@@ -218,6 +233,118 @@ class Store:
             """
             UPDATE handoffs
             SET status = 'resolved', resolved_at = ?
+            WHERE phone = ? AND status = 'active'
+            """,
+            (now, phone),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    # --- follow-up sequences ---
+
+    def start_followup(
+        self,
+        *,
+        phone: str,
+        call_sid: str,
+        next_action: str,
+        next_action_at: str,
+    ) -> bool:
+        """Create/replace the lead's sequence unless one is already active.
+
+        Duplicate webhooks for the same call must not reset an active sequence;
+        a new missed call after cancel/expiry starts fresh.
+        """
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            INSERT INTO followups
+                (phone, call_sid, status, attempts_sent, next_action,
+                 next_action_at, cancel_reason, created_at, updated_at)
+            VALUES (?, ?, 'active', 0, ?, ?, NULL, ?, ?)
+            ON CONFLICT(phone) DO UPDATE SET
+                call_sid = excluded.call_sid,
+                status = 'active',
+                attempts_sent = 0,
+                next_action = excluded.next_action,
+                next_action_at = excluded.next_action_at,
+                cancel_reason = NULL,
+                created_at = excluded.created_at,
+                updated_at = excluded.updated_at
+            WHERE followups.status != 'active'
+            """,
+            (phone, call_sid, next_action, next_action_at, now, now),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    def get_followup(self, phone: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM followups WHERE phone = ?", (phone,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def due_followups(self, now_iso: str) -> list[dict]:
+        rows = self.conn.execute(
+            """
+            SELECT * FROM followups
+            WHERE status = 'active' AND next_action_at <= ?
+            ORDER BY next_action_at
+            """,
+            (now_iso,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def advance_followup(
+        self,
+        phone: str,
+        *,
+        attempts_sent: int,
+        next_action: str,
+        next_action_at: str,
+    ) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            """
+            UPDATE followups
+            SET attempts_sent = ?, next_action = ?, next_action_at = ?, updated_at = ?
+            WHERE phone = ? AND status = 'active'
+            """,
+            (attempts_sent, next_action, next_action_at, now, phone),
+        )
+        self.conn.commit()
+
+    def defer_followup(self, phone: str, next_action_at: str) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            """
+            UPDATE followups
+            SET next_action_at = ?, updated_at = ?
+            WHERE phone = ? AND status = 'active'
+            """,
+            (next_action_at, now, phone),
+        )
+        self.conn.commit()
+
+    def cancel_followup(self, phone: str, reason: str) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            UPDATE followups
+            SET status = 'cancelled', cancel_reason = ?, updated_at = ?
+            WHERE phone = ? AND status = 'active'
+            """,
+            (reason, now, phone),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    def expire_followup(self, phone: str) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            UPDATE followups
+            SET status = 'expired', updated_at = ?
             WHERE phone = ? AND status = 'active'
             """,
             (now, phone),

@@ -26,14 +26,29 @@ Each row contains:
 | `calendar.slot_checked` | requested zoned start time | The free/busy check completes; metadata records availability and check count |
 | `calendar.event_created` | calendar event ID | Calendar returns a non-empty event ID |
 | `appointment.confirmed` | outbound provider message ID | The confirmation transport accepts the SMS; metadata links the calendar event ID |
+| `followup.sent` | outbound provider message ID | A due no-response follow-up SMS is accepted by the transport; metadata records the attempt number |
+| `lead.expired` | originating call SID | The bounded sequence's expiry deadline passes with no response after the final attempt; metadata records attempts_sent |
 
 The booking code records `calendar.event_created` before persistence and
 `appointment.confirmed` only after the confirmation transport succeeds. A
 booking or message failure therefore cannot appear as confirmed evidence.
 
+## Follow-up sequence (src/text_back/followup.py)
+
+A bounded no-response sequence is scheduled only after an accepted intro SMS
+(provider evidence exists). `run_due_followups` is a pure function of
+(store, telecom, policy, injected now) — no live cron, queue, or provider
+send is wired. Configured by `TEXT_BACK_FOLLOWUP_DELAYS_MINUTES` (default
+`120,1440`), `TEXT_BACK_FOLLOWUP_EXPIRY_MINUTES` (default `2880`), and
+`TEXT_BACK_QUIET_HOURS_START`/`END` (default `21:00`/`08:00`, business
+timezone). Sends due inside quiet hours defer to quiet-end. The sequence
+cancels immediately on any customer reply, STOP/opt-out, successful booking,
+or active handoff, and re-running the processor at the same instant is
+idempotent via `claim_event`. Follow-up bodies contain no customer content.
+
 ## Not implemented yet
 
-- `followup.sent`, `lead.expired`, `job.completed`, and `revenue.attributed`;
+- `job.completed` and `revenue.attributed`;
 - operator/CRM evidence for completion and job value;
 - a derived current-state projection and Recovered Revenue Brief.
 

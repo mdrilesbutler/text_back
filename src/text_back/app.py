@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Callable
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -10,6 +10,7 @@ from fastapi import FastAPI, Form, Header, HTTPException, Request, Response
 from text_back.config import DEFAULT_WEBHOOK_SECRET, load_config
 from text_back.cxml import empty_response, forwarded_call_response
 from text_back.calendar_stub import CalendarStub
+from text_back.followup import FollowupPolicy
 from text_back.handoff import FakeHandoffNotifier, HandoffNotifier
 from text_back.handlers import handle_sms_event, handle_voice_event
 from text_back.policy import WIRING_MODES, WIRING_MODE_FORWARDED
@@ -124,6 +125,7 @@ def create_app(
     app.state.handoff_notifier = handoff_notifier or FakeHandoffNotifier()
     app.state.handoff_destination = handoff_destination
     app.state.now_provider = now_provider
+    app.state.followup_policy = FollowupPolicy.from_config(config)
 
     @app.get("/health")
     def health() -> dict:
@@ -176,6 +178,12 @@ def create_app(
             to_number=to_number,
             wiring_mode=request.app.state.wiring_mode,
             business_name=request.app.state.business_name,
+            followup_policy=request.app.state.followup_policy,
+            now=(
+                request.app.state.now_provider()
+                if request.app.state.now_provider is not None
+                else datetime.now(timezone.utc)
+            ),
         )
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
         if request.app.state.telecom.provider_name == "signalwire":

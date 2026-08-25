@@ -23,6 +23,10 @@ class AppConfig:
     timezone_name: str
     appointment_duration_minutes: int
     handoff_destination: str
+    followup_delays_minutes: str
+    followup_expiry_minutes: int
+    quiet_hours_start: str
+    quiet_hours_end: str
 
 
 def load_config() -> AppConfig:
@@ -49,4 +53,12 @@ def load_config() -> AppConfig:
         handoff_destination=os.environ.get(
             "TEXT_BACK_HANDOFF_DESTINATION", "unconfigured"
         ),
+        followup_delays_minutes=os.environ.get(
+            "TEXT_BACK_FOLLOWUP_DELAYS_MINUTES", "120,1440"
+        ),
+        followup_expiry_minutes=int(
+            os.environ.get("TEXT_BACK_FOLLOWUP_EXPIRY_MINUTES", "2880")
+        ),
+        quiet_hours_start=os.environ.get("TEXT_BACK_QUIET_HOURS_START", "21:00"),
+        quiet_hours_end=os.environ.get("TEXT_BACK_QUIET_HOURS_END", "08:00"),
     )

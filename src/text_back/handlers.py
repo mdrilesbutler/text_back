@@ -4,6 +4,11 @@ from datetime import datetime
 
 from text_back.booking import BookingError, SlotUnavailableError, book_appointment
 from text_back.calendar_stub import CalendarStub
+from text_back.followup import (
+    FollowupPolicy,
+    cancel_followup,
+    schedule_followup_sequence,
+)
 from text_back.handoff import (
     HandoffAlert,
     HandoffNotifier,
@@ -39,6 +44,8 @@ def handle_voice_event(
     to_number: str,
     wiring_mode: str,
     business_name: str,
+    followup_policy: FollowupPolicy | None = None,
+    now: datetime | None = None,
 ) -> dict:
     # "managed": our number is the client's own number, so only a terminal
     # unanswered status (no-answer/busy/failed/canceled) is a missed call.
@@ -75,6 +82,14 @@ def handle_voice_event(
         evidence_id=message_id,
         metadata={},
     )
+    if followup_policy is not None and now is not None:
+        schedule_followup_sequence(
+            store=store,
+            policy=followup_policy,
+            phone=from_number,
+            call_sid=call_sid,
+            now=now,
+        )
     return {"accepted": True, "duplicate": False, "action": "sent_intro"}
 
 
@@ -104,6 +119,8 @@ def handle_sms_event(
         evidence_id=message_sid,
         metadata={},
     )
+    # Any customer response immediately ends the no-response sequence.
+    cancel_followup(store, from_number, "customer_replied")
     kind = classify_inbound_sms(body)
     if kind == "stop":
         store.set_opted_out(from_number, True)
