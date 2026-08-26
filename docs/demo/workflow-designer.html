@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>text_back — Response Workflow Designer</title>
+<style>
+:root{
+  --bg:#1a1a2e; --bg2:#16162a; --panel:#232338; --panel2:#2a2a44;
+  --line:#3a3a5c; --text:#e8e8f2; --dim:#9a9ab8; --faint:#6b6b8f;
+  --orange:#ff6d5a; --blue:#4a90e2; --purple:#9b6dff; --green:#3ecf8e;
+  --grey:#6b7280; --amber:#f0a842; --red:#ff5470;
+  --node-bg:#26263e; --node-border:#3d3d61; --node-hover:#4c4c7a;
+  --accent:#ff6d5a;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%; overflow:hidden;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  background:var(--bg); color:var(--text); font-size:14px;
+}
+/* ---------- header ---------- */
+#header{
+  height:52px; display:flex; align-items:center; gap:14px; padding:0 18px;
+  background:linear-gradient(180deg,#20203a,#1c1c32); border-bottom:1px solid var(--line);
+  position:relative; z-index:40;
+}
+#header .logo{
+  width:30px; height:30px; border-radius:8px; flex:0 0 auto;
+  background:linear-gradient(135deg,var(--orange),#ff9d5a);
+  display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px;
+  box-shadow:0 2px 10px rgba(255,109,90,.35);
+}
+#header h1{font-size:15px; font-weight:600; letter-spacing:.2px;}
+#header h1 .tb{color:var(--orange); font-weight:800;}
+#header .byline{font-size:11px; color:var(--faint); margin-left:2px; letter-spacing:.6px; text-transform:uppercase;}
+#header .spacer{flex:1;}
+.hbtn{
+  background:var(--panel); border:1px solid var(--line); color:var(--text);
+  border-radius:8px; padding:7px 13px; font-size:12.5px; cursor:pointer; display:flex; align-items:center; gap:7px;
+  transition:all .15s;
+}
+.hbtn:hover{border-color:var(--purple); background:var(--panel2);}
+.hbtn.primary{background:var(--orange); border-color:var(--orange); color:#fff; font-weight:600;}
+.hbtn.primary:hover{background:#ff8471;}
+#selCount{
+  background:#fff2; border-radius:10px; padding:1px 8px; font-size:11px; font-weight:700;
+}
+/* ---------- canvas ---------- */
+#stage{position:absolute; top:52px; left:0; right:0; bottom:0; overflow:hidden;
+  background-color:var(--bg);
+  background-image:radial-gradient(circle,#33334f 1px,transparent 1px);
+  background-size:22px 22px; cursor:grab;
+}
+#stage.panning{cursor:grabbing;}
+#world{position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform;}
+#edgeSvg{position:absolute; top:0; left:0; overflow:visible; pointer-events:none;}
+.edgePath{fill:none; stroke:#55557f; stroke-width:2;}
+.edgePath.hot{stroke:var(--orange);}
+.edgeLabel{fill:#b8b8d8; font-size:11px; font-weight:600;}
+.edgeLabelBg{fill:#1a1a2e; stroke:#3a3a5c; stroke-width:1; rx:6;}
+.port{fill:#8a8ab5; stroke:#1a1a2e; stroke-width:2;}
+/* ---------- nodes ---------- */
+.node{
+  position:absolute; width:224px; min-height:62px; background:var(--node-bg);
+  border:1.5px solid var(--node-border); border-radius:12px; display:flex; align-items:center;
+  cursor:pointer; user-select:none; transition:border-color .12s, box-shadow .12s;
+  box-shadow:0 3px 12px rgba(0,0,0,.35);
+}
+.node:hover{border-color:var(--node-hover); box-shadow:0 5px 18px rgba(0,0,0,.5);}
+.node.active{border-color:var(--orange); box-shadow:0 0 0 3px rgba(255,109,90,.22), 0 5px 18px rgba(0,0,0,.5);}
+.node .nicon{
+  width:44px; height:44px; border-radius:10px; margin:9px 11px 9px 9px; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center;
+}
+.node .nicon svg{width:22px; height:22px;}
+.node .nbody{flex:1; padding-right:10px; min-width:0;}
+.node .ntitle{font-size:13px; font-weight:600; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.node .nsub{font-size:10.5px; color:var(--dim); margin-top:2px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.node .badge{
+  position:absolute; top:-8px; right:-8px; width:20px; height:20px; border-radius:50%;
+  background:var(--green); color:#0c2b1d; display:none; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; border:2px solid var(--bg); box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.node.hasSel .badge{display:flex;}
+.node .msgTag{
+  position:absolute; bottom:-9px; left:12px; background:var(--panel2); border:1px solid var(--line);
+  border-radius:8px; font-size:9px; padding:1px 7px; color:var(--dim); letter-spacing:.4px;
+}
+/* ---------- zoom controls ---------- */
+#zoomCtl{position:absolute; left:16px; bottom:16px; display:flex; flex-direction:column; gap:6px; z-index:30;}
+#zoomCtl button{
+  width:36px; height:36px; border-radius:9px; background:var(--panel); border:1px solid var(--line);
+  color:var(--text); font-size:16px; cursor:pointer; transition:all .15s;
+}
+#zoomCtl button:hover{border-color:var(--purple); background:var(--panel2);}
+#zoomPct{position:absolute; left:60px; bottom:22px; font-size:11px; color:var(--faint); z-index:30;}
+#legend{
+  position:absolute; right:16px; bottom:16px; z-index:30; background:rgba(35,35,56,.9); border:1px solid var(--line);
+  border-radius:10px; padding:10px 13px; font-size:11px; color:var(--dim); display:flex; gap:14px; backdrop-filter:blur(4px);
+}
+#legend .li{display:flex; align-items:center; gap:6px;}
+#legend .sw{width:11px; height:11px; border-radius:3.5px;}
+/* ---------- side panel ---------- */
+#panel{
+  position:absolute; top:52px; right:0; bottom:0; width:420px; max-width:92vw;
+  background:var(--panel); border-left:1px solid var(--line); z-index:50;
+  transform:translateX(105%); transition:transform .22s ease; display:flex; flex-direction:column;
+  box-shadow:-12px 0 40px rgba(0,0,0,.45);
+}
+#panel.open{transform:translateX(0);}
+#pHead{padding:16px 18px 12px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:12px;}
+#pHead .picon{width:40px; height:40px; border-radius:10px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;}
+#pHead .picon svg{width:20px; height:20px;}
+#pTitle{font-size:15px; font-weight:700;}
+#pSub{font-size:11.5px; color:var(--dim); margin-top:3px; line-height:1.45;}
+#pClose{margin-left:auto; background:none; border:none; color:var(--faint); font-size:20px; cursor:pointer; padding:2px 6px; border-radius:6px;}
+#pClose:hover{color:var(--text); background:var(--panel2);}
+#pTabs{display:flex; gap:4px; padding:10px 14px 0; border-bottom:1px solid var(--line); flex-wrap:wrap;}
+.ptab{
+  background:none; border:none; color:var(--dim); font-size:12px; font-weight:600; padding:8px 11px;
+  border-bottom:2px solid transparent; cursor:pointer; border-radius:6px 6px 0 0;
+}
+.ptab:hover{color:var(--text);}
+.ptab.on{color:var(--orange); border-bottom-color:var(--orange);}
+#pTools{padding:12px 16px 4px;}
+#pSearch{
+  width:100%; background:var(--bg2); border:1px solid var(--line); border-radius:8px; color:var(--text);
+  padding:8px 12px; font-size:13px; outline:none;
+}
+#pSearch:focus{border-color:var(--purple);}
+#toneRow{display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;}
+.tchip{
+  background:var(--bg2); border:1px solid var(--line); color:var(--dim); border-radius:20px;
+  padding:4px 11px; font-size:11px; font-weight:600; cursor:pointer; transition:all .12s;
+}
+.tchip:hover{color:var(--text); border-color:var(--faint);}
+.tchip.on{background:var(--purple); border-color:var(--purple); color:#fff;}
+#pBody{flex:1; overflow-y:auto; padding:12px 16px 24px;}
+#pBody::-webkit-scrollbar{width:9px;}
+#pBody::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+.pnote{
+  background:rgba(155,109,255,.08); border:1px solid rgba(155,109,255,.3); border-radius:9px;
+  padding:10px 13px; font-size:12px; color:#c9b8f5; line-height:1.55; margin-bottom:12px;
+}
+.pnote b{color:#ddd0ff;}
+.tcount{font-size:11px; color:var(--faint); margin:2px 2px 10px;}
+/* template card */
+.tcard{
+  background:var(--bg2); border:1.5px solid var(--line); border-radius:11px; padding:11px 13px;
+  margin-bottom:10px; cursor:pointer; transition:border-color .12s, background .12s; position:relative;
+}
+.tcard:hover{border-color:var(--node-hover);}
+.tcard.sel{border-color:var(--green); background:rgba(62,207,142,.07);}
+.tcard .trow{display:flex; align-items:center; gap:7px; margin-bottom:7px; flex-wrap:wrap;}
+.tcard .radio{
+  width:15px; height:15px; border-radius:50%; border:2px solid var(--faint); flex:0 0 auto; position:relative;
+}
+.tcard.sel .radio{border-color:var(--green);}
+.tcard.sel .radio::after{
+  content:''; position:absolute; inset:2.5px; border-radius:50%; background:var(--green);
+}
+.pill{font-size:9.5px; font-weight:700; letter-spacing:.4px; padding:2px 8px; border-radius:10px; text-transform:uppercase;}
+.pill.tone-pro{background:rgba(74,144,226,.18); color:#8bbcf0;}
+.pill.tone-friendly{background:rgba(62,207,142,.16); color:#7fe0b4;}
+.pill.tone-casual{background:rgba(240,168,66,.16); color:#f5c67e;}
+.pill.tone-urgent{background:rgba(255,84,112,.16); color:#ff8ba0;}
+.pill.ind{background:rgba(155,109,255,.14); color:#bda4f7;}
+.pill.comp-ok{background:rgba(62,207,142,.16); color:#7fe0b4;}
+.pill.comp-warn{background:rgba(255,84,112,.18); color:#ff8ba0;}
+.tcard .ttext{font-size:13px; line-height:1.55; color:var(--text); word-wrap:break-word;}
+.tcard .ttext .tok{color:var(--amber); font-weight:600;}
+.tcard .tfoot{display:flex; align-items:center; gap:10px; margin-top:8px; font-size:10.5px; color:var(--faint);}
+.tcard .tfoot .over{color:var(--amber);}
+.copyBtn{
+  margin-left:auto; background:var(--panel2); border:1px solid var(--line); color:var(--dim);
+  border-radius:7px; padding:3px 10px; font-size:10.5px; cursor:pointer;
+}
+.copyBtn:hover{color:var(--text); border-color:var(--faint);}
+.copyBtn.done{color:var(--green); border-color:var(--green);}
+/* info panel (non-message nodes) */
+.infoBlock{font-size:13px; line-height:1.65; color:var(--dim);}
+.infoBlock h4{color:var(--text); font-size:12px; text-transform:uppercase; letter-spacing:.7px; margin:16px 0 6px;}
+.infoBlock ul{margin:4px 0 4px 18px;}
+.infoBlock li{margin:4px 0;}
+.infoBlock code{background:var(--bg2); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:11.5px; color:var(--amber);}
+/* ---------- selections drawer ---------- */
+#drawer{
+  position:absolute; top:52px; right:0; bottom:0; width:480px; max-width:94vw; background:var(--panel);
+  border-left:1px solid var(--line); z-index:60; transform:translateX(105%); transition:transform .22s ease;
+  display:flex; flex-direction:column; box-shadow:-12px 0 40px rgba(0,0,0,.5);
+}
+#drawer.open{transform:translateX(0);}
+#dHead{padding:16px 18px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px;}
+#dHead h3{font-size:15px;}
+#dBody{flex:1; overflow-y:auto; padding:14px 18px;}
+#dBody::-webkit-scrollbar{width:9px;}
+#dBody::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+.dItem{background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:11px 14px; margin-bottom:10px;}
+.dItem .dstep{font-size:10.5px; font-weight:700; color:var(--orange); letter-spacing:.5px; text-transform:uppercase;}
+.dItem .dtext{font-size:12.5px; line-height:1.55; margin-top:5px;}
+.dItem .dtext .tok{color:var(--amber); font-weight:600;}
+.dItem .dempty{font-size:12px; color:var(--faint); font-style:italic; margin-top:4px;}
+.dItem .dmeta{font-size:10px; color:var(--faint); margin-top:6px;}
+#dFoot{padding:14px 18px; border-top:1px solid var(--line); display:flex; gap:10px;}
+#dFoot .hbtn{flex:1; justify-content:center;}
+#toast{
+  position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(80px); z-index:100;
+  background:var(--panel2); border:1px solid var(--green); color:var(--text); border-radius:10px;
+  padding:10px 20px; font-size:13px; transition:transform .25s; box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">t</div>
+  <div>
+    <h1><span class="tb">text_back</span> — Response Workflow Designer</h1>
+  </div>
+  <span class="byline">a Fluxworks product</span>
+  <div class="spacer"></div>
+  <button class="hbtn" id="fitBtn" title="Fit workflow to view">⤢ Fit view</button>
+  <button class="hbtn primary" id="drawerBtn">Selections <span id="selCount">0</span></button>
+</div>
+
+<div id="stage">
+  <div id="world">
+    <svg id="edgeSvg"></svg>
+    <div id="nodes"></div>
+  </div>
+</div>
+
+<div id="zoomCtl">
+  <button id="zin" title="Zoom in">+</button>
+  <button id="zout" title="Zoom out">−</button>
+  <button id="zfit" title="Fit view">⤢</button>
+</div>
+<div id="zoomPct">100%</div>
+
+<div id="legend">
+  <div class="li"><span class="sw" style="background:var(--orange)"></span>Trigger</div>
+  <div class="li"><span class="sw" style="background:var(--blue)"></span>Message</div>
+  <div class="li"><span class="sw" style="background:var(--purple)"></span>Logic</div>
+  <div class="li"><span class="sw" style="background:var(--green)"></span>Done</div>
+  <div class="li"><span class="sw" style="background:var(--grey)"></span>End state</div>
+</div>
+
+<div id="panel">
+  <div id="pHead">
+    <div class="picon" id="pIcon"></div>
+    <div style="min-width:0">
+      <div id="pTitle"></div>
+      <div id="pSub"></div>
+    </div>
+    <button id="pClose">✕</button>
+  </div>
+  <div id="pTabs"></div>
+  <div id="pTools">
+    <input id="pSearch" type="text" placeholder="Search templates…">
+    <div id="toneRow"></div>
+  </div>
+  <div id="pBody"></div>
+</div>
+
+<div id="drawer">
+  <div id="dHead">
+    <h3>Your selected responses</h3>
+    <div class="spacer" style="flex:1"></div>
+    <button id="dClose" class="hbtn">✕ Close</button>
+  </div>
+  <div id="dBody"></div>
+  <div id="dFoot">
+    <button class="hbtn" id="clearBtn">Clear all</button>
+    <button class="hbtn primary" id="exportBtn">⬇ Export selections (JSON)</button>
+  </div>
+</div>
+
+<div id="toast">Copied</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   text_back — missed-call → SMS recovery flow (deterministic, no LLM)
+   ===================================================================== */
+
+const COLORS = {trigger:'#ff6d5a', action:'#4a90e2', logic:'#9b6dff', wait:'#f0a842', done:'#3ecf8e', end:'#6b7280'};
+
+const ICONS = {
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.5 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  msg:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  branch:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 3v12M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a9 9 0 0 1-9 9"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></svg>',
+  help:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>',
+  zap:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  hourglass:'<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2h12M6 22h12M8 2v4l4 4 4-4V2M8 22v-4l4-4 4 4v4"/></svg>'
+};
+
+/* ---------- node graph ---------- */
+const NODES = [
+ {id:'trigger',      x:40,   y:340, type:'trigger', icon:'phone',  title:'Missed Call Received', sub:'Carrier conditional-forwarding webhook', cats:[],
+   info:{what:'Fires when a call to the business number rings out or is declined. The carrier forwards call metadata (caller number, timestamp, line) to the text_back webhook. Nothing is sent yet.', notes:['Dedupe window: same caller within 10 min = one event','Landline callers with no SMS capability are dropped silently','All downstream behaviour is deterministic policy — no LLM in the message path']}},
+ {id:'guard',        x:330,  y:340, type:'logic',   icon:'shield', title:'Opted Out?', sub:'Suppression-list check', cats:[],
+   info:{what:'Checks the caller against the opt-out suppression list before any message is composed. This gate runs first, always.', notes:['Suppressed numbers get zero messages — the event is logged and closed','List is append-only; re-opt-in requires the customer to text START','This is a compliance hard-stop, not configurable']}},
+ {id:'suppressed',   x:330,  y:520, type:'end',     icon:'stop',   title:'Opted Out', sub:'End state — no message sent', cats:[],
+   info:{what:'Terminal state. The caller previously opted out, so text_back stays silent.', notes:['Missed call still appears on the owner dashboard for manual callback']}},
+ {id:'intro',        x:620,  y:340, type:'action',  icon:'msg',    title:'Send Intro SMS', sub:'“Sorry we missed you” — first touch', cats:['intro'],
+   info:null},
+ {id:'replies',      x:910,  y:340, type:'logic',   icon:'branch', title:'Customer Replies?', sub:'Wait for inbound SMS', cats:[],
+   info:{what:'Waits for an inbound reply from the caller. Any inbound text routes to Classify Reply; silence routes to the timed Follow-up Sequence.', notes:['Reply at ANY later point re-enters classification — follow-ups cancel instantly','Delivery receipts tracked; failed sends retry once, then alert the owner']}},
+ {id:'classify',     x:1200, y:150, type:'logic',   icon:'zap',    title:'Classify Reply', sub:'Keyword policy — STOP / HELP / safety / other', cats:[],
+   info:{what:'Deterministic keyword classifier. Checks the inbound text against ordered rule lists — no model, no guessing.', notes:['STOP, UNSUBSCRIBE, CANCEL, QUIT, END → Opt-Out Ack + suppression list','HELP, INFO → Help Info reply','Safety/human words (emergency, gas, sparks, flooding, “call me”, “real person”) → Human Handoff Alert','Anything else → slot-filling begins with Ask Service','Rules are evaluated top-down; first match wins']}},
+ {id:'optout_ack',   x:1500, y:20,  type:'action',  icon:'stop',   title:'Opt-Out Ack', sub:'Confirm unsubscribe, add to list', cats:['stop_ack'], info:null},
+ {id:'optout_end',   x:1790, y:20,  type:'end',     icon:'stop',   title:'Opted Out', sub:'End state — suppressed', cats:[],
+   info:{what:'Terminal state after a STOP reply. Number added to the suppression list; one final confirmation was sent, then silence.', notes:['Carrier-level STOP handling is honoured even if our ack fails to send']}},
+ {id:'help_info',    x:1500, y:150, type:'action',  icon:'help',   title:'Help Info', sub:'Explain the service, return to flow', cats:['help'],
+   info:null},
+ {id:'handoff',      x:1500, y:280, type:'action',  icon:'user',   title:'Human Handoff Alert', sub:'Page the owner + ack the customer', cats:['handoff'], info:null},
+ {id:'handoff_end',  x:1790, y:280, type:'end',     icon:'user',   title:'Handoff to Human', sub:'End state — owner takes over', cats:[],
+   info:{what:'Terminal state for automation. The owner has been paged (push + SMS) and the customer told a real person is coming. text_back stops driving the thread.', notes:['Thread stays visible in the dashboard with full history','If the owner does not acknowledge in 10 min, the page repeats once']}},
+ {id:'followup',     x:1200, y:520, type:'wait',    icon:'clock',  title:'Follow-up Sequence', sub:'2h → 24h · quiet hours 9pm–8am deferred', cats:['followup1','followup2','quiet'],
+   info:null},
+ {id:'expired',      x:1500, y:600, type:'end',     icon:'hourglass', title:'Lead Expired', sub:'End state — no reply after final follow-up', cats:[],
+   info:{what:'Terminal state. Two follow-ups went unanswered. The lead is marked expired and surfaced on the dashboard for optional manual callback.', notes:['Details retained 30 days, then purged','If the customer texts later, the thread reopens automatically']}},
+ {id:'ask_service',  x:1500, y:420, type:'action',  icon:'msg',    title:'Ask Service', sub:'Slot 1 — what needs doing', cats:['ask_service'], info:null},
+ {id:'ask_location', x:1790, y:420, type:'action',  icon:'pin',    title:'Ask Location', sub:'Slot 2 — address / suburb', cats:['ask_location'], info:null},
+ {id:'ask_time',     x:2080, y:420, type:'action',  icon:'clock',  title:'Ask Preferred Time', sub:'Slot 3 — parse day + time', cats:['ask_time'], info:null},
+ {id:'invalid_time', x:2080, y:600, type:'action',  icon:'help',   title:'Reprompt: Invalid Time', sub:'Could not parse → ask again', cats:['invalid_time'], info:null},
+ {id:'slot_taken',   x:2370, y:600, type:'action',  icon:'cal',    title:'Offer New Time', sub:'Slot already booked → alternatives', cats:['slot_taken'], info:null},
+ {id:'ask_name',     x:2370, y:420, type:'action',  icon:'user',   title:'Ask Name', sub:'Slot 4 — name for the job sheet', cats:['ask_name'], info:null},
+ {id:'check_cal',    x:2660, y:420, type:'logic',   icon:'cal',    title:'Check Calendar', sub:'Live availability lookup', cats:[],
+   info:{what:'Queries the connected calendar (Google / Outlook / Jobber) for the requested window. Availability is checked at booking time, not when the slot was first offered.', notes:['Slot free → Book Appointment','Slot gone → Offer New Time with the two nearest open windows','Calendar unreachable → Booking Error copy + owner alert; never fake a confirmation']}},
+ {id:'book',         x:2950, y:420, type:'action',  icon:'cal',    title:'Book Appointment', sub:'Create calendar event', cats:['book_error'],
+   info:null},
+ {id:'confirm',      x:3240, y:420, type:'action',  icon:'msg',    title:'Send Confirmation SMS', sub:'Only after calendar event ID exists', cats:['confirm'], info:null},
+ {id:'booked',       x:3530, y:420, type:'done',    icon:'check',  title:'Booked ✓', sub:'End state — job on the calendar', cats:[],
+   info:{what:'Terminal success state. A real calendar event exists, the customer holds a written confirmation, and the owner sees the booking with full SMS history.', notes:['Reminder texts (24h / 1h before) are a separate, optional sequence','Average missed-call → booked time in pilot: under 4 minutes']}}
+];
+
+const EDGES = [
+ {from:'trigger', to:'guard'},
+ {from:'guard', to:'intro', label:'clear'},
+ {from:'guard', to:'suppressed', label:'suppress'},
+ {from:'intro', to:'replies'},
+ {from:'replies', to:'classify', label:'yes'},
+ {from:'replies', to:'followup', label:'no reply'},
+ {from:'classify', to:'optout_ack', label:'STOP'},
+ {from:'classify', to:'help_info', label:'HELP'},
+ {from:'classify', to:'handoff', label:'safety / human'},
+ {from:'classify', to:'ask_service', label:'otherwise'},
+ {from:'optout_ack', to:'optout_end'},
+ {from:'handoff', to:'handoff_end'},
+ {from:'followup', to:'expired', label:'no reply ×2'},
+ {from:'followup', to:'classify', label:'reply'},
+ {from:'ask_service', to:'ask_location'},
+ {from:'ask_location', to:'ask_time'},
+ {from:'ask_time', to:'invalid_time', label:'can’t parse'},
+ {from:'invalid_time', to:'ask_time', label:'retry'},
+ {from:'ask_time', to:'ask_name', label:'valid'},
+ {from:'slot_taken', to:'ask_time', label:'new time'},
+ {from:'ask_name', to:'check_cal'},
+ {from:'check_cal', to:'book', label:'free'},
+ {from:'check_cal', to:'slot_taken', label:'taken'},
+ {from:'book', to:'confirm', label:'event ID ✓'},
+ {from:'confirm', to:'booked'}
+];
+
+/* ---------- response categories ---------- */
+const CATS = {
+ intro:        {name:'Missed-Call Intro', node:'intro', order:1, optout:true,
+   desc:'The very first text after a missed call. Must identify the business, sound human, invite a reply, and carry opt-out language.'},
+ followup1:    {name:'Follow-Up #1 (2h)', node:'followup', order:2, optout:true,
+   desc:'Sent 2 hours after the intro if there is no reply. Gentle nudge; opt-out language required.'},
+ followup2:    {name:'Follow-Up #2 — Final (24h)', node:'followup', order:3, optout:true,
+   desc:'Sent 24 hours after the intro if still silent. This is the last automated touch; after this the lead expires.'},
+ quiet:        {name:'After-Hours / Quiet Note', node:'followup', order:4, optout:true,
+   desc:'Used when an inbound message lands inside quiet hours (9pm–8am). Outbound sends are deferred; this note manages expectations.'},
+ ask_service:  {name:'Ask-Service Prompt', node:'ask_service', order:5,
+   desc:'First slot-filling question: what does the customer need done?'},
+ ask_location: {name:'Ask-Location Prompt', node:'ask_location', order:6,
+   desc:'Second slot: address or suburb, for coverage and routing.'},
+ ask_time:     {name:'Ask-Time Prompt', node:'ask_time', order:7,
+   desc:'Third slot: preferred day and time. The parser accepts natural phrasing like “Thu 9am” or “tomorrow arvo”.'},
+ invalid_time: {name:'Invalid-Time Reprompt', node:'invalid_time', order:8,
+   desc:'Sent when the time parser can’t read the reply. Should show an example format without sounding robotic.'},
+ slot_taken:   {name:'Slot-Unavailable Offer', node:'slot_taken', order:9,
+   desc:'The requested window filled up between offer and booking. Offer concrete alternatives ({alt_time_1}, {alt_time_2}).'},
+ ask_name:     {name:'Ask-Name Prompt', node:'ask_name', order:10,
+   desc:'Final slot before booking: a name for the job sheet.'},
+ confirm:      {name:'Booking Confirmation', node:'confirm', order:11,
+   desc:'Sent ONLY after the calendar event ID exists. Never promise a booking earlier in the flow.'},
+ book_error:   {name:'Booking Error', node:'book', order:12,
+   desc:'Calendar write failed. Be honest, keep the customer, and hand to a human — never fake a confirmation.'},
+ help:         {name:'HELP Reply', node:'help_info', order:13,
+   desc:'Carrier-mandated response to HELP/INFO. Identify the service and how to opt out.'},
+ stop_ack:     {name:'STOP Acknowledgment', node:'optout_ack', order:14, stopack:true,
+   desc:'One final message confirming the unsubscribe. Must clearly state no further texts will be sent.'},
+ handoff:      {name:'Human-Handoff Ack', node:'handoff', order:15,
+   desc:'Customer asked for a person, or used safety words. Safety variants lead with the safety action; all variants promise a human, fast.'}
+};
+
+const TONES = {pro:'Professional', friendly:'Friendly', casual:'Casual', urgent:'Urgent-Trade'};
+const INDS = {general:'General', tree:'Tree care', plumbing:'Plumbing', hvac:'HVAC', electric:'Electrician', roofing:'Roofing', landscaping:'Landscaping'};
+
+/* ---------- template library (85 templates) ---------- */
+const TEMPLATES = [
+/* ===== Missed-Call Intro (8) ===== */
+ {id:'in1', cat:'intro', tone:'pro', ind:'general', text:"Hi, this is {business_name}. Sorry we missed your call — we're on a job right now. Reply here and we'll get you sorted. Reply STOP to opt out."},
+ {id:'in2', cat:'intro', tone:'friendly', ind:'general', text:"Hey! You just called {business_name} — sorry, hands were full. Text us what you need and we'll jump straight on it. Reply STOP to opt out."},
+ {id:'in3', cat:'intro', tone:'casual', ind:'general', text:"Missed you! {business_name} here. We're mid-job — text back what you need & we'll sort it. Reply STOP to opt out."},
+ {id:'in4', cat:'intro', tone:'urgent', ind:'general', text:"{business_name}: sorry we missed you. If it's urgent, reply URGENT and we'll call back first. Otherwise text the job details. Reply STOP to opt out."},
+ {id:'in5', cat:'intro', tone:'friendly', ind:'tree', text:"Hi, {business_name} tree care. We were mid-climb when you rang. Text us what the tree's doing and we'll take a look. Reply STOP to opt out."},
+ {id:'in6', cat:'intro', tone:'casual', ind:'plumbing', text:"{business_name} here — sorry we missed you, elbows-deep in a repipe. Text what's leaking and we'll get right back. Reply STOP to opt out."},
+ {id:'in7', cat:'intro', tone:'pro', ind:'hvac', text:"Hi from {business_name}. We missed your call — out on a service run. No heat or AC? Text us the issue and we'll respond fast. Reply STOP to opt out."},
+ {id:'in8', cat:'intro', tone:'urgent', ind:'electric', text:"{business_name}: missed your call, sorry. Sparks, burning smell or no power? Tell us now and we'll prioritise you. Reply STOP to opt out."},
+/* ===== Follow-Up #1 (6) ===== */
+ {id:'f1a', cat:'followup1', tone:'pro', ind:'general', text:"Hi again from {business_name} — still happy to help with your call earlier. Want a quote or a visit? Just reply here. Reply STOP to opt out."},
+ {id:'f1b', cat:'followup1', tone:'friendly', ind:'general', text:"Hey, {business_name} again. Didn't want your call slipping through the cracks — still need a hand? Reply STOP to opt out."},
+ {id:'f1c', cat:'followup1', tone:'casual', ind:'general', text:"Still need us? {business_name} here — one quick text and we'll pencil you in. Reply STOP to opt out."},
+ {id:'f1d', cat:'followup1', tone:'urgent', ind:'general', text:"{business_name}: following up on your call. Slots this week are going fast — reply with a good time and we'll hold one. Reply STOP to opt out."},
+ {id:'f1e', cat:'followup1', tone:'friendly', ind:'tree', text:"{business_name} tree care, checking back on your call. Storm season books out quick. Reply with your suburb and we'll quote it. Reply STOP to opt out."},
+ {id:'f1f', cat:'followup1', tone:'pro', ind:'plumbing', text:"Quick nudge from {business_name} — small leaks turn into big bills. Reply and we'll get a plumber your way. Reply STOP to opt out."},
+/* ===== Follow-Up #2 final (6) ===== */
+ {id:'f2a', cat:'followup2', tone:'pro', ind:'general', text:"Last note from {business_name} re: your call. If you still need help, reply anytime and we'll pick it right up. Reply STOP to opt out."},
+ {id:'f2b', cat:'followup2', tone:'friendly', ind:'general', text:"We'll stop after this one, promise. {business_name} is here if you still need that job done — just reply. Reply STOP to opt out."},
+ {id:'f2c', cat:'followup2', tone:'casual', ind:'general', text:"Last check-in from {business_name}. Reply whenever — we keep your spot warm for 30 days. Reply STOP to opt out."},
+ {id:'f2d', cat:'followup2', tone:'urgent', ind:'general', text:"{business_name}: final follow-up. One reply books you before the week fills up. After this we'll leave you be. Reply STOP to opt out."},
+ {id:'f2e', cat:'followup2', tone:'pro', ind:'hvac', text:"{business_name}: last follow-up. If the system's still acting up, reply and we'll book a tech. Stay comfortable out there. Reply STOP to opt out."},
+ {id:'f2f', cat:'followup2', tone:'pro', ind:'general', text:"Closing your enquiry with {business_name} for now. Reply any time to reopen it — no forms, no hold music, just text. Reply STOP to opt out."},
+/* ===== After-hours / quiet note (5) ===== */
+ {id:'q1', cat:'quiet', tone:'pro', ind:'general', text:"Thanks for reaching {business_name}. It's after hours, so we'll confirm first thing at 8am — your spot in the queue is saved. Reply STOP to opt out."},
+ {id:'q2', cat:'quiet', tone:'friendly', ind:'general', text:"Got your message! We're offline til 8am, but you're first in line when we open. — {business_name}. Reply STOP to opt out."},
+ {id:'q3', cat:'quiet', tone:'casual', ind:'general', text:"We're closed for the night — back at 8am and you're top of the list. {business_name}. Reply STOP to opt out."},
+ {id:'q4', cat:'quiet', tone:'urgent', ind:'general', text:"After-hours at {business_name}: genuine emergency? Call {emergency_phone}. Otherwise we'll text you at 8am sharp. Reply STOP to opt out."},
+ {id:'q5', cat:'quiet', tone:'pro', ind:'general', text:"{business_name}: message received after hours (9pm–8am). We'll pick this up at open — nothing needed from you now. Reply STOP to opt out."},
+/* ===== Ask service (8) ===== */
+ {id:'s1', cat:'ask_service', tone:'pro', ind:'general', text:"Great — what do you need done? A line or two is plenty."},
+ {id:'s2', cat:'ask_service', tone:'friendly', ind:'general', text:"Happy to help! What's the job? A rough description is fine."},
+ {id:'s3', cat:'ask_service', tone:'casual', ind:'general', text:"What are we fixing? Short version's fine."},
+ {id:'s4', cat:'ask_service', tone:'urgent', ind:'general', text:"Got it. What's the problem — and is it an emergency, or can it wait a day or two?"},
+ {id:'s5', cat:'ask_service', tone:'pro', ind:'tree', text:"What's going on with the tree? Removal, pruning, storm damage, or stump grinding?"},
+ {id:'s6', cat:'ask_service', tone:'pro', ind:'plumbing', text:"What's the issue — blocked drain, leak, hot water, toilet, or something else?"},
+ {id:'s7', cat:'ask_service', tone:'friendly', ind:'hvac', text:"Is it heating or cooling? And is the unit dead, noisy, or just not keeping up?"},
+ {id:'s8', cat:'ask_service', tone:'pro', ind:'electric', text:"What do you need — fault finding, new circuit, switchboard, lighting, or a safety check?"},
+/* ===== Ask location (6) ===== */
+ {id:'l1', cat:'ask_location', tone:'pro', ind:'general', text:"Thanks. What's the property address or suburb, so we can check coverage and travel time?"},
+ {id:'l2', cat:'ask_location', tone:'friendly', ind:'general', text:"Perfect. Whereabouts are you? Suburb is enough for now."},
+ {id:'l3', cat:'ask_location', tone:'casual', ind:'general', text:"Nice — what suburb? Just checking you're in our patch."},
+ {id:'l4', cat:'ask_location', tone:'urgent', ind:'general', text:"OK — address please. It helps us route the nearest crew to you."},
+ {id:'l5', cat:'ask_location', tone:'pro', ind:'tree', text:"Where's the tree? A street address helps us eyeball access for the chipper."},
+ {id:'l6', cat:'ask_location', tone:'urgent', ind:'plumbing', text:"What's the address? And if water's actively running, kill the mains tap while you text."},
+/* ===== Ask time (6) ===== */
+ {id:'t1', cat:'ask_time', tone:'pro', ind:'general', text:"When suits you for a visit? Mornings, afternoons, or first thing — e.g. 'Thu 9am'."},
+ {id:'t2', cat:'ask_time', tone:'friendly', ind:'general', text:"When works best? Give us a day plus a rough time and we'll make it happen."},
+ {id:'t3', cat:'ask_time', tone:'casual', ind:'general', text:"Pick a time — 'tomorrow arvo', 'Fri 8am', whatever suits."},
+ {id:'t4', cat:'ask_time', tone:'urgent', ind:'general', text:"Fastest option matters most? Reply ASAP and we'll send the earliest crew. Or name a day and time."},
+ {id:'t5', cat:'ask_time', tone:'pro', ind:'general', text:"What day and time suits? We book 2-hour windows, 8am–5pm weekdays, Saturday mornings too."},
+ {id:'t6', cat:'ask_time', tone:'friendly', ind:'general', text:"Nearly done! Just need a preferred day and time — something like 'Wednesday morning'."},
+/* ===== Invalid time reprompt (5) ===== */
+ {id:'v1', cat:'invalid_time', tone:'pro', ind:'general', text:"Sorry — we couldn't read that as a time. Try a day plus a time, like 'Thu 2pm' or 'tomorrow morning'."},
+ {id:'v2', cat:'invalid_time', tone:'friendly', ind:'general', text:"Hmm, that time didn't quite compute! Something like 'Friday 10am' works best."},
+ {id:'v3', cat:'invalid_time', tone:'casual', ind:'general', text:"Didn't catch that one — try 'Tue arvo' or 'Thurs 8am'."},
+ {id:'v4', cat:'invalid_time', tone:'pro', ind:'general', text:"We book 8am–5pm, Mon–Sat. Could you give us a day and a time inside those hours?"},
+ {id:'v5', cat:'invalid_time', tone:'urgent', ind:'general', text:"Quick one — we just need a day + time to lock it in. 'Tomorrow 7:30am' style."},
+/* ===== Slot unavailable (5) ===== */
+ {id:'u1', cat:'slot_taken', tone:'pro', ind:'general', text:"Ah — {time} just got taken. Closest we have is {alt_time_1} or {alt_time_2}. Do either of those work?"},
+ {id:'u2', cat:'slot_taken', tone:'friendly', ind:'general', text:"So close! {time} was snapped up a minute ago. We've got {alt_time_1} or {alt_time_2} free — pick one?"},
+ {id:'u3', cat:'slot_taken', tone:'casual', ind:'general', text:"{time}'s gone, sorry! We can do {alt_time_1} or {alt_time_2} — which one?"},
+ {id:'u4', cat:'slot_taken', tone:'urgent', ind:'general', text:"{time} is booked, but we can squeeze you in {alt_time_1}. Reply YES to grab it before it goes too."},
+ {id:'u5', cat:'slot_taken', tone:'pro', ind:'general', text:"That slot's no longer free. Reply 1 for {alt_time_1}, 2 for {alt_time_2}, or send another time."},
+/* ===== Ask name (4) ===== */
+ {id:'n1', cat:'ask_name', tone:'pro', ind:'general', text:"Last thing — what name should we put on the booking?"},
+ {id:'n2', cat:'ask_name', tone:'friendly', ind:'general', text:"And who should we ask for when we arrive?"},
+ {id:'n3', cat:'ask_name', tone:'casual', ind:'general', text:"Who do we ask for at the door?"},
+ {id:'n4', cat:'ask_name', tone:'pro', ind:'general', text:"Almost booked. A name for the job sheet, please?"},
+/* ===== Confirmation (8) ===== */
+ {id:'c1', cat:'confirm', tone:'pro', ind:'general', text:"Booked ✓ {business_name} will see you {time} for {service} at {location}. We'll text when we're on the way. Reply C to cancel."},
+ {id:'c2', cat:'confirm', tone:'friendly', ind:'general', text:"You're locked in, {customer_name}! {time} for {service}. We'll text a heads-up before we arrive."},
+ {id:'c3', cat:'confirm', tone:'casual', ind:'general', text:"Done deal — {time}, {service}. See you then, {customer_name}."},
+ {id:'c4', cat:'confirm', tone:'urgent', ind:'general', text:"Confirmed for {time}. Crew will call 20 min out. If you can, keep access to the work area clear."},
+ {id:'c5', cat:'confirm', tone:'pro', ind:'tree', text:"Booked ✓ {time} — tree work at {location}. Please keep gate access clear for gear and the chipper."},
+ {id:'c6', cat:'confirm', tone:'friendly', ind:'plumbing', text:"Confirmed: plumber at {location}, {time}. If it's leaking in the meantime, the mains tap is your friend."},
+ {id:'c7', cat:'confirm', tone:'friendly', ind:'hvac', text:"Locked in: {time} for your {service}. Tech will text on approach — have spare filters handy if you've got them."},
+ {id:'c8', cat:'confirm', tone:'pro', ind:'electric', text:"Booked ✓ Electrician arriving {time} at {location}. Please keep the switchboard area accessible."},
+/* ===== Booking error (4) ===== */
+ {id:'e1', cat:'book_error', tone:'pro', ind:'general', text:"We hit a snag saving your booking — nothing's lost. A human from {business_name} will text you shortly to confirm it by hand."},
+ {id:'e2', cat:'book_error', tone:'friendly', ind:'general', text:"Tech gremlins on our end! Don't worry {customer_name} — we've flagged it, and a real person will confirm your time soon."},
+ {id:'e3', cat:'book_error', tone:'casual', ind:'general', text:"Our calendar hiccuped. We've got your details — someone will text to lock it in properly."},
+ {id:'e4', cat:'book_error', tone:'urgent', ind:'general', text:"Booking didn't save — our fault, not yours. {business_name} will call you within the hour to confirm manually."},
+/* ===== HELP (4) ===== */
+ {id:'h1', cat:'help', tone:'pro', ind:'general', text:"{business_name} missed-call assistant. Reply with what you need and we'll book you in. Msg&data rates may apply. Reply STOP to opt out."},
+ {id:'h2', cat:'help', tone:'friendly', ind:'general', text:"This is {business_name}'s booking line! Text your job and suburb and we'll sort a time. STOP to opt out anytime."},
+ {id:'h3', cat:'help', tone:'casual', ind:'general', text:"You've reached {business_name}. Text us the job, we text you a time. STOP = no more texts."},
+ {id:'h4', cat:'help', tone:'pro', ind:'general', text:"Help: reply with your job details to book, HUMAN to reach a person, or STOP to unsubscribe. — {business_name}"},
+/* ===== STOP ack (4) ===== */
+ {id:'k1', cat:'stop_ack', tone:'pro', ind:'general', text:"You're unsubscribed from {business_name} texts. No further messages will be sent. Call us anytime if you need a hand."},
+ {id:'k2', cat:'stop_ack', tone:'friendly', ind:'general', text:"Done — you won't hear from us by text again. {business_name} is just a phone call away if you ever need us."},
+ {id:'k3', cat:'stop_ack', tone:'pro', ind:'general', text:"{business_name}: you have been opted out and will receive no further messages from this number."},
+ {id:'k4', cat:'stop_ack', tone:'casual', ind:'general', text:"No worries — texts are off, no more messages from us. Reach {business_name} by phone whenever."},
+/* ===== Human handoff (6) ===== */
+ {id:'x1', cat:'handoff', tone:'urgent', ind:'general', safety:true, text:"Understood — this sounds urgent. If anyone is in danger, stop texting and call emergency services now. {business_name} has been alerted and will call you."},
+ {id:'x2', cat:'handoff', tone:'urgent', ind:'plumbing', safety:true, text:"If you smell gas: get outside, don't touch switches, and call the gas emergency line. A human from {business_name} is being alerted right now."},
+ {id:'x3', cat:'handoff', tone:'urgent', ind:'electric', safety:true, text:"If wires are down or sparking, keep everyone well clear and call your utility's fault line. {business_name} is calling you ASAP."},
+ {id:'x4', cat:'handoff', tone:'pro', ind:'general', text:"No problem — handing you over to a real person at {business_name}. Expect a call shortly."},
+ {id:'x5', cat:'handoff', tone:'friendly', ind:'general', text:"Sure thing! A human from {business_name} will text or call you shortly — hang tight."},
+ {id:'x6', cat:'handoff', tone:'casual', ind:'general', text:"Getting the boss for you. {business_name} will call soon."}
+];
+
+/* ---------- panel copy for message nodes ---------- */
+const NODE_NOTES = {
+ intro:'This text goes out seconds after the missed call. It must include opt-out language (<b>Reply STOP to opt out</b>) — templates missing it are flagged. Pick one; it becomes your intro for every missed call.',
+ followup:'This node owns three messages: <b>Follow-Up #1</b> (2h after intro), <b>Follow-Up #2</b> (24h, final), and the <b>After-Hours note</b> used when quiet hours (9pm–8am) defer a send. Choose one template per tab.',
+ ask_service:'First slot-filling question after a live reply. Keep it short — the customer is mid-conversation and momentum matters.',
+ ask_location:'Second slot. Suburb-level is enough to quote travel; exact address is confirmed at booking.',
+ ask_time:'Third slot. The deterministic parser reads phrases like “Thu 9am”, “tomorrow arvo”, “Friday morning”. Unparseable replies route to the reprompt node.',
+ invalid_time:'Shown when the parser can’t read the customer’s time. Give an example format without sounding like a robot scolding them.',
+ slot_taken:'The window filled between offer and booking. These templates use <span class="tok">{alt_time_1}</span> and <span class="tok">{alt_time_2}</span> — text_back fills them with the two nearest open windows.',
+ ask_name:'Last slot before the calendar. One short question; anything longer kills momentum at the finish line.',
+ confirm:'Compliance rule: this message is sent <b>only after the calendar event ID exists</b>. Nothing earlier in the flow ever claims the job is booked.',
+ book:'If the calendar write fails, text_back never fakes success. The Booking Error copy below is what the customer sees while the owner is alerted to confirm by hand.',
+ help_info:'Carriers require a meaningful HELP response: who is texting, why, and how to stop. After sending, the flow returns to wherever the customer left off.',
+ optout_ack:'One final message confirming the unsubscribe, then permanent silence. Templates must clearly state that no further texts will come.',
+ handoff:'Safety-word triggers (gas, sparks, flooding, emergency) should use a <b>safety variant</b> that leads with the right immediate action. Plain “I want a human” replies use a normal variant.'
+};
+
+/* =====================================================================
+   engine
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const stage = $('#stage'), world = $('#world'), nodesEl = $('#nodes'), svg = $('#edgeSvg');
+const NW = 224, NH = 62;
+let view = {x:40, y:20, k:1};
+let selections = {};
+try{ selections = JSON.parse(localStorage.getItem('textback_selections')||'{}'); }catch(e){ selections = {}; }
+
+function saveSel(){ localStorage.setItem('textback_selections', JSON.stringify(selections)); updateSelCount(); refreshBadges(); }
+function updateSelCount(){ $('#selCount').textContent = Object.keys(selections).filter(k=>selections[k]).length; }
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function tokify(s){ return esc(s).replace(/\{([a-z_0-9]+)\}/g, '<span class="tok">{$1}</span>'); }
+
+function smsMeta(text){
+  const nonGsm = /[^\x20-\x7E\n\r£¥èéùìòÇØøÅåÆæßÉÄÖÑÜäöñüà]/.test(text);
+  const single = nonGsm ? 70 : 160, multi = nonGsm ? 67 : 153;
+  const len = [...text].length;
+  const seg = len <= single ? 1 : Math.ceil(len / multi);
+  return {len, seg, enc: nonGsm ? 'UCS-2' : 'GSM-7'};
+}
+
+function compliance(t){
+  const cat = CATS[t.cat];
+  const badges = [];
+  if(cat.optout){
+    if(/reply stop|stop to opt out|stop = no more/i.test(t.text)) badges.push(['comp-ok','STOP language ✓']);
+    else badges.push(['comp-warn','missing opt-out!']);
+  }
+  if(cat.stopack){
+    if(/unsubscrib|opted out|no further|no more messages|texts are off/i.test(t.text)) badges.push(['comp-ok','opt-out confirmed ✓']);
+    else badges.push(['comp-warn','must confirm unsubscribe']);
+  }
+  if(t.safety) badges.push(['comp-ok','safety variant']);
+  return badges;
+}
+
+/* ---------- render nodes ---------- */
+const nodeMap = {};
+NODES.forEach(n => nodeMap[n.id] = n);
+
+function renderNodes(){
+  NODES.forEach(n => {
+    const d = document.createElement('div');
+    d.className = 'node'; d.id = 'node-' + n.id;
+    d.style.left = n.x + 'px'; d.style.top = n.y + 'px';
+    const color = COLORS[n.type];
+    d.innerHTML = `
+      <div class="nicon" style="background:${color}">${ICONS[n.icon]}</div>
+      <div class="nbody">
+        <div class="ntitle">${n.title}</div>
+        <div class="nsub">${n.sub}</div>
+      </div>
+      <div class="badge">✓</div>
+      ${n.cats.length ? '<div class="msgTag">'+n.cats.length+' message'+(n.cats.length>1?'s':'')+' · click to choose</div>' : ''}`;
+    d.addEventListener('click', ev => { ev.stopPropagation(); openPanel(n.id); });
+    nodesEl.appendChild(d);
+  });
+  refreshBadges();
+}
+
+function refreshBadges(){
+  NODES.forEach(n => {
+    if(!n.cats.length) return;
+    const done = n.cats.every(c => selections[c]);
+    document.getElementById('node-'+n.id).classList.toggle('hasSel', done);
+  });
+}
+
+/* ---------- render edges ---------- */
+function renderEdges(){
+  let maxX = 0, maxY = 0;
+  NODES.forEach(n => { maxX = Math.max(maxX, n.x + NW + 200); maxY = Math.max(maxY, n.y + NH + 200); });
+  svg.setAttribute('width', maxX); svg.setAttribute('height', maxY);
+  let html = '';
+  EDGES.forEach(e => {
+    const a = nodeMap[e.from], b = nodeMap[e.to];
+    let x1, y1, x2, y2;
+    if(b.x >= a.x + NW - 20){ x1 = a.x + NW; y1 = a.y + NH/2; x2 = b.x; y2 = b.y + NH/2; }
+    else if(b.x + NW <= a.x + 20){ x1 = a.x; y1 = a.y + NH/2; x2 = b.x + NW; y2 = b.y + NH/2; }
+    else if(b.y > a.y){ x1 = a.x + NW/2; y1 = a.y + NH; x2 = b.x + NW/2; y2 = b.y; }
+    else { x1 = a.x + NW/2; y1 = a.y; x2 = b.x + NW/2; y2 = b.y + NH; }
+    const dx = Math.abs(x2 - x1), dy = Math.abs(y2 - y1);
+    let path;
+    if(dx >= dy){
+      const c = Math.max(dx * 0.45, 40) * (x2 >= x1 ? 1 : -1);
+      path = `M ${x1} ${y1} C ${x1+c} ${y1}, ${x2-c} ${y2}, ${x2} ${y2}`;
+    } else {
+      const c = Math.max(dy * 0.45, 40) * (y2 >= y1 ? 1 : -1);
+      path = `M ${x1} ${y1} C ${x1} ${y1+c}, ${x2} ${y2-c}, ${x2} ${y2}`;
+    }
+    html += `<path class="edgePath" d="${path}"/>`;
+    html += `<circle class="port" cx="${x1}" cy="${y1}" r="4"/><circle class="port" cx="${x2}" cy="${y2}" r="4"/>`;
+    if(e.label){
+      const mx = (x1+x2)/2, my = (y1+y2)/2;
+      const w = e.label.length * 6.4 + 16;
+      html += `<rect class="edgeLabelBg" x="${mx-w/2}" y="${my-11}" width="${w}" height="20" rx="7"/>`;
+      html += `<text class="edgeLabel" x="${mx}" y="${my+3.5}" text-anchor="middle">${e.label}</text>`;
+    }
+  });
+  svg.innerHTML = html;
+}
+
+/* ---------- pan & zoom ---------- */
+function applyView(){
+  world.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.k})`;
+  $('#zoomPct').textContent = Math.round(view.k*100) + '%';
+}
+let panning = false, px = 0, py = 0;
+stage.addEventListener('mousedown', e => {
+  if(e.target.closest('.node')) return;
+  panning = true; px = e.clientX; py = e.clientY; stage.classList.add('panning');
+});
+window.addEventListener('mousemove', e => {
+  if(!panning) return;
+  view.x += e.clientX - px; view.y += e.clientY - py;
+  px = e.clientX; py = e.clientY; applyView();
+});
+window.addEventListener('mouseup', () => { panning = false; stage.classList.remove('panning'); });
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = stage.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+  const nk = Math.min(2.2, Math.max(0.25, view.k * factor));
+  view.x = mx - (mx - view.x) * (nk / view.k);
+  view.y = my - (my - view.y) * (nk / view.k);
+  view.k = nk; applyView();
+}, {passive:false});
+function zoomBy(f){
+  const rect = stage.getBoundingClientRect();
+  const mx = rect.width/2, my = rect.height/2;
+  const nk = Math.min(2.2, Math.max(0.25, view.k * f));
+  view.x = mx - (mx - view.x) * (nk / view.k);
+  view.y = my - (my - view.y) * (nk / view.k);
+  view.k = nk; applyView();
+}
+function fitView(){
+  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+  NODES.forEach(n => { minX=Math.min(minX,n.x); minY=Math.min(minY,n.y); maxX=Math.max(maxX,n.x+NW); maxY=Math.max(maxY,n.y+NH); });
+  const rect = stage.getBoundingClientRect();
+  const pad = 60;
+  const k = Math.min((rect.width-pad*2)/(maxX-minX), (rect.height-pad*2)/(maxY-minY), 1.4);
+  view.k = k;
+  view.x = (rect.width - (maxX-minX)*k)/2 - minX*k;
+  view.y = (rect.height - (maxY-minY)*k)/2 - minY*k;
+  applyView();
+}
+$('#zin').onclick = () => zoomBy(1.2);
+$('#zout').onclick = () => zoomBy(1/1.2);
+$('#zfit').onclick = fitView;
+$('#fitBtn').onclick = fitView;
+
+/* ---------- node detail panel ---------- */
+let curNode = null, curCat = null, curTone = 'all', curSearch = '';
+
+function openPanel(id){
+  curNode = nodeMap[id]; curTone = 'all'; curSearch = ''; $('#pSearch').value = '';
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+  document.getElementById('node-'+id).classList.add('active');
+  $('#drawer').classList.remove('open');
+  const n = curNode;
+  $('#pIcon').style.background = COLORS[n.type];
+  $('#pIcon').innerHTML = ICONS[n.icon];
+  $('#pTitle').textContent = n.title;
+  $('#pSub').textContent = n.sub;
+  const tabs = $('#pTabs');
+  if(n.cats.length){
+    tabs.style.display = 'flex';
+    $('#pTools').style.display = 'block';
+    tabs.innerHTML = n.cats.map((c,i) => `<button class="ptab${i===0?' on':''}" data-cat="${c}">${CATS[c].name}</button>`).join('');
+    tabs.querySelectorAll('.ptab').forEach(b => b.onclick = () => {
+      tabs.querySelectorAll('.ptab').forEach(x => x.classList.remove('on'));
+      b.classList.add('on'); curCat = b.dataset.cat; renderTemplates();
+    });
+    curCat = n.cats[0];
+    renderToneChips();
+    renderTemplates();
+  } else {
+    tabs.style.display = 'none';
+    $('#pTools').style.display = 'none';
+    curCat = null;
+    renderInfo();
+  }
+  $('#panel').classList.add('open');
+}
+
+function renderToneChips(){
+  const row = $('#toneRow');
+  row.innerHTML = '<button class="tchip on" data-tone="all">All tones</button>' +
+    Object.entries(TONES).map(([k,v]) => `<button class="tchip" data-tone="${k}">${v}</button>`).join('');
+  row.querySelectorAll('.tchip').forEach(b => b.onclick = () => {
+    row.querySelectorAll('.tchip').forEach(x => x.classList.remove('on'));
+    b.classList.add('on'); curTone = b.dataset.tone; renderTemplates();
+  });
+}
+
+function renderInfo(){
+  const n = curNode, info = n.info || {};
+  let html = '<div class="infoBlock">';
+  if(info.what) html += `<p>${info.what}</p>`;
+  if(info.notes && info.notes.length){
+    html += '<h4>Policy notes</h4><ul>' + info.notes.map(x => `<li>${x}</li>`).join('') + '</ul>';
+  }
+  html += '<h4>Placeholders available</h4><p><code>{business_name}</code> <code>{customer_name}</code> <code>{service}</code> <code>{location}</code> <code>{time}</code></p>';
+  html += '</div>';
+  $('#pBody').innerHTML = html;
+}
+
+function renderTemplates(){
+  const cat = CATS[curCat];
+  const note = NODE_NOTES[curNode.id];
+  const list = TEMPLATES.filter(t => t.cat === curCat)
+    .filter(t => curTone === 'all' || t.tone === curTone)
+    .filter(t => !curSearch || (t.text + ' ' + INDS[t.ind] + ' ' + TONES[t.tone]).toLowerCase().includes(curSearch));
+  const total = TEMPLATES.filter(t => t.cat === curCat).length;
+  let html = '';
+  if(note) html += `<div class="pnote">${note}</div>`;
+  html += `<div class="pnote" style="background:rgba(74,144,226,.07);border-color:rgba(74,144,226,.3);color:#a8c8ee">${cat.desc}</div>`;
+  html += `<div class="tcount">${list.length} of ${total} templates${curTone!=='all'?' · '+TONES[curTone]:''}${curSearch?' · “'+esc(curSearch)+'”':''}</div>`;
+  list.forEach(t => {
+    const sel = selections[curCat] === t.id;
+    const m = smsMeta(t.text);
+    const badges = compliance(t);
+    html += `<div class="tcard${sel?' sel':''}" data-id="${t.id}">
+      <div class="trow">
+        <span class="radio"></span>
+        <span class="pill tone-${t.tone}">${TONES[t.tone]}</span>
+        ${t.ind !== 'general' ? `<span class="pill ind">${INDS[t.ind]}</span>` : ''}
+        ${badges.map(b => `<span class="pill ${b[0]}">${b[1]}</span>`).join('')}
+        <button class="copyBtn" data-copy="${t.id}">copy</button>
+      </div>
+      <div class="ttext">${tokify(t.text)}</div>
+      <div class="tfoot">
+        <span class="${m.len>160?'over':''}">${m.len} chars</span>
+        <span>${m.seg} segment${m.seg>1?'s':''}</span>
+        <span>${m.enc}</span>
+        ${sel ? '<span style="color:var(--green);font-weight:700">✓ selected for this step</span>' : ''}
+      </div>
+    </div>`;
+  });
+  if(!list.length) html += '<div class="tcount" style="padding:20px 4px">No templates match — clear the filter or search.</div>';
+  $('#pBody').innerHTML = html;
+  $('#pBody').querySelectorAll('.tcard').forEach(c => c.addEventListener('click', e => {
+    if(e.target.closest('.copyBtn')) return;
+    const id = c.dataset.id;
+    selections[curCat] = (selections[curCat] === id) ? null : id;
+    saveSel(); renderTemplates();
+  }));
+  $('#pBody').querySelectorAll('.copyBtn').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const t = TEMPLATES.find(x => x.id === b.dataset.copy);
+    navigator.clipboard.writeText(t.text).then(() => {
+      b.textContent = 'copied ✓'; b.classList.add('done');
+      setTimeout(() => { b.textContent = 'copy'; b.classList.remove('done'); }, 1400);
+      toast('Template copied to clipboard');
+    }).catch(() => toast('Copy failed — select the text manually'));
+  }));
+}
+
+$('#pSearch').addEventListener('input', e => { curSearch = e.target.value.trim().toLowerCase(); if(curCat) renderTemplates(); });
+$('#pClose').onclick = () => {
+  $('#panel').classList.remove('open');
+  document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+};
+stage.addEventListener('click', e => {
+  if(!e.target.closest('.node')){
+    $('#panel').classList.remove('open');
+    document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+  }
+});
+
+/* ---------- selections drawer ---------- */
+function renderDrawer(){
+  const order = Object.entries(CATS).sort((a,b) => a[1].order - b[1].order);
+  let html = '';
+  order.forEach(([key, cat]) => {
+    const selId = selections[key];
+    const t = selId ? TEMPLATES.find(x => x.id === selId) : null;
+    const nodeTitle = nodeMap[cat.node].title;
+    html += `<div class="dItem">
+      <div class="dstep">${cat.order}. ${cat.name} <span style="color:var(--faint);font-weight:500;text-transform:none">· ${nodeTitle}</span></div>`;
+    if(t){
+      const m = smsMeta(t.text);
+      html += `<div class="dtext">${tokify(t.text)}</div>
+        <div class="dmeta">${TONES[t.tone]}${t.ind!=='general' ? ' · ' + INDS[t.ind] : ''} · ${m.len} chars · ${m.seg} seg</div>`;
+    } else {
+      html += `<div class="dempty">No response chosen yet — click the “${nodeTitle}” node.</div>`;
+    }
+    html += '</div>';
+  });
+  $('#dBody').innerHTML = html;
+}
+$('#drawerBtn').onclick = () => {
+  $('#panel').classList.remove('open');
+  renderDrawer();
+  $('#drawer').classList.add('open');
+};
+$('#dClose').onclick = () => $('#drawer').classList.remove('open');
+$('#clearBtn').onclick = () => {
+  if(!confirm('Clear all selected responses?')) return;
+  selections = {}; saveSel(); renderDrawer();
+};
+$('#exportBtn').onclick = () => {
+  const order = Object.entries(CATS).sort((a,b) => a[1].order - b[1].order);
+  const out = {
+    product:'text_back', artifact:'response-selections',
+    exported_at:new Date().toISOString(),
+    selections: order.map(([key, cat]) => {
+      const t = selections[key] ? TEMPLATES.find(x => x.id === selections[key]) : null;
+      return {
+        step: cat.order, category: key, category_name: cat.name, node: cat.node,
+        template_id: t ? t.id : null,
+        tone: t ? TONES[t.tone] : null,
+        industry: t ? INDS[t.ind] : null,
+        text: t ? t.text : null,
+        chars: t ? smsMeta(t.text).len : null,
+        segments: t ? smsMeta(t.text).seg : null
+      };
+    })
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'textback-response-selections.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('Selections exported as JSON');
+};
+
+let toastTimer = null;
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------- boot ---------- */
+renderNodes();
+renderEdges();
+updateSelCount();
+fitView();
+window.addEventListener('resize', () => {});
+</script>
+</body>
+</html>
