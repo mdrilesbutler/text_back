@@ -6,7 +6,7 @@ When Michael starts an agent from this project directory and says "continue proj
 ## Where everything stands (verified 2026-08-20, fresh)
 - Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
 - Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`; completed items are pushed to origin (verify with `git log --oneline -5`).
-- Test suite: `.venv/bin/pytest tests/` → **142 passed** (updated 2026-08-25), rerun this session after every change.
+- Test suite: `.venv/bin/pytest tests/` → **148 passed** (updated 2026-08-27), rerun this session after every change.
 - Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
 - Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
 - gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
@@ -27,7 +27,8 @@ When Michael starts an agent from this project directory and says "continue proj
 5a. **Agent (done locally 2026-08-21)**: deterministic customer-requested/safety handoff persists active state, pauses SMS and missed-call automation, preserves STOP/HELP, supports explicit resolution, and emits an idempotent concise operator payload to an in-memory notifier. External operator delivery remains unimplemented.
 5b. **Agent (done locally 2026-08-21)**: append-only outcome events now capture missed/contacted/engaged/field/qualified/handoff/slot/event/confirmed facts with stable evidence IDs and retry-safe idempotency keys. See `docs/OUTCOME-EVENTS.md`.
 5c. **Agent (done locally 2026-08-25, TDD)**: bounded no-response sequence implemented in `src/text_back/followup.py` + `followups` store table. Scheduled only after an accepted intro SMS; configurable `TEXT_BACK_FOLLOWUP_DELAYS_MINUTES` (default `120,1440`), `TEXT_BACK_FOLLOWUP_EXPIRY_MINUTES` (default `2880`), quiet hours `TEXT_BACK_QUIET_HOURS_START/END` (default 21:00/08:00, business tz, overnight-window aware); defers in-quiet sends to quiet-end; cancels on reply/STOP/opt-out/booking/active handoff; idempotent via claim_event; records `followup.sent` + `lead.expired` with evidence. `run_due_followups` is a pure injected-clock seam — NO live cron/queue/provider send exists.
-5d. **Agent (done locally 2026-08-25, TDD)**: Recovered Revenue Brief in `src/text_back/brief.py` (`build_brief_data` + `render_brief`): deterministic period projection of the outcome ledger — unique-lead funnel, confirmed-appointment evidence list, revenue summed ONLY from explicit `revenue.attributed` events (integer `amount_cents` + external evidence ID); honest "No attributed revenue recorded" otherwise. `record_outcome` gained optional `occurred_at`. Next P0 options: operator write path for `revenue.attributed`/`job.completed`, or external handoff-alert delivery.
+5d. **Agent (done locally 2026-08-25, TDD)**: Recovered Revenue Brief in `src/text_back/brief.py` (`build_brief_data` + `render_brief`): deterministic period projection of the outcome ledger — unique-lead funnel, confirmed-appointment evidence list, revenue summed ONLY from explicit `revenue.attributed` events (integer `amount_cents` + external evidence ID); honest "No attributed revenue recorded" otherwise. `record_outcome` gained optional `occurred_at`.
+5e. **Agent (done locally 2026-08-27, TDD)**: operator write path in `src/text_back/operator.py` — `record_job_completed` and `record_revenue_attributed`. Completion requires CRM/job evidence; revenue requires a matching completed job plus invoice/payment evidence and a non-negative integer `amount_cents`. Bookings cannot attribute revenue. Idempotent. No HTTP/CRM connector. Next P0 option: external handoff-alert delivery.
 6. Store SignalWire Space URL, least-privilege API token, Project ID, and signing key outside Git; deploy and attach the HTTPS handlers. The outbound REST adapter and inbound boundary are built; live provider configuration and the Calendar adapter remain. Then run a real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`.
 
 ## Session gotchas (hard-won)
@@ -99,17 +100,12 @@ Michael and is config-only in ~/.config/text_back/pilot.env. There are no
 SignalWire credentials, live webhooks/messages/calls, Google credentials, real
 Calendar adapter, external handoff delivery, or deployment.
 
-Start automatically with the next unblocked Recover P0 item: build a bounded
-no-response follow-up sequence using TDD. It must have configurable maximum
-attempts and delays, enforce configured timezone/business quiet hours, schedule
-only after an accepted initial SMS with provider evidence, and cancel immediately
-on any customer response, STOP, successful booking, active handoff, expiry, or
-the attempt ceiling. Retries must be idempotent. Record evidence-backed
-followup.sent and lead.expired outcome facts without storing raw message bodies.
-Use an injected clock/scheduler seam and stub transport only; do not add a live
-cron, queue, or provider send. Run focused tests and the full suite, update the
-PRD/handoff/docs, commit with the repo's existing author flags, and push
-local/tdd-core.
+Start automatically with the next unblocked Recover P0 item: external
+handoff-alert delivery for the already-tested in-memory operator payload.
+Keep STOP/HELP, consent, and booking gates deterministic. Do not add a live
+notifier destination without Michael choosing the channel. Run focused tests
+and the full suite, update the PRD/handoff/docs, commit with the repo's
+existing author flags, and push local/tdd-core.
 
 Human gates remain: Michael's Platform Free Trial mobile verification; Google
 authentication and Calendar sharing; SignalWire least-privilege credentials;
@@ -123,8 +119,8 @@ Google Voice, store credentials or the purchased number in Git, let an LLM
 control policy, mix forwarded/managed trigger semantics, or claim a booking
 without a successful Calendar event ID.
 
-Done for next session = bounded no-response sequence shipped test-first with the
-full suite green and pushed, with factual notes updated. If that item finishes
-early, begin the deterministic Recovered Revenue Brief generator from the
-append-only outcome ledger; never infer revenue from a booking alone.
+Done for next session = operator completion/revenue write path is already
+shipped. Next: external handoff-alert delivery, or wait on human gates
+(signing key, public HTTPS host, Google Calendar). Never infer revenue from
+a booking alone.
 ```

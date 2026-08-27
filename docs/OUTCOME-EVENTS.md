@@ -28,6 +28,8 @@ Each row contains:
 | `appointment.confirmed` | outbound provider message ID | The confirmation transport accepts the SMS; metadata links the calendar event ID |
 | `followup.sent` | outbound provider message ID | A due no-response follow-up SMS is accepted by the transport; metadata records the attempt number |
 | `lead.expired` | originating call SID | The bounded sequence's expiry deadline passes with no response after the final attempt; metadata records attempts_sent |
+| `job.completed` | CRM/job ticket ID | Operator records external completion proof via `record_job_completed`; metadata may link a calendar event ID |
+| `revenue.attributed` | invoice/payment reference | Operator records job value via `record_revenue_attributed` only after a matching `job.completed`; metadata stores integer `amount_cents` and `job_evidence_id` |
 
 The booking code records `calendar.event_created` before persistence and
 `appointment.confirmed` only after the confirmation transport succeeds. A
@@ -57,12 +59,21 @@ says "No attributed revenue recorded" otherwise — it never estimates from
 bookings. `record_outcome` accepts an optional `occurred_at` for backdated
 attribution entries.
 
+## Operator write path (`src/text_back/operator.py`)
+
+`record_job_completed` and `record_revenue_attributed` are the only supported
+way to add completion and revenue facts. They require non-empty external
+evidence IDs, refuse string/boolean/negative amounts, and refuse revenue
+without a matching `job.completed` for the same lead. A calendar booking is
+not completion. Both writes are idempotent via stable keys. There is no HTTP
+or CRM connector yet; operators call these functions (or a future approved
+tooling wrapper) against the ledger.
+
 ## Not implemented yet
 
-- `job.completed`;
-- operator/CRM evidence capture for completion and job value (the
-  `revenue.attributed` write path is manual/operator-driven for now);
-- a derived current-state projection.
+- derived current-state projection;
+- HTTP/CRM connector for operator writes;
+- external delivery for the tested human-handoff alert payload.
 
 Future projections and reports must read this ledger without rewriting its
 history. A booking is pipeline evidence, not completed work or recovered

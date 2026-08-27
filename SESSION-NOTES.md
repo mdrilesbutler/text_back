@@ -1,5 +1,13 @@
 # text_back — Session Notes
 
+## 2026-08-27 — operator job/revenue write path
+
+Added `src/text_back/operator.py` so completed jobs and attributed revenue can
+enter the outcome ledger only from operator/CRM evidence. Revenue refuses
+string/boolean/negative amounts and refuses attribution unless a matching
+`job.completed` event exists for the lead. Bookings stay pipeline. Suite: 148
+passed. Live SignalWire/Google/deploy gates are unchanged.
+
 ## 2026-08-21 — durable handoff and next-session focus
 
 Refreshed the canonical resume prompt after the SignalWire boundary, booking,
