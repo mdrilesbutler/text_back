@@ -16,9 +16,11 @@ Missed-call recovery and scheduling assistant for field-service businesses.
 Local core and a SignalWire Compatibility REST outbound-SMS adapter exist and
 are tested on this host. The product path is assessment → **Recover install**
 (`TB-RECOVER`) → Care; Answer voice and Grow journeys wait until a real-phone
-Recover pilot proves conversion. Michael purchased one pilot number, but no
-API token, webhook routing, production message, customer call, Google
-credential, or deployment is configured.
+Recover pilot proves conversion. Michael purchased one pilot number and the
+protected Compatibility API credentials now verify against it. An enabled
+localhost-only pilot service runs in safe `stub` mode; no live handler, message,
+or customer call is active because the Project signing key, approved public
+HTTPS deployment, Google Calendar adapter, and operator notifier remain gated.
 
 ```bash
 cd /home/ubuntu/projects/text_back
