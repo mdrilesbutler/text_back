@@ -1,7 +1,7 @@
 # text_back — Product Requirements Document
 
-Status: Local core + SignalWire adapters implemented and tested (111 tests); live Google Calendar, operator notification delivery, credentials, and deploy pending human gates
-Updated: 2026-08-21
+Status: Local core + SignalWire adapters implemented and tested (148 tests); Space funded and pilot number verified live via API (no handlers attached); live Google Calendar, operator notification delivery, signing key, and deploy pending human gates
+Updated: 2026-08-28
 Owner: Michael Riley  
 Canonical path: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror: `/home/mdriles/projects/text_back`)  
 Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`  
@@ -140,7 +140,7 @@ No telecom account activation, number purchase, paid usage, production messaging
 
 ## Current open items (2026-08-20)
 
-1. SignalWire Space is funded and one local voice/SMS-capable pilot number was purchased 2026-08-21 at $0.50/month under the existing $15/month approval. Exact number is config-only outside Git. Next browser gate: verify Michael's personal mobile for Platform Free Trial; do not submit a paid Brand/Campaign without reviewing its displayed fees. Michael is currently a sole proprietor and the LLC is pending.
+1. SignalWire Space is funded and one local voice/SMS-capable pilot number was purchased 2026-08-21 at $0.50/month under the existing $15/month approval. Exact number is config-only outside Git. Re-verified 2026-08-28 via authenticated Compatibility API: number active with voice/SMS/MMS/fax capabilities, `voice_url`/`sms_url` both unset, and Michael confirms the account holds funds. Next browser gate: verify Michael's personal mobile for Platform Free Trial; do not submit a paid Brand/Campaign without reviewing its displayed fees. Michael is currently a sole proprietor and the LLC is pending. Public-HTTPS deployment decision (tunnel vs. durable Caddy+domain) was explicitly deferred by Michael on 2026-08-28 — no exposure work until he picks.
 2. Michael: Google sign-in for `mdrilesbutler@gmail.com` hit an "access blocked" page mid-flow (2026-08-20); exact error wording still unreported. Fallbacks documented in NEXT-SESSION.md.
 3. After gcloud auth lands: scripted GCP setup — create project, enable `calendar-json.googleapis.com`, create service account + key to `~/.config/text_back/sa_key.json` (never git), Michael shares the pilot calendar with the SA email.
 4. Code, done locally: explicit `preferred_time` values are parsed in the configured timezone and all four collected fields feed the free/busy-rechecked Calendar stub booking gate. Vague, past, nonexistent, ambiguous, and unavailable times do not produce confirmations. The local voicemail-style forwarded greeting is implemented with `<Say>` + `<Hangup>` and no retained recording.
@@ -148,6 +148,13 @@ No telecom account activation, number purchase, paid usage, production messaging
 6. Deploy through Paperclip Hermes on Hostinger; real-phone end-to-end smoke test.
 7. Before first client launch: replace pilot identity/calendar/phone with client-owned values; per-client 10DLC registration.
 8. Connect the tested handoff payload to an approved operator delivery adapter; the current notifier is in-memory only and sends nothing externally.
+
+## Session record — 2026-08-28 (hermes-vcn-0, Claude)
+
+- Re-verified the SignalWire pilot live via authenticated Compatibility API: the pilot number (exact value config-only) active with voice/SMS/MMS/fax capabilities; `voice_url` and `sms_url` both unset — nothing is attached, no traffic possible. Michael confirmed the Space holds funds, so money is not a blocker.
+- Michael's decision: hold on public-HTTPS deployment (tunnel vs. Caddy+domain undecided); this session is docs/bookkeeping only. Remaining blockers to a real-phone smoke test are (a) the public HTTPS URL, (b) the dashboard-only Project signing key, (c) Platform Free Trial mobile verification — (b) and (c) need Michael's browser.
+- Gotchas recorded: `TEXT_BACK_SIGNALWIRE_SPACE_URL` in `runtime.env` includes the `https://` scheme — strip it before composing API URLs; the Twilio-style `/Balance.json` endpoint 404s on SignalWire (do not use it to check funding).
+- Evidence: `.venv/bin/pytest tests/` — 148 passed. No secret value read into or committed to the repo.
 
 ## Session record — 2026-08-21 (hermes-vcn-0, Codex)
 

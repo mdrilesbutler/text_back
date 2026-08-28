@@ -1,4 +1,4 @@
-# text_back — next session prompt (updated 2026-08-21, hermes-vcn-0)
+# text_back — next session prompt (updated 2026-08-28, hermes-vcn-0)
 
 ## Continue-project contract
 When Michael starts an agent from this project directory and says "continue project", "continue", "pick up", or equivalent, read this `NEXT-SESSION.md` completely before taking action. Then read the files it names, briefly state the recovered state, and begin the highest-priority open item unless a newer user instruction overrides the handoff.
@@ -14,6 +14,7 @@ When Michael starts an agent from this project directory and says "continue proj
 - SignalWire estimate (researched 2026-08-20): ≈ $9.44/month all-in at pilot volume; setup ≈ $12 one-time + $5 minimum funding; 10DLC approval ~1–2 weeks; cheap $1.50/month tier needs an EIN. Details in `PRD-text_back.md` § Cost refresh.
 - Environment loader is implemented: `create_app()` reads all documented `TEXT_BACK_*` settings, explicit arguments override environment values, and `/health` reports non-secret effective config.
 - SignalWire pilot progress (2026-08-27): Space funded and one voice/SMS/MMS-capable pilot number purchased. Protected credentials exist under `~/.config/text_back/` with mode 600; authenticated Compatibility API discovery returned HTTP 200 and found exactly that configured number. A canonical protected `runtime.env` and enabled localhost-only `text-back.service` now run in safe `stub` mode at `127.0.0.1:8000`; `/health` is green. The number still has no voice/SMS handlers attached, no live message/call has been sent, and SignalWire mode correctly refuses startup without the Project signing key and exact public HTTPS base URL.
+- SignalWire re-verified 2026-08-28 (Claude): authenticated Compatibility API shows the pilot number active with voice/SMS/MMS/fax capabilities and `voice_url`/`sms_url` both unset; Michael confirmed the Space holds funds — money is NOT a blocker. Michael explicitly deferred the public-HTTPS deployment decision (tunnel for smoke test vs. durable Caddy+domain on this VPS); do not expose anything until he chooses. API gotchas: `TEXT_BACK_SIGNALWIRE_SPACE_URL` in `runtime.env` already includes `https://` (strip before building URLs); Twilio-style `/Balance.json` 404s on SignalWire.
 - NOT done: obtain the dashboard-only SignalWire Project signing key, choose/approve a durable public HTTPS deployment with persistent storage, finish Google Calendar auth/adapter, attach live voice/SMS handlers, or run production traffic.
 
 ## Open items, in order
