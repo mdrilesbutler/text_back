@@ -1,5 +1,25 @@
 # text_back — Session Notes
 
+## 2026-08-29 — handoff-alert delivery seam, quiet-hours tests, CI (piclaw, Claude)
+
+Built the external handoff-alert delivery seam (`src/text_back/delivery.py` +
+`handoff_deliveries` table): durable outbox enqueued on handoff activation,
+uuid alert IDs stable across restarts, enqueue failure raises instead of
+silently dropping an operator alert, transport interface with only safe
+channels (`disabled` default, PII-masked `log`), fail-closed
+`TEXT_BACK_HANDOFF_DELIVERY_*` config, injected-clock `run_due_deliveries`
+that persists each attempt BEFORE the transport call (crash-safe
+at-least-once), bounded backoff, ledger-first dead-letter evidence. No live
+channel exists — destination choice is Michael's gate. Also: clock-driven
+quiet-hours tests (boundaries, DST, expiry interplay) and GitHub Actions CI
+(least-privilege, py3.12/3.13). Two major defects (crash-wedged outbox rows;
+restart alert-ID collision losing a safety handoff) were caught by the
+adversarial review pass with executed repros and fixed with regression
+tests. Suite: 182 passed (was 148). Found but not fixed: `followup.py`
+carries the same pre-existing claim-before-persist wedge shape — next
+session's first item. Work done in a worktree lane; Grok's UI lane
+(`deploy/`, `docs/demo/`) untouched.
+
 ## 2026-08-27 — operator job/revenue write path
 
 Added `src/text_back/operator.py` so completed jobs and attributed revenue can
