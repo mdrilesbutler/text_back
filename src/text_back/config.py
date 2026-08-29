@@ -27,6 +27,8 @@ class AppConfig:
     followup_expiry_minutes: int
     quiet_hours_start: str
     quiet_hours_end: str
+    handoff_delivery_channel: str
+    handoff_delivery_retry_minutes: str
 
 
 def load_config() -> AppConfig:
@@ -61,4 +63,10 @@ def load_config() -> AppConfig:
         ),
         quiet_hours_start=os.environ.get("TEXT_BACK_QUIET_HOURS_START", "21:00"),
         quiet_hours_end=os.environ.get("TEXT_BACK_QUIET_HOURS_END", "08:00"),
+        handoff_delivery_channel=os.environ.get(
+            "TEXT_BACK_HANDOFF_DELIVERY_CHANNEL", "disabled"
+        ),
+        handoff_delivery_retry_minutes=os.environ.get(
+            "TEXT_BACK_HANDOFF_DELIVERY_RETRY_MINUTES", "1,5,15"
+        ),
     )

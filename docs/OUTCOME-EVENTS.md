@@ -28,6 +28,8 @@ Each row contains:
 | `appointment.confirmed` | outbound provider message ID | The confirmation transport accepts the SMS; metadata links the calendar event ID |
 | `followup.sent` | outbound provider message ID | A due no-response follow-up SMS is accepted by the transport; metadata records the attempt number |
 | `lead.expired` | originating call SID | The bounded sequence's expiry deadline passes with no response after the final attempt; metadata records attempts_sent |
+| `handoff.alert_delivered` | transport receipt ID | The delivery transport accepts the queued operator alert; metadata records channel and attempt |
+| `handoff.alert_dead_lettered` | outbox alert ID | Bounded retries exhaust without transport acceptance; metadata records channel, attempts, truncated last_error |
 | `job.completed` | CRM/job ticket ID | Operator records external completion proof via `record_job_completed`; metadata may link a calendar event ID |
 | `revenue.attributed` | invoice/payment reference | Operator records job value via `record_revenue_attributed` only after a matching `job.completed`; metadata stores integer `amount_cents` and `job_evidence_id` |
 
@@ -47,6 +49,30 @@ timezone). Sends due inside quiet hours defer to quiet-end. The sequence
 cancels immediately on any customer reply, STOP/opt-out, successful booking,
 or active handoff, and re-running the processor at the same instant is
 idempotent via `claim_event`. Follow-up bodies contain no customer content.
+
+## Handoff alert delivery (src/text_back/delivery.py)
+
+Every handoff activation enqueues exactly one row in the `handoff_deliveries`
+outbox (keyed by the notifier alert ID). `run_due_deliveries` is a pure
+function of (store, transport, policy, injected now) — no live cron, queue,
+or network transport is wired. The default channel `disabled`
+(`TEXT_BACK_HANDOFF_DELIVERY_CHANNEL`) parks rows durably with zero attempts
+consumed; flipping the channel later drains the backlog. Retries follow
+`TEXT_BACK_HANDOFF_DELIVERY_RETRY_MINUTES` (default `1,5,15`) and exhaustion
+dead-letters the row. Delivery is at-least-once to the operator but
+exactly-once in this ledger: each attempt's count and next backoff slot are
+persisted before the transport is called, so a crash (or an unexpected
+transport exception) mid-attempt leaves the row pending and re-runnable
+rather than wedged; the `handoff.alert_delivered` idempotency key carries no
+attempt number, so a crash between transport success and the status flip can
+re-ping the operator without double-appending evidence. Both the delivered
+and dead-letter paths append their ledger event before flipping row status,
+so a crash between the two commits cannot lose evidence. Notifier alert IDs
+are unique across process restarts (the outbox is file-backed), and a
+colliding enqueue raises instead of silently dropping an operator alert.
+Quiet hours deliberately do not apply — they protect customer SMS in the
+nurture lane only, and operator alerts (including safety handoffs) are
+time-critical.
 
 ## Recovered Revenue Brief (src/text_back/brief.py)
 
@@ -72,8 +98,7 @@ tooling wrapper) against the ledger.
 ## Not implemented yet
 
 - derived current-state projection;
-- HTTP/CRM connector for operator writes;
-- external delivery for the tested human-handoff alert payload.
+- HTTP/CRM connector for operator writes.
 
 Future projections and reports must read this ledger without rewriting its
 history. A booking is pipeline evidence, not completed work or recovered

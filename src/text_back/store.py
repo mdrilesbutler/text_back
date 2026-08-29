@@ -99,6 +99,28 @@ class Store:
             )
             """
         )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS handoff_deliveries (
+                alert_id TEXT PRIMARY KEY,
+                phone TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                status TEXT NOT NULL,
+                attempts INTEGER NOT NULL DEFAULT 0,
+                next_attempt_at TEXT NOT NULL,
+                receipt_id TEXT,
+                last_error TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        self.conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_handoff_deliveries_due
+            ON handoff_deliveries (status, next_attempt_at)
+            """
+        )
         self.conn.commit()
 
     def claim_event(self, source: str, event_id: str, action: str) -> bool:
@@ -348,6 +370,122 @@ class Store:
             WHERE phone = ? AND status = 'active'
             """,
             (now, phone),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    # --- handoff alert deliveries ---
+
+    def enqueue_handoff_delivery(
+        self,
+        *,
+        alert_id: str,
+        phone: str,
+        payload_json: str,
+        next_attempt_at: str,
+    ) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        try:
+            self.conn.execute(
+                """
+                INSERT INTO handoff_deliveries
+                    (alert_id, phone, payload_json, status, attempts,
+                     next_attempt_at, receipt_id, last_error, created_at, updated_at)
+                VALUES (?, ?, ?, 'pending', 0, ?, NULL, NULL, ?, ?)
+                """,
+                (alert_id, phone, payload_json, next_attempt_at, now, now),
+            )
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def get_handoff_delivery(self, alert_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM handoff_deliveries WHERE alert_id = ?", (alert_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def due_handoff_deliveries(self, now_iso: str) -> list[dict]:
+        rows = self.conn.execute(
+            """
+            SELECT * FROM handoff_deliveries
+            WHERE status = 'pending' AND next_attempt_at <= ?
+            ORDER BY next_attempt_at
+            """,
+            (now_iso,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def begin_handoff_delivery_attempt(
+        self, alert_id: str, *, attempts: int, next_attempt_at: str
+    ) -> bool:
+        """Persist the attempt bump BEFORE any transport call.
+
+        The WHERE clause is the attempt lock: it succeeds only while the row
+        is still pending at the prior attempt count, so a replayed or
+        concurrent runner skips the row instead of double-attempting. Because
+        this commits first, a crash mid-delivery leaves the row pending and
+        re-runnable at ``next_attempt_at`` (true at-least-once) rather than
+        wedged behind a consumed claim.
+        """
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            UPDATE handoff_deliveries
+            SET attempts = ?, next_attempt_at = ?, updated_at = ?
+            WHERE alert_id = ? AND status = 'pending' AND attempts = ?
+            """,
+            (attempts, next_attempt_at, now, alert_id, attempts - 1),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    def mark_handoff_delivery_delivered(
+        self, alert_id: str, *, attempts: int, receipt_id: str
+    ) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            UPDATE handoff_deliveries
+            SET status = 'delivered', attempts = ?, receipt_id = ?, updated_at = ?
+            WHERE alert_id = ? AND status = 'pending'
+            """,
+            (attempts, receipt_id, now, alert_id),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
+    def retry_handoff_delivery(
+        self,
+        alert_id: str,
+        *,
+        attempts: int,
+        next_attempt_at: str,
+        last_error: str,
+    ) -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            """
+            UPDATE handoff_deliveries
+            SET attempts = ?, next_attempt_at = ?, last_error = ?, updated_at = ?
+            WHERE alert_id = ? AND status = 'pending'
+            """,
+            (attempts, next_attempt_at, last_error, now, alert_id),
+        )
+        self.conn.commit()
+
+    def dead_letter_handoff_delivery(
+        self, alert_id: str, *, attempts: int, last_error: str
+    ) -> bool:
+        now = datetime.now(timezone.utc).isoformat()
+        cursor = self.conn.execute(
+            """
+            UPDATE handoff_deliveries
+            SET status = 'dead_letter', attempts = ?, last_error = ?, updated_at = ?
+            WHERE alert_id = ? AND status = 'pending'
+            """,
+            (attempts, last_error, now, alert_id),
         )
         self.conn.commit()
         return cursor.rowcount == 1

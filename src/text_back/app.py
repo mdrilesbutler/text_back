@@ -10,6 +10,11 @@ from fastapi import FastAPI, Form, Header, HTTPException, Request, Response
 from text_back.config import DEFAULT_WEBHOOK_SECRET, load_config
 from text_back.cxml import empty_response, forwarded_call_response
 from text_back.calendar_stub import CalendarStub
+from text_back.delivery import (
+    DeliveryPolicy,
+    DeliveryTransport,
+    transport_from_config,
+)
 from text_back.followup import FollowupPolicy
 from text_back.handoff import FakeHandoffNotifier, HandoffNotifier
 from text_back.handlers import handle_sms_event, handle_voice_event
@@ -72,6 +77,7 @@ def create_app(
     handoff_notifier: HandoffNotifier | None = None,
     handoff_destination: str | None = None,
     now_provider: Callable[[], datetime] | None = None,
+    delivery_transport: DeliveryTransport | None = None,
 ) -> FastAPI:
     config = load_config()
     webhook_secret = webhook_secret if webhook_secret is not None else config.webhook_secret
@@ -104,6 +110,14 @@ def create_app(
         raise ValueError(
             f"invalid wiring_mode: {wiring_mode!r}; must be one of {sorted(WIRING_MODES)}"
         )
+    # Fail closed at startup on a bad delivery channel or retry schedule,
+    # the same way telecom_mode/wiring_mode do.
+    delivery_policy = DeliveryPolicy.from_config(config)
+    selected_delivery_transport = (
+        delivery_transport
+        if delivery_transport is not None
+        else transport_from_config(config)
+    )
     selected_telecom = telecom if telecom is not None else _telecom_from_config(config)
     if selected_telecom.provider_name == "signalwire":
         _validate_signalwire_boundary(
@@ -126,6 +140,8 @@ def create_app(
     app.state.handoff_destination = handoff_destination
     app.state.now_provider = now_provider
     app.state.followup_policy = FollowupPolicy.from_config(config)
+    app.state.delivery_policy = delivery_policy
+    app.state.delivery_transport = selected_delivery_transport
 
     @app.get("/health")
     def health() -> dict:
@@ -142,6 +158,7 @@ def create_app(
                 bool(app.state.handoff_destination)
                 and app.state.handoff_destination != "unconfigured"
             ),
+            "handoff_delivery_channel": app.state.delivery_transport.channel_name,
         }
 
     @app.post("/webhooks/voice")
@@ -238,7 +255,7 @@ def create_app(
             now=(
                 request.app.state.now_provider()
                 if request.app.state.now_provider is not None
-                else None
+                else datetime.now(timezone.utc)
             ),
         )
         result["message_sid"] = message_sid

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from typing import ClassVar, Protocol
 
@@ -30,8 +31,12 @@ class FakeHandoffNotifier:
     alerts: list[HandoffAlert] = field(default_factory=list)
 
     def notify(self, alert: HandoffAlert) -> str:
+        # Alert IDs key the durable handoff_deliveries outbox (file-backed
+        # store), so they must stay unique across process restarts — a
+        # process-local counter would collide with a previous life's rows
+        # and silently drop a new lead's operator alert.
         self.alerts.append(alert)
-        return f"handoff-{len(self.alerts):04d}"
+        return f"handoff-{uuid.uuid4().hex}"
 
 
 def build_handoff_summary(

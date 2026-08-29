@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from text_back.booking import BookingError, SlotUnavailableError, book_appointment
 from text_back.calendar_stub import CalendarStub
+from text_back.delivery import enqueue_handoff_alert
 from text_back.followup import (
     FollowupPolicy,
     cancel_followup,
@@ -147,6 +148,7 @@ def handle_sms_event(
                 body=body,
                 reason=handoff_reason,
                 acknowledge_customer=False,
+                now=now,
             )
         return {"accepted": True, "duplicate": False, "action": "suppressed", "reason": "opted_out"}
     if handoff_reason is not None:
@@ -160,6 +162,7 @@ def handle_sms_event(
             body=body,
             reason=handoff_reason,
             acknowledge_customer=True,
+            now=now,
         )
     if store.active_handoff(from_number) is not None:
         return {
@@ -194,6 +197,7 @@ def _request_handoff(
     body: str,
     reason: str,
     acknowledge_customer: bool,
+    now: datetime | None,
 ) -> dict:
     if not store.request_handoff(from_number, reason):
         current = store.active_handoff(from_number)
@@ -211,17 +215,16 @@ def _request_handoff(
         latest_message=body,
         collected_fields=fields,
     )
-    alert_id = handoff_notifier.notify(
-        HandoffAlert(
-            destination=handoff_destination,
-            caller=from_number,
-            business_number=to_number,
-            reason=reason,
-            latest_message=body,
-            collected_fields=fields,
-            summary=summary,
-        )
+    alert = HandoffAlert(
+        destination=handoff_destination,
+        caller=from_number,
+        business_number=to_number,
+        reason=reason,
+        latest_message=body,
+        collected_fields=fields,
+        summary=summary,
     )
+    alert_id = handoff_notifier.notify(alert)
     store.set_handoff_alert_id(from_number, alert_id)
     store.record_outcome(
         lead_id=from_number,
@@ -230,6 +233,20 @@ def _request_handoff(
         evidence_id=alert_id,
         metadata={"reason": reason},
     )
+    enqueued = enqueue_handoff_alert(
+        store=store,
+        alert=alert,
+        alert_id=alert_id,
+        now=now if now is not None else datetime.now(timezone.utc),
+    )
+    if not enqueued:
+        # An operator safety alert must never be dropped silently. With
+        # durable-unique alert IDs this cannot fire; if it does, fail loudly
+        # so the provider retries the webhook instead of losing the alert.
+        raise RuntimeError(
+            f"handoff outbox already contains alert_id {alert_id!r}; "
+            "refusing to silently drop an operator alert"
+        )
     if acknowledge_customer:
         telecom.send_sms(
             to=from_number,
