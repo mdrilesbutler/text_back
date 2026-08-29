@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install project with dev extras
+        run: pip install -e ".[dev]"
+      - name: Run tests
+        # pyproject addopts already passes -q; adding another here would run
+        # at -qq and hide the "N passed" summary in Actions logs.
+        run: pytest tests/
