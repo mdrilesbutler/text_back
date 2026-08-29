@@ -1,5 +1,21 @@
 # text_back — Session Notes
 
+## 2026-08-29 evening — signing key stored, no-live-human principle, Cal.com question (piclaw, Claude)
+
+Michael's corrections drove three changes. (1) **Product principle: customers
+never get a live human** — escalation copy no longer promises a person or
+points at the unanswered business line; handoff acks promise an owner
+follow-up (911 kept), booking errors keep the customer in-thread; guard test
+`tests/test_no_live_human_copy.py`; PRD updated; suite 186 passed. (2) **The
+SignalWire Project signing key was retrieved from the FluxWorks dashboard via
+browser** (at Michael's explicit order) and stored on hermes-cloud in
+`runtime.env` as `TEXT_BACK_WEBHOOK_SECRET`; service restarted, /health green;
+rotate at deploy (value transited a session transcript). (3) **Cal.com vs
+Google Calendar is now an open decision** — Michael asked "aren't we using
+cal.com?"; recommendation is Cal.com (kills the OAuth blocker); gcloud OAuth
+flow stays parked on hermes-cloud until he decides. Also recorded: where all
+code/credentials/gates live, in NEXT-SESSION and the Obsidian project note.
+
 ## 2026-08-29 — handoff-alert delivery seam, quiet-hours tests, CI (piclaw, Claude)
 
 Built the external handoff-alert delivery seam (`src/text_back/delivery.py` +
