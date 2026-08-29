@@ -109,8 +109,7 @@ def followup_sms(business_name: str, attempt: int) -> str:
         )
     return (
         f"Last check-in from {business_name}'s scheduling assistant. Reply with "
-        "the job you need and we'll set a time, or call the business line. "
-        "Reply STOP to opt out."
+        "the job you need and we'll set a time. Reply STOP to opt out."
     )
 
 

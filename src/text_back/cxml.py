@@ -24,7 +24,7 @@ def forwarded_call_response(
     else:
         say.text = (
             f"Thanks for calling {business_name}. We couldn't answer right now. "
-            "Please try the business line again later. Goodbye."
+            "Please try again later. Goodbye."
         )
     ElementTree.SubElement(response, "Hangup")
     return _serialize(response)

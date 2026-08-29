@@ -76,7 +76,7 @@ def slot_unavailable_sms() -> str:
 def booking_error_sms() -> str:
     return (
         "We couldn't confirm that appointment. No booking was made. "
-        "Please call the business line for help."
+        "Please send another date and time and we'll try again."
     )
 
 
@@ -98,11 +98,12 @@ def classify_handoff_request(body: str) -> str | None:
 def handoff_ack_sms(reason: str) -> str:
     if reason == "safety":
         return (
-            "Automated scheduling is paused. Please call the business line for a person. "
-            "If anyone is in immediate danger, call 911 now."
+            "Automated scheduling is paused. The owner will follow up with you "
+            "as soon as possible. If anyone is in immediate danger, call 911 now."
         )
     return (
-        "Automated scheduling is paused. Please call the business line to reach a person."
+        "Got it—automated scheduling is paused. The owner will follow up "
+        "with you directly."
     )
 
 
@@ -116,8 +117,8 @@ def intro_sms(business_name: str) -> str:
 def help_sms(business_name: str) -> str:
     return (
         f"{business_name}'s scheduling assistant. Reply with the job type, location, "
-        "and a time that works. For a person, call the business line. "
-        "Reply STOP to opt out."
+        "and a time that works. Anything we can't handle by text, the owner "
+        "follows up on. Reply STOP to opt out."
     )
 
 

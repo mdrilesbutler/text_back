@@ -83,7 +83,7 @@ Default path for field-service ICP: assessment → **text_back install** as the 
 - STOP and standard opt-out keywords immediately suppress non-essential messaging.
 - HELP returns accurate business/contact information.
 - Respect A2P registration, carrier rules, consent, and quiet hours.
-- Human handoff pauses AI and alerts the operator with a concise summary.
+- Handoff is ASYNC lead capture, never a live-person transfer (Michael, 2026-08-29: "they don't get a human, that's the whole point"). It pauses AI, tells the customer the owner will follow up, and queues a concise summary for the operator to act on later. Customer-facing copy never promises a person or points at the business line (enforced by `tests/test_no_live_human_copy.py`).
 - Never send marketing content in this transactional workflow.
 - Keep an audit log of inbound/outbound messages, booking actions, consent, opt-out, and handoff.
 
