@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import ClassVar
 
 
 @dataclass
 class CalendarStub:
+    provider_name: ClassVar[str] = "stub"
     timezone_name: str = "UTC"
     events: dict[str, dict] = field(default_factory=dict)
     busy: list[tuple[datetime, datetime]] = field(default_factory=list)

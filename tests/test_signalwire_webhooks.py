@@ -7,6 +7,7 @@ from xml.etree import ElementTree
 from fastapi.testclient import TestClient
 
 from text_back.app import create_app
+from text_back.calendar_stub import CalendarStub
 from text_back.store import Store
 from text_back.telecom import FakeTelecom
 
@@ -45,6 +46,9 @@ def _client(
         wiring_mode=wiring_mode,
         business_name=business_name,
         store=store,
+        # Explicit injection: SignalWire mode refuses the env-default stub
+        # calendar at startup, exactly like env validation elsewhere.
+        calendar=CalendarStub(),
     )
     return TestClient(app), telecom
 

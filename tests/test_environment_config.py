@@ -69,7 +69,7 @@ def test_explicit_app_config_overrides_environment(monkeypatch, tmp_path):
     assert app.state.handoff_destination == "explicit-queue"
 
 
-def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch):
+def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("TEXT_BACK_TELECOM_MODE", "signalwire")
     monkeypatch.setenv("TEXT_BACK_WEBHOOK_SECRET", "signalwire-signing-key")
     monkeypatch.setenv("TEXT_BACK_PUBLIC_BASE_URL", "https://calls.example.test")
@@ -80,14 +80,45 @@ def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch):
     monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_PROJECT_ID", "project-id")
     monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_API_TOKEN", "secret-token")
     monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", "+15551234567")
+    # SignalWire mode refuses the stub calendar, so wire a real provider too.
+    token_file = tmp_path / "google.token"
+    token_file.write_text("tok-test\n")
+    monkeypatch.setenv("TEXT_BACK_CALENDAR_PROVIDER", "google")
+    monkeypatch.setenv("TEXT_BACK_GOOGLE_CALENDAR_ID", "mike@example.test")
+    monkeypatch.setenv("TEXT_BACK_GOOGLE_TOKEN_FILE", str(token_file))
 
     app = create_app()
     health = TestClient(app).get("/health").json()
 
     assert isinstance(app.state.telecom, SignalWireTelecom)
     assert health["telecom"] == "signalwire"
+    assert health["calendar"] == "google"
     assert "secret-token" not in str(health)
     assert "signalwire_api_token" not in health
+
+
+def test_signalwire_mode_refuses_default_stub_calendar(monkeypatch):
+    # A fully production-wired app must not silently boot against the
+    # in-memory stub calendar: bookings would be "confirmed" with fabricated
+    # event ids while no real calendar records the appointment.
+    monkeypatch.setenv("TEXT_BACK_TELECOM_MODE", "signalwire")
+    monkeypatch.setenv("TEXT_BACK_WEBHOOK_SECRET", "signalwire-signing-key")
+    monkeypatch.setenv("TEXT_BACK_PUBLIC_BASE_URL", "https://calls.example.test")
+    monkeypatch.setenv(
+        "TEXT_BACK_SIGNALWIRE_SPACE_URL", "https://pilot.signalwire.com/"
+    )
+    monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_PROJECT_ID", "project-id")
+    monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_API_TOKEN", "secret-token")
+    monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", "+15551234567")
+    monkeypatch.delenv("TEXT_BACK_CALENDAR_PROVIDER", raising=False)
+
+    with pytest.raises(ValueError, match="TEXT_BACK_CALENDAR_PROVIDER"):
+        create_app()
+
+    # An explicit 'stub' value fails closed the same way.
+    monkeypatch.setenv("TEXT_BACK_CALENDAR_PROVIDER", "stub")
+    with pytest.raises(ValueError, match="TEXT_BACK_CALENDAR_PROVIDER"):
+        create_app()
 
 
 def test_signalwire_mode_fails_closed_when_credentials_are_missing(monkeypatch):

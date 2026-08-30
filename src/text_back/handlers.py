@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from text_back.booking import BookingError, SlotUnavailableError, book_appointment
-from text_back.calendar_stub import CalendarStub
+from text_back.calendars.protocol import CalendarProvider
 from text_back.delivery import enqueue_handoff_alert
 from text_back.followup import (
     FollowupPolicy,
@@ -97,7 +97,7 @@ def handle_voice_event(
 def handle_sms_event(
     *,
     store: Store,
-    calendar: CalendarStub,
+    calendar: CalendarProvider,
     telecom: Telecom,
     handoff_notifier: HandoffNotifier,
     handoff_destination: str,
@@ -266,7 +266,7 @@ def _request_handoff(
 def _collect_conversation_field(
     *,
     store: Store,
-    calendar: CalendarStub,
+    calendar: CalendarProvider,
     telecom: Telecom,
     from_number: str,
     to_number: str,
@@ -284,6 +284,24 @@ def _collect_conversation_field(
     fields = store.get_conversation_fields(from_number)
     pending_field = next_missing_field(fields)
     if pending_field is None:
+        if store.appointment_by_conversation(from_number) is None:
+            # All fields were collected but no appointment was saved — the
+            # crash window between create_event and save_appointment, or a
+            # booking that previously failed. Re-attempt the booking: the
+            # deterministic (conversation, slot) provider IDs make a genuine
+            # same-slot retry dedupe at the provider instead of double-booking.
+            return _book_collected_fields(
+                store=store,
+                calendar=calendar,
+                telecom=telecom,
+                from_number=from_number,
+                to_number=to_number,
+                fields=fields,
+                business_name=business_name,
+                timezone_name=timezone_name,
+                appointment_duration_minutes=appointment_duration_minutes,
+                now=now,
+            )
         return {"accepted": True, "duplicate": False, "action": "conversation", "fields_complete": True}
 
     value = body.strip()
@@ -362,7 +380,7 @@ def _collect_conversation_field(
 def _book_collected_fields(
     *,
     store: Store,
-    calendar: CalendarStub,
+    calendar: CalendarProvider,
     telecom: Telecom,
     from_number: str,
     to_number: str,

@@ -171,6 +171,64 @@ def test_calendar_create_failure_never_sends_booking_confirmation():
     assert all(item.kind != "booking_confirmation" for item in telecom.outbound)
 
 
+def test_fields_complete_without_saved_appointment_rebooks_on_next_message():
+    # Crash window: all four fields were collected but no appointment was
+    # saved (process died between create_event and save_appointment, or a
+    # previous booking attempt failed). The next inbound message must
+    # re-attempt the booking instead of dead-ending the conversation — the
+    # deterministic (conversation, slot) provider IDs make a genuine
+    # same-slot retry dedupe at the provider.
+    store, calendar, telecom = Store(), CalendarStub(TIMEZONE_NAME), FakeTelecom()
+    for field, value in (
+        ("service", "tree removal"),
+        ("location", "12 Oak St"),
+        ("preferred_time", "2026-08-25 2:00 PM"),
+        ("name", "John Smith"),
+    ):
+        store.set_conversation_field(CALLER, field, value)
+    assert store.appointment_by_conversation(CALLER) is None
+
+    result = _send(
+        store=store,
+        calendar=calendar,
+        telecom=telecom,
+        message_sid="SM-after-crash",
+        body="did that go through?",
+    )
+
+    assert result["action"] == "booked"
+    assert result["event_id"]
+    assert store.appointment_by_conversation(CALLER) is not None
+    assert telecom.outbound[-1].kind == "booking_confirmation"
+
+
+def test_messages_after_saved_appointment_stay_noop():
+    # Once the appointment IS saved, later messages remain a quiet no-op —
+    # no re-booking chatter.
+    store, calendar, telecom = Store(), CalendarStub(TIMEZONE_NAME), FakeTelecom()
+    _collect_through_time(store, calendar, telecom)
+    _send(
+        store=store,
+        calendar=calendar,
+        telecom=telecom,
+        message_sid="SM-name",
+        body="John Smith",
+    )
+    telecom.outbound.clear()
+
+    result = _send(
+        store=store,
+        calendar=calendar,
+        telecom=telecom,
+        message_sid="SM-post-booking",
+        body="thanks!",
+    )
+
+    assert result["action"] == "conversation"
+    assert result.get("fields_complete") is True
+    assert telecom.outbound == []
+
+
 def test_webhook_conversation_uses_configured_calendar_timezone_and_duration():
     store, calendar, telecom = Store(), CalendarStub(TIMEZONE_NAME), FakeTelecom()
     app = create_app(

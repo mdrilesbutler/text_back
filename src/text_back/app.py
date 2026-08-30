@@ -9,7 +9,7 @@ from fastapi import FastAPI, Form, Header, HTTPException, Request, Response
 
 from text_back.config import DEFAULT_WEBHOOK_SECRET, load_config
 from text_back.cxml import empty_response, forwarded_call_response
-from text_back.calendar_stub import CalendarStub
+from text_back.calendars import CalendarProvider, calendar_from_config
 from text_back.delivery import (
     DeliveryPolicy,
     DeliveryTransport,
@@ -71,7 +71,7 @@ def create_app(
     store: Store | None = None,
     wiring_mode: str | None = None,
     business_name: str | None = None,
-    calendar: CalendarStub | None = None,
+    calendar: CalendarProvider | None = None,
     timezone_name: str | None = None,
     appointment_duration_minutes: int | None = None,
     handoff_notifier: HandoffNotifier | None = None,
@@ -118,12 +118,31 @@ def create_app(
         if delivery_transport is not None
         else transport_from_config(config)
     )
+    # Fail closed at startup on a bad calendar provider or missing credentials,
+    # regardless of how the app is constructed (mirrors DeliveryPolicy above);
+    # an injected calendar bypasses env validation like an injected telecom.
+    selected_calendar = (
+        calendar
+        if calendar is not None
+        else calendar_from_config(config, timezone_name=timezone_name)
+    )
     selected_telecom = telecom if telecom is not None else _telecom_from_config(config)
     if selected_telecom.provider_name == "signalwire":
         _validate_signalwire_boundary(
             webhook_secret=webhook_secret,
             public_base_url=public_base_url,
         )
+        # A production telecom must never confirm real customer bookings
+        # against the in-memory stub calendar: the customer would get a
+        # confirmation SMS while no calendar anywhere records the job. An
+        # explicitly injected calendar (tests) is exempt, mirroring how
+        # injection bypasses env validation above.
+        if calendar is None and selected_calendar.provider_name == "stub":
+            raise ValueError(
+                "SignalWire telecom mode requires a real calendar provider; "
+                "set TEXT_BACK_CALENDAR_PROVIDER (the default stub calendar "
+                "would fabricate booking confirmations)"
+            )
 
     app = FastAPI(title="text_back", version="0.1.0")
     app.state.webhook_secret = webhook_secret
@@ -135,7 +154,7 @@ def create_app(
     app.state.business_name = business_name.strip()
     app.state.timezone_name = timezone_name
     app.state.appointment_duration_minutes = appointment_duration_minutes
-    app.state.calendar = calendar or CalendarStub(timezone_name=timezone_name)
+    app.state.calendar = selected_calendar
     app.state.handoff_notifier = handoff_notifier or FakeHandoffNotifier()
     app.state.handoff_destination = handoff_destination
     app.state.now_provider = now_provider
@@ -149,6 +168,7 @@ def create_app(
             "status": "ok",
             "production": False,
             "telecom": app.state.telecom.provider_name,
+            "calendar": app.state.calendar.provider_name,
             "public_base_url": app.state.public_base_url,
             "wiring_mode": app.state.wiring_mode,
             "timezone": app.state.timezone_name,

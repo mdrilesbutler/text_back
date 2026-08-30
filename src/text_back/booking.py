@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from text_back.calendar_stub import CalendarStub, slot_end
+from text_back.calendar_stub import slot_end
+from text_back.calendars.protocol import CalendarProvider, CalendarProviderError
 from text_back.store import Store
 from text_back.telecom import Telecom
 
@@ -22,7 +23,7 @@ class CalendarEventError(BookingError):
 
 def book_appointment(
     *,
-    calendar: CalendarStub,
+    calendar: CalendarProvider,
     store: Store,
     telecom: Telecom,
     caller: str,
@@ -52,7 +53,12 @@ def book_appointment(
         raise BookingError("business timezone is invalid") from None
 
     end = slot_end(start, duration_minutes)
-    first_check_available = calendar.is_free(start, end)
+    try:
+        first_check_available = calendar.is_free(start, end)
+    except CalendarProviderError:
+        raise SlotUnavailableError(
+            "calendar availability could not be verified"
+        ) from None
     if not first_check_available:
         _record_slot_check(
             store=store,
@@ -64,7 +70,12 @@ def book_appointment(
         )
         raise SlotUnavailableError("requested slot is unavailable")
     # Recheck immediately before create, matching PRD.
-    second_check_available = calendar.is_free(start, end)
+    try:
+        second_check_available = calendar.is_free(start, end)
+    except CalendarProviderError:
+        raise SlotUnavailableError(
+            "calendar availability could not be verified"
+        ) from None
     _record_slot_check(
         store=store,
         caller=caller,
@@ -76,14 +87,19 @@ def book_appointment(
     if not second_check_available:
         raise SlotUnavailableError("requested slot is unavailable")
 
-    event_id = calendar.create_event(
-        start=start,
-        end=end,
-        summary=f"{service} for {customer_name} ({caller})",
-        location=location,
-        caller=caller,
-        conversation_id=conversation_id,
-    )
+    try:
+        event_id = calendar.create_event(
+            start=start,
+            end=end,
+            summary=f"{service} for {customer_name} ({caller})",
+            location=location,
+            caller=caller,
+            conversation_id=conversation_id,
+        )
+    except CalendarProviderError:
+        raise CalendarEventError(
+            "calendar provider failed; booking not confirmed"
+        ) from None
     if not event_id:
         raise CalendarEventError("calendar did not return an event id")
     store.record_outcome(

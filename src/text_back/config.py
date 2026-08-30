@@ -29,6 +29,14 @@ class AppConfig:
     quiet_hours_end: str
     handoff_delivery_channel: str
     handoff_delivery_retry_minutes: str
+    calendar_provider: str
+    google_calendar_id: str
+    google_token_file: str
+    ms_user: str
+    ms_token_file: str
+    icloud_username: str
+    icloud_app_password_file: str
+    icloud_calendar_url: str
 
 
 def load_config() -> AppConfig:
@@ -69,4 +77,14 @@ def load_config() -> AppConfig:
         handoff_delivery_retry_minutes=os.environ.get(
             "TEXT_BACK_HANDOFF_DELIVERY_RETRY_MINUTES", "1,5,15"
         ),
+        calendar_provider=os.environ.get("TEXT_BACK_CALENDAR_PROVIDER", "stub"),
+        google_calendar_id=os.environ.get("TEXT_BACK_GOOGLE_CALENDAR_ID", ""),
+        google_token_file=os.environ.get("TEXT_BACK_GOOGLE_TOKEN_FILE", ""),
+        ms_user=os.environ.get("TEXT_BACK_MS_USER", ""),
+        ms_token_file=os.environ.get("TEXT_BACK_MS_TOKEN_FILE", ""),
+        icloud_username=os.environ.get("TEXT_BACK_ICLOUD_USERNAME", ""),
+        icloud_app_password_file=os.environ.get(
+            "TEXT_BACK_ICLOUD_APP_PASSWORD_FILE", ""
+        ),
+        icloud_calendar_url=os.environ.get("TEXT_BACK_ICLOUD_CALENDAR_URL", ""),
     )
