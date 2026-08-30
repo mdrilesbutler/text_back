@@ -54,6 +54,7 @@ When Michael starts an agent from this project directory and says "continue proj
 - On this host there is no Obsidian vault and no `/home/mdriles`; Codex memory here is sqlite (do not edit directly). The repo + GitHub push IS the cross-machine handoff; vault mirroring happens from piclaw.
 
 ## Improvements backlog
+- **Customer reauth flow (requirement recorded 2026-08-29, from the OAuth-auto-repair session):** Michael's own operator OAuth may auto-route into the google-oauth-repair skill (Hermes plugin + Claude hook now do this). A CUSTOMER's revoked calendar authorization must NOT go through that path: refresh silently when possible; on true consent revocation, move the client record into a `reauth_required` state and send that customer a secure reconnect link — Google will not let software bypass the consent step. Needs: per-client token store, `reauth_required` state + outcome event, reconnect-link delivery. Not built yet.
 - Env-loader with validation and a startup log of effective (non-secret) config.
 - Outcome audit ledger is built for core lifecycle evidence; generic outbound, consent-change, and operational events remain.
 - Quiet-hours enforcement has no clock-driven tests; add freeze-time tests.
