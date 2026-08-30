@@ -1,5 +1,29 @@
 # text_back — Session Notes
 
+## 2026-08-29 night — multi-provider calendar layer + Google OAuth DONE (piclaw, Claude)
+
+Michael decided: Google Calendar primary ("everyone has a gmail account"),
+with iCloud/Outlook/M365 wired in as options — helps client onboarding. Built
+the same night (workflow: design → 3 TDD lanes → verify → adversarial review
+→ fix): `src/text_back/calendars/` package — CalendarProvider protocol,
+Google adapter (Calendar v3 freebusy + insert, deterministic event ids),
+Microsoft Graph adapter (getSchedule + events, covers Outlook.com and M365),
+iCloud CalDAV adapter (VFREEBUSY REPORT + PUT .ics, endpoint pinned to
+*.icloud.com), all behind an injected transport (no live network in tests, no
+new deps, redirect-refusing urllib opener). Review caught and fixed a
+critical: idempotency ids were slot-independent, so a returning customer's
+second booking could "confirm" against their months-old event — ids now hash
+(conversation, slot) and every duplicate response is verified against the
+requested slot before an id is returned. Also fixed: production wiring
+(SignalWire) now refuses to boot with the stub calendar; iCloud free/busy
+fails toward busy on non-multistatus 207s; a crash between event creation and
+appointment save is now recoverable. Suite 186 → 302 passed. Separately:
+**Google OAuth completed** via the google-oauth-repair skill pattern — a
+dedicated calendar-only token (butler account, existing Hermes OAuth client,
+browser consent, no password) live-verified and installed at hermes-cloud
+`~/.config/text_back/google_token.json`; the stuck-since-08-20 gcloud path is
+dead, never to be used again.
+
 ## 2026-08-29 evening — signing key stored, no-live-human principle, Cal.com question (piclaw, Claude)
 
 Michael's corrections drove three changes. (1) **Product principle: customers
