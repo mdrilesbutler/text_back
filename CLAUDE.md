@@ -42,6 +42,7 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - Customer calendar reauth: silent refresh; on true revocation mark the client `reauth_required` and send a reconnect link. Customers never go through the operator OAuth-repair path.
 - Credential intake: browser → `~/.config/text_back/` → verified via `/health`. Never chat, git, or Obsidian.
 - The live-call verification checklist in `docs/ONBOARDING-FORWARDING.md` is mandatory at every client onboarding.
+- Two-lane repo protocol: Grok owns `deploy/textback-designer/` + `docs/demo/`; Claude/Codex own everything else. Every commit is `--only`-scoped to named paths, never `-a`. Lane splits are recorded here, not in dated docs files.
 
 ## KILLED (dead — never resurface as live; deleted from runtime, not archived)
 - `cal.com` as booking backend (Google decision 2026-08-29).
@@ -66,7 +67,7 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - Gate (Michael, browser): SignalWire Platform Free Trial mobile verification. Sole proprietor, LLC pending; no paid Brand/Campaign without reviewing fees.
 - Not built: customer `reauth_required` flow (per-client token store, state + outcome event, reconnect-link delivery).
 - Conflict: vault project note (2026-08-29) still says "if Cal.com approved" — stale; the later Google decision wins.
-- Grok's lane has uncommitted UI work in `deploy/` and `docs/demo/` (2026-09-11); not Claude's to touch.
+- 2026-09-11: canon init committed (f3d10d2); a parallel canon-sweep session stood down and committed nothing here. Grok's lane still has uncommitted UI work in `deploy/` and `docs/demo/`.
 
 ## NEXT (exactly one item)
 Port the persist-attempt-before-send crash-safety pattern from `src/text_back/delivery.py` into `src/text_back/followup.py` (the `claim_event` → `send_sms` block near line 199), TDD with crash-shaped tests; full suite green; commit and push `local/tdd-core`.
