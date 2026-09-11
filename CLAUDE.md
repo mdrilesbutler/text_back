@@ -78,3 +78,5 @@ Port the persist-attempt-before-send crash-safety pattern from `src/text_back/de
 - `docs/SIGNALWIRE-INTEGRATION.md`, `docs/ONBOARDING-FORWARDING.md`, `docs/CALENDAR-PROVIDERS.md`, `docs/OUTCOME-EVENTS.md` — contracts.
 - `README.md` — how to run and test.
 - Gotchas: `TEXT_BACK_SIGNALWIRE_SPACE_URL` already includes `https://`; SignalWire has no `/Balance.json`; the `!` runner is non-interactive; caller-ID passthrough on forwarded calls is proven only by the live test call.
+
+- canon-allow: `src/text_back/handoff.py` (product code — the customer handoff module, not a state file)
