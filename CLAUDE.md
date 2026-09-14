@@ -51,7 +51,7 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - `live-human` transfer or "call the business line" escalation copy.
 
 ## ROADMAP (order is locked; build only the current phase)
-- v1 Recover (built locally, TDD): missed call → SMS → qualification → booking or handoff → follow-up sequence → Recovered Revenue Brief.
+- Done 2026-08-29: v1 Recover (built locally, TDD; 302 tests green) — missed call → SMS → qualification → booking or handoff → follow-up sequence → Recovered Revenue Brief.
 - v1 live pilot (current): public HTTPS host, attach SignalWire handlers, real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`, first client via per-client config.
 - v2 Answer: after-hours/overflow AI voice + directory routing.
 - v3 Grow: estimate, no-show, review journeys, separately consent-scoped.
