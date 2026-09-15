@@ -42,7 +42,7 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - Customer calendar reauth: silent refresh; on true revocation mark the client `reauth_required` and send a reconnect link. Customers never go through the operator OAuth-repair path.
 - Credential intake: browser → `~/.config/text_back/` → verified via `/health`. Never chat, git, or Obsidian.
 - The live-call verification checklist in `docs/ONBOARDING-FORWARDING.md` is mandatory at every client onboarding.
-- Two-lane repo protocol: Grok owns `deploy/textback-designer/` + `docs/demo/`; Claude/Codex own everything else. Every commit is `--only`-scoped to named paths, never `-a`. Lane splits are recorded here, not in dated docs files.
+- Two-lane repo protocol: Grok owns `deploy/textback-designer/` + `docs/demo/`; Claude/Codex own everything else (incl. `docs/landing/`). Every commit is `--only`-scoped to named paths, never `-a`. Lane splits are recorded here, not in dated docs files.
 
 ## KILLED (dead — never resurface as live; deleted from runtime, not archived)
 - `cal.com` as booking backend (Google decision 2026-08-29).
@@ -62,15 +62,15 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - Built locally: FastAPI app, signature boundary, idempotency, STOP/HELP, slot filling, time parsing, booking gate, handoff state, outcome ledger, follow-up sequence, Revenue Brief, operator revenue write path, handoff-alert delivery outbox, calendar layer (stub/google/microsoft/icloud).
 - No live webhook, message, call, deployment, or customer traffic has ever happened.
 - Open defect (2026-08-29 review): `followup.py` claims the event then sends — crash between the two wedges the attempt. Same shape `delivery.py` already fixed.
-- NEXT verified absent from codebase 2026-09-15 (grep: `followup.py` L202 `claim_event` → L204 `send_sms`, no persisted attempt bump between; `tests/test_followup.py` has 22 tests, zero crash/wedge/interrupt cases).
+- Queued after NEXT: port persist-attempt-before-send from `delivery.py` into `followup.py` (verified absent 2026-09-15: L202 `claim_event` → L204 `send_sms`, no persisted bump; `tests/test_followup.py` has zero crash cases).
 - Gate (Michael): deployment shape — tunnel smoke test vs durable Caddy+domain on the VPS (deferred 2026-08-28).
 - Gate (Michael): live handoff-alert channel (SMS / Telegram / email). Outbox built; channel `disabled`.
 - Gate (Michael, browser): SignalWire Platform Free Trial mobile verification. Sole proprietor, LLC pending; no paid Brand/Campaign without reviewing fees.
 - Not built: customer `reauth_required` flow (per-client token store, state + outcome event, reconnect-link delivery). Conflict: vault project note (2026-08-29) still says "if Cal.com approved" — stale; Google decision wins.
-- Uncommitted, untouched: Grok's lane (`deploy/textback-designer/`, `docs/demo/`) and `docs/landing/` (landing-page design sources from a 2026-09-11/12 session, deployed to text-back-landing.vercel.app; lane unassigned — Michael to say who commits it).
+- 2026-09-15: everything committed on Michael's instruction — Grok's lane (two commits) and `docs/landing/` (v1–v6 + directions A–C, live at text-back-landing.vercel.app, canvas in README). Tree clean. NEXT verified absent (grep `docs/landing`: no review notes, no chosen-version marker, no sign-off; only sources and README).
 
 ## NEXT (exactly one item)
-Port the persist-attempt-before-send crash-safety pattern from `src/text_back/delivery.py` into `src/text_back/followup.py` (the `claim_event` → `send_sms` block near line 199), TDD with crash-shaped tests; full suite green; commit and push `local/tdd-core`.
+Go through the landing pages with Michael: open `docs/landing/README.md`, walk v1→v6 and directions A–C (live gallery at text-back-landing.vercel.app/versions/), get his pick and change list, apply it to `Main.dc.html`/`Mobile.dc.html` and the `site/` build, redeploy, and record the chosen version in `docs/landing/README.md`.
 
 ## SPEC
 - `docs/PRD-text_back.md` — requirements and architecture; no status log lives there.
