@@ -1,0 +1,456 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wdth,wght@0,75..100,400..700;1,75..100,400..700&display=swap">
+<style>
+    body { margin: 0; background: #ffffff; color: #12211a; font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: #12211a; text-decoration: none; } a:hover { color: #3a7958; }
+    h1, h2, h3, h4 { margin: 0; font-family: "Instrument Sans", "Arial Narrow", "Helvetica Neue", Arial, sans-serif; font-stretch: 75%; font-weight: 600; letter-spacing: -0.02em; line-height: 0.96; text-wrap: balance; }
+    p { margin: 0; text-wrap: pretty; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+    .sec { padding: 80px 0; }
+    .rule { border-top: 1px solid #d8e0db; }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 72px; }
+    .navlinks { display: flex; gap: 24px; font-size: 15px; font-weight: 500; }
+    .navitem { position: relative; display: flex; align-items: center; height: 72px; }
+    .navitem > a { display: inline-flex; align-items: center; gap: 6px; }
+    .mega { display: none; position: absolute; top: 64px; left: -24px; z-index: 20; width: 860px; background: #ffffff; border: 1px solid #d8e0db; border-radius: 12px; box-shadow: 0 24px 60px rgba(15, 42, 30, 0.12); padding: 24px; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 24px; }
+    .navitem:hover .mega, .navitem:focus-within .mega { display: grid; }
+    .mcol { display: flex; flex-direction: column; gap: 10px; }
+    .mhead { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #808582; padding-bottom: 6px; border-bottom: 1px solid #ebefec; }
+    .mgroup { display: flex; flex-direction: column; gap: 6px; }
+    .mgroup a { font-weight: 600; }
+    .trades { display: flex; flex-wrap: wrap; gap: 6px; }
+    .trades a { font-size: 13px; font-weight: 500; color: #4b4e4c; padding: 5px 10px; border-radius: 999px; background: #f4f2ee; border: 1px solid #ebefec; }
+    .trades a:hover { color: #0f2a1e; background: #cffbe1; }
+    .mlink { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; }
+    .mlink:hover { background: #f9f8f6; }
+    .mlink span { font-size: 13px; color: #656966; font-weight: 400; }
+    .pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 22px; border-radius: 999px; font-weight: 600; font-size: 15px; white-space: nowrap; border: 1px solid transparent; transition: all 0.2s ease; }
+    .pill-dark { background: #0f2a1e; color: #f9f8f6; border-color: #0f2a1e; } .pill-dark:hover { background: #2b4539; color: #f9f8f6; }
+    .pill-light { background: #f9f8f6; color: #0f2a1e; border-color: #cfceca; } .pill-light:hover { background: #f4f2ee; color: #0f2a1e; }
+    .pill-accent { background: #d6f842; color: #0f2a1e; border-color: #d6f842; } .pill-accent:hover { filter: brightness(0.95); color: #0f2a1e; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #3a7958; }
+    .h1 { font-size: 92px; }
+    .h2 { font-size: 66px; }
+    .h2s { font-size: 48px; }
+    .h3 { font-size: 30px; }
+    .lede { font-size: 20px; line-height: 1.45; color: #4b4e4c; }
+    .panel { background: #f9f8f6; border-radius: 12px; margin: 8px; overflow: clip; }
+    .hero { display: grid; grid-template-columns: minmax(16rem, 1fr) minmax(0, 4fr); gap: 48px; padding: 72px 40px 56px; }
+    .menu { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
+    .menu a { padding: 10px 12px; border-radius: 8px; color: #4b4e4c; display: flex; justify-content: space-between; align-items: center; }
+    .menu a.on { background: #ffffff; color: #0f2a1e; font-weight: 600; border: 1px solid #d8e0db; }
+    .hero-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: end; }
+    .hero-shot { grid-column: span 2; }
+    .app { background: #ffffff; border: 1px solid #d8e0db; border-radius: 12px; box-shadow: 0 20px 50px rgba(15, 42, 30, 0.08); overflow: hidden; display: grid; grid-template-columns: 220px minmax(0, 1fr) 240px; min-height: 480px; }
+    .app-side { border-right: 1px solid #ebefec; background: #f9f8f6; padding: 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .app-panel { border-left: 1px solid #ebefec; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; font-size: 13px; }
+    .convo { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 8px; font-size: 13px; }
+    .convo.active { background: #ffffff; border: 1px solid #d8e0db; }
+    .bub-out { align-self: flex-end; background: #0f2a1e; color: #f9f8f6; border-radius: 12px 12px 4px 12px; padding: 10px 14px; max-width: 78%; font-size: 14px; line-height: 1.4; }
+    .bub-in { align-self: flex-start; background: #f4f2ee; color: #12211a; border-radius: 12px 12px 12px 4px; padding: 10px 14px; max-width: 78%; font-size: 14px; line-height: 1.4; }
+    .badge { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+    .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .tab { display: flex; flex-direction: column; gap: 8px; padding: 20px 18px; border-radius: 12px; border: 1px solid #d8e0db; background: #ffffff; color: #4b4e4c; }
+    .tab.on { background: #0f2a1e; color: #f9f8f6; border-color: #0f2a1e; }
+    .tab h3 { font-size: 22px; }
+    .tabpanel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: center; background: #ffffff; border: 1px solid #d8e0db; border-radius: 12px; padding: 40px; }
+    .quote { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+    .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; align-items: center; padding: 64px 0; }
+    .mini { background: #f9f8f6; border: 1px solid #d8e0db; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+    .visual { background: #f4f2ee; border-radius: 12px; padding: 40px; display: flex; align-items: center; justify-content: center; min-height: 380px; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+    .card { display: flex; flex-direction: column; gap: 10px; background: #ffffff; border: 1px solid #d8e0db; border-radius: 12px; padding: 24px; min-height: 150px; }
+    .cmp { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); border: 1px solid #d8e0db; border-radius: 12px; overflow: hidden; background: #ffffff; }
+    .cmp > div { padding: 18px 20px; border-bottom: 1px solid #ebefec; font-size: 15px; display: flex; align-items: center; }
+    .cmp .head { background: #f9f8f6; font-weight: 600; font-size: 14px; }
+    .cmp .c { justify-content: center; }
+    .trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .tcards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .tcard { display: flex; flex-direction: column; justify-content: space-between; gap: 24px; min-height: 340px; border-radius: 12px; padding: 28px; background: #f4f2ee; border: 1px solid #d8e0db; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .stat { display: flex; flex-direction: column; gap: 8px; padding: 32px; border-radius: 12px; background: #f9f8f6; border: 1px solid #d8e0db; }
+    .cta { background: #0f2a1e; color: #f9f8f6; border-radius: 12px; margin: 8px; padding: 96px 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: center; }
+    .foot { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr; gap: 32px; }
+    .footlinks { display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: #4b4e4c; }
+    @media (max-width: 760px) {
+      .wrap { padding: 0 16px; }
+      .sec { padding: 56px 0; }
+      .navlinks, .navsec { display: none; }
+      .nav { height: 60px; }
+      .nav .pill { height: 40px; padding: 0 16px; font-size: 14px; }
+      .hero { grid-template-columns: repeat(1, minmax(0, 1fr)); padding: 32px 16px; gap: 28px; }
+      .menu { flex-direction: row; overflow-x: auto; gap: 6px; }
+      .menu a { white-space: nowrap; }
+      .hero-content { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .hero-shot { grid-column: span 1; }
+      .h1 { font-size: 50px; }
+      .h2 { font-size: 40px; }
+      .h2s { font-size: 34px; }
+      .lede { font-size: 18px; }
+      .app { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+      .app-side, .app-panel { display: none; }
+      .tabs, .tabpanel, .quote, .split, .trust, .tcards, .stats, .cta, .cards { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .tabpanel { padding: 20px; }
+      .split { padding: 40px 0; gap: 28px; }
+      .visual { padding: 20px; min-height: 0; }
+      .cmpwrap { overflow-x: auto; }
+      .cmp { min-width: 560px; }
+      .cta { padding: 56px 20px; }
+      .foot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .pill.wide { width: 100%; }
+    }
+  </style>
+</helmet>
+
+
+
+
+<div style="background: #ffffff; min-height: 100%;">
+
+  <!-- NAV -->
+  <div class="wrap">
+    <div class="nav">
+      <div style="display: flex; align-items: center; gap: 36px;">
+        <div style="font-family: 'Instrument Sans', 'Arial Narrow', sans-serif; font-stretch: 75%; font-weight: 700; font-size: 26px; letter-spacing: -0.03em; color: #0f2a1e;">text_back</div>
+        <div class="navlinks">
+          <a href="#product">Product</a>
+          <a href="#solutions">Solutions</a>
+          <div class="navitem">
+            <a href="#customers">Customers<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#12211a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></a>
+            <div class="mega">
+              <div class="mcol">
+                <div class="mhead">By industry</div>
+                <div class="mgroup">
+                  <a href="#customers">Home services</a>
+                  <div class="trades"><a href="#customers">HVAC</a><a href="#customers">Plumbing</a><a href="#customers">Electrical</a><a href="#customers">Roofing</a><a href="#customers">Landscaping</a><a href="#customers">Tree care</a><a href="#customers">Pest control</a><a href="#customers">Cleaning</a><a href="#customers">Garage doors</a><a href="#customers">Appliance repair</a></div>
+                </div>
+                <div class="mgroup">
+                  <a href="#customers">Home improvement</a>
+                  <div class="trades"><a href="#customers">Remodeling</a><a href="#customers">Windows &amp; doors</a><a href="#customers">Flooring</a><a href="#customers">Painting</a><a href="#customers">Kitchen &amp; bath</a><a href="#customers">Fencing &amp; decks</a><a href="#customers">Solar</a></div>
+                </div>
+                <div class="mgroup">
+                  <a href="#customers">Other appointment businesses</a>
+                  <div class="trades"><a href="#customers">Auto repair</a><a href="#customers">Salons &amp; barbers</a><a href="#customers">Clinics</a><a href="#customers">Outfitters &amp; guides</a><a href="#customers">Property management</a></div>
+                </div>
+              </div>
+              <div class="mcol">
+                <div class="mhead">By role</div>
+                <a class="mlink" href="#customers">Owners and operators<span>Recover calls without a new phone or app</span></a>
+                <a class="mlink" href="#customers">Office and dispatch<span>Fewer callbacks, cleaner handoffs</span></a>
+                <a class="mlink" href="#customers">Multi-location managers<span>One standard, every location</span></a>
+              </div>
+              <div class="mcol">
+                <div class="mhead">By size</div>
+                <a class="mlink" href="#customers">Solo and small teams<span>Installed on the number you already have</span></a>
+                <a class="mlink" href="#customers">Growing and multi-location<span>Consistent replies at any volume</span></a>
+              </div>
+              <div class="mcol">
+                <div class="mhead">By results</div>
+                <a class="mlink" href="#customers">Customer stories<span>Appointments booked, calls recovered</span></a>
+                <a class="mlink" href="#customers">Pilot results<span>Numbers from the outcome ledger</span></a>
+              </div>
+            </div>
+          </div>
+          <a href="#resources">Resources</a>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <a class="navsec" href="#pricing" style="font-size: 15px; font-weight: 500;">Pricing</a>
+        <a class="navsec" href="#login" style="font-size: 15px; font-weight: 500;">Login</a>
+        <a class="pill pill-dark" href="#demo">Book a demo</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO (rounded panel: product menu left, content right) -->
+  <div class="panel">
+    <div class="hero">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="eyebrow" style="color: #808582;">Product</div>
+        <div class="menu">
+          <a href="#product">Overview</a>
+          <a class="on" href="#product">Missed-call text-back<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0f2a1e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg></a>
+          <a href="#feat-2">Qualification</a>
+          <a href="#feat-2">Calendar booking</a>
+          <a href="#feat-3">Human handoff</a>
+          <a href="#feat-4">Reporting</a>
+          <a href="#solutions">Platform overview</a>
+        </div>
+      </div>
+      <div class="hero-content">
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <h1 class="h1">Reliable missed-call text-back for busy businesses</h1>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 24px; align-items: flex-start;">
+          <p class="lede">text_back replies to every call you miss within a minute, finds out what the caller needs, and books a time your calendar is actually free. Callers keep dialing the number they already know.</p>
+          <a class="pill pill-dark wide" href="#demo">Book a demo</a>
+        </div>
+        <div class="hero-shot">
+          <div class="app">
+            <div class="app-side">
+              <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #808582; padding: 4px 10px 8px;">Conversations</div>
+              <div class="convo active"><div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3a7958;"></span>Appointment request</div><div style="color: #656966;">Booked · tomorrow 2:00 PM</div></div>
+              <div class="convo"><div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #faae7a;"></span>Estimate request</div><div style="color: #656966;">Qualifying · asked for details</div></div>
+              <div class="convo"><div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9ca29e;"></span>Asked for a person</div><div style="color: #656966;">Handed off · summary sent</div></div>
+              <div class="convo"><div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9ca29e;"></span>No reply yet</div><div style="color: #656966;">Follow-up · 9:00 AM</div></div>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #ebefec;">
+                <div style="display: flex; flex-direction: column;"><div style="font-weight: 600; font-size: 14px;">Missed call · 6:42 PM</div><div style="font-size: 12px; color: #656966;">Forwarded from your business line</div></div>
+                <span class="badge" style="background: #cffbe1; color: #143222;">Booked</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px; flex-grow: 1;">
+                <div class="bub-out">Sorry we missed your call, this is [Your Business]'s scheduling assistant. What can we help you with?</div>
+                <div class="bub-in">I'd like to book an appointment for next week</div>
+                <div class="bub-out">Happy to help. What do you need done, and what days work best?</div>
+                <div class="bub-in">An estimate. Tuesday or Wednesday afternoon</div>
+                <div class="bub-out">Tuesday at 2:00 PM is open. Booked, and a confirmation is on its way.</div>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid #ebefec; font-size: 13px; color: #656966;"><span>Assistant is handling this conversation</span><span style="font-weight: 600; color: #0f2a1e;">Take over</span></div>
+            </div>
+            <div class="app-panel">
+              <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #808582;">Details</div>
+              <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Request</span><span style="font-weight: 600;">Estimate</span></div>
+              <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Location</span><span style="font-weight: 600;">[Address]</span></div>
+              <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Preferred time</span><span style="font-weight: 600;">Tuesday, 2:00 PM</span></div>
+              <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Calendar event</span><span style="font-weight: 600; color: #3a7958;">Created</span></div>
+              <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">First text sent</span><span style="font-weight: 600;">41 seconds after the call</span></div>
+              <div style="margin-top: auto; border-top: 1px solid #ebefec; padding-top: 12px; color: #808582;">Sample conversation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTCOMES: tabs + testimonial -->
+  <div id="product" class="sec">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 40px;">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: end;">
+        <div style="display: flex; flex-direction: column; gap: 16px;"><div class="eyebrow">Outcomes</div><h2 class="h2">Text-back that drives bookings, not just replies</h2></div>
+        <p class="lede">It does more than answer. It moves a missed call to a booked time, keeps your team out of routine back-and-forth, and shows you exactly what happened. Here is how.</p>
+      </div>
+      <div class="tabs">
+        <div class="tab on"><span class="eyebrow" style="color: #9ef8c6;">01</span><h3>Build engagement with fast, consistent replies</h3></div>
+        <div class="tab"><span class="eyebrow" style="color: #808582;">02</span><h3>Convert more conversations into scheduled appointments</h3></div>
+        <div class="tab"><span class="eyebrow" style="color: #808582;">03</span><h3>Free your team from routine conversations</h3></div>
+        <div class="tab"><span class="eyebrow" style="color: #808582;">04</span><h3>See every conversation and outcome in one place</h3></div>
+      </div>
+      <div class="tabpanel">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <h3 class="h3">Every missed call gets a reply within a minute</h3>
+          <p style="color: #4b4e4c;">The unanswered call is forwarded to text_back and the caller gets one clear text asking what they need, before they have dialed anyone else. Wording is set by you and stays the same every time.</p>
+          <p style="color: #4b4e4c;">If they go quiet, a short follow-up sequence continues, never inside quiet hours, and stops the moment they respond.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+          <div class="mini" style="border-color: #faae7a;"><div style="font-weight: 600; color: #808582; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px;">Before</div><div style="display: flex; justify-content: space-between;"><span>6:42 PM</span><span>Call rings out</span></div><div style="display: flex; justify-content: space-between;"><span>6:43 PM</span><span>Voicemail, no message</span></div><div style="display: flex; justify-content: space-between;"><span>6:45 PM</span><span style="color: #c2410c;">Calls a competitor</span></div></div>
+          <div class="mini" style="border-color: #9ef8c6;"><div style="font-weight: 600; color: #808582; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px;">With text_back</div><div style="display: flex; justify-content: space-between;"><span>6:42 PM</span><span>Call forwarded</span></div><div style="display: flex; justify-content: space-between;"><span>6:42 PM</span><span>Text sent</span></div><div style="display: flex; justify-content: space-between;"><span>6:44 PM</span><span style="color: #3a7958;">Booked, event created</span></div></div>
+        </div>
+      </div>
+      <div class="quote">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <p style="font-family: 'Instrument Sans', sans-serif; font-stretch: 85%; font-size: 30px; line-height: 1.2; letter-spacing: -0.01em;">"[Quote from a pilot customer about what changed after installing text_back.]"</p>
+          <p style="color: #656966;">- [Name], [Title], [Business]</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px; justify-content: flex-end;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: #d8e0db;"></div>
+          <div style="height: 40px; width: 140px; border-radius: 6px; background: #d8e0db;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES INTRO + case study card -->
+  <div class="sec rule" style="background: #f9f8f6;">
+    <div class="wrap" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: center;">
+      <div style="display: flex; flex-direction: column; gap: 20px; align-items: flex-start;">
+        <div class="eyebrow">Features</div>
+        <h2 class="h2">Built to reply the right way, every time, at any volume</h2>
+        <p class="lede">The pieces that make a missed call end in a booked appointment, whether you get five calls a week or five hundred.</p>
+        <a class="pill pill-dark" href="#demo">Get a demo</a>
+      </div>
+      <div style="background: #0f2a1e; color: #f9f8f6; border-radius: 12px; padding: 32px; display: flex; flex-direction: column; gap: 20px; min-height: 300px; justify-content: space-between;">
+        <span class="badge" style="background: #2b4539; color: #9ef8c6; align-self: flex-start;">Case study · placeholder</span>
+        <h3 class="h3" style="color: #f9f8f6;">[Business]: [__]% of missed calls turned into appointments</h3>
+        <span style="color: #9ab7b2; font-size: 14px;">Read the case study →</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURE SPLITS -->
+  <div class="wrap">
+    <div id="feat-1" class="split rule">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="eyebrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Build engagement</div>
+        <h2 class="h2s">Instant, consistent replies on the channel people already use</h2>
+        <p class="lede" style="font-size: 18px;">A text within a minute of the missed call, in wording you approve, with a bounded follow-up if the caller goes quiet. Momentum is kept before the conversation goes cold.</p>
+      </div>
+      <div class="visual">
+        <div class="mini" style="background: #ffffff; width: 100%; max-width: 420px;"><div style="display: flex; justify-content: space-between; color: #808582;"><span>Intro text</span><span>Sent 41 s after call</span></div><div class="bub-out" style="align-self: flex-start; max-width: 100%;">Sorry we missed your call, this is [Your Business]'s scheduling assistant. What can we help you with?</div><div style="display: flex; gap: 8px; flex-wrap: wrap;"><span class="badge" style="background: #f4f2ee; color: #4b4e4c;">STOP honored</span><span class="badge" style="background: #f4f2ee; color: #4b4e4c;">HELP honored</span><span class="badge" style="background: #f4f2ee; color: #4b4e4c;">Quiet hours</span></div></div>
+      </div>
+    </div>
+
+    <div id="feat-2" class="split rule">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="eyebrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Increase set rates</div>
+        <h2 class="h2s">Intelligent qualification and booking</h2>
+        <p class="lede" style="font-size: 18px;">It asks one question at a time to learn what the caller needs, where, and when, then offers only times your calendar is free. A time is confirmed only after the calendar accepts the event.</p>
+      </div>
+      <div class="visual">
+        <div class="mini" style="background: #ffffff; width: 100%; max-width: 420px;"><div style="display: flex; justify-content: space-between; color: #808582;"><span>Tuesday</span><span>Your calendar</span></div><div style="display: flex; gap: 10px;"><span style="color: #808582; width: 44px;">10:00</span><span style="color: #3a7958;">Free</span></div><div style="display: flex; gap: 10px;"><span style="color: #808582; width: 44px;">12:00</span><span>Existing appointment</span></div><div style="display: flex; gap: 10px; background: #0f2a1e; color: #f9f8f6; padding: 8px 10px; border-radius: 8px;"><span style="width: 44px; opacity: 0.7;">14:00</span><span>Estimate · new</span></div><div style="color: #3a7958; font-weight: 600;">Event created → confirmation sent</div></div>
+      </div>
+    </div>
+
+    <div id="feat-3" class="split rule">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="eyebrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Boost productivity</div>
+        <h2 class="h2s">End-to-end automation with full control for your team</h2>
+        <p class="lede" style="font-size: 18px;">It handles the whole conversation, not just the greeting. When a caller asks for a person, raises something urgent, or goes off-script, it pauses and sends you a short summary. You can take over at any point.</p>
+      </div>
+      <div class="visual">
+        <div class="mini" style="background: #ffffff; width: 100%; max-width: 420px;"><div style="display: flex; justify-content: space-between; color: #808582;"><span>Handoff alert</span><span>To your phone</span></div><div style="font-weight: 600;">Caller asked for a person</div><div>Latest message: "Can someone call me back today?"</div><div style="color: #656966;">Collected so far: request, location. Conversation paused.</div><div style="display: flex; gap: 8px;"><span class="badge" style="background: #ffe3cf; color: #8a3a12;">Needs a person</span><span class="badge" style="background: #f4f2ee; color: #4b4e4c;">Paused</span></div></div>
+      </div>
+    </div>
+
+    <div id="feat-4" class="split rule">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="eyebrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m7 15 4-4 4 4 5-6"></path></svg>Drive consistency</div>
+        <h2 class="h2s">Complete visibility and operational control</h2>
+        <p class="lede" style="font-size: 18px;">Every call, text, booking, opt-out, and handoff is recorded with timestamps and provider IDs. A monthly report shows what came in while you were busy, and it never counts a booking as revenue.</p>
+      </div>
+      <div class="visual">
+        <div class="mini" style="background: #ffffff; width: 100%; max-width: 420px;"><div style="display: flex; justify-content: space-between; color: #808582;"><span>Outcome ledger</span><span>This call</span></div><div style="display: flex; justify-content: space-between;"><span>call_missed</span><span style="color: #808582;">18:42:07</span></div><div style="display: flex; justify-content: space-between;"><span>first_sms_sent</span><span style="color: #808582;">18:42:48</span></div><div style="display: flex; justify-content: space-between;"><span>first_reply</span><span style="color: #808582;">18:43:30</span></div><div style="display: flex; justify-content: space-between;"><span>qualified</span><span style="color: #808582;">18:44:02</span></div><div style="display: flex; justify-content: space-between; font-weight: 600; color: #3a7958;"><span>booked · event_id</span><span>18:44:21</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOLUTIONS link cards -->
+  <div id="solutions" class="sec rule">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 32px;">
+      <div style="display: flex; flex-direction: column; gap: 12px; max-width: 720px;"><h2 class="h2">Solutions</h2><p class="lede">Missed-call text-back is the core. It powers these, and the rest arrive as they are proven.</p></div>
+      <div class="cards">
+        <a class="card" href="#feat-1"><span class="badge" style="background: #cffbe1; color: #143222; align-self: flex-start;">Available now</span><h3 style="font-size: 22px;">Missed-call follow-up</h3><span style="font-size: 14px; color: #656966;">Reply, qualify, book, hand off.</span></a>
+        <a class="card" href="#feat-1"><span class="badge" style="background: #cffbe1; color: #143222; align-self: flex-start;">Available now</span><h3 style="font-size: 22px;">After-hours coverage</h3><span style="font-size: 14px; color: #656966;">Same flow when you are closed, quiet hours enforced.</span></a>
+        <a class="card" href="#feat-2"><span class="badge" style="background: #cffbe1; color: #143222; align-self: flex-start;">Available now</span><h3 style="font-size: 22px;">Speed to lead</h3><span style="font-size: 14px; color: #656966;">First reply in under a minute, every time.</span></a>
+        <a class="card" href="#feat-2"><span class="badge" style="background: #cffbe1; color: #143222; align-self: flex-start;">Available now</span><h3 style="font-size: 22px;">Appointment booking</h3><span style="font-size: 14px; color: #656966;">Against real calendar availability.</span></a>
+        <a class="card" href="#feat-3"><span class="badge" style="background: #cffbe1; color: #143222; align-self: flex-start;">Available now</span><h3 style="font-size: 22px;">Customer care</h3><span style="font-size: 14px; color: #656966;">Human handoff with a summary when it matters.</span></a>
+        <a class="card" href="#feat-4"><span class="badge" style="background: #f4f2ee; color: #4b4e4c; align-self: flex-start;">Roadmap</span><h3 style="font-size: 22px;">Estimate follow-up</h3><span style="font-size: 14px; color: #656966;">Nudges on open quotes, consent-safe.</span></a>
+        <a class="card" href="#feat-4"><span class="badge" style="background: #f4f2ee; color: #4b4e4c; align-self: flex-start;">Roadmap</span><h3 style="font-size: 22px;">No-show recovery</h3><span style="font-size: 14px; color: #656966;">Reminders and quick rebooking.</span></a>
+        <a class="card" href="#feat-4"><span class="badge" style="background: #f4f2ee; color: #4b4e4c; align-self: flex-start;">Roadmap</span><h3 style="font-size: 22px;">Voice answering</h3><span style="font-size: 14px; color: #656966;">After text-back proves conversion on real phones.</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="sec rule" style="background: #f9f8f6;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 32px;">
+      <h2 class="h2" style="max-width: 800px;">How text_back compares</h2>
+      <div class="cmpwrap"><div class="cmp">
+        <div class="head">After a missed call</div>
+        <div class="head c" style="color: #0f2a1e;">text_back</div>
+        <div class="head c">Others</div>
+        <div>Caller hears back within a minute</div><div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="color: #808582; font-size: 13px;">Voicemail or a message taken</div>
+        <div>Handles the full conversation, not just the greeting</div><div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="color: #808582; font-size: 13px;">Captures basics</div>
+        <div>Books against your real calendar</div><div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="color: #808582; font-size: 13px;">Manual callback</div>
+        <div>Keeps your existing number</div><div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="color: #808582; font-size: 13px;">Varies</div>
+        <div>STOP, HELP, and quiet hours built in</div><div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="color: #808582; font-size: 13px;">Varies</div>
+        <div>Hands off to a person with a summary</div><div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="color: #808582; font-size: 13px;">Varies</div>
+        <div style="border-bottom: 0;">Evidence for every step, monthly report</div><div class="c" style="border-bottom: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div><div class="c" style="border-bottom: 0; color: #808582; font-size: 13px;">Call log</div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- TRUST -->
+  <div class="sec rule">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 36px;">
+      <h2 class="h2" style="max-width: 900px;">Why owners and operators trust text_back</h2>
+      <div class="trust">
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 12px; border: 1px solid #c1d7ff; background: #ffffff;"><h3 class="h3" style="font-size: 26px;">Compliance you don't have to think about</h3><p style="color: #4b4e4c; font-size: 15px;">Registered business texting, STOP and HELP handled instantly, quiet hours respected, transactional messages only.</p></div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 12px; border: 1px solid #faae7a; background: #ffffff;"><h3 class="h3" style="font-size: 26px;">Scripts you approve and can change</h3><p style="color: #4b4e4c; font-size: 15px;">Every message is set by you. Wording, hours, service area, appointment length, and who gets the handoff.</p></div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 28px; border-radius: 12px; border: 1px solid #9ef8c6; background: #ffffff;"><h3 class="h3" style="font-size: 26px;">Guardrails that scale with you</h3><p style="color: #4b4e4c; font-size: 15px;">Clear escalation paths, a calendar that is the only source of truth for bookings, and a full record of every conversation.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS: testimonial cards + rating -->
+  <div id="customers" class="sec rule" style="background: #f9f8f6;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 32px;">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: end;">
+        <div style="display: flex; flex-direction: column; gap: 12px;"><div class="eyebrow" style="color: #808582;">Rated [_._] ([__] reviews) · placeholder</div><h2 class="h2">Join the businesses recovering calls they used to lose</h2></div>
+        <p class="lede">Results below will come from pilot installs, with each number taken from the outcome ledger and labeled as such.</p>
+      </div>
+      <div class="tcards">
+        <div class="tcard"><span class="badge" style="background: #ffe3cf; color: #8a3a12; align-self: flex-start;">Placeholder</span><p style="font-size: 20px; line-height: 1.3;">"[Quote, under 125 characters, from a pilot customer.]"</p><div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; font-stretch: 80%;">[__]% of missed calls booked</span><span style="color: #656966; font-size: 14px;">[Name], [Title], [Business]</span></div></div>
+        <div class="tcard"><span class="badge" style="background: #ffe3cf; color: #8a3a12; align-self: flex-start;">Placeholder</span><p style="font-size: 20px; line-height: 1.3;">"[Quote, under 125 characters, from a pilot customer.]"</p><div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; font-stretch: 80%;">[__] appointments in month one</span><span style="color: #656966; font-size: 14px;">[Name], [Title], [Business]</span></div></div>
+        <div class="tcard"><span class="badge" style="background: #ffe3cf; color: #8a3a12; align-self: flex-start;">Placeholder</span><p style="font-size: 20px; line-height: 1.3;">"[Quote, under 125 characters, from a pilot customer.]"</p><div style="display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 34px; font-weight: 600; letter-spacing: -0.02em; font-stretch: 80%;">[__] s median time to first text</span><span style="color: #656966; font-size: 14px;">[Name], [Title], [Business]</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="sec rule">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="stats">
+        <div class="stat"><h3 class="h2s" style="font-size: 56px;">[__]%</h3><span style="color: #4b4e4c;">of missed calls answered by text within a minute</span></div>
+        <div class="stat"><h3 class="h2s" style="font-size: 56px;">[__]x</h3><span style="color: #4b4e4c;">faster first reply than a callback</span></div>
+        <div class="stat"><h3 class="h2s" style="font-size: 56px;">[__]</h3><span style="color: #4b4e4c;">appointments booked without anyone picking up the phone</span></div>
+      </div>
+      <p style="font-size: 13px; color: #808582;">Figures will be taken from the outcome ledger of pilot installs and labeled as pilot results. They are not a guarantee of your results.</p>
+    </div>
+  </div>
+
+  <!-- DARK CTA -->
+  <div id="demo">
+    <div class="cta">
+      <div style="display: flex; flex-direction: column; gap: 24px; align-items: flex-start;">
+        <h2 class="h2" style="color: #f9f8f6;">Recover the calls,<br>not the headcount</h2>
+        <p style="font-size: 19px; color: #b6d3c2; max-width: 520px;">See how many calls you miss, what they are worth, and what text_back would do with them. A demo takes 15 minutes.</p>
+        <a class="pill pill-accent wide" href="#demo">Book a demo</a>
+        <div style="font-size: 15px; color: #9ab7b2;">[YOUR EMAIL] · [YOUR PHONE]</div>
+      </div>
+      <div class="mini" style="background: #143222; border-color: #2c5e44; color: #f9f8f6;">
+        <div style="display: flex; justify-content: space-between; color: #9ab7b2;"><span>Monthly report</span><span>[MONTH]</span></div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Missed calls texted</span><span>[__]</span></div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Replied</span><span>[__]</span></div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Booked with calendar event</span><span>[__]</span></div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Handed off to you</span><span>[__]</span></div>
+        <div style="color: #9ab7b2; font-size: 12px;">Bookings are never counted as revenue.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div id="resources" style="padding: 64px 0 40px;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 40px;">
+      <div class="foot">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'Instrument Sans', 'Arial Narrow', sans-serif; font-stretch: 75%; font-weight: 700; font-size: 24px; letter-spacing: -0.03em; color: #0f2a1e;">text_back</div>
+          <p style="color: #656966; font-size: 15px; max-width: 300px;">Missed-call text-back and scheduling for businesses that can't answer every call. By Fluxworks.</p>
+          <a class="pill pill-light" href="#demo" style="align-self: flex-start;">Book a demo</a>
+        </div>
+        <div class="footlinks"><h3 style="font-size: 16px; font-stretch: 100%;">Solutions</h3><a href="#solutions">Missed-call follow-up</a><a href="#solutions">After-hours coverage</a><a href="#solutions">Speed to lead</a><a href="#solutions">Appointment booking</a></div>
+        <div class="footlinks"><h3 style="font-size: 16px; font-stretch: 100%;">Customers</h3><a href="#customers">Results</a><a href="#customers">Case studies</a><a href="#customers">Reviews</a></div>
+        <div class="footlinks"><h3 style="font-size: 16px; font-stretch: 100%;">Resources</h3><a href="#feat-4">How it works</a><a href="#feat-1">Texting rules</a><a href="#pricing">Pricing</a></div>
+        <div class="footlinks"><h3 style="font-size: 16px; font-stretch: 100%;">Company</h3><a href="#demo">Contact</a><span>[PRIVACY POLICY]</span><span>[TERMS]</span></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #808582; border-top: 1px solid #ebefec; padding-top: 20px;">
+        <span>© [YEAR] Fluxworks · text_back</span>
+        <span>Reply STOP to opt out · Reply HELP for help · Msg &amp; data rates may apply</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+</x-dc>
+</body>
+</html>

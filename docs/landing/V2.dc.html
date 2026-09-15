@@ -1,0 +1,496 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wdth,wght@0,75..100,400..700;1,75..100,400..700&display=swap">
+<style>
+    body { margin: 0; background: #f8f6f1; color: #12211a; font-family: "Instrument Sans", "Helvetica Neue", Arial, sans-serif; font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { color: #12211a; text-decoration: none; } a:hover { color: #ff5a2e; }
+    h1, h2, h3, h4 { margin: 0; font-family: "Instrument Sans", "Arial Narrow", "Helvetica Neue", Arial, sans-serif; font-stretch: 82%; font-weight: 600; letter-spacing: -0.03em; line-height: 0.98; text-wrap: balance; }
+    p { margin: 0; text-wrap: pretty; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 80px; }
+    .navlinks { display: flex; gap: 28px; font-size: 15px; font-weight: 500; }
+    .pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 22px; border-radius: 999px; font-weight: 600; font-size: 15px; white-space: nowrap; transition: background 0.2s ease; }
+    .pill-dark { background: #0f2a1e; color: #f8f6f1; border: 1px solid #0f2a1e; } .pill-dark:hover { background: #1d4634; color: #f8f6f1; }
+    .pill-light { background: #ffffff; color: #0f2a1e; border: 1px solid #d9d5cb; } .pill-light:hover { color: #0f2a1e; background: #f0ede6; }
+    .pill-accent { background: #ff5a2e; color: #ffffff; border: 1px solid #ff5a2e; } .pill-accent:hover { color: #ffffff; filter: brightness(0.93); }
+    .h1 { font-size: 78px; }
+    .h2 { font-size: 54px; }
+    .kicker { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #3a7958; }
+    .lede { font-size: 20px; line-height: 1.45; color: #3f4a44; }
+    .hero { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px; align-items: center; padding: 48px 0 88px; }
+    .hero-copy { grid-column: span 5; }
+    .hero-app { grid-column: span 7; }
+    .app { background: #ffffff; border: 1px solid #e3e0d8; border-radius: 16px; box-shadow: 0 24px 60px rgba(15, 42, 30, 0.10); overflow: hidden; display: grid; grid-template-columns: 200px minmax(0, 1fr) 220px; min-height: 520px; }
+    .app-side { border-right: 1px solid #ecebe6; background: #f9f8f6; padding: 16px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .app-thread { display: flex; flex-direction: column; }
+    .app-panel { border-left: 1px solid #ecebe6; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; font-size: 13px; }
+    .convo { display: flex; flex-direction: column; gap: 2px; padding: 10px 10px; border-radius: 8px; font-size: 13px; }
+    .convo.active { background: #ffffff; border: 1px solid #e3e0d8; }
+    .bub-out { align-self: flex-end; background: #0f2a1e; color: #f8f6f1; border-radius: 14px 14px 4px 14px; padding: 10px 14px; max-width: 78%; font-size: 14px; line-height: 1.4; }
+    .bub-in { align-self: flex-start; background: #f1efe9; color: #12211a; border-radius: 14px 14px 14px 4px; padding: 10px 14px; max-width: 78%; font-size: 14px; line-height: 1.4; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab { height: 44px; padding: 0 18px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 15px; font-weight: 500; color: #536461; border: 1px solid transparent; }
+    .tab.on { background: #ffffff; color: #0f2a1e; border-color: #d9d5cb; font-weight: 600; }
+    .outcome { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px; align-items: center; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 20px; padding: 48px; }
+    .outcome-copy { grid-column: span 5; }
+    .outcome-vis { grid-column: span 7; }
+    .features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+    .feature { display: flex; flex-direction: column; gap: 28px; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 20px; padding: 36px; }
+    .bullets { display: flex; flex-direction: column; gap: 10px; font-size: 16px; color: #3f4a44; }
+    .bullet { display: flex; gap: 10px; align-items: flex-start; }
+    .mini { background: #f9f8f6; border: 1px solid #e3e0d8; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+    .fits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .fit { display: flex; flex-direction: column; gap: 12px; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 16px; padding: 26px; }
+    .badge { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .cmp { display: grid; grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)); border: 1px solid #e3e0d8; border-radius: 16px; overflow: hidden; background: #ffffff; }
+    .cmp > div { padding: 18px 20px; border-bottom: 1px solid #ecebe6; font-size: 15px; display: flex; align-items: center; }
+    .cmp .head { background: #f9f8f6; font-weight: 600; font-size: 14px; }
+    .cmp .c { justify-content: center; }
+    .trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+    .proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .ghost { border: 1px dashed #b9c0bb; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 12px; color: #808582; min-height: 200px; }
+    .pricing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .price { display: flex; flex-direction: column; gap: 14px; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 20px; padding: 32px; }
+    .foot { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px; }
+    .footlinks { display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: #3f4a44; }
+    @media (max-width: 760px) {
+      .wrap { padding: 0 20px; }
+      .navlinks { display: none; }
+      .nav { height: 64px; }
+      .nav .pill { height: 40px; padding: 0 16px; font-size: 14px; }
+      .hero { grid-template-columns: repeat(1, minmax(0, 1fr)); padding: 24px 0 56px; gap: 32px; }
+      .hero-copy, .hero-app, .outcome-copy, .outcome-vis { grid-column: span 1; }
+      .h1 { font-size: 46px; }
+      .h2 { font-size: 36px; }
+      .lede { font-size: 18px; }
+      .app { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+      .app-side, .app-panel { display: none; }
+      .outcome { grid-template-columns: repeat(1, minmax(0, 1fr)); padding: 24px; }
+      .features, .fits, .trust, .proof, .pricing { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .feature { padding: 24px; }
+      .cmp { min-width: 640px; }
+      .cmp > div { padding: 14px 14px; font-size: 14px; }
+      .foot { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .pill.wide { width: 100%; }
+    }
+  </style>
+</helmet>
+
+
+
+
+<div style="background: #f8f6f1; min-height: 100%;">
+
+  <!-- NAV -->
+  <div class="wrap">
+    <div class="nav">
+      <div style="display: flex; align-items: center; gap: 36px;">
+        <div style="font-family: 'Instrument Sans', 'Arial Narrow', sans-serif; font-stretch: 80%; font-weight: 700; font-size: 26px; letter-spacing: -0.03em; color: #0f2a1e;">text_back</div>
+        <div class="navlinks">
+          <a href="#how">How it works</a>
+          <a href="#features">Product</a>
+          <a href="#compare">Compare</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+      </div>
+      <a class="pill pill-dark" href="#call">Book a 15-minute call</a>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div class="wrap">
+    <div class="hero">
+      <div class="hero-copy" style="display: flex; flex-direction: column; gap: 26px;">
+        <div class="kicker">Missed-call recovery for field service</div>
+        <h1 class="h1">Reliable text-back and booking for service operations.</h1>
+        <p class="lede">text_back answers the calls you can't. It texts the caller within a minute, qualifies the job, and books against your real Google Calendar availability. Your number stays the same.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <a class="pill pill-accent wide" href="#call">Book a 15-minute call</a>
+          <a class="pill pill-light wide" href="#how">See how it works</a>
+        </div>
+        <div style="font-size: 14px; color: #656966;">Built for arborists, guides, and trades that work with their hands full.</div>
+      </div>
+
+      <div class="hero-app">
+        <div class="app">
+          <div class="app-side">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #808582; padding: 4px 10px 8px;">Conversations</div>
+            <div class="convo active">
+              <div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #3a7958;"></span>Limb on fence</div>
+              <div style="color: #656966;">Booked · tomorrow 2:00 PM</div>
+            </div>
+            <div class="convo">
+              <div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ff5a2e;"></span>Stump grind quote</div>
+              <div style="color: #656966;">Qualifying · asked for location</div>
+            </div>
+            <div class="convo">
+              <div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9ca29e;"></span>Asked for a person</div>
+              <div style="color: #656966;">Handed off · summary sent</div>
+            </div>
+            <div class="convo">
+              <div style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9ca29e;"></span>No reply yet</div>
+              <div style="color: #656966;">Follow-up · 9:00 AM</div>
+            </div>
+          </div>
+
+          <div class="app-thread">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #ecebe6;">
+              <div style="display: flex; flex-direction: column;">
+                <div style="font-weight: 600; font-size: 14px;">Missed call · 6:42 PM</div>
+                <div style="font-size: 12px; color: #656966;">Forwarded from your business line</div>
+              </div>
+              <span class="badge" style="background: #d9f2e3; color: #1d4634;">Booked</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 18px; flex-grow: 1;">
+              <div class="bub-out">Sorry we missed your call, this is [Your Business]'s scheduling assistant. What were you calling about?</div>
+              <div class="bub-in">Big limb came down on the back fence, need it cleared out</div>
+              <div class="bub-out">Got it. When works for a look? Tomorrow has 10 AM or 2 PM open.</div>
+              <div class="bub-in">2 works</div>
+              <div class="bub-out">Booked for tomorrow at 2:00 PM. Confirmation on its way to you both.</div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid #ecebe6; font-size: 13px; color: #656966;">
+              <span>Assistant is handling this conversation</span>
+              <span style="font-weight: 600; color: #0f2a1e;">Take over</span>
+            </div>
+          </div>
+
+          <div class="app-panel">
+            <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #808582;">Lead details</div>
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Job</span><span style="font-weight: 600;">Limb removal</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Location</span><span style="font-weight: 600;">[Address]</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Preferred time</span><span style="font-weight: 600;">Tomorrow, 2:00 PM</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">Calendar event</span><span style="font-weight: 600; color: #3a7958;">Created</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #808582;">First text sent</span><span style="font-weight: 600;">41 seconds after the call</span></div>
+            <div style="margin-top: auto; border-top: 1px solid #ecebe6; padding-top: 12px; color: #808582;">Sample conversation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTCOMES -->
+  <div id="how" style="padding: 88px 0;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; max-width: 720px;">
+        <div class="kicker">Outcomes</div>
+        <h2 class="h2">Recovery that drives booked jobs, not just replies.</h2>
+      </div>
+      <div class="tabs">
+        <div class="tab on">Answer every missed call</div>
+        <div class="tab">Book against real availability</div>
+        <div class="tab">Keep the operator in control</div>
+        <div class="tab">Prove what came back</div>
+      </div>
+      <div class="outcome">
+        <div class="outcome-copy" style="display: flex; flex-direction: column; gap: 16px;">
+          <h3 style="font-size: 32px;">Every missed call gets a text within a minute.</h3>
+          <p style="color: #3f4a44;">Conditional forwarding hands the unanswered call to text_back. The caller gets one branded text asking what they need, before they have dialed the next company.</p>
+          <p style="color: #3f4a44;">Webhook retries are claimed once, so a caller never gets the same text twice.</p>
+        </div>
+        <div class="outcome-vis" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+          <div class="mini" style="border-color: #faae7a;">
+            <div style="font-weight: 600; color: #808582; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px;">Without text_back</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between;"><span>6:42 PM</span><span>Call rings out</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>6:43 PM</span><span>Voicemail, no message</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>6:45 PM</span><span style="color: #ff5a2e;">Calls the next company</span></div>
+            </div>
+          </div>
+          <div class="mini" style="border-color: #9ef8c6;">
+            <div style="font-weight: 600; color: #808582; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px;">With text_back</div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between;"><span>6:42 PM</span><span>Call forwarded</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>6:42 PM</span><span>Text sent</span></div>
+              <div style="display: flex; justify-content: space-between;"><span>6:44 PM</span><span style="color: #3a7958;">Booked, calendar event created</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div id="features" style="background: #ffffff; padding: 96px 0; border-top: 1px solid #ecebe6; border-bottom: 1px solid #ecebe6;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 40px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; max-width: 720px;">
+        <div class="kicker">Product</div>
+        <h2 class="h2">Everything between the missed call and the booked job.</h2>
+      </div>
+      <div class="features">
+
+        <div class="feature" style="background: #f9f8f6;">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <h3 style="font-size: 28px;">Instant, consistent text-back</h3>
+            <div class="bullets">
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>One branded, transactional text within a minute of the missed call</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Same wording every time, set by you, not improvised</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Short follow-up sequence if they go quiet, never inside quiet hours</span></div>
+            </div>
+          </div>
+          <div class="mini" style="background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; color: #808582;"><span>Intro text</span><span>Sent 41 s after call</span></div>
+            <div class="bub-out" style="align-self: flex-start; max-width: 100%;">Sorry we missed your call, this is [Your Business]'s scheduling assistant. What were you calling about?</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;"><span class="badge" style="background: #f1efe9; color: #4b4e4c;">STOP honored</span><span class="badge" style="background: #f1efe9; color: #4b4e4c;">HELP honored</span><span class="badge" style="background: #f1efe9; color: #4b4e4c;">Quiet hours</span></div>
+          </div>
+        </div>
+
+        <div class="feature" style="background: #f9f8f6;">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <h3 style="font-size: 28px;">Qualification and booking on calendar truth</h3>
+            <div class="bullets">
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Collects job, location, preferred time, and name, one question at a time</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Checks free/busy before offering a slot and again before booking</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Says "booked" only after Google Calendar returns the event</span></div>
+            </div>
+          </div>
+          <div class="mini" style="background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; color: #808582;"><span>Tomorrow</span><span>Your calendar</span></div>
+            <div style="display: flex; gap: 10px;"><span style="color: #808582; width: 44px;">10:00</span><span style="color: #3a7958;">Free</span></div>
+            <div style="display: flex; gap: 10px;"><span style="color: #808582; width: 44px;">12:00</span><span>Stump grind, Elm St</span></div>
+            <div style="display: flex; gap: 10px; background: #0f2a1e; color: #f8f6f1; padding: 8px 10px; border-radius: 8px;"><span style="width: 44px; opacity: 0.7;">14:00</span><span>Limb removal · new</span></div>
+            <div style="color: #3a7958; font-weight: 600;">Event created → confirmation sent</div>
+          </div>
+        </div>
+
+        <div class="feature" style="background: #f9f8f6;">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <h3 style="font-size: 28px;">Full automation with full operator control</h3>
+            <div class="bullets">
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Ask for a person, mention anything urgent, or go off-script and it pauses</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>You get who, what, and where in one short message</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Keep your existing number; nothing to port and no new app</span></div>
+            </div>
+          </div>
+          <div class="mini" style="background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; color: #808582;"><span>Handoff alert</span><span>To your phone</span></div>
+            <div style="font-weight: 600;">Caller asked for a person</div>
+            <div>Reason: "Is this urgent? Tree is leaning on the power line."</div>
+            <div style="color: #656966;">Collected so far: job, location. Conversation paused.</div>
+            <div style="display: flex; gap: 8px;"><span class="badge" style="background: #ffe3cf; color: #8a3a12;">Safety term</span><span class="badge" style="background: #f1efe9; color: #4b4e4c;">Paused</span></div>
+          </div>
+        </div>
+
+        <div class="feature" style="background: #f9f8f6;">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <h3 style="font-size: 28px;">Complete visibility, backed by evidence</h3>
+            <div class="bullets">
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Every call, text, booking, opt-out, and handoff in an append-only ledger</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>Call and message IDs, calendar event IDs, and timestamps for each step</span></div>
+              <div class="bullet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 3px;"><path d="m5 12 5 5L20 7"></path></svg><span>A monthly recovered-leads brief that never counts a booking as revenue</span></div>
+            </div>
+          </div>
+          <div class="mini" style="background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; color: #808582;"><span>Outcome ledger</span><span>This call</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>call_missed</span><span style="color: #808582;">18:42:07</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>first_sms_sent</span><span style="color: #808582;">18:42:48</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>first_reply</span><span style="color: #808582;">18:43:30</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>qualified</span><span style="color: #808582;">18:44:02</span></div>
+            <div style="display: flex; justify-content: space-between; font-weight: 600; color: #3a7958;"><span>booked · event_id</span><span>18:44:21</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- WHERE IT FITS -->
+  <div style="padding: 96px 0;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; max-width: 720px;">
+        <div class="kicker">Where it fits</div>
+        <h2 class="h2">Start with the missed call. Add the rest when it earns it.</h2>
+      </div>
+      <div class="fits">
+        <div class="fit"><span class="badge" style="background: #d9f2e3; color: #1d4634; align-self: flex-start;">Available now</span><h3 style="font-size: 24px;">Missed-call follow-up</h3><p style="color: #3f4a44; font-size: 15px;">The core. Text back, qualify, book, hand off.</p></div>
+        <div class="fit"><span class="badge" style="background: #d9f2e3; color: #1d4634; align-self: flex-start;">Available now</span><h3 style="font-size: 24px;">After-hours coverage</h3><p style="color: #3f4a44; font-size: 15px;">Same flow when the shop is closed, with quiet hours enforced.</p></div>
+        <div class="fit"><span class="badge" style="background: #d9f2e3; color: #1d4634; align-self: flex-start;">Available now</span><h3 style="font-size: 24px;">Recovered-leads report</h3><p style="color: #3f4a44; font-size: 15px;">Monthly brief of what came in while you were on a job.</p></div>
+        <div class="fit"><span class="badge" style="background: #f1efe9; color: #4b4e4c; align-self: flex-start;">Roadmap</span><h3 style="font-size: 24px;">Estimate follow-up</h3><p style="color: #3f4a44; font-size: 15px;">Nudges on open quotes, consent-safe.</p></div>
+        <div class="fit"><span class="badge" style="background: #f1efe9; color: #4b4e4c; align-self: flex-start;">Roadmap</span><h3 style="font-size: 24px;">No-show recovery</h3><p style="color: #3f4a44; font-size: 15px;">Reminders and quick rebooking.</p></div>
+        <div class="fit"><span class="badge" style="background: #f1efe9; color: #4b4e4c; align-self: flex-start;">Roadmap</span><h3 style="font-size: 24px;">Voice answering</h3><p style="color: #3f4a44; font-size: 15px;">Only after text recovery proves conversion on real phones.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div id="compare" style="background: #ffffff; padding: 96px 0; border-top: 1px solid #ecebe6; border-bottom: 1px solid #ecebe6;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; max-width: 720px;">
+        <div class="kicker">Compare</div>
+        <h2 class="h2">How text_back compares to what you do today.</h2>
+      </div>
+      <div class="cmpwrap" style="overflow-x: auto;"><div class="cmp">
+        <div class="head">What happens after a missed call</div>
+        <div class="head c" style="color: #0f2a1e;">text_back</div>
+        <div class="head c">Answering service</div>
+        <div class="head c">Voicemail</div>
+
+        <div>Caller hears back within a minute</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b9c0bb" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></div>
+
+        <div>Books against your real calendar</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c" style="color: #808582; font-size: 13px;">Takes a message</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b9c0bb" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></div>
+
+        <div>Keeps your existing number</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+
+        <div>STOP, HELP, and quiet hours enforced</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c" style="color: #808582; font-size: 13px;">Varies</div>
+        <div class="c" style="color: #808582; font-size: 13px;">n/a</div>
+
+        <div>Hands off to you when it's not simple</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b9c0bb" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></div>
+
+        <div>Evidence of every step, monthly report</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3a7958" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></div>
+        <div class="c" style="color: #808582; font-size: 13px;">Call log</div>
+        <div class="c"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b9c0bb" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></div>
+
+        <div style="border-bottom: 0;">Monthly cost</div>
+        <div class="c" style="border-bottom: 0; font-weight: 600;">From $200</div>
+        <div class="c" style="border-bottom: 0; color: #808582; font-size: 13px;">Per call or per minute</div>
+        <div class="c" style="border-bottom: 0; color: #808582; font-size: 13px;">The jobs you lose</div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- TRUST -->
+  <div style="padding: 96px 0;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; max-width: 720px;">
+        <div class="kicker">Why owners trust it</div>
+        <h2 class="h2">Built to be boring in all the right places.</h2>
+      </div>
+      <div class="trust">
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 28px; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 16px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0f2a1e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          <h3 style="font-size: 22px;">Compliant by default</h3>
+          <p style="color: #3f4a44; font-size: 15px;">Registered business texting, STOP and HELP handled instantly, quiet hours respected, transactional messages only. Never marketing.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 28px; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 16px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0f2a1e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path><path d="m9 16 2 2 4-4"></path></svg>
+          <h3 style="font-size: 22px;">Calendar is the source of truth</h3>
+          <p style="color: #3f4a44; font-size: 15px;">No double-booking, no invented slots. A time is confirmed only after your Google Calendar accepts the event.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 12px; padding: 28px; background: #ffffff; border: 1px solid #e3e0d8; border-radius: 16px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0f2a1e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13H6z"></path><path d="M15 3v5h5"></path><path d="M9 13h6M9 17h6"></path></svg>
+          <h3 style="font-size: 22px;">Auditable end to end</h3>
+          <p style="color: #3f4a44; font-size: 15px;">Every message and booking is logged with provider IDs. Verified from a real phone before your install goes live.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROOF (placeholder) -->
+  <div style="background: #ffffff; padding: 80px 0; border-top: 1px solid #ecebe6; border-bottom: 1px solid #ecebe6;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 28px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="kicker">Customer results</div>
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;"><h2 class="h2" style="font-size: 40px;">Results from the first installs.</h2><span class="badge" style="background: #ffe3cf; color: #8a3a12;">Placeholder until the first pilot</span></div>
+        <p style="color: #656966; font-size: 15px;">Each card will carry a quote, one measured number from the outcome ledger, and the business name, with permission.</p>
+      </div>
+      <div class="proof">
+        <div class="ghost"><span>"[Quote from the owner]"</span><span style="font-size: 28px; font-weight: 600; color: #b9c0bb;">[__]% of missed calls booked</span><span>[Business name, trade]</span></div>
+        <div class="ghost"><span>"[Quote from the owner]"</span><span style="font-size: 28px; font-weight: 600; color: #b9c0bb;">[__] jobs recovered in month one</span><span>[Business name, trade]</span></div>
+        <div class="ghost"><span>"[Quote from the owner]"</span><span style="font-size: 28px; font-weight: 600; color: #b9c0bb;">[__] s median time to first text</span><span>[Business name, trade]</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div id="pricing" style="padding: 96px 0;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 14px; max-width: 720px;">
+        <div class="kicker">Pricing</div>
+        <h2 class="h2">Diagnose first. Install second. Keep it running.</h2>
+      </div>
+      <div class="pricing">
+        <div class="price">
+          <div class="kicker" style="color: #808582;">Step 1</div>
+          <h3 style="font-size: 30px;">Assessment</h3>
+          <div style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em;">$500 to $1,000</div>
+          <p style="color: #3f4a44; font-size: 15px;">A 45-minute discovery call and a written plan within 48 hours. We size the leak before you spend anything fixing it.</p>
+          <a class="pill pill-light" href="#call" style="margin-top: auto;">Start here</a>
+        </div>
+        <div class="price" style="border: 2px solid #0f2a1e;">
+          <div class="kicker">Step 2</div>
+          <h3 style="font-size: 30px;">Recover install</h3>
+          <div style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em;">$1,500 to $3,000 <span style="font-size: 16px; font-weight: 500; color: #656966;">one-time</span></div>
+          <p style="color: #3f4a44; font-size: 15px;">Attached to your existing number and your Google Calendar. Tested end to end from a real phone before it goes live.</p>
+          <a class="pill pill-dark" href="#call" style="margin-top: auto;">Book a 15-minute call</a>
+        </div>
+        <div class="price">
+          <div class="kicker" style="color: #808582;">Step 3</div>
+          <h3 style="font-size: 30px;">Care</h3>
+          <div style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em;">$200 to $500 <span style="font-size: 16px; font-weight: 500; color: #656966;">per month</span></div>
+          <p style="color: #3f4a44; font-size: 15px;">Monitoring, tuning, and a monthly report of the leads that came in while you were on a job.</p>
+          <a class="pill pill-light" href="#call" style="margin-top: auto;">Ask about Care</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div id="call" style="background: #0f2a1e; color: #f8f6f1; padding: 104px 0;">
+    <div class="wrap" style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px; align-items: center;">
+      <div style="grid-column: span 7; display: flex; flex-direction: column; gap: 24px;">
+        <h2 class="h2" style="color: #f8f6f1;">Recover the jobs you are already paying to ring.</h2>
+        <p style="font-size: 19px; color: #b6d3c2; max-width: 540px;">Bring last week's missed-call guess and your average job value. We will do the math together on a 15-minute call.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+          <a class="pill pill-accent wide" href="#call">Book a 15-minute call</a>
+        </div>
+        <div style="font-size: 15px; color: #9ab7b2;">[YOUR EMAIL] · [YOUR PHONE]</div>
+      </div>
+      <div style="grid-column: span 5;">
+        <div class="mini" style="background: #143222; border-color: #2c5e44; color: #f8f6f1;">
+          <div style="display: flex; justify-content: space-between; color: #9ab7b2;"><span>Recovered-leads brief</span><span>[MONTH]</span></div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Missed calls texted</span><span>[__]</span></div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Replied</span><span>[__]</span></div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Booked with calendar event</span><span>[__]</span></div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #2c5e44; padding-bottom: 8px;"><span>Handed off to you</span><span>[__]</span></div>
+          <div style="display: flex; justify-content: space-between; color: #9ab7b2; font-size: 12px;"><span>Bookings are never counted as revenue.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="padding: 56px 0 40px; border-top: 1px solid #ecebe6;">
+    <div class="wrap" style="display: flex; flex-direction: column; gap: 40px;">
+      <div class="foot">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-family: 'Instrument Sans', 'Arial Narrow', sans-serif; font-stretch: 80%; font-weight: 700; font-size: 24px; letter-spacing: -0.03em; color: #0f2a1e;">text_back</div>
+          <p style="color: #656966; font-size: 15px; max-width: 320px;">Missed-call recovery and scheduling for field-service businesses. By Fluxworks.</p>
+        </div>
+        <div class="footlinks"><span style="font-weight: 600; color: #12211a;">Product</span><a href="#how">How it works</a><a href="#features">Features</a><a href="#compare">Compare</a></div>
+        <div class="footlinks"><span style="font-weight: 600; color: #12211a;">Company</span><a href="#pricing">Pricing</a><a href="#call">Contact</a><span>[PRIVACY POLICY]</span></div>
+        <div class="footlinks"><span style="font-weight: 600; color: #12211a;">Texting</span><span>Reply STOP to opt out</span><span>Reply HELP for help</span><span>Msg &amp; data rates may apply</span></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #808582;">
+        <span>Fluxworks · text_back</span>
+        <span>Sample conversations shown. No customer data.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+</x-dc>
+</body>
+</html>

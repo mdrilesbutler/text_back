@@ -1,0 +1,159 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Landing page"
+    },
+    {
+      "id": "page-2",
+      "name": "Workflow animation"
+    },
+    {
+      "id": "page-3",
+      "name": "Earlier directions"
+    },
+    {
+      "id": "page-4",
+      "name": "Earlier versions v1\u2013v5"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Landing page \u00b7 desktop (v6, current)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 9400,
+      "page": "page-1"
+    },
+    {
+      "file": "Mobile.dc.html",
+      "title": "Landing page \u00b7 phone",
+      "x": 1540,
+      "y": 0,
+      "w": 390,
+      "h": 13600,
+      "page": "page-1"
+    },
+    {
+      "file": "Workflow.dc.html",
+      "title": "Missed call \u2192 booked job (animated)",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 880,
+      "page": "page-2"
+    },
+    {
+      "file": "DirectionA.dc.html",
+      "title": "Direction A \u00b7 Job-site plain",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 4100,
+      "page": "page-3"
+    },
+    {
+      "file": "DirectionB.dc.html",
+      "title": "Direction B \u00b7 Dispatch board (low-fi)",
+      "x": 1540,
+      "y": 0,
+      "w": 880,
+      "h": 900,
+      "page": "page-3"
+    },
+    {
+      "file": "DirectionC.dc.html",
+      "title": "Direction C \u00b7 Editorial letter (low-fi)",
+      "x": 2500,
+      "y": 0,
+      "w": 880,
+      "h": 900,
+      "page": "page-3"
+    },
+    {
+      "file": "V1.dc.html",
+      "title": "v1 \u00b7 first Hatch-style build",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 8600,
+      "page": "page-4"
+    },
+    {
+      "file": "V2.dc.html",
+      "title": "v2 \u00b7 v1 + review fixes",
+      "x": 1540,
+      "y": 0,
+      "w": 1440,
+      "h": 8600,
+      "page": "page-4"
+    },
+    {
+      "file": "V3.dc.html",
+      "title": "v3 \u00b7 trade-neutral + Customers menu",
+      "x": 3080,
+      "y": 0,
+      "w": 1440,
+      "h": 8600,
+      "page": "page-4"
+    },
+    {
+      "file": "V4.dc.html",
+      "title": "v4 \u00b7 v3 + mobile fixes",
+      "x": 4620,
+      "y": 0,
+      "w": 1440,
+      "h": 8600,
+      "page": "page-4"
+    },
+    {
+      "file": "V5.dc.html",
+      "title": "v5 \u00b7 specialist copy pass",
+      "x": 6160,
+      "y": 0,
+      "w": 1440,
+      "h": 8600,
+      "page": "page-4"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "style-note",
+      "x": 0,
+      "y": -180,
+      "w": 520,
+      "page": "page-1",
+      "text": "Rebuilt section for section in the structure of the reference product page: rounded hero panel with a product menu and screenshot, outcome tabs with a testimonial, features intro with a case-study card, four text-left feature splits, solutions grid, comparison, trust row, testimonial cards with a rating line, stats band, dark two-line call to action, four-group footer. All copy is original and trade-neutral; quotes, ratings and stats are marked placeholders."
+    },
+    {
+      "id": "workflow-note",
+      "x": 0,
+      "y": 1000,
+      "w": 460,
+      "page": "page-2",
+      "text": "Loops on its own. The dot is one call moving through text_back; the small monospace labels are the actual functions in the repo. Use the cycle chip above the frame to slow it down or speed it up."
+    },
+    {
+      "id": "direction-note",
+      "x": 1540,
+      "y": 1020,
+      "w": 420,
+      "page": "page-3",
+      "text": "The three earlier directions, kept for reference. None chosen."
+    },
+    {
+      "id": "versions-note",
+      "x": 0,
+      "y": -200,
+      "w": 560,
+      "page": "page-4",
+      "text": "Every iteration of the Hatch-style page, left to right, oldest first. v6 is the current page on the Landing page tab. Direction A, B and C are on the Earlier directions tab. Nothing gets deleted; each new pass is added here."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}
