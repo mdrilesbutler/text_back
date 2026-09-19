@@ -1,0 +1,5 @@
+# Set TEXT_BACK_PUBLIC_HOST to the approved hostname before installing.
+# Runtime TEXT_BACK_PUBLIC_BASE_URL must be https://<the same hostname>.
+{$TEXT_BACK_PUBLIC_HOST} {
+    reverse_proxy 127.0.0.1:8000
+}

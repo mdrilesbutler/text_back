@@ -12,17 +12,17 @@ never code. Done = one real-phone Recover pilot proves conversion.
 
 ## WHAT'S LIVE
 - Repo: git@github.com:mdrilesbutler/text_back.git — app code is branch `local/tdd-core` (`main` is stale). Piclaw worktree: `~/projects/text_back-tdd-core`.
-- Runtime: hermes-vcn-0 (`ssh hermes-cloud`) — localhost-only `text-back.service` at 127.0.0.1:8000, stub telecom mode, `/health` green. No public URL.
-- Credentials: hermes-cloud `~/.config/text_back/{pilot,runtime,signalwire}.env` + `google_token.json`, mode 600, never git. Signing key is in runtime.env — rotate at deploy.
+- Runtime: hermes-vcn-0 (`ssh hermes-cloud`) — user-scoped `text-back.service` at 127.0.0.1:8000, stub telecom + real Google Calendar, managed worker and persistent SQLite; restarted and health verified 2026-09-19 with the Web OAuth migration fix. No public URL.
+- Credentials: hermes-cloud `~/.config/text_back/{pilot,runtime,signalwire}.env` + `google_token.json`, mode 600, never git. Preserve credentials; verify the existing project signing key before live webhooks, without rotating it.
 - SignalWire: FluxWorks space, funded, one voice/SMS/MMS pilot number, no handlers attached, $15/month ceiling.
-- Google Calendar: calendar-only OAuth token, live-verified as mdrilesbutler@gmail.com (2026-08-29).
+- Google Calendar: calendar-only authorized-user JSON for mdrilesbutler@gmail.com; refresh and read-only free/busy live-verified 2026-09-18.
 - CI: GitHub Actions runs pytest on every push/PR (py3.12/3.13).
 - Grok's lane: `deploy/textback-designer/` + `docs/demo/` (designer UI, story film). Claude/Codex never edit or commit those.
 
 ## HOW TO WORK WITH RILES
 - He does not code. Terse, decisive answers. Recommend; don't hand him option menus.
 - Small compartmentalized specs, one layer at a time.
-- State key decisions explicitly and get a yes before executing.
+- Michael authorized autonomous completion on 2026-09-16: "continue working until the product is working" and "you don't have to ask for my approval any more." Proceed with routine in-scope inspection, fixes, tests, and verification; do not repeatedly ask for approval already given. Preserve the specific live-service boundaries below and obey tool-enforced permissions.
 - Never cut, kill, demote, or drop scope without his explicit agreement on the specific item.
 - Don't re-derive anything under LOCKED.
 - No telecom purchase, spend, production message, or call routing without his explicit approval; purchases happen only in his browser.
@@ -34,7 +34,7 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - Customers never get a live human. Escalation = graceful exit + async operator lead. Guard: `tests/test_no_live_human_copy.py`.
 - Deterministic policy, never an LLM, owns STOP/HELP, consent, quiet hours, booking truth, and handoff.
 - `wiring_mode`: `forwarded` (default; first voice event per call_sid triggers) vs `managed` (terminal unanswered only). Never mix the rules.
-- Webhooks verify `X-SignalWire-Signature` and fail closed; every side effect is idempotent via `claim_event`.
+- Webhooks verify `X-SignalWire-Signature` and fail closed; inbound claims and local intents commit atomically; durable outboxes own retries, and ambiguous SMS acceptance requires reconciliation.
 - No booking is claimed without a Calendar event ID. Revenue comes only from explicit `revenue.attributed` events with evidence — never inferred from a booking.
 - Product order: Recover first. Answer (voice) and Grow (journeys) wait until the real-phone Recover pilot proves conversion.
 - GTM: Koerner ladder TB-ASSESS → TB-RECOVER → TB-CARE; sell missed-call recovery, not "AI".
@@ -57,20 +57,20 @@ never code. Done = one real-phone Recover pilot proves conversion.
 - v3 Grow: estimate, no-show, review journeys, separately consent-scoped.
 - Optional (money gate): PDF leave-behind, Stripe links for the three SKUs; a `deploy-client` skill for fluxworks.
 
-## STATE (as of 2026-09-15; ≤ 10 lines; rewritten every handoff)
-- Last code commit 2026-08-29. 302 tests green on hermes-cloud (verified 2026-09-11). No code changed 2026-09-13→15 (canon-only sessions).
-- Built locally: FastAPI app, signature boundary, idempotency, STOP/HELP, slot filling, time parsing, booking gate, handoff state, outcome ledger, follow-up sequence, Revenue Brief, operator revenue write path, handoff-alert delivery outbox, calendar layer (stub/google/microsoft/icloud).
-- No live webhook, message, call, deployment, or customer traffic has ever happened.
-- Open defect (2026-08-29 review): `followup.py` claims the event then sends — crash between the two wedges the attempt. Same shape `delivery.py` already fixed.
-- Queued after NEXT: port persist-attempt-before-send from `delivery.py` into `followup.py` (verified absent 2026-09-15: L202 `claim_event` → L204 `send_sms`, no persisted bump; `tests/test_followup.py` has zero crash cases).
-- Gate (Michael): deployment shape — tunnel smoke test vs durable Caddy+domain on the VPS (deferred 2026-08-28).
-- Gate (Michael): live handoff-alert channel (SMS / Telegram / email). Outbox built; channel `disabled`.
-- Gate (Michael, browser): SignalWire Platform Free Trial mobile verification. Sole proprietor, LLC pending; no paid Brand/Campaign without reviewing fees.
-- Not built: customer `reauth_required` flow (per-client token store, state + outcome event, reconnect-link delivery). Conflict: vault project note (2026-08-29) still says "if Cal.com approved" — stale; Google decision wins.
-- 2026-09-15: everything committed on Michael's instruction — Grok's lane (two commits) and `docs/landing/` (v1–v6 + directions A–C, live at text-back-landing.vercel.app, canvas in README). Tree clean. NEXT verified absent (grep `docs/landing`: no review notes, no chosen-version marker, no sign-off; only sources and README).
+## STATE (as of 2026-09-19; ≤ 10 lines; rewritten every handoff)
+- Recover recovery on hermes-vcn-0, branch `local/tdd-core`, implementation commit `e4b9f5a`: the three lost-retry cases have passing regressions; customer SMS outbox, transactional inbound processing, persistent webhook inbox, and managed startup/shutdown worker are wired. Michael authorized publishing all changes; verify live origin for synchronization claims.
+- SMS uses bounded definite-failure retries, persisted send ownership, unknown-outcome holds, signed SignalWire status reconciliation, STOP/quiet-hour/cancellation checks, and provider-backed outcome evidence. Operator alerts isolate malformed payloads and protect concurrent final attempts. Google event recovery verifies the provider event after a local-commit interruption.
+- Qualified bookings retry calendar outages without another customer reply, pause on reauth, and produce a durable operator handoff after exhaustion. Google authorized-user credentials refresh with file locking/atomic mode-600 persistence; revocation queues reconnect links; browser reconnection uses expiring state, PKCE, cookie binding, and configured-calendar write verification.
+- Validation: `.venv/bin/pytest tests/` → 347 passed on 2026-09-19, including signed SignalWire local end-to-end tests and a real ASGI process restart smoke test. New regression proves configuring a Web OAuth client preserves refresh with the token's original client until successful browser reconnect replaces it. Providers in journey tests are fakes.
+- Restarted the existing localhost user service with the reviewed `deploy/systemd/text-back.service`; preserved stub telecom, signing key, sender, and routing. Enabled Google Calendar, persisted worker state, credential-directory writes, and a new separate operator API key only where absent. Protected pre-change environment/unit backups remain beside their originals.
+- Live read-only verification on 2026-09-19: Google free/busy succeeds; runtime uses google calendar, stub telecom, persistent SQLite and an error-free worker. SignalWire owned-number and project APIs return HTTP 200; existing longcode supports voice/SMS/MMS and reports `messaging_integration_test`. No voice/SMS URLs attached. Brand-list API returns HTTP 200 with an empty complete list. Project API exposes neither trial status nor signing key; these checks do not establish a send restriction. No live traffic, events, purchases, routing changes, credential rotation, or public exposure.
+- Concrete missing pilot inputs: intended HTTPS hostname, monitored operator destination, business test phone/carrier and separate approved caller phone. Inspected `~/.config/text_back/`, relevant proxy/service configuration, and completed VS Code session; none supplies those inputs. Google Web OAuth client file is unset and HTTPS callback registration remains unverified. Question sent to Michael; do not infer approval for a recipient from an address book or provider registration. Real-phone pilot unproven.
+- Operations: `docs/RECOVER-OPERATIONS.md`, `scripts/pilot_check.py`, `deploy/install_local_runtime.py`, and `deploy/Caddyfile`. Authenticated `/operator/handoffs` exposes durable leads; external alert delivery remains disabled pending a monitored destination. Do not mistake redacted logging or green health for a monitored pilot.
+- Preserve landing v1–v6/directions A–C pending Michael's pick/change list and Grok's `deploy/textback-designer/` + `docs/demo/`. Those directories and landing sources were not edited. Michael reiterated on 2026-09-18: stop asking for verification approval; it is already granted.
+- VS Code session `01a0ae70-b1e4-73d2-a2bc-bbb8a0dffcd8` completed its last turn at 2026-09-18 21:50 UTC. Absorb its work in this checkout; no unfinished turn to continue or kill. Michael requested committing and pushing all changes; GitHub CLI and existing SSH identity verified as `mdrilesbutler`.
 
 ## NEXT (exactly one item)
-Go through the landing pages with Michael: open `docs/landing/README.md`, walk v1→v6 and directions A–C (live gallery at text-back-landing.vercel.app/versions/), get his pick and change list, apply it to `Main.dc.html`/`Mobile.dc.html` and the `site/` build, redeploy, and record the chosen version in `docs/landing/README.md`.
+Complete the real-phone Recover pilot after the pending endpoint/operator/test-phone answer: configure the intended HTTPS endpoint and Google Web OAuth callback, verify the existing SignalWire signing key and any actual provider restrictions, attach the exact handlers, then run forwarding/caller-ID/one-intro/answered-call/STOP/booking-or-handoff/outcome checks. Reuse the owned number. Do not repeat assessment, infer unspecified eligibility blockers, rotate credentials, contact unapproved people, or disturb pending landing/Grok work.
 
 ## SPEC
 - `docs/PRD-text_back.md` — requirements and architecture; no status log lives there.

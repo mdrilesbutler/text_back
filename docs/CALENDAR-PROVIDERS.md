@@ -13,8 +13,8 @@ bypasses env validation, exactly like `telecom=`.
 |---|---|---|
 | `stub` (default) | `CalendarStub` (in-memory) | implemented |
 | `google` | `calendars/google.py` (Calendar v3 REST) | implemented |
-| `microsoft` | `calendars/microsoft.py` (Graph; Outlook.com + M365) | placeholder — selecting it raises "not yet implemented" |
-| `icloud` | `calendars/icloud.py` (CalDAV) | placeholder — selecting it raises "not yet implemented" |
+| `microsoft` | `calendars/microsoft.py` (Graph; Outlook.com + M365) | implemented |
+| `icloud` | `calendars/icloud.py` (CalDAV) | implemented |
 
 ## Environment variables (values never in git)
 
@@ -22,20 +22,19 @@ bypasses env validation, exactly like `telecom=`.
 |---|---|---|
 | `TEXT_BACK_CALENDAR_PROVIDER` | all | `stub` \| `google` \| `microsoft` \| `icloud` |
 | `TEXT_BACK_GOOGLE_CALENDAR_ID` | google | Calendar ID (e.g. `mike@example.com`) |
-| `TEXT_BACK_GOOGLE_TOKEN_FILE` | google | Path to a mode-600 file holding ONLY a current OAuth2 bearer access token (one line) |
+| `TEXT_BACK_GOOGLE_TOKEN_FILE` | google | Path to mode-600 Google authorized-user JSON (legacy one-line tokens supported) |
 | `TEXT_BACK_MS_USER` | microsoft | Target mailbox UPN |
 | `TEXT_BACK_MS_TOKEN_FILE` | microsoft | Path to a mode-600 file holding a current Graph bearer token |
 | `TEXT_BACK_ICLOUD_USERNAME` | icloud | Apple ID |
 | `TEXT_BACK_ICLOUD_APP_PASSWORD_FILE` | icloud | Path to a mode-600 file holding the app-specific password |
 | `TEXT_BACK_ICLOUD_CALENDAR_URL` | icloud | Full HTTPS CalDAV calendar collection URL |
 
-Adapters consume token FILES, not OAuth client credentials. Token refresh runs
-in an external refresher (cron/systemd under `~/.config/text_back/`) that
-rewrites the token file; the app re-reads the file on every provider call and
-never performs an OAuth flow itself. The refresher's own env names
-(`TEXT_BACK_MS_TENANT_ID` / `TEXT_BACK_MS_CLIENT_ID` /
-`TEXT_BACK_MS_CLIENT_SECRET_FILE`, `TEXT_BACK_GOOGLE_SA_KEY_FILE`) are
-documentation-only — `create_app` never reads them.
+Google refresh and customer reconnection run inside the application. See
+[Recover operations](RECOVER-OPERATIONS.md) for the authorized-user JSON format,
+Web OAuth client configuration, revocation handling, and reconnect routes.
+Microsoft Graph continues to read a current externally refreshed bearer token;
+iCloud reads an app-specific password. Neither optional adapter uses Google's
+credential lifecycle.
 
 ## Product rules (all providers)
 

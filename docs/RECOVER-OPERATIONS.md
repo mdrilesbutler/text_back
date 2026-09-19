@@ -1,0 +1,122 @@
+# Recover operation and recovery
+
+Run one client per process and persistent SQLite database. Configure identity,
+numbers, timezone, calendar, and destinations through the environment. Start with
+`PYTHONPATH=src .venv/bin/python -m text_back`; the server binds to localhost.
+`deploy/systemd/text-back.service` is the user-service template. Its writable
+credential directory permits atomic Google token refresh; `UMask=0077` protects
+credentials and the database. Back up the database with SQLite's backup API,
+not by copying a live database without its WAL.
+
+## Background processing
+
+FastAPI's lifespan starts one worker. It checks credentials, replays persisted
+inbound webhooks, retries bookings, advances follow-ups, sends queued SMS, and
+delivers operator alerts. Each lane reports failure separately through `/health`.
+Shutdown waits for active provider requests before closing the owned database.
+Restart resumes the same database. SignalWire mode rejects an in-memory database.
+
+Every verified webhook is stored before processing. The inbound claim, captured
+fields, handoff payload, and SMS intent commit together. An interrupted handler
+can be replayed without treating the same customer text as a new field. SMS
+transports run after the intent transaction commits. Old prompts are cancelled
+when a new reply changes the conversation.
+
+Customer SMS attempts use a four-attempt limit with 1-, 5-, and 15-minute retry
+delays. Only definite non-acceptance (connection failure or HTTP 429) is retried.
+A timeout after transmission, HTTP 5xx, missing receipt, or interrupted send is
+held as `unknown`; it is not automatically resent. An interrupted `sending` row
+becomes `unknown` after its two-minute lease. This avoids claiming exactly-once
+provider delivery, which the SMS provider does not guarantee.
+
+Each SignalWire send carries an intent-specific `StatusCallback`. The signed
+`/webhooks/sms-status?key=...` callback reconciles unknown sends using the provider
+message ID. Failed/undelivered callbacks record `sms.delivery_failed`; they cannot
+invent a booking confirmation. Provider acceptance and handset delivery are
+separate facts. Missing callbacks require investigation in SignalWire before any
+manual resend. Health exposes counts, never customer content or secrets.
+
+STOP, current handoff, booking, follow-up cancellation, and quiet hours are checked
+again before delayed sends. STOP/HELP replies are exempt from quiet hours.
+Immediate customer replies remain conversational; delayed retries and worker
+messages obey quiet hours. A provider request already authorized and in flight
+cannot be recalled by a later STOP. Pending work is cancelled.
+
+Qualified bookings survive temporary calendar outages. Up to four attempts are
+made, followed by a durable operator handoff. Revoked Google credentials pause
+booking attempts until reconnection. Google retries verify the deterministic
+provider event before treating its occupied slot as a conflict after a crash.
+Confirmation is queued only with a provider event ID.
+
+## Operator access
+
+Set a separate `TEXT_BACK_OPERATOR_API_KEY` in the protected environment file.
+`GET /operator/handoffs` requires `Authorization: Bearer <key>` and returns the
+most recent durable alert payloads. Do not place the key in URLs or public pages.
+This supports operator polling; it does not establish that someone is monitoring
+alerts. `TEXT_BACK_HANDOFF_DELIVERY_CHANNEL=disabled` parks alerts;
+`log` emits redacted notices. A monitored alert destination remains a pilot
+requirement. Operator delivery is bounded at-least-once; receipts and outcome
+ledger entries are deduplicated. Malformed payloads do not block healthy rows.
+
+Revenue reporting uses `brief.build_brief_data` / `brief.render_brief` and explicit
+operator evidence through `operator.record_job_completed` and
+`operator.record_revenue_attributed`. Bookings alone never produce revenue.
+
+## Calendar reconnection
+
+Google supports authorized-user JSON credentials with `token`, `expiry`,
+`refresh_token`, `client_id`, and `client_secret`. Refresh uses a file lock and
+atomic mode-600 replacement. Transient outages preserve credentials;
+`invalid_grant` persists `reauth_required`. A 401 causes one refresh and retry.
+Legacy one-line access tokens remain readable for compatibility but cannot
+refresh themselves; use authorized-user JSON for an operating client.
+
+Customer reconnection uses Google browser consent, not host OAuth-repair tools.
+A revoked calendar queues an operator alert containing a connection link. An
+operator can also request one with authenticated `POST /operator/calendar/reconnect`.
+Links expire after one day; the browser flow uses a 15-minute, single-use state,
+PKCE, and a Secure/HttpOnly cookie. The callback verifies write access to the
+configured calendar before saving new credentials.
+
+Configure a Google **Web application** OAuth client with the exact redirect URI
+`<TEXT_BACK_PUBLIC_BASE_URL>/calendar/callback`. Use
+`TEXT_BACK_GOOGLE_CLIENT_FILE` to point to its protected client JSON if it differs
+from the client embedded in the current token file. An installed/desktop OAuth
+client used for the pilot token is not proof that this HTTPS callback is registered.
+Refresh continues using the client embedded in the existing token file until a
+successful browser reconnection saves credentials for the new Web client.
+Public HTTPS, client registration, and a monitored reconnect delivery channel
+must be verified during onboarding.
+
+## Pilot preparation and verification
+
+`scripts/pilot_check.py --env-file <protected-runtime-file>` reports configuration
+without printing secrets. Add `--health` to check the running localhost worker. Add `--providers` for read-only Google free/busy and
+SignalWire number/handler checks. Google refresh may update the credential file.
+SignalWire checks also report owned-number capabilities, available project
+verification fields, and brand registration states. Missing API fields mean
+unknown, not a confirmed account restriction; capabilities alone do not prove
+delivery to a handset.
+The script never creates an appointment, sends an SMS, purchases a number, or
+changes routing. An explicit `--google-token-file` and `--google-calendar-id`
+can verify credentials before switching runtime configuration.
+
+The localhost installer `deploy/install_local_runtime.py --google-calendar-id <id>`
+requires existing stub telecom and a localhost public URL. It backs up the prior
+unit/environment, installs the reviewed service, enables the supplied Google
+calendar, and creates an operator API secret only if none exists. Existing
+telecom and signing credentials are preserved. Reload the user service manager
+and restart `text-back.service` after running the tests, or pass `--restart` to the installer.
+
+Before live traffic: choose and register the HTTPS endpoint (`deploy/Caddyfile` is the uninstalled proxy template), configure the OAuth
+callback, establish monitored operator alerts, check SignalWire account/trial and
+messaging-registration requirements, then attach the exact voice/SMS handlers.
+Use only approved pilot numbers and follow every check in
+`ONBOARDING-FORWARDING.md`. A passing local suite, working provider credentials,
+or green health check does not prove caller-ID forwarding or a real-phone pilot.
+
+Protocol references:
+[Google OAuth web-server flow](https://developers.google.com/identity/protocols/oauth2/web-server),
+[SignalWire status callbacks](https://signalwire.com/docs/compatibility-api/rest/messages/webhooks/sms-status-callback),
+[SignalWire number inspection](https://signalwire.com/docs/compatibility-api/rest/incoming-phone-numbers/list-incoming-phone-numbers).

@@ -14,7 +14,7 @@ Missed-call recovery and scheduling assistant for field-service businesses.
 ```bash
 cd /home/ubuntu/projects/text_back
 .venv/bin/pytest tests/
-.venv/bin/python -m text_back   # 127.0.0.1:8000 only
+PYTHONPATH=src .venv/bin/python -m text_back   # 127.0.0.1:8000 only
 ```
 
 Project state lives only in `CLAUDE.md`. Contracts: `docs/SIGNALWIRE-INTEGRATION.md`,
@@ -32,11 +32,11 @@ settings) with two values:
   Because the carrier only ever connects a call to us *after* the client's
   own line already went unanswered, an inbound call to our number already
   IS a missed call. The first voice webhook we receive for a given
-  `CallSid` triggers exactly one intro SMS, regardless of `CallStatus`
+  `CallSid` queues one intro SMS, regardless of `CallStatus`
   (`ringing`, `in-progress`, `completed`, etc.). Idempotency is enforced via
   the same `claim_event` mechanism keyed on `call_sid`, so carrier webhook
   retries (e.g. a `ringing` webhook followed by a `completed` webhook for
-  the same call) still send exactly one SMS.
+  the same call) share one durable SMS intent. Unknown provider acceptance is held for reconciliation.
 - **`managed`** — our number is the client's number directly (the original/
   legacy behavior). Only a terminal-unanswered `CallStatus`
   (`no-answer`/`busy`/`failed`/`canceled`) counts as a missed call; other
@@ -45,3 +45,5 @@ settings) with two values:
 In both modes: opt-out (STOP) suppression is checked before any SMS is
 sent, and the intro SMS goes to the original caller (`From` on the voice
 webhook) from our number (`To`) — never to/from the client's own line.
+
+Runtime, durable delivery, credential recovery, and pilot checks: [Recover operations](docs/RECOVER-OPERATIONS.md).

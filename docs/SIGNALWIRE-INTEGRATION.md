@@ -61,8 +61,9 @@ internal URL into this setting.
   existing terminal-unanswered policy remains unchanged.
 - `call_sid` and `message_sid` idempotency gates remain in front of duplicate
   outbound messages.
-- Handoff pauses automated replies and builds an operator alert payload, but its
-  notifier is currently an in-memory stub. No external operator delivery exists.
+- Handoff pauses automated replies and commits a durable operator alert. The
+  managed worker delivers configured notices; authenticated operator polling is
+  available. Configure a monitored channel before the pilot.
 
 ## Pre-live checklist
 
@@ -73,9 +74,8 @@ internal URL into this setting.
    and no secret values.
 4. Replace the in-process Calendar stub with the real, credentialed Google
    Calendar adapter. Do not route customer traffic to the stub.
-5. Replace the in-memory handoff notifier with an approved operator delivery
-   adapter and verify its stable alert ID. Do not promise monitored handoff
-   while the notifier is a stub.
+5. Configure and verify monitored operator access to durable handoff alerts.
+   Disabled delivery parks alerts; logging alone does not prove monitoring.
 6. Expose HTTPS and attach the two exact webhook URLs in SignalWire.
 7. Use only approved non-customer test numbers.
 8. Complete every live-call check in `docs/ONBOARDING-FORWARDING.md`, including
@@ -84,3 +84,6 @@ internal URL into this setting.
 
 Steps 6–8 mutate live telecom configuration or create traffic and therefore
 require Michael's explicit approval at execution time.
+
+Durable sends, signed status callbacks, retries, and worker operation are described
+in [Recover operations](RECOVER-OPERATIONS.md).
