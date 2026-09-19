@@ -37,11 +37,15 @@ class AppConfig:
     icloud_username: str
     icloud_app_password_file: str
     icloud_calendar_url: str
+    google_client_file: str = ""
+    operator_api_key: str = field(default="", repr=False)
 
 
 def load_config() -> AppConfig:
     """Load app configuration from the process environment."""
     return AppConfig(
+        google_client_file=os.environ.get("TEXT_BACK_GOOGLE_CLIENT_FILE", ""),
+        operator_api_key=os.environ.get("TEXT_BACK_OPERATOR_API_KEY", ""),
         webhook_secret=os.environ.get(
             "TEXT_BACK_WEBHOOK_SECRET", DEFAULT_WEBHOOK_SECRET
         ),

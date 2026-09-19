@@ -2,12 +2,27 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
+from contextlib import contextmanager
+from functools import wraps
 from datetime import datetime, timezone
+
+
+def synchronized(function):
+    @wraps(function)
+    def wrapped(self, *args, **kwargs):
+        with self.lock:
+            return function(self, *args, **kwargs)
+    return wrapped
 
 
 class Store:
     def __init__(self, path: str = ":memory:") -> None:
-        self.conn = sqlite3.connect(path, check_same_thread=False)
+        self.lock = threading.RLock()
+        self._transaction_depth = 0
+        self.conn = sqlite3.connect(path, check_same_thread=False, timeout=30)
+        self.conn.execute("PRAGMA busy_timeout=30000")
+        self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.row_factory = sqlite3.Row
         self.conn.execute(
             """
@@ -121,8 +136,67 @@ class Store:
             ON handoff_deliveries (status, next_attempt_at)
             """
         )
-        self.conn.commit()
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS sms_outbox (
+                key TEXT PRIMARY KEY, phone TEXT NOT NULL, from_number TEXT NOT NULL,
+                body TEXT NOT NULL, kind TEXT NOT NULL, completion_json TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0,
+                next_attempt_at TEXT NOT NULL, lease_until TEXT,
+                provider_id TEXT, last_error TEXT, created_at TEXT NOT NULL
+            )
+        """)
+        self.conn.execute("CREATE INDEX IF NOT EXISTS sms_due ON sms_outbox(status, next_attempt_at)")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS inbound_jobs (
+            key TEXT PRIMARY KEY, kind TEXT NOT NULL, phone TEXT NOT NULL,
+            params_json TEXT NOT NULL, received_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0,
+            next_attempt_at TEXT NOT NULL)""")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS calendar_reconnect_links (
+            token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0)""")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS calendar_oauth_states (
+            state_hash TEXT PRIMARY KEY, cookie_hash TEXT NOT NULL, verifier TEXT NOT NULL,
+            expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0)""")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS booking_jobs (
+            key TEXT PRIMARY KEY, phone TEXT NOT NULL, payload_json TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 1,
+            next_attempt_at TEXT NOT NULL)""")
+        self._commit()
 
+    def _commit(self) -> None:
+        if not self._transaction_depth:
+            self.conn.commit()
+
+    @contextmanager
+    def transaction(self):
+        """Serialize one connection and atomically commit local state + intents.
+
+        BEGIN IMMEDIATE also serializes independent processes/connections.
+        Nested calls participate in their caller's transaction.
+        """
+        with self.lock:
+            outer = self._transaction_depth == 0
+            if outer:
+                self.conn.execute("BEGIN IMMEDIATE")
+            self._transaction_depth += 1
+            try:
+                yield
+            except BaseException:
+                if outer:
+                    self.conn.rollback()
+                raise
+            else:
+                if outer:
+                    self.conn.commit()
+            finally:
+                self._transaction_depth -= 1
+
+    @synchronized
+    def get_sms(self, key: str) -> dict | None:
+        with self.lock:
+            row = self.conn.execute("SELECT * FROM sms_outbox WHERE key = ?", (key,)).fetchone()
+            return dict(row) if row else None
+
+    @synchronized
     def claim_event(self, source: str, event_id: str, action: str) -> bool:
         now = datetime.now(timezone.utc).isoformat()
         try:
@@ -130,11 +204,12 @@ class Store:
                 "INSERT INTO processed_events (source, event_id, action, created_at) VALUES (?, ?, ?, ?)",
                 (source, event_id, action, now),
             )
-            self.conn.commit()
+            self._commit()
             return True
         except sqlite3.IntegrityError:
             return False
 
+    @synchronized
     def set_opted_out(self, phone: str, opted_out: bool) -> None:
         now = datetime.now(timezone.utc).isoformat()
         self.conn.execute(
@@ -145,20 +220,23 @@ class Store:
             """,
             (phone, int(opted_out), now),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def is_opted_out(self, phone: str) -> bool:
         row = self.conn.execute(
             "SELECT opted_out FROM contacts WHERE phone = ?", (phone,)
         ).fetchone()
         return bool(row["opted_out"]) if row else False
 
+    @synchronized
     def get_conversation_fields(self, phone: str) -> dict[str, str]:
         rows = self.conn.execute(
             "SELECT field, value FROM conversation_fields WHERE phone = ?", (phone,)
         ).fetchall()
         return {row["field"]: row["value"] for row in rows}
 
+    @synchronized
     def set_conversation_field(self, phone: str, field: str, value: str) -> None:
         now = datetime.now(timezone.utc).isoformat()
         self.conn.execute(
@@ -169,19 +247,22 @@ class Store:
             """,
             (phone, field, value, now),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def clear_conversation_fields(self, phone: str) -> None:
         self.conn.execute("DELETE FROM conversation_fields WHERE phone = ?", (phone,))
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def delete_conversation_field(self, phone: str, field: str) -> None:
         self.conn.execute(
             "DELETE FROM conversation_fields WHERE phone = ? AND field = ?",
             (phone, field),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def save_appointment(
         self,
         *,
@@ -201,20 +282,23 @@ class Store:
             """,
             (conversation_id, event_id, caller, start, location, service, now),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def appointment_by_event(self, event_id: str) -> dict | None:
         row = self.conn.execute(
             "SELECT * FROM appointments WHERE event_id = ?", (event_id,)
         ).fetchone()
         return dict(row) if row else None
 
+    @synchronized
     def appointment_by_conversation(self, conversation_id: str) -> dict | None:
         row = self.conn.execute(
             "SELECT * FROM appointments WHERE conversation_id = ?", (conversation_id,)
         ).fetchone()
         return dict(row) if row else None
 
+    @synchronized
     def request_handoff(self, phone: str, reason: str) -> bool:
         now = datetime.now(timezone.utc).isoformat()
         cursor = self.conn.execute(
@@ -232,16 +316,18 @@ class Store:
             """,
             (phone, reason, now),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
+    @synchronized
     def set_handoff_alert_id(self, phone: str, alert_id: str) -> None:
         self.conn.execute(
             "UPDATE handoffs SET alert_id = ? WHERE phone = ? AND status = 'active'",
             (alert_id, phone),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def active_handoff(self, phone: str) -> dict | None:
         row = self.conn.execute(
             "SELECT * FROM handoffs WHERE phone = ? AND status = 'active'",
@@ -249,6 +335,7 @@ class Store:
         ).fetchone()
         return dict(row) if row else None
 
+    @synchronized
     def resolve_handoff(self, phone: str) -> bool:
         now = datetime.now(timezone.utc).isoformat()
         cursor = self.conn.execute(
@@ -259,11 +346,12 @@ class Store:
             """,
             (now, phone),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
     # --- follow-up sequences ---
 
+    @synchronized
     def start_followup(
         self,
         *,
@@ -297,15 +385,17 @@ class Store:
             """,
             (phone, call_sid, next_action, next_action_at, now, now),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
+    @synchronized
     def get_followup(self, phone: str) -> dict | None:
         row = self.conn.execute(
             "SELECT * FROM followups WHERE phone = ?", (phone,)
         ).fetchone()
         return dict(row) if row else None
 
+    @synchronized
     def due_followups(self, now_iso: str) -> list[dict]:
         rows = self.conn.execute(
             """
@@ -317,6 +407,7 @@ class Store:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @synchronized
     def advance_followup(
         self,
         phone: str,
@@ -334,8 +425,9 @@ class Store:
             """,
             (attempts_sent, next_action, next_action_at, now, phone),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def defer_followup(self, phone: str, next_action_at: str) -> None:
         now = datetime.now(timezone.utc).isoformat()
         self.conn.execute(
@@ -346,8 +438,9 @@ class Store:
             """,
             (next_action_at, now, phone),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def cancel_followup(self, phone: str, reason: str) -> bool:
         now = datetime.now(timezone.utc).isoformat()
         cursor = self.conn.execute(
@@ -358,9 +451,10 @@ class Store:
             """,
             (reason, now, phone),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
+    @synchronized
     def expire_followup(self, phone: str) -> bool:
         now = datetime.now(timezone.utc).isoformat()
         cursor = self.conn.execute(
@@ -371,11 +465,12 @@ class Store:
             """,
             (now, phone),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
     # --- handoff alert deliveries ---
 
+    @synchronized
     def enqueue_handoff_delivery(
         self,
         *,
@@ -395,17 +490,19 @@ class Store:
                 """,
                 (alert_id, phone, payload_json, next_attempt_at, now, now),
             )
-            self.conn.commit()
+            self._commit()
             return True
         except sqlite3.IntegrityError:
             return False
 
+    @synchronized
     def get_handoff_delivery(self, alert_id: str) -> dict | None:
         row = self.conn.execute(
             "SELECT * FROM handoff_deliveries WHERE alert_id = ?", (alert_id,)
         ).fetchone()
         return dict(row) if row else None
 
+    @synchronized
     def due_handoff_deliveries(self, now_iso: str) -> list[dict]:
         rows = self.conn.execute(
             """
@@ -417,6 +514,7 @@ class Store:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @synchronized
     def begin_handoff_delivery_attempt(
         self, alert_id: str, *, attempts: int, next_attempt_at: str
     ) -> bool:
@@ -438,9 +536,10 @@ class Store:
             """,
             (attempts, next_attempt_at, now, alert_id, attempts - 1),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
+    @synchronized
     def mark_handoff_delivery_delivered(
         self, alert_id: str, *, attempts: int, receipt_id: str
     ) -> bool:
@@ -449,13 +548,14 @@ class Store:
             """
             UPDATE handoff_deliveries
             SET status = 'delivered', attempts = ?, receipt_id = ?, updated_at = ?
-            WHERE alert_id = ? AND status = 'pending'
+            WHERE alert_id = ? AND status = 'pending' AND attempts = ?
             """,
-            (attempts, receipt_id, now, alert_id),
+            (attempts, receipt_id, now, alert_id, attempts),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
+    @synchronized
     def retry_handoff_delivery(
         self,
         alert_id: str,
@@ -469,12 +569,13 @@ class Store:
             """
             UPDATE handoff_deliveries
             SET attempts = ?, next_attempt_at = ?, last_error = ?, updated_at = ?
-            WHERE alert_id = ? AND status = 'pending'
+            WHERE alert_id = ? AND status = 'pending' AND attempts = ?
             """,
-            (attempts, next_attempt_at, last_error, now, alert_id),
+            (attempts, next_attempt_at, last_error, now, alert_id, attempts),
         )
-        self.conn.commit()
+        self._commit()
 
+    @synchronized
     def dead_letter_handoff_delivery(
         self, alert_id: str, *, attempts: int, last_error: str
     ) -> bool:
@@ -483,13 +584,14 @@ class Store:
             """
             UPDATE handoff_deliveries
             SET status = 'dead_letter', attempts = ?, last_error = ?, updated_at = ?
-            WHERE alert_id = ? AND status = 'pending'
+            WHERE alert_id = ? AND status = 'pending' AND attempts = ?
             """,
-            (attempts, last_error, now, alert_id),
+            (attempts, last_error, now, alert_id, attempts),
         )
-        self.conn.commit()
+        self._commit()
         return cursor.rowcount == 1
 
+    @synchronized
     def record_outcome(
         self,
         *,
@@ -521,11 +623,12 @@ class Store:
                     when,
                 ),
             )
-            self.conn.commit()
+            self._commit()
             return True
         except sqlite3.IntegrityError:
             return False
 
+    @synchronized
     def list_outcome_events(self, lead_id: str | None = None) -> list[dict]:
         if lead_id is None:
             rows = self.conn.execute(

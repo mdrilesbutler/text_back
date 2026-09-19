@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from text_back.sms import enqueue_sms, run_due_sms
 from text_back.store import Store
 from text_back.telecom import Telecom
 
@@ -158,79 +159,47 @@ def run_due_followups(
     """Process every active sequence whose next action is due at ``now``.
 
     Pure scheduling seam: the caller owns the clock and invocation cadence.
-    Re-running at the same instant is a no-op (idempotent via claim_event and
-    the persisted next_action_at).
+    Re-running at the same instant is a no-op via the durable SMS intent
+    and the persisted next_action_at.
     """
     actions: list[dict] = []
-    for sequence in store.due_followups(now.isoformat()):
-        phone = sequence["phone"]
-        cancel_reason = _cancel_reason_at_send_time(store, phone)
-        if cancel_reason is not None:
-            store.cancel_followup(phone, cancel_reason)
-            actions.append(
-                {"action": "followup_cancelled", "phone": phone, "reason": cancel_reason}
-            )
-            continue
-
-        if sequence["next_action"] == "expire":
-            if not store.expire_followup(phone):
+    for candidate in store.due_followups(now.isoformat()):
+        phone = candidate['phone']
+        with store.transaction():
+            sequence = store.get_followup(phone)
+            if (not sequence or sequence['status'] != 'active'
+                    or sequence['call_sid'] != candidate['call_sid']
+                    or sequence['next_action_at'] > now.isoformat()):
                 continue
-            store.record_outcome(
-                lead_id=phone,
-                event_type="lead.expired",
-                idempotency_key=f"followup:{sequence['call_sid']}:expired",
-                evidence_id=sequence["call_sid"],
-                metadata={"attempts_sent": sequence["attempts_sent"]},
-            )
-            actions.append({"action": "lead_expired", "phone": phone})
-            continue
-
-        allowed_at = next_allowed_send_time(now, policy)
-        if allowed_at > now:
-            store.defer_followup(phone, allowed_at.isoformat())
-            actions.append(
-                {
-                    "action": "followup_deferred",
-                    "phone": phone,
-                    "deferred_to": allowed_at.isoformat(),
-                }
-            )
-            continue
-
-        attempt = sequence["attempts_sent"] + 1
-        claim_key = f"{sequence['call_sid']}:attempt:{attempt}"
-        if not store.claim_event("followup", claim_key, "send"):
-            continue
-        message_id = telecom.send_sms(
-            to=phone,
-            body=followup_sms(business_name, attempt),
-            from_number=business_number,
-            kind="followup",
-        )
-        store.record_outcome(
-            lead_id=phone,
-            event_type="followup.sent",
-            idempotency_key=f"followup:{sequence['call_sid']}:sent:{attempt}",
-            evidence_id=message_id,
-            metadata={"attempt": attempt},
-        )
-        if attempt < policy.max_attempts:
-            next_due = now + timedelta(minutes=policy.delays_minutes[attempt])
-            store.advance_followup(
-                phone,
-                attempts_sent=attempt,
-                next_action="followup",
-                next_action_at=next_due.isoformat(),
-            )
-        else:
-            expiry_due = now + timedelta(minutes=policy.expiry_minutes)
-            store.advance_followup(
-                phone,
-                attempts_sent=attempt,
-                next_action="expire",
-                next_action_at=expiry_due.isoformat(),
-            )
-        actions.append(
-            {"action": "followup_sent", "phone": phone, "attempt": attempt}
-        )
+            cancel_reason = _cancel_reason_at_send_time(store, phone)
+            if cancel_reason is not None:
+                store.cancel_followup(phone, cancel_reason)
+                actions.append({'action': 'followup_cancelled', 'phone': phone, 'reason': cancel_reason})
+                continue
+            if sequence['next_action'] == 'expire':
+                store.expire_followup(phone)
+                store.record_outcome(lead_id=phone, event_type='lead.expired',
+                    idempotency_key=f"followup:{sequence['call_sid']}:expired",
+                    evidence_id=sequence['call_sid'], metadata={'attempts_sent': sequence['attempts_sent']},
+                    occurred_at=now.isoformat())
+                actions.append({'action': 'lead_expired', 'phone': phone})
+                continue
+            allowed_at = next_allowed_send_time(now, policy)
+            if allowed_at > now:
+                store.defer_followup(phone, allowed_at.isoformat())
+                actions.append({'action': 'followup_deferred', 'phone': phone, 'deferred_to': allowed_at.isoformat()})
+                continue
+            attempt = sequence['attempts_sent'] + 1
+            key = f"followup:{sequence['call_sid']}:sent:{attempt}"
+            intro = store.conn.execute('SELECT from_number FROM sms_outbox WHERE key=?',
+                                       (f"{sequence['call_sid']}:intro",)).fetchone()
+            sender = intro['from_number'] if intro else business_number
+            enqueue_sms(store=store, key=key, to=phone, from_number=sender,
+                body=followup_sms(business_name, attempt), kind='followup', now=now,
+                completion={'event_type': 'followup.sent', 'outcome_key': key,
+                            'call_sid': sequence['call_sid'], 'metadata': {'attempt': attempt},
+                            'delays': list(policy.delays_minutes), 'expiry': policy.expiry_minutes})
+        result = run_due_sms(store=store, telecom=telecom, policy=policy, now=now, keys=[key])
+        if any(item['action'] == 'sent' for item in result):
+            actions.append({'action': 'followup_sent', 'phone': phone, 'attempt': attempt})
     return actions

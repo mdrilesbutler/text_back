@@ -236,15 +236,16 @@ def run_due_deliveries(
                 now + timedelta(minutes=policy.retry_minutes[attempt - 1])
             ).isoformat()
         else:
-            # Final attempt: no backoff slot remains; keep the row due so a
-            # crash mid-attempt dead-letters (with evidence) on the next run.
-            next_at_iso = row["next_attempt_at"]
+            # Final attempt still needs a lease: concurrent workers must not
+            # dead-letter an in-flight send. After a minute an interrupted
+            # final attempt can be dead-lettered with evidence.
+            next_at_iso = (now + timedelta(minutes=1)).isoformat()
         if not store.begin_handoff_delivery_attempt(
             alert_id, attempts=attempt, next_attempt_at=next_at_iso
         ):
             continue
-        alert = alert_from_payload_json(row["payload_json"])
         try:
+            alert = alert_from_payload_json(row["payload_json"])
             receipt_id = transport.deliver(alert)
         except Exception as exc:  # noqa: BLE001 - a transport bug must never
             # wedge this row or abort the remaining due rows.

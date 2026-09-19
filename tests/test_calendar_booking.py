@@ -155,3 +155,13 @@ def test_naive_start_time_is_rejected_without_event_or_confirmation():
 
     assert calendar.events == {}
     assert telecom.outbound == []
+
+
+def test_active_handoff_blocks_new_calendar_event():
+    import pytest
+    calendar,store,telecom=CalendarStub(),Store(),FakeTelecom()
+    store.request_handoff('+15551112222','customer_requested')
+    with pytest.raises(BookingError,match='handoff'):
+        _book(calendar=calendar,store=store,telecom=telecom)
+    assert calendar.events=={}
+    assert telecom.outbound==[]

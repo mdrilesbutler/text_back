@@ -8,7 +8,6 @@ from text_back.delivery import enqueue_handoff_alert
 from text_back.followup import (
     FollowupPolicy,
     cancel_followup,
-    schedule_followup_sequence,
 )
 from text_back.handoff import (
     HandoffAlert,
@@ -31,10 +30,12 @@ from text_back.policy import (
     slot_unavailable_sms,
 )
 from text_back.preferred_time import PreferredTimeError, parse_preferred_time
+from text_back.sms import atomic_sms_handler, enqueue_sms
 from text_back.store import Store
 from text_back.telecom import Telecom
 
 
+@atomic_sms_handler
 def handle_voice_event(
     *,
     store: Store,
@@ -59,6 +60,7 @@ def handle_voice_event(
     store.record_outcome(
         lead_id=from_number,
         event_type="call.missed",
+        occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
         idempotency_key=f"call:{call_sid}:missed",
         evidence_id=call_sid,
         metadata={"wiring_mode": wiring_mode},
@@ -70,30 +72,19 @@ def handle_voice_event(
     claimed = store.claim_event("voice", call_sid, "missed_call_intro")
     if not claimed:
         return {"accepted": True, "duplicate": True, "action": "noop"}
-    message_id = telecom.send_sms(
-        to=from_number,
-        body=intro_sms(business_name),
-        from_number=to_number,
-        kind="missed_call_intro",
+    key = f"{call_sid}:intro"
+    enqueue_sms(
+        store=store, key=key, to=from_number, body=intro_sms(business_name),
+        from_number=to_number, kind="missed_call_intro",
+        now=now or datetime.now(timezone.utc),
+        completion={"event_type": "sms.initial_sent", "outcome_key": f"call:{call_sid}:initial_sms",
+                    "call_sid": call_sid, "delays": list(followup_policy.delays_minutes) if followup_policy else []},
     )
-    store.record_outcome(
-        lead_id=from_number,
-        event_type="sms.initial_sent",
-        idempotency_key=f"call:{call_sid}:initial_sms",
-        evidence_id=message_id,
-        metadata={},
-    )
-    if followup_policy is not None and now is not None:
-        schedule_followup_sequence(
-            store=store,
-            policy=followup_policy,
-            phone=from_number,
-            call_sid=call_sid,
-            now=now,
-        )
+    telecom.keys.append(key)
     return {"accepted": True, "duplicate": False, "action": "sent_intro"}
 
 
+@atomic_sms_handler
 def handle_sms_event(
     *,
     store: Store,
@@ -116,10 +107,13 @@ def handle_sms_event(
     store.record_outcome(
         lead_id=from_number,
         event_type="sms.customer_replied",
+        occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
         idempotency_key=f"sms:{message_sid}:customer_replied",
         evidence_id=message_sid,
         metadata={},
     )
+    store.conn.execute("""UPDATE sms_outbox SET status='cancelled' WHERE phone=? AND status='pending'
+        AND kind IN ('missed_call_intro','followup','field_prompt','preferred_time_reprompt','slot_unavailable','booking_error')""", (from_number,))
     # Any customer response immediately ends the no-response sequence.
     cancel_followup(store, from_number, "customer_replied")
     kind = classify_inbound_sms(body)
@@ -229,6 +223,7 @@ def _request_handoff(
     store.record_outcome(
         lead_id=from_number,
         event_type="lead.handoff_requested",
+        occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
         idempotency_key=f"handoff:{alert_id}:requested",
         evidence_id=alert_id,
         metadata={"reason": reason},
@@ -335,6 +330,7 @@ def _collect_conversation_field(
     store.record_outcome(
         lead_id=from_number,
         event_type="lead.field_captured",
+        occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
         idempotency_key=f"sms:{message_sid}:field:{pending_field}",
         evidence_id=message_sid,
         metadata={"field": pending_field},
@@ -345,6 +341,7 @@ def _collect_conversation_field(
         store.record_outcome(
             lead_id=from_number,
             event_type="lead.qualified",
+        occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
             idempotency_key=f"lead:{from_number}:qualified",
             evidence_id=message_sid,
             metadata={},
@@ -411,23 +408,17 @@ def _book_collected_fields(
             "fields_complete": False,
         }
 
+    from text_back.booking_jobs import queue_booking, finish_booking_job
+    payload = dict(caller=from_number, business_number=to_number, service=fields['service'],
+                   location=fields['location'], customer_name=fields['name'], business_name=business_name,
+                   timezone_name=timezone_name, start=start, duration_minutes=appointment_duration_minutes,
+                   conversation_id=from_number)
+    job_key = queue_booking(store, payload, now or datetime.now(timezone.utc))
     try:
-        booking = book_appointment(
-            calendar=calendar,
-            store=store,
-            telecom=telecom,
-            caller=from_number,
-            business_number=to_number,
-            service=fields["service"],
-            location=fields["location"],
-            customer_name=fields["name"],
-            business_name=business_name,
-            timezone_name=timezone_name,
-            start=start,
-            duration_minutes=appointment_duration_minutes,
-            conversation_id=from_number,
-        )
+        booking = book_appointment(calendar=calendar, store=store, telecom=telecom, now=now, **payload)
+        finish_booking_job(store, job_key)
     except SlotUnavailableError:
+        finish_booking_job(store, job_key)
         store.delete_conversation_field(from_number, "preferred_time")
         telecom.send_sms(
             to=from_number,

@@ -7,7 +7,7 @@ import pytest
 
 from text_back.booking import (
     BookingError,
-    SlotUnavailableError,
+    CalendarEventError,
     book_appointment,
 )
 from text_back.calendars.ids import (
@@ -189,7 +189,7 @@ def test_provider_error_during_freebusy_refuses_booking_without_sms():
     telecom = FakeTelecom()
     store = Store()
 
-    with pytest.raises(SlotUnavailableError):
+    with pytest.raises(CalendarEventError):
         _book(RaisingCalendar(fail_on="is_free"), telecom, store)
 
     assert telecom.outbound == []

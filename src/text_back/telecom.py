@@ -17,6 +17,14 @@ class TelecomError(RuntimeError):
     """A redacted provider failure safe to surface without credentials/content."""
 
 
+class RetryableSmsError(TelecomError):
+    """Provider definitely did not accept; a bounded retry is safe."""
+
+
+class AmbiguousSmsError(TelecomError):
+    """Provider may have accepted; reconcile instead of resending."""
+
+
 @dataclass
 class OutboundSms:
     to: str
@@ -74,6 +82,9 @@ class SignalWireTelecom:
         )
 
     def send_sms(self, *, to: str, body: str, from_number: str, kind: str) -> str:
+        return self.send_sms_with_callback(to=to, body=body, from_number=from_number, kind=kind)
+
+    def send_sms_with_callback(self, *, to, body, from_number, kind, callback_url=None):
         if from_number != self.allowed_from_number:
             raise TelecomError("SMS sender is not the configured SignalWire number")
         request_client = self.client or httpx.Client()
@@ -82,17 +93,23 @@ class SignalWireTelecom:
             response = request_client.post(
                 self.messages_url,
                 auth=httpx.BasicAuth(self.project_id, self.api_token),
-                data={"To": to, "From": from_number, "Body": body},
+                data={"To": to, "From": from_number, "Body": body, **({"StatusCallback": callback_url} if callback_url else {})},
                 timeout=self.timeout_seconds,
             )
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            raise RetryableSmsError(f"SignalWire connection failed ({type(exc).__name__})") from None
         except httpx.RequestError as exc:
-            raise TelecomError(
+            raise AmbiguousSmsError(
                 f"SignalWire SMS request failed ({type(exc).__name__})"
             ) from None
         finally:
             if close_client:
                 request_client.close()
 
+        if response.status_code == 429:
+            raise RetryableSmsError("SignalWire SMS rate limited")
+        if response.status_code >= 500:
+            raise AmbiguousSmsError("SignalWire SMS acceptance unknown")
         if not response.is_success:
             raise TelecomError(
                 f"SignalWire SMS request returned HTTP {response.status_code}"
@@ -100,8 +117,8 @@ class SignalWireTelecom:
         try:
             payload = response.json()
         except ValueError:
-            raise TelecomError("SignalWire SMS response was not valid JSON") from None
+            raise AmbiguousSmsError("SignalWire SMS response was not valid JSON") from None
         message_id = payload.get("sid")
         if not isinstance(message_id, str) or not message_id:
-            raise TelecomError("SignalWire SMS response did not include a message ID")
+            raise AmbiguousSmsError("SignalWire SMS response did not include a message ID")
         return message_id

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import asyncio
 from typing import Callable
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -17,9 +18,12 @@ from text_back.delivery import (
 )
 from text_back.followup import FollowupPolicy
 from text_back.handoff import FakeHandoffNotifier, HandoffNotifier
-from text_back.handlers import handle_sms_event, handle_voice_event
 from text_back.policy import WIRING_MODES, WIRING_MODE_FORWARDED
 from text_back.signatures import SignatureError, verify_twilio_compat
+from text_back.sms import reconcile_sms
+from text_back.worker import lifespan
+from text_back.inbox import submit_event
+from text_back.reconnect import install_routes
 from text_back.store import Store
 from text_back.telecom import FakeTelecom, SignalWireTelecom, Telecom
 
@@ -78,6 +82,7 @@ def create_app(
     handoff_destination: str | None = None,
     now_provider: Callable[[], datetime] | None = None,
     delivery_transport: DeliveryTransport | None = None,
+    worker_interval_seconds: float = 5.0,
 ) -> FastAPI:
     config = load_config()
     webhook_secret = webhook_secret if webhook_secret is not None else config.webhook_secret
@@ -144,7 +149,20 @@ def create_app(
                 "would fabricate booking confirmations)"
             )
 
-    app = FastAPI(title="text_back", version="0.1.0")
+    if telecom is None and selected_telecom.provider_name == 'signalwire' and db_path == ':memory:' and store is None:
+        raise ValueError('SignalWire runtime requires a persistent TEXT_BACK_DB_PATH')
+
+    if worker_interval_seconds <= 0:
+        raise ValueError("worker interval must be positive")
+    app = FastAPI(title="text_back", version="0.1.0", lifespan=lifespan)
+    app.state.worker_interval_seconds = worker_interval_seconds
+    app.state.worker_running = False
+    app.state.worker_errors = []
+    app.state.calendar_check_at = None
+    app.state.operator_api_key = config.operator_api_key
+    app.state.worker_last_run = None
+    app.state.owns_store = store is None
+    app.state.business_number = config.signalwire_from_number
     app.state.webhook_secret = webhook_secret
     app.state.public_base_url = public_base_url.rstrip("/")
     app.state.telecom = selected_telecom
@@ -158,15 +176,35 @@ def create_app(
     app.state.handoff_notifier = handoff_notifier or FakeHandoffNotifier()
     app.state.handoff_destination = handoff_destination
     app.state.now_provider = now_provider
-    app.state.followup_policy = FollowupPolicy.from_config(config)
+    from dataclasses import replace
+    app.state.followup_policy = FollowupPolicy.from_config(replace(config, timezone_name=timezone_name))
+    # Handler outbox drains use the same policy and signed callback route.
+    app.state.store.sms_policy = app.state.followup_policy
+    app.state.store.callback_base_url = app.state.public_base_url
     app.state.delivery_policy = delivery_policy
     app.state.delivery_transport = selected_delivery_transport
 
     @app.get("/health")
     def health() -> dict:
+        from text_back.calendars.credentials import GoogleCredentials
+        credentials = getattr(app.state.calendar, 'token_provider', None)
+        try:
+            credential_status = credentials.status() if isinstance(credentials, GoogleCredentials) else 'not_managed'
+        except Exception:
+            credential_status = 'unavailable'
+        with app.state.store.lock:
+            sms_counts = {row[0]: row[1] for row in app.state.store.conn.execute('SELECT status,count(*) FROM sms_outbox GROUP BY status')}
+            inbound_failed = app.state.store.conn.execute("SELECT count(*) FROM inbound_jobs WHERE status='dead_letter'").fetchone()[0]
         return {
             "status": "ok",
-            "production": False,
+            "production": app.state.telecom.provider_name == 'signalwire' and app.state.calendar.provider_name != 'stub',
+            "calendar_credentials": credential_status,
+            "persistent_database": app.state.db_path != ':memory:',
+            "sms_queue": sms_counts,
+            "inbound_dead_letters": inbound_failed,
+            "worker_running": app.state.worker_running,
+            "worker_errors": app.state.worker_errors,
+            "worker_last_run": app.state.worker_last_run,
             "telecom": app.state.telecom.provider_name,
             "calendar": app.state.calendar.provider_name,
             "public_base_url": app.state.public_base_url,
@@ -206,22 +244,8 @@ def create_app(
             verify_twilio_compat(url, params, signature, request.app.state.webhook_secret)
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
-        result = handle_voice_event(
-            store=request.app.state.store,
-            telecom=request.app.state.telecom,
-            call_sid=call_sid,
-            call_status=call_status,
-            from_number=from_number,
-            to_number=to_number,
-            wiring_mode=request.app.state.wiring_mode,
-            business_name=request.app.state.business_name,
-            followup_policy=request.app.state.followup_policy,
-            now=(
-                request.app.state.now_provider()
-                if request.app.state.now_provider is not None
-                else datetime.now(timezone.utc)
-            ),
-        )
+        result = await asyncio.to_thread(submit_event, state=app.state, kind='voice',
+            params=dict(call_sid=call_sid, call_status=call_status, from_number=from_number, to_number=to_number))
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
         if request.app.state.telecom.provider_name == "signalwire":
             content = (
@@ -259,28 +283,31 @@ def create_app(
             verify_twilio_compat(url, params, signature, request.app.state.webhook_secret)
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
-        result = handle_sms_event(
-            store=request.app.state.store,
-            calendar=request.app.state.calendar,
-            telecom=request.app.state.telecom,
-            handoff_notifier=request.app.state.handoff_notifier,
-            handoff_destination=request.app.state.handoff_destination,
-            message_sid=message_sid,
-            from_number=from_number,
-            to_number=to_number,
-            body=body,
-            business_name=request.app.state.business_name,
-            timezone_name=request.app.state.timezone_name,
-            appointment_duration_minutes=request.app.state.appointment_duration_minutes,
-            now=(
-                request.app.state.now_provider()
-                if request.app.state.now_provider is not None
-                else datetime.now(timezone.utc)
-            ),
-        )
+        result = await asyncio.to_thread(submit_event, state=app.state, kind='sms',
+            params=dict(message_sid=message_sid, from_number=from_number, to_number=to_number, body=body))
         result["message_sid"] = message_sid
         if request.app.state.telecom.provider_name == "signalwire":
             return Response(content=empty_response(), media_type="application/xml")
         return result
 
+    @app.post("/webhooks/sms-status")
+    async def sms_status(request: Request, key: str):
+        form = await request.form()
+        params = {str(k): str(v) for k, v in form.items()}
+        # Signatures cover the exact configured URL, including the intent key.
+        url = app.state.public_base_url + str(request.url.path) + "?" + request.url.query
+        try:
+            verify_twilio_compat(url, params, request.headers.get("X-SignalWire-Signature"), app.state.webhook_secret)
+        except SignatureError as exc:
+            raise HTTPException(403, str(exc)) from exc
+        sid = params.get("MessageSid", "")
+        if not sid:
+            raise HTTPException(400, "MessageSid required")
+        now = app.state.now_provider() if app.state.now_provider else datetime.now(timezone.utc)
+        accepted = await asyncio.to_thread(reconcile_sms, store=app.state.store, key=key, provider_id=sid, now=now, delivery_status=params.get("MessageStatus", ""))
+        if not accepted:
+            raise HTTPException(409, "Unrecognized message receipt")
+        return Response(content=empty_response(), media_type="application/xml")
+
+    install_routes(app)
     return app
