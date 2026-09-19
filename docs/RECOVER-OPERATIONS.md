@@ -59,6 +59,15 @@ alerts. `TEXT_BACK_HANDOFF_DELIVERY_CHANNEL=disabled` parks alerts;
 requirement. Operator delivery is bounded at-least-once; receipts and outcome
 ledger entries are deduplicated. Malformed payloads do not block healthy rows.
 
+For private Telegram alerts, select `TEXT_BACK_HANDOFF_DELIVERY_CHANNEL=telegram`
+and configure `TEXT_BACK_TELEGRAM_BOT_TOKEN` and `TEXT_BACK_TELEGRAM_CHAT_ID` in the
+protected environment. Use an existing bot and an operator-approved chat; verify
+the chat identity before enabling delivery. Messages use plain text and disable
+link previews so reconnection invitations are not fetched by preview services.
+API failures remain in the bounded outbox retry workflow, with token-free error
+messages. Telegram acceptance returns a stored receipt; operator acknowledgment
+is separate evidence that the destination is monitored.
+
 Revenue reporting uses `brief.build_brief_data` / `brief.render_brief` and explicit
 operator evidence through `operator.record_job_completed` and
 `operator.record_revenue_attributed`. Bookings alone never produce revenue.
@@ -115,6 +124,28 @@ messaging-registration requirements, then attach the exact voice/SMS handlers.
 Use only approved pilot numbers and follow every check in
 `ONBOARDING-FORWARDING.md`. A passing local suite, working provider credentials,
 or green health check does not prove caller-ID forwarding or a real-phone pilot.
+
+### HTTPS using existing Tailscale Funnel
+
+When Funnel is already allowed for the host, it can provide pilot HTTPS without
+buying a domain or installing Caddy. Check `tailscale serve status --json` first
+and preserve existing services. Use an unused allowed port such as `8443`:
+
+```sh
+sudo tailscale funnel --bg --https=8443 http://127.0.0.1:8000
+```
+
+Set `TEXT_BACK_PUBLIC_BASE_URL` to the exact printed HTTPS origin, including the
+port, and restart `text-back.service`. The Google redirect URI is that origin
+plus `/calendar/callback`; SignalWire handlers use `/webhooks/voice` and
+`/webhooks/sms`. Verify health through the public DNS address, since a tailnet
+connection alone does not prove public reachability. Confirm `AllowFunnel`
+contains only the intended public port. Roll back only the Recover listener with
+`sudo tailscale funnel --https=8443 off`; never reset the entire Serve config.
+
+Account setup browsers must remain private. A temporary browser dashboard can
+use a separate **Serve** listener restricted to the tailnet; never expose an
+authenticated setup browser through Funnel. Remove its listener after setup.
 
 Protocol references:
 [Google OAuth web-server flow](https://developers.google.com/identity/protocols/oauth2/web-server),

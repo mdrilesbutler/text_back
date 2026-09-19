@@ -1,10 +1,9 @@
 """Durable outbox + safe transports for operator handoff alerts.
 
-Michael has not chosen a live notifier channel; NO live destination exists
-here. 'disabled' (default) parks rows durably; 'log' writes to the process
-log; the in-memory transport is for tests. ``run_due_deliveries`` is a pure
-function of (store, transport, policy, injected now) — no cron, queue, or
-network. Operator alerts are time-critical: quiet hours deliberately do not
+The configured transport sends alerts; 'disabled' (default) parks rows durably,
+'log' writes redacted notices, and 'telegram' delivers to a configured operator.
+The in-memory transport is for tests. ``run_due_deliveries`` uses the supplied
+store, transport, policy, and clock. Operator alerts are time-critical: quiet hours deliberately do not
 apply (quiet hours protect customer SMS in the nurture lane only).
 
 Semantics: at-least-once to the operator, exactly-once in the ledger. Each
@@ -128,8 +127,13 @@ def transport_from_config(config) -> DeliveryTransport:
         return DisabledTransport()
     if config.handoff_delivery_channel == "log":
         return LogTransport()
+    if config.handoff_delivery_channel == "telegram":
+        from text_back.telegram import TelegramTransport
+        if not config.telegram_bot_token or not config.telegram_chat_id:
+            raise ValueError("Telegram delivery requires TEXT_BACK_TELEGRAM_BOT_TOKEN and TEXT_BACK_TELEGRAM_CHAT_ID")
+        return TelegramTransport(config.telegram_bot_token, config.telegram_chat_id)
     raise ValueError(
-        "invalid TEXT_BACK_HANDOFF_DELIVERY_CHANNEL; must be 'disabled' or 'log'"
+        "invalid TEXT_BACK_HANDOFF_DELIVERY_CHANNEL; must be 'disabled', 'log', or 'telegram'"
     )
 
 

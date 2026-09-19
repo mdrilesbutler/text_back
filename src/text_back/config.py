@@ -39,11 +39,15 @@ class AppConfig:
     icloud_calendar_url: str
     google_client_file: str = ""
     operator_api_key: str = field(default="", repr=False)
+    telegram_bot_token: str = field(default="", repr=False)
+    telegram_chat_id: str = field(default="", repr=False)
 
 
 def load_config() -> AppConfig:
     """Load app configuration from the process environment."""
     return AppConfig(
+        telegram_bot_token=os.environ.get("TEXT_BACK_TELEGRAM_BOT_TOKEN", ""),
+        telegram_chat_id=os.environ.get("TEXT_BACK_TELEGRAM_CHAT_ID", ""),
         google_client_file=os.environ.get("TEXT_BACK_GOOGLE_CLIENT_FILE", ""),
         operator_api_key=os.environ.get("TEXT_BACK_OPERATOR_API_KEY", ""),
         webhook_secret=os.environ.get(
