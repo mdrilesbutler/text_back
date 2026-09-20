@@ -1,0 +1,12 @@
+[Unit]
+Description=Private text_back setup dashboard keyboard workaround
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/projects/text_back
+ExecStart=/usr/bin/env node /home/ubuntu/projects/text_back/deploy/setup_browser_proxy.mjs
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true

@@ -158,8 +158,26 @@ lifetime, so use the native executable for this setup:
 /home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back --session recover-login --cdp 9224 open https://fluxworks.signalwire.com
 /home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back --session recover-login --cdp 9224 set viewport 1280 720
 /home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back dashboard start --port 4849
-sudo tailscale serve --bg --https=10000 http://127.0.0.1:4849
+node deploy/setup_browser_proxy.mjs
 ```
+
+The proxy binds to localhost 4850; use the temporary user-service template
+`deploy/systemd/text-back-setup-proxy.service` to manage it in the background.
+Point the private Serve listener at it:
+
+```sh
+sudo tailscale serve --bg --https=10000 http://127.0.0.1:4850
+```
+
+Agent-browser 0.34.0 incorrectly uses character codes as Windows virtual key
+codes: a period becomes Delete (46 rather than 190). The scoped proxy patches
+that dashboard bundle to use the browser's keyboard event code. It refuses to
+start if the expected implementation changes, forwards API/WebSocket traffic,
+and does not log keyboard input. It leaves the installed shared agent-browser
+package untouched. Asset cache busting loads the corrected bundle on refresh.
+Run `node --test deploy/setup_browser_proxy.test.mjs` and verify a period through
+an isolated dashboard client before asking the operator to reload. Stop the
+temporary proxy service along with the setup browser when setup is complete.
 
 The private dashboard requires Tailscale connected on the viewing device. Check
 both `/api/sessions` and the session WebSocket stream through HTTPS; an HTTP 200
@@ -182,7 +200,7 @@ account browser public to work around it. A temporary TCP forward on an unused
 tailnet port can bypass hostname resolution:
 
 ```sh
-sudo tailscale serve --bg --tcp=80 tcp://127.0.0.1:4849
+sudo tailscale serve --bg --tcp=80 tcp://127.0.0.1:4850
 ```
 
 Open `http://<host-tailscale-ip>/` from the connected device. This HTTP connection
