@@ -68,6 +68,34 @@ API failures remain in the bounded outbox retry workflow, with token-free error
 messages. Telegram acceptance returns a stored receipt; operator acknowledgment
 is separate evidence that the destination is monitored.
 
+### Native-browser credential intake
+
+Use the operator's normal browser for provider account sign-in. If the agent
+cannot access that browser, the existing SignalWire signing key can be staged
+through an optional HTTPS form. Set `TEXT_BACK_SETUP_DIRECTORY` to a protected
+directory writable by the service and restart it. Issue an invitation with:
+
+```sh
+PYTHONPATH=src .venv/bin/python -m text_back.setup_intake \
+  --directory /home/ubuntu/.config/text_back/setup \
+  --public-base-url https://hermes-cloud.tailefb1a4.ts.net:8443
+```
+
+The generated link authorizes one save for one hour. Its token is carried in the
+URL fragment, removed from the visible address after loading, and sent only as
+an Authorization header. The form has no external assets, disables caching and
+referrers, and requires a matching Origin. The invitation stores only a token
+hash. The submitted key is published atomically as a mode-600
+`signalwire-signing-key.pending` file; an existing staged key is never replaced.
+Saving does not rotate credentials, change routing, or prove the key matches
+the provider. Privately apply the staged value to `TEXT_BACK_WEBHOOK_SECRET`,
+restart the service, and verify signatures during the real-phone checks.
+Remove `TEXT_BACK_SETUP_DIRECTORY` and restart after intake is complete.
+
+Test this flow through a separate temporary directory with dummy data. Never
+consume a live invitation during verification or put a signing key in chat,
+logs, source, or documentation.
+
 Revenue reporting uses `brief.build_brief_data` / `brief.render_brief` and explicit
 operator evidence through `operator.record_job_completed` and
 `operator.record_revenue_attributed`. Bookings alone never produce revenue.

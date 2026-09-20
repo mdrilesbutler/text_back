@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import asyncio
+import os
 from typing import Callable
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -310,4 +311,7 @@ def create_app(
         return Response(content=empty_response(), media_type="application/xml")
 
     install_routes(app)
+    if setup_directory := os.environ.get('TEXT_BACK_SETUP_DIRECTORY'):
+        from text_back.setup_intake import install_routes as install_setup_routes
+        install_setup_routes(app, directory=setup_directory, public_base_url=public_base_url)
     return app
