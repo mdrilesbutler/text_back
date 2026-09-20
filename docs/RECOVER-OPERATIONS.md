@@ -156,13 +156,21 @@ lifetime, so use the native executable for this setup:
 
 ```sh
 /home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back --session recover-login --cdp 9224 open https://fluxworks.signalwire.com
+/home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back --session recover-login --cdp 9224 set viewport 1280 720
 /home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back dashboard start --port 4849
 sudo tailscale serve --bg --https=10000 http://127.0.0.1:4849
 ```
 
 The private dashboard requires Tailscale connected on the viewing device. Check
 both `/api/sessions` and the session WebSocket stream through HTTPS; an HTTP 200
-alone does not prove that the browser viewport works. Keep other Serve listeners
+alone does not prove that the browser viewport works. Explicitly set the viewport
+after opening or selecting each login tab. When attaching to existing Chrome,
+agent-browser can report its default 1280×720 while the page and streamed image
+are actually 780×493; the dashboard then sends clicks to incorrect coordinates.
+Verify `innerWidth`/`innerHeight`, decoded canvas dimensions, and stream status
+agree. Test a click and a harmless character through the dashboard, confirm the
+intended input received it, and clear it without submitting. Frame delivery alone
+does not establish working interaction. Keep other Serve listeners
 and shared browser sessions intact. After account setup, stop this dedicated
 browser and dashboard and remove only the temporary port-10000 Serve listener.
 
