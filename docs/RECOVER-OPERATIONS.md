@@ -166,6 +166,26 @@ alone does not prove that the browser viewport works. Keep other Serve listeners
 and shared browser sessions intact. After account setup, stop this dedicated
 browser and dashboard and remove only the temporary port-10000 Serve listener.
 
+If the browser reports that the connection unexpectedly closed, check the
+`tailscaled` journal for `handleIngress` rejection of the private port. That
+means the request reached public Funnel ingress instead of the private Serve
+listener, for example because the browser used public DNS. Do not make the
+account browser public to work around it. A temporary TCP forward on an unused
+tailnet port can bypass hostname resolution:
+
+```sh
+sudo tailscale serve --bg --tcp=80 tcp://127.0.0.1:4849
+```
+
+Open `http://<host-tailscale-ip>/` from the connected device. This HTTP connection
+travels inside the encrypted Tailscale tunnel; the browser itself does not use
+HTTPS for this fallback. TCP forwarding is necessary because the HTTP Serve
+handler matches the configured hostname and returns 404 for an IP-address Host.
+Verify session listing, tabs with the matching Referer, and streamed frames at
+the IP origin, then obtain device confirmation. Preserve the public Recover
+listener and existing private services. Remove this temporary fallback with
+`sudo tailscale serve --tcp=80 off` after setup.
+
 Protocol references:
 [Google OAuth web-server flow](https://developers.google.com/identity/protocols/oauth2/web-server),
 [SignalWire status callbacks](https://signalwire.com/docs/compatibility-api/rest/messages/webhooks/sms-status-callback),
