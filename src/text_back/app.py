@@ -53,6 +53,7 @@ def _telecom_from_config(config) -> Telecom:
         project_id=config.signalwire_project_id,
         api_token=config.signalwire_api_token,
         allowed_from_number=config.signalwire_from_number,
+        allowed_to_numbers=config.pilot_recipients,
     )
 
 
@@ -218,6 +219,7 @@ def create_app(
                 and app.state.handoff_destination != "unconfigured"
             ),
             "handoff_delivery_channel": app.state.delivery_transport.channel_name,
+            "pilot_recipient_count": None if config.pilot_recipients is None else len(config.pilot_recipients),
         }
 
     @app.post("/webhooks/voice")
@@ -245,6 +247,8 @@ def create_app(
             verify_twilio_compat(url, params, signature, request.app.state.webhook_secret)
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
+        if config.pilot_recipients is not None and from_number not in config.pilot_recipients:
+            return Response(content=empty_response(), media_type='application/xml')
         result = await asyncio.to_thread(submit_event, state=app.state, kind='voice',
             params=dict(call_sid=call_sid, call_status=call_status, from_number=from_number, to_number=to_number))
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
@@ -284,6 +288,8 @@ def create_app(
             verify_twilio_compat(url, params, signature, request.app.state.webhook_secret)
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
+        if config.pilot_recipients is not None and from_number not in config.pilot_recipients:
+            return Response(content=empty_response(), media_type='application/xml')
         result = await asyncio.to_thread(submit_event, state=app.state, kind='sms',
             params=dict(message_sid=message_sid, from_number=from_number, to_number=to_number, body=body))
         result["message_sid"] = message_sid

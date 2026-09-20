@@ -61,6 +61,7 @@ class SignalWireTelecom:
     allowed_from_number: str
     client: httpx.Client | None = None
     timeout_seconds: float = 10.0
+    allowed_to_numbers: tuple[str, ...] | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         self.space_url = self.space_url.rstrip("/")
@@ -87,6 +88,8 @@ class SignalWireTelecom:
     def send_sms_with_callback(self, *, to, body, from_number, kind, callback_url=None):
         if from_number != self.allowed_from_number:
             raise TelecomError("SMS sender is not the configured SignalWire number")
+        if self.allowed_to_numbers is not None and to not in self.allowed_to_numbers:
+            raise TelecomError("SMS recipient is not an approved pilot recipient")
         request_client = self.client or httpx.Client()
         close_client = self.client is None
         try:

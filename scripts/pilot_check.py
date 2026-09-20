@@ -55,6 +55,12 @@ def signalwire_details(config):
                 project['signing_key'] == config.webhook_secret
                 if project.get('signing_key') else 'not_exposed')
             report['signalwire_trial_status'] = project.get('is_trial', 'not_exposed')
+        response = client.get(base+'/api/laml/2010-04-01/Accounts/'+config.signalwire_project_id)
+        report['signalwire_account_http_status'] = response.status_code
+        if response.is_success:
+            account = response.json()
+            report['signalwire_account_type'] = account.get('type', 'not_exposed')
+            report['signalwire_account_status'] = account.get('status', 'not_exposed')
         response = client.get(base+'/api/relay/rest/registry/beta/brands')
         report['signalwire_brands_http_status'] = response.status_code
         if response.is_success:
@@ -89,7 +95,7 @@ def main():
             payload=health.json()
             report['runtime_health']={key:payload.get(key) for key in (
                 'status','telecom','calendar','calendar_credentials','worker_running','worker_errors',
-                'worker_last_run','persistent_database','sms_queue','inbound_dead_letters')}
+                'worker_last_run','persistent_database','sms_queue','inbound_dead_letters','pilot_recipient_count')}
         except Exception as exc:
             report['runtime_health_error']=type(exc).__name__
     if args.providers:

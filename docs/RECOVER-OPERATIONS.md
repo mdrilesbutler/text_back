@@ -153,6 +153,15 @@ Use only approved pilot numbers and follow every check in
 `ONBOARDING-FORWARDING.md`. A passing local suite, working provider credentials,
 or green health check does not prove caller-ID forwarding or a real-phone pilot.
 
+For the pilot, set `TEXT_BACK_PILOT_RECIPIENTS` to a comma-separated list of
+explicitly approved E.164 mobile numbers. An explicitly empty value blocks all
+pilot recipients; an absent variable leaves normal service behavior unchanged.
+Malformed numbers fail startup. After signature verification, voice/SMS requests
+from other numbers return empty cXML without persisting work. The SignalWire
+transport also blocks queued outbound messages to numbers outside the list.
+Health reports only the count. Keep the list empty until the operator supplies
+the approved test phones; never infer approval from account records.
+
 ### HTTPS using existing Tailscale Funnel
 
 When Funnel is already allowed for the host, it can provide pilot HTTPS without
