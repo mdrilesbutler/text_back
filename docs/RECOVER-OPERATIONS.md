@@ -147,6 +147,25 @@ Account setup browsers must remain private. A temporary browser dashboard can
 use a separate **Serve** listener restricted to the tailnet; never expose an
 authenticated setup browser through Funnel. Remove its listener after setup.
 
+Use `deploy/systemd/text-back-setup-browser.service` for a dedicated setup
+browser on this host. Its mode-700 profile lives outside the repository and its
+debugging port binds to localhost. Start it as a temporary user service; wait
+for `http://127.0.0.1:9224/json/version` before attaching. The host's global
+`agent-browser` wrapper shares a different Chrome instance with a one-hour
+lifetime, so use the native executable for this setup:
+
+```sh
+/home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back --session recover-login --cdp 9224 open https://fluxworks.signalwire.com
+/home/ubuntu/.local/lib/node_modules/agent-browser/bin/agent-browser-linux-arm64 --namespace text-back dashboard start --port 4849
+sudo tailscale serve --bg --https=10000 http://127.0.0.1:4849
+```
+
+The private dashboard requires Tailscale connected on the viewing device. Check
+both `/api/sessions` and the session WebSocket stream through HTTPS; an HTTP 200
+alone does not prove that the browser viewport works. Keep other Serve listeners
+and shared browser sessions intact. After account setup, stop this dedicated
+browser and dashboard and remove only the temporary port-10000 Serve listener.
+
 Protocol references:
 [Google OAuth web-server flow](https://developers.google.com/identity/protocols/oauth2/web-server),
 [SignalWire status callbacks](https://signalwire.com/docs/compatibility-api/rest/messages/webhooks/sms-status-callback),

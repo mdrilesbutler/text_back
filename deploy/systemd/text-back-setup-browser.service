@@ -1,0 +1,12 @@
+[Unit]
+Description=Private browser for text_back account setup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/snap/bin/chromium --headless --disable-gpu --disable-dev-shm-usage --remote-debugging-address=127.0.0.1 --remote-debugging-port=9224 --user-data-dir=/home/ubuntu/snap/chromium/common/text-back-setup-profile --restore-last-session about:blank
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
