@@ -49,9 +49,10 @@ class FakeTelecom:
 class SignalWireTelecom:
     """SignalWire Compatibility REST adapter for outbound SMS.
 
-    This direct REST path is compatible with SignalWire's Platform Free Trial;
-    it intentionally does not use cXML/SWML messaging integrations, which the
-    trial does not support.
+    This direct REST path is expected to work under SignalWire's Platform Free
+    Trial because it does not use the cXML/SWML messaging integrations the trial
+    excludes; that reading is unverified until the first live send succeeds.
+    See docs/SIGNALWIRE-INTEGRATION.md.
     """
 
     provider_name: ClassVar[str] = "signalwire"
