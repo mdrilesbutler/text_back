@@ -19,7 +19,7 @@ Port the persist-attempt-before-send crash-safety pattern from `src/text_back/de
 none
 
 ## OWNER
-none
+claude-alienware#1095 · 2026-09-28T23:35Z
 
 ## NEXT
 - (queued slices, in order)
