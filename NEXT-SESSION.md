@@ -6,33 +6,33 @@ When Michael starts an agent from this project directory and says "continue proj
 ## Where everything stands (verified 2026-08-20, fresh)
 - Canonical checkout: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror path: `/home/mdriles/projects/text_back`).
 - Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`; completed items are pushed to origin (verify with `git log --oneline -5`).
-- Test suite: `.venv/bin/pytest tests/` → **182 passed** (updated 2026-08-29), rerun this session after every change.
+- Test suite: `.venv/bin/pytest tests/` → **301 passed** (verified 2026-08-29), rerun after every change.
 - Implemented: FastAPI app (`/health`, `/webhooks/voice`, `/webhooks/sms`); fail-closed Twilio-compatible signatures; idempotency via `claim_event`; deterministic STOP/HELP; Calendar stub gating confirmation on event ID; conversation slot-filling (service → location → preferred_time → name); `wiring_mode` = `forwarded` (default, conditional-forwarding attach to a client's existing number) / `managed` (ported number, terminal-unanswered rule).
 - Docs: `PRD-text_back.md` (labeled root PRD — bare `PRD.md` no longer exists), `docs/ONBOARDING-FORWARDING.md` (per-carrier conditional-forwarding runbook + mandatory live verification checklist).
-- gcloud CLI 581.0.0 installed at `~/google-cloud-sdk` on hermes-vcn-0. **NOT authenticated** — sign-in hit "access blocked" (see gotchas).
+- gcloud CLI exists on hermes-vcn-0 but is irrelevant to customer calendar onboarding; do not revive the superseded service-account path.
 - Approvals given by Michael 2026-08-20: SignalWire purchase path with a **$15/month ceiling**; product must attach to customers' actual existing phone numbers (drove `wiring_mode`); everything must be reproducible for the **fluxworks catalog**.
 - SignalWire estimate (researched 2026-08-20): ≈ $9.44/month all-in at pilot volume; setup ≈ $12 one-time + $5 minimum funding; 10DLC approval ~1–2 weeks; cheap $1.50/month tier needs an EIN. Details in `PRD-text_back.md` § Cost refresh.
 - Environment loader is implemented: `create_app()` reads all documented `TEXT_BACK_*` settings, explicit arguments override environment values, and `/health` reports non-secret effective config.
 - SignalWire pilot progress (2026-08-27): Space funded and one voice/SMS/MMS-capable pilot number purchased. Protected credentials exist under `~/.config/text_back/` with mode 600; authenticated Compatibility API discovery returned HTTP 200 and found exactly that configured number. A canonical protected `runtime.env` and enabled localhost-only `text-back.service` now run in safe `stub` mode at `127.0.0.1:8000`; `/health` is green. The number still has no voice/SMS handlers attached, no live message/call has been sent, and SignalWire mode correctly refuses startup without the Project signing key and exact public HTTPS base URL.
 - SignalWire re-verified 2026-08-28 (Claude): authenticated Compatibility API shows the pilot number active with voice/SMS/MMS/fax capabilities and `voice_url`/`sms_url` both unset; Michael confirmed the Space holds funds — money is NOT a blocker. Michael explicitly deferred the public-HTTPS deployment decision (tunnel for smoke test vs. durable Caddy+domain on this VPS); do not expose anything until he chooses. API gotchas: `TEXT_BACK_SIGNALWIRE_SPACE_URL` in `runtime.env` already includes `https://` (strip before building URLs); Twilio-style `/Balance.json` 404s on SignalWire.
-- NOT done: obtain the dashboard-only SignalWire Project signing key, choose/approve a durable public HTTPS deployment with persistent storage, finish Google Calendar auth/adapter, attach live voice/SMS handlers, run production traffic, or pick a LIVE handoff-alert channel (the delivery outbox/seam is built and default-disabled; Michael must choose the destination).
+- NOT done: choose/approve a durable public HTTPS deployment with persistent storage, build the customer-facing one-time calendar connection layer, attach live voice/SMS handlers, run production traffic, or pick a LIVE handoff-alert channel (the delivery outbox/seam is built and default-disabled; Michael must choose the destination).
 - 2026-08-29 (piclaw, Claude): worked in a separate worktree lane; Grok's UI lane (`deploy/`, `docs/demo/`) untouched by agreement.
 - **Where everything lives (recorded 2026-08-29 at Michael's request):** app code = branch `local/tdd-core` (piclaw worktree `~/projects/text_back-tdd-core`; the plain `~/projects/text_back` checkout is on stale `main`). Credentials/runtime = hermes-vcn-0 (`ssh hermes-cloud`) `~/.config/text_back/{pilot,runtime,signalwire}.env` mode 600 + localhost-only `text-back.service` in stub mode. Michael HAS a SignalWire account (space flux…) with funded pilot number; agents have API access via the stored PT token.
-- **Signing key clarification (verified against SignalWire docs 2026-08-29):** `TEXT_BACK_WEBHOOK_SECRET` = the *dedicated* Project "Signing Key" at Dashboard → API Credentials → Signing Key → Show. It is NOT the PT API token. Michael reports having provided it to agents multiple times, but no host stores it — whoever receives it next must append `TEXT_BACK_WEBHOOK_SECRET=…` to hermes-cloud `~/.config/text_back/runtime.env` (mode 600, never git/chat) so it stops getting lost.
-- **Google OAuth (2026-08-29, in progress):** headless `gcloud auth login mdrilesbutler@gmail.com --no-launch-browser` flow started on hermes-cloud (`~/oauth_login.log`, code goes to `~/oauth_code.txt` via the tail -f pattern); URL handed to Michael. Open the URL in a FULL browser (not an in-app webview) — that was the cause of the earlier "access blocked". **May be MOOT — see Cal.com decision below.**
+- **Signing key clarification (verified against SignalWire docs 2026-08-29):** `TEXT_BACK_WEBHOOK_SECRET` is the dedicated Project Signing Key, not the PT API token. It is now stored only in hermes-cloud's protected runtime config; never copy its value into Git, Obsidian, or chat.
+- **Superseded operator auth attempt:** the earlier headless `gcloud auth login`/service-account path is not customer onboarding and must not be revived as the product design. A pilot Calendar API token later proved the adapter; the sellable flow is the one-time in-app connection described below.
 - **SIGNING KEY STORED (2026-08-29 evening):** retrieved from the FluxWorks dashboard (API Credentials → Signing Key) via browser at Michael's order and appended to hermes-cloud `~/.config/text_back/runtime.env` as `TEXT_BACK_WEBHOOK_SECRET` (mode 600); `text-back.service` restarted, `/health` green. SignalWire-mode startup is no longer blocked on it. ROTATE the key in the dashboard at deploy time — the value transited a session transcript (transcripts sync to GitHub nightly).
-- **NEW PRODUCT PRINCIPLE (Michael, 2026-08-29): customers never get a live human — that's the whole point.** Escalation = graceful exit + async operator lead, never a transfer or "call the business line". Copy fixed in policy.py/followup.py/cxml.py; guard test `tests/test_no_live_human_copy.py`; PRD § compliance updated. 186 tests.
-- **DECIDED (Michael, 2026-08-29 evening) — Google Calendar primary, NOT Cal.com:** "everyone has a gmail account". Multi-provider adapter layer built the same night: `TEXT_BACK_CALENDAR_PROVIDER = stub | google | microsoft | icloud` (Graph covers Outlook.com + M365; iCloud via CalDAV pinned to *.icloud.com). All fail closed on unknown provider/missing credentials; SignalWire telecom + stub calendar refuses to boot (no phantom bookings in production wiring). See `docs/CALENDAR-PROVIDERS.md`.
-- **Google OAuth DONE (2026-08-29 evening):** dedicated calendar-only token minted from the existing Hermes OAuth client (google-oauth-repair skill pattern, browser consent, butler account) and installed at hermes-cloud `~/.config/text_back/google_token.json` (mode 600). Live-verified Calendar API 200 as mdrilesbutler. The gcloud flow from earlier handoffs was the WRONG PATH — never use gcloud for this; re-mint via the skill pattern if a revocation wave kills the grant (~5 min).
+- **NEW PRODUCT PRINCIPLE (Michael, 2026-08-29): customers never get a live human — that's the whole point.** Escalation = graceful exit + async operator lead, never a transfer or "call the business line". Copy fixed in policy.py/followup.py/cxml.py; guard test `tests/test_no_live_human_copy.py`; PRD § compliance updated.
+- **DECIDED (Michael, 2026-08-29) — ONE-TIME CUSTOMER CALENDAR CONNECTION:** a nontechnical owner connects the Google, Microsoft/Outlook, or iCloud calendar already used by the business once inside text_back; normal operation requires nothing else. Provider adapters are hidden plumbing. No Cal.com account, service-account sharing, token files, or recurring credential work is customer-facing. The adapter layer is built and fail-closed; the in-app connection screen, OAuth callbacks, encrypted connection store, automatic refresh broker, and calendar picker are not yet built. See `docs/CALENDAR-PROVIDERS.md`.
+- **Pilot Google API proof DONE (2026-08-29 evening):** a dedicated calendar-only pilot token was installed outside Git and Calendar API returned 200. This proves the Google adapter, not the sellable onboarding flow. The production owner experience must be one Connect Calendar action with text_back retaining and refreshing the connection thereafter.
 
 ## Open items, in order
 0. **Product model (docs done 2026-08-20):** canonical `docs/PRODUCT-MODEL.md`. Build only the Recover P0 queue next: voicemail response → preferred-time booking → human handoff → append-only outcome events → bounded no-response sequence → Recovered Revenue Brief generator. Voice Answer and Grow journeys wait until the real-phone Recover pilot proves conversion.
 0a. **GTM (docs done 2026-08-20):** Koerner model live at `docs/gtm/KOERNER-MODEL.md`. Optional next: PDF leave-behind, Stripe links for TB-ASSESS/RECOVER/CARE (Michael money gate).
 1. **Michael (browser)**: enable SignalWire Platform Free Trial under Messaging Campaigns by verifying his personal mobile. This permits REST API test messages only between the purchased pilot number and that one verified mobile (200/day, trial prefix); it does not enable cXML/SWML messaging. Michael is operating as a sole proprietor while an LLC is pending. Do not submit a paid Brand/Campaign yet unless he explicitly chooses that path after seeing the displayed fees.
-2. **Michael + agent**: finish Google auth for `mdrilesbutler@gmail.com`. Last attempt: `~/google-cloud-sdk/bin/gcloud auth login --no-launch-browser` run in background with stdin held open; Michael's browser showed "access blocked" (exact wording never reported). Restart the flow fresh (the old background process/scratchpad is disposable). Fallback ladder: (a) plain desktop browser, not an in-app webview; (b) incognito signed in only as mdrilesbutler; (c) Plan B — Michael creates project/SA in console by hand, downloads key; (d) Plan C — `gcloud auth login --no-browser` remote-bootstrap if he has gcloud locally.
-3. **Agent (after auth)**: scripted GCP setup — `gcloud projects create <unique-id>`, enable `calendar-json.googleapis.com`, create service account, key to `~/.config/text_back/sa_key.json` (chmod 600, NEVER git); then Michael shares the pilot calendar with the SA email ("Make changes to events").
+2. **Agent (unblocked local work)**: build the one-time calendar connection domain and UI/API contract TDD — `CalendarConnection`, encrypted credential reference, `connected|degraded|reauth_required` states, Connect Calendar callback seams, calendar picker, and automatic refresh interface. Do not require real provider credentials for deterministic tests.
+3. **Agent + Michael only after public-domain approval**: register Google and Microsoft provider apps/redirect URLs and the Apple connection path, then perform one pilot onboarding through the same customer-facing Connect Calendar flow. This is the only calendar setup Michael should see.
 4. **Agent (done locally 2026-08-21)**: SignalWire callbacks now require `X-SignalWire-Signature`, return cXML, and forwarded calls receive branded `<Say>` + `<Hangup>` with no retained recording. Live attachment/testing remains gated.
-5. **Agent (done locally 2026-08-21)**: explicit `preferred_time` input is parsed in the configured timezone; vague/past/DST-unsafe input is re-prompted; the four fields feed free/busy-rechecked Calendar-stub booking; confirmation remains gated on event ID. Live Google Calendar is still pending.
+5. **Agent (done locally 2026-08-21)**: explicit `preferred_time` input is parsed in the configured timezone; vague/past/DST-unsafe input is re-prompted; the four fields feed free/busy-rechecked booking; confirmation remains gated on event ID. Live customer onboarding through the one-time connection flow is still pending.
 5a. **Agent (done locally 2026-08-21)**: deterministic customer-requested/safety handoff persists active state, pauses SMS and missed-call automation, preserves STOP/HELP, supports explicit resolution, and emits an idempotent concise operator payload to an in-memory notifier. External operator delivery remains unimplemented.
 5b. **Agent (done locally 2026-08-21)**: append-only outcome events now capture missed/contacted/engaged/field/qualified/handoff/slot/event/confirmed facts with stable evidence IDs and retry-safe idempotency keys. See `docs/OUTCOME-EVENTS.md`.
 5c. **Agent (done locally 2026-08-25, TDD)**: bounded no-response sequence implemented in `src/text_back/followup.py` + `followups` store table. Scheduled only after an accepted intro SMS; configurable `TEXT_BACK_FOLLOWUP_DELAYS_MINUTES` (default `120,1440`), `TEXT_BACK_FOLLOWUP_EXPIRY_MINUTES` (default `2880`), quiet hours `TEXT_BACK_QUIET_HOURS_START/END` (default 21:00/08:00, business tz, overnight-window aware); defers in-quiet sends to quiet-end; cancels on reply/STOP/opt-out/booking/active handoff; idempotent via claim_event; records `followup.sent` + `lead.expired` with evidence. `run_due_followups` is a pure injected-clock seam — NO live cron/queue/provider send exists.
@@ -54,7 +54,7 @@ When Michael starts an agent from this project directory and says "continue proj
 - On this host there is no Obsidian vault and no `/home/mdriles`; Codex memory here is sqlite (do not edit directly). The repo + GitHub push IS the cross-machine handoff; vault mirroring happens from piclaw.
 
 ## Improvements backlog
-- **Customer reauth flow (requirement recorded 2026-08-29, from the OAuth-auto-repair session):** Michael's own operator OAuth may auto-route into the google-oauth-repair skill (Hermes plugin + Claude hook now do this). A CUSTOMER's revoked calendar authorization must NOT go through that path: refresh silently when possible; on true consent revocation, move the client record into a `reauth_required` state and send that customer a secure reconnect link — Google will not let software bypass the consent step. Needs: per-client token store, `reauth_required` state + outcome event, reconnect-link delivery. Not built yet.
+- **Calendar connection reliability:** the normal customer contract is connect once and done. text_back silently refreshes/rotates credentials. Only an exceptional provider-initiated revocation may surface one in-app Reconnect Calendar button; customers never handle tokens or repair skills. Needs: per-client token store, `reauth_required` state + outcome event, reconnect-link delivery. Not built yet.
 - Env-loader with validation and a startup log of effective (non-secret) config.
 - Outcome audit ledger is built for core lifecycle evidence; generic outbound, consent-change, and operational events remain.
 - Quiet-hours enforcement has no clock-driven tests; add freeze-time tests.
@@ -71,7 +71,7 @@ When Michael starts an agent from this project directory and says "continue proj
 5. Port piclaw's past-tense-claim hook to hermes-vcn-0 handoff docs — this session had to avoid "has been deployed"-style claims by hand. `recommended, priority: medium, effort: M`
 
 ### Automation (5)
-1. GitHub Actions: pytest on every push to any branch (repo has zero CI; suite is 50 tests and fast). `recommended, priority: high, effort: S`
+1. GitHub Actions pytest on every push/PR — **done** in `.github/workflows/ci.yml`.
 2. Add text_back to the piclaw fleet-sync daily pull-before-push sweep so both checkouts converge. `recommended, priority: high, effort: S`
 3. Weekly pricing-drift check: re-fetch SignalWire/Twilio rates, diff vs `PRD-text_back.md` cost snapshot, alert only on >10% drift (stale pricing has now needed manual refresh twice). `recommended, priority: medium, effort: M`
 4. Once a SignalWire account exists: daily 10DLC registration-status poll during the 1–2 week approval window; notify only on state change (no-status-dumps compliant). `recommended, priority: medium, effort: M`
@@ -102,30 +102,29 @@ Cold start:
   docs/SIGNALWIRE-INTEGRATION.md, docs/OUTCOME-EVENTS.md.
   Verify git status/log, then run .venv/bin/pytest tests/ before changing code.
 
-Verified state (2026-08-21): 111 tests pass. Branch local/tdd-core is synced to
-origin. The environment loader, forwarded/managed wiring modes, fail-closed
-SignalWire signature boundary and cXML, deterministic time parsing and Calendar
-stub booking gate, human-handoff state/payload, and append-only outcome ledger
-are implemented. One voice/SMS-capable SignalWire pilot number was purchased by
-Michael and is config-only in ~/.config/text_back/pilot.env. There are no
-SignalWire credentials, live webhooks/messages/calls, Google credentials, real
-Calendar adapter, external handoff delivery, or deployment.
+Verified state (2026-08-29): 301 tests pass. Branch local/tdd-core has
+fail-closed Google, Microsoft/Outlook, and iCloud calendar API adapters plus the
+existing telecom, conversation, booking, handoff, follow-up, outcome, brief,
+delivery, and CI seams. Microsoft availability uses Graph calendarView so
+delegated personal Outlook.com accounts are supported. No customer-facing
+one-time calendar connection screen/callback/store exists yet. No live
+webhooks/messages/calls, external handoff destination, or deployment exists.
 
-Start automatically with the next unblocked item: port the persisted-
-attempt-before-send crash-safety pattern from delivery.py to
-followup.py:201-204 (same claim-then-update wedge shape, found in the
-2026-08-29 adversarial review), TDD with crash-shaped tests. After that:
-generic outbound/consent-change ledger events from the improvements
-backlog. Keep STOP/HELP, consent, and booking gates deterministic. Do not
-add a live notifier destination without Michael choosing the channel. Run
-focused tests and the full suite, update the PRD/handoff/docs, commit with
-the repo's existing author flags, and push local/tdd-core.
+Start automatically with Michael's highest-priority correction: build the
+one-time calendar connection domain and local UI/API contract TDD. Add a
+persisted CalendarConnection with encrypted-credential references and
+connected/degraded/reauth_required state, provider callback seams, a calendar
+picker contract, and an automatic refresh interface. Tests must use fakes—do
+not register provider apps or use live credentials yet. Then port the
+persisted-attempt-before-send crash-safety pattern from delivery.py to
+followup.py:201-204. Keep STOP/HELP, consent, and booking gates deterministic.
+Run focused tests and the full suite, update docs, commit, and push.
 
-Human gates remain: Michael's Platform Free Trial mobile verification; Google
-authentication and Calendar sharing; SignalWire least-privilege credentials;
-external operator-notifier choice; deploy/webhook attachment; and the mandatory
-non-customer live-call checklist. Record progress if Michael completes one, but
-do not wait for a gate before doing the local follow-up-sequence work.
+Human gates remain: Michael's Platform Free Trial mobile verification; public
+deployment domain and provider-app registrations for the one-time calendar
+flow; external operator-notifier choice; deploy/webhook attachment; and the
+mandatory non-customer live-call checklist. Do not wait for those gates before
+building the local connection domain and fake callback tests.
 
 Do not purchase/activate more telecom service, exceed the approved $15/month
 SignalWire ceiling, send live/production SMS, route calls, attach webhooks, use
@@ -133,8 +132,7 @@ Google Voice, store credentials or the purchased number in Git, let an LLM
 control policy, mix forwarded/managed trigger semantics, or claim a booking
 without a successful Calendar event ID.
 
-Done for next session = handoff-alert delivery seam is already shipped
-(182 tests green). Next: followup.py crash-safety port, or wait on human
-gates (signing key, public HTTPS host, Google Calendar, live alert
-channel). Never infer revenue from a booking alone.
+Done for next session = the one-time calendar connection domain and fake
+onboarding flow are green in the full suite; live provider registration remains
+gated on the public HTTPS domain. Never infer revenue from a booking alone.
 ```

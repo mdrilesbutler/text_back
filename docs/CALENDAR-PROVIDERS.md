@@ -1,60 +1,120 @@
-# Calendar providers
+# Calendar connection — one-time customer onboarding
 
-text_back books against a pluggable calendar provider. The provider is chosen
-once at startup by `TEXT_BACK_CALENDAR_PROVIDER`; `create_app` fails closed on
-an unknown value, missing credentials, or an absent credential file. `/health`
-reports the active provider under the `calendar` key.
+## Product rule
 
-Selection: `src/text_back/calendars/factory.py` (`calendar_from_config`) maps
-the env value to an adapter. Passing `calendar=` to `create_app` (tests)
-bypasses env validation, exactly like `telecom=`.
+A business owner connects the calendar they already use **one time inside
+text_back**. After that, text_back reads availability, prevents conflicts, and
+creates appointments automatically. The owner does not create a Cal.com
+account, copy tokens, manage credential files, share a calendar with a service
+account, or repeat setup during normal operation.
 
-| Value | Adapter | Status |
-|---|---|---|
-| `stub` (default) | `CalendarStub` (in-memory) | implemented |
-| `google` | `calendars/google.py` (Calendar v3 REST) | implemented |
-| `microsoft` | `calendars/microsoft.py` (Graph; Outlook.com + M365) | placeholder — selecting it raises "not yet implemented" |
-| `icloud` | `calendars/icloud.py` (CalDAV) | placeholder — selecting it raises "not yet implemented" |
+This is one customer experience with three behind-the-scenes adapters:
 
-## Environment variables (values never in git)
+- **Google Calendar / Gmail**
+- **Microsoft Outlook / Microsoft 365**
+- **Apple iCloud Calendar**
 
-| Env var | Provider | Meaning |
-|---|---|---|
-| `TEXT_BACK_CALENDAR_PROVIDER` | all | `stub` \| `google` \| `microsoft` \| `icloud` |
-| `TEXT_BACK_GOOGLE_CALENDAR_ID` | google | Calendar ID (e.g. `mike@example.com`) |
-| `TEXT_BACK_GOOGLE_TOKEN_FILE` | google | Path to a mode-600 file holding ONLY a current OAuth2 bearer access token (one line) |
-| `TEXT_BACK_MS_USER` | microsoft | Target mailbox UPN |
-| `TEXT_BACK_MS_TOKEN_FILE` | microsoft | Path to a mode-600 file holding a current Graph bearer token |
-| `TEXT_BACK_ICLOUD_USERNAME` | icloud | Apple ID |
-| `TEXT_BACK_ICLOUD_APP_PASSWORD_FILE` | icloud | Path to a mode-600 file holding the app-specific password |
-| `TEXT_BACK_ICLOUD_CALENDAR_URL` | icloud | Full HTTPS CalDAV calendar collection URL |
+The provider details are implementation plumbing, not choices the owner must
+understand beyond selecting the calendar account they already have.
 
-Adapters consume token FILES, not OAuth client credentials. Token refresh runs
-in an external refresher (cron/systemd under `~/.config/text_back/`) that
-rewrites the token file; the app re-reads the file on every provider call and
-never performs an OAuth flow itself. The refresher's own env names
-(`TEXT_BACK_MS_TENANT_ID` / `TEXT_BACK_MS_CLIENT_ID` /
-`TEXT_BACK_MS_CLIENT_SECRET_FILE`, `TEXT_BACK_GOOGLE_SA_KEY_FILE`) are
-documentation-only — `create_app` never reads them.
+## One-time owner experience
 
-## Product rules (all providers)
+1. During onboarding, select **Connect calendar**.
+2. Choose Google, Microsoft/Outlook, or Apple.
+3. Sign in to that provider and approve calendar access once.
+4. Choose the calendar text_back should use.
+5. Return to text_back with **Calendar connected** shown.
 
-- A booking is NEVER confirmed without a provider event ID.
-- Free/busy is rechecked immediately before event creation; a provider error
-  during either check refuses the booking (no confirmation SMS).
-- Event IDs are deterministic per (conversation, slot start)
-  (`calendars/ids.py`), so a webhook retry or crash-rerun of the SAME booking
-  dedupes at the provider, while a later booking for a different slot can
-  never collide with an earlier event's ID.
-- A provider "duplicate" signal (Google 409, iCloud 412, Graph 409) is
-  verified before it is treated as success: the adapter confirms the existing
-  event is live and occupies exactly the requested slot, and refuses the
-  booking otherwise (a cancelled tombstone or mismatched event never
-  phantom-confirms).
-- Crash-window recovery is a real runtime path: when a conversation's fields
-  are complete but no appointment is saved, the next inbound message
-  re-attempts the booking (`handlers._collect_conversation_field`), which is
-  where the deterministic IDs' retry-dedupe is exercised.
-- The in-memory `stub` calendar is refused at startup when the telecom
-  provider is SignalWire — a production telecom must never confirm bookings
-  against a fake calendar.
+From then on, text_back owns access-token refresh, rotated credentials,
+connection health, availability checks, and event creation. No Cal.com page or
+second scheduling account sits between the owner and their calendar.
+
+If a calendar provider itself revokes a grant or the owner revokes access,
+text_back must fail closed on booking, preserve the lead, and present one
+**Reconnect calendar** button. That is an exceptional provider security event,
+not routine onboarding and never a request to paste tokens or edit files.
+
+## Internal architecture
+
+The app stores one `CalendarConnection` per business:
+
+- provider (`google`, `microsoft`, or `icloud`)
+- provider account and selected calendar identifiers
+- encrypted refresh credential or encrypted provider credential reference
+- access-token expiry and provider-specific rotation metadata
+- connection state (`connected`, `degraded`, `reauth_required`)
+- timestamps for connection, last successful refresh, and last successful API
+  operation
+
+Secrets are encrypted at rest in the deployment secret store and never placed
+in Git, Obsidian, logs, SMS bodies, browser URLs, or customer-visible errors.
+Short-lived access tokens are refreshed before expiry. Microsoft refresh-token
+rotation must be stored atomically. On a provider authentication failure, the
+runtime refreshes once and retries the original operation once; it never loops.
+
+`CalendarProvider` remains the provider-neutral booking seam. Every adapter
+must implement:
+
+- `is_free(start, end)`
+- `create_event(...) -> provider_event_id`
+
+All adapters obey the same deterministic rules:
+
+- recheck free/busy immediately before event creation;
+- fail closed when availability cannot be proven;
+- use provider-side idempotency so retries do not create duplicates;
+- never send a booking confirmation without a real provider event ID.
+
+## Provider implementation notes
+
+### Google
+
+Use an OAuth authorization-code flow with offline access and least-privilege
+Calendar scopes. Store the refresh grant encrypted, refresh access tokens
+silently, and let the owner select `primary` or another writable calendar.
+Michael's local `google-oauth-repair` skill is for operator infrastructure; it
+is not the customer connection mechanism.
+
+### Microsoft / Outlook
+
+Use Microsoft identity OAuth with `offline_access` and Calendar permissions.
+The same owner flow covers Outlook.com and Microsoft 365. Availability must use
+the Graph `calendarView` API because Graph `getSchedule` does not support
+delegated personal Microsoft accounts. Event creation uses Graph's
+`transactionId` idempotency field.
+
+### Apple iCloud
+
+Keep Apple behind the same **Connect calendar once** experience. Use Apple's
+supported third-party calendar authorization when available for the app; a
+CalDAV app-specific credential is the fallback. Any Apple credential is
+captured once through onboarding and stored encrypted—never exposed as a file
+or recurring owner task.
+
+## Current build status
+
+The provider-neutral booking seam and offline-tested Google, Microsoft, and
+iCloud API adapters are built. Microsoft availability uses Graph
+`calendarView`, which supports delegated personal Outlook.com accounts as well
+as Microsoft 365 accounts. The current token-file factory is a development and
+pilot scaffold only; it is **not** the sellable onboarding design.
+
+The production in-app connection screen, OAuth callbacks, encrypted connection
+store, automatic refresh/rotation broker, calendar picker, and provider app
+registrations are not yet built. Until those exist, the product does not yet
+meet the one-time human onboarding requirement.
+
+The Cal.com booking embed on the separate FluxWorks marketing website is not
+part of text_back and is unchanged.
+
+## Acceptance criteria
+
+- A nontechnical owner connects one existing calendar in one onboarding flow.
+- No owner handles API keys, token files, service-account sharing, or Cal.com.
+- The connection survives process restarts and normal access-token expiry.
+- Google, Outlook.com, Microsoft 365, and iCloud owners receive the same product
+  experience.
+- A revoked grant cannot create or confirm a phantom booking; the lead remains
+  queued and the owner sees one safe reconnect action.
+- Every confirmed appointment contains a real provider event ID and repeated
+  webhook delivery cannot create a duplicate event.

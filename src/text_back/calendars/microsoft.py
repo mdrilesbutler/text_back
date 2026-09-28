@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import urllib.parse
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import ClassVar
 
 from text_back.calendars.ids import ms_transaction_id
@@ -15,15 +15,21 @@ from text_back.calendars.transport import (
     rfc3339_utc,
 )
 
-# Graph scheduleItems statuses that block the window. "free" and
-# "workingElsewhere" do not.
-_BLOCKING_STATUSES = {"busy", "tentative", "oof"}
+# calendarView supports delegated personal Outlook.com accounts as well as
+# work/school Microsoft 365 accounts. Only these two Graph showAs values leave
+# the requested slot bookable; missing/unknown values fail toward busy.
+_NON_BLOCKING_SHOW_AS = {"free", "workingElsewhere"}
 
 
 @dataclass
 class MicrosoftGraphProvider:
-    """One adapter for both Outlook.com and M365 — identical Graph endpoints;
-    only the token audience differs (the external refresher's problem)."""
+    """One adapter for Outlook.com and Microsoft 365.
+
+    Availability intentionally uses ``calendarView`` rather than
+    ``calendar/getSchedule``: Microsoft documents delegated personal accounts
+    as unsupported for getSchedule, while calendarView supports both personal
+    and work/school accounts.
+    """
 
     provider_name: ClassVar[str] = "microsoft"
     user: str  # target mailbox UPN (Outlook.com and M365)
@@ -32,49 +38,17 @@ class MicrosoftGraphProvider:
     base_url: str = "https://graph.microsoft.com/v1.0"
 
     def is_free(self, start: datetime, end: datetime) -> bool:
-        payload = {
-            "schedules": [self.user],
-            "startTime": {"dateTime": rfc3339_utc(start), "timeZone": "UTC"},
-            "endTime": {"dateTime": rfc3339_utc(end), "timeZone": "UTC"},
-            "availabilityViewInterval": 15,
-        }
-        response = self.transport(
-            self._request("POST", f"{self._user_url()}/calendar/getSchedule", payload)
+        entries = self._calendar_view_entries(
+            start=start,
+            end=end,
+            select="id,showAs,isCancelled",
         )
-        if response.status != 200:
-            raise CalendarProviderError(
-                f"microsoft calendar returned HTTP {response.status}"
-            )
-        body = self._json(response.body)
-        value = body.get("value") if isinstance(body, dict) else None
-        if not isinstance(value, list) or not value:
-            raise CalendarProviderError(
-                "microsoft calendar getSchedule response was malformed"
-            )
-        entry = value[0]
-        if not isinstance(entry, dict) or "error" in entry:
-            raise CalendarProviderError(
-                "microsoft calendar getSchedule response reported an error"
-            )
-        items = entry.get("scheduleItems")
-        if not isinstance(items, list):
-            raise CalendarProviderError(
-                "microsoft calendar getSchedule response was malformed"
-            )
-        start_utc = start.astimezone(timezone.utc)
-        end_utc = end.astimezone(timezone.utc)
-        for item in items:
-            if not isinstance(item, dict):
-                raise CalendarProviderError(
-                    "microsoft calendar schedule item was malformed"
-                )
-            if item.get("status") not in _BLOCKING_STATUSES:
+        for entry in entries:
+            if entry.get("isCancelled") is True:
                 continue
-            item_start = self._parse_graph_datetime(item.get("start"))
-            item_end = self._parse_graph_datetime(item.get("end"))
-            # Half-open overlap against [start, end).
-            if item_start < end_utc and item_end > start_utc:
-                return False
+            if entry.get("showAs") in _NON_BLOCKING_SHOW_AS:
+                continue
+            return False
         return True
 
     def create_event(
@@ -128,25 +102,11 @@ class MicrosoftGraphProvider:
         # verification: an event for a different or deleted slot can never be
         # returned here, so a 409 whose event does not occupy the requested
         # window fails closed instead of phantom-confirming.
-        query = urllib.parse.urlencode(
-            {
-                "startDateTime": rfc3339_utc(start),
-                "endDateTime": rfc3339_utc(end),
-                "$select": "id,transactionId",
-            }
+        value = self._calendar_view_entries(
+            start=start,
+            end=end,
+            select="id,transactionId",
         )
-        url = f"{self._user_url()}/calendar/calendarView?{query}"
-        response = self.transport(self._request("GET", url, None))
-        if response.status != 200:
-            raise CalendarProviderError(
-                f"microsoft calendar returned HTTP {response.status}"
-            )
-        body = self._json(response.body)
-        value = body.get("value") if isinstance(body, dict) else None
-        if not isinstance(value, list):
-            raise CalendarProviderError(
-                "microsoft calendar duplicate lookup did not return the event id"
-            )
         for entry in value:
             if (
                 isinstance(entry, dict)
@@ -159,7 +119,65 @@ class MicrosoftGraphProvider:
             "microsoft calendar duplicate lookup did not return the event id"
         )
 
+    def _calendar_view_entries(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+        select: str,
+    ) -> list[dict]:
+        query = urllib.parse.urlencode(
+            {
+                "startDateTime": rfc3339_utc(start),
+                "endDateTime": rfc3339_utc(end),
+                "$select": select,
+            }
+        )
+        url = f"{self._user_url()}/calendarView?{query}"
+        entries: list[dict] = []
+        seen: set[str] = set()
+        trusted_prefix = self.base_url.rstrip("/") + "/"
+
+        # A one-slot view should be tiny, but follow bounded Graph pagination so
+        # a crowded calendar cannot hide a busy event on page two.
+        for _ in range(20):
+            if url in seen:
+                raise CalendarProviderError(
+                    "microsoft calendar pagination was invalid"
+                )
+            seen.add(url)
+            response = self.transport(self._request("GET", url, None))
+            if response.status != 200:
+                raise CalendarProviderError(
+                    f"microsoft calendar returned HTTP {response.status}"
+                )
+            body = self._json(response.body)
+            value = body.get("value") if isinstance(body, dict) else None
+            if not isinstance(value, list) or any(
+                not isinstance(entry, dict) for entry in value
+            ):
+                raise CalendarProviderError(
+                    "microsoft calendar calendarView response was malformed"
+                )
+            entries.extend(value)
+
+            next_link = body.get("@odata.nextLink")
+            if next_link is None:
+                return entries
+            if (
+                not isinstance(next_link, str)
+                or not next_link.startswith(trusted_prefix)
+            ):
+                raise CalendarProviderError(
+                    "microsoft calendar pagination was invalid"
+                )
+            url = next_link
+
+        raise CalendarProviderError("microsoft calendar pagination exceeded limit")
+
     def _user_url(self) -> str:
+        if self.user == "me":
+            return f"{self.base_url}/me"
         return f"{self.base_url}/users/{urllib.parse.quote(self.user, safe='')}"
 
     def _request(self, method: str, url: str, payload: dict | None) -> HttpRequest:
@@ -179,27 +197,4 @@ class MicrosoftGraphProvider:
                 "microsoft calendar response was not valid JSON"
             ) from None
 
-    @staticmethod
-    def _parse_graph_datetime(field: object) -> datetime:
-        """Parse a Graph dateTimeTimeZone start/end into an aware UTC datetime.
-        We request timeZone UTC, so a naive value is UTC; anything unparseable
-        raises (fail closed — a slot whose freeness cannot be proven is not
-        bookable)."""
-        if not isinstance(field, dict):
-            raise CalendarProviderError(
-                "microsoft calendar schedule item was malformed"
-            )
-        raw = field.get("dateTime")
-        if not isinstance(raw, str):
-            raise CalendarProviderError(
-                "microsoft calendar schedule item was malformed"
-            )
-        try:
-            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-        except ValueError:
-            raise CalendarProviderError(
-                "microsoft calendar schedule item datetime was unparseable"
-            ) from None
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
+

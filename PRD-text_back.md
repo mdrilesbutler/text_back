@@ -1,7 +1,7 @@
 # text_back — Product Requirements Document
 
-Status: Local core + SignalWire adapters implemented and tested (148 tests); Space funded and pilot number verified live via API (no handlers attached); live Google Calendar, operator notification delivery, signing key, and deploy pending human gates
-Updated: 2026-08-28
+Status: Local core + SignalWire adapters implemented and tested; calendar-provider seam is in progress; customer-facing one-time calendar connection, operator notification delivery, and deploy remain unshipped
+Updated: 2026-08-29
 Owner: Michael Riley  
 Canonical path: `/home/ubuntu/projects/text_back` on hermes-vcn-0 (piclaw mirror: `/home/mdriles/projects/text_back`)  
 Remote: `git@github.com:mdrilesbutler/text_back.git`, branch `local/tdd-core`  
@@ -18,12 +18,12 @@ A production missed-call recovery and scheduling assistant for arborists, guides
 3. If the operator does not answer, conditional forwarding sends the call to the client's dedicated programmable number. The first voice event for that `call_sid` is the missed-call trigger in `forwarded` mode.
 4. The system sends one branded transactional SMS, such as: “Sorry we missed your call—this is {{business_name}}'s scheduling assistant. What were you calling about?”
 5. A bounded conversational layer gathers job/service type, location, preferred time, and name; deterministic policy controls consent, STOP/HELP, booking, quiet hours, and handoff.
-6. The system checks Google Calendar availability and books only after receiving an event ID.
+6. The system checks the business owner's already-connected calendar and books only after receiving a real provider event ID.
 7. It confirms the appointment by SMS or routes the conversation to a human.
 
 ## Product objective
 
-Recover missed-call revenue without forcing the operator to adopt a new phone, app, or CRM. The system must be inexpensive, reliable, auditable, and simple enough for a small service business.
+Recover missed-call revenue without forcing the operator to adopt a new phone, scheduling account, app, or CRM. During onboarding the owner connects the Google, Microsoft/Outlook, or iCloud calendar they already use one time; text_back operates that connection afterward. The system must be inexpensive, reliable, auditable, and simple enough for a small service business.
 
 ## Commercial / GTM model (adopted 2026-08-20)
 
@@ -50,8 +50,8 @@ Default path for field-service ICP: assessment → **text_back install** as the 
 - Telecom: SignalWire is the current cost-first recommendation; Twilio remains the documentation/ecosystem fallback.
 - Public number: programmable carrier number, not Google Voice.
 - Number wiring (`wiring_mode` config, added 2026-08-20): `forwarded` (default) attaches to the client's EXISTING number via carrier conditional call forwarding — any call arriving at our number is by definition missed, so the first voice event per call_sid triggers exactly one text-back. `managed` keeps the terminal-unanswered rule for ported/platform-owned numbers. Per-carrier onboarding codes and the mandatory live verification checklist live in `docs/ONBOARDING-FORWARDING.md`.
-- Calendar credentials: service-account approach chosen over OAuth desktop client (2026-08-20) — fully CLI-scriptable and catalog-reproducible; the client shares their calendar with the service account's email instead of completing an OAuth consent flow.
-- Calendar: Google Calendar through `mdrilesbutler@gmail.com` for the pilot; client-owned Google accounts in production.
+- Calendar onboarding: the owner clicks **Connect calendar** once, signs in to the Google, Microsoft/Outlook, or Apple account they already use, selects the calendar, and returns to text_back. No Cal.com account, token copying, credential files, or service-account sharing is customer-facing.
+- Calendar runtime: provider-neutral adapters sit behind one product experience. Refresh grants/credentials are encrypted in the deployment secret store; text_back refreshes and rotates access automatically and fails closed if the provider itself revokes access. Canonical contract: `docs/CALENDAR-PROVIDERS.md`.
 - State: persistent conversation/contact/appointment records with idempotency keys and webhook-event audit history.
 - AI: bounded conversational extraction and response generation; deterministic policy engine controls booking, opt-out, and escalation.
 - Secrets: environment/secret store only; never repository or Obsidian.
@@ -73,6 +73,9 @@ Default path for field-service ICP: assessment → **text_back install** as the 
 - Time out or hand off uncertain, hostile, emergency, complex, or repeated-failure conversations.
 
 ### Calendar booking
+- Give each business owner one in-app calendar connection flow during onboarding; normal operation requires no repeated setup.
+- Support Google Calendar, Outlook.com/Microsoft 365, and Apple iCloud behind the same product experience.
+- Persist encrypted provider connection state and refresh short-lived access automatically; never ask an owner to handle tokens or service-account sharing.
 - Query free/busy before offering or accepting a slot.
 - Use a configurable appointment duration, travel buffer, timezone, and working hours.
 - Recheck availability immediately before event creation.
@@ -99,7 +102,7 @@ Default path for field-service ICP: assessment → **text_back install** as the 
 
 - An unanswered test call produces exactly one initial SMS.
 - A complete test conversation gathers the required fields without inventing information.
-- Booking occurs only in a free slot and creates exactly one Google Calendar event.
+- A nontechnical owner connects one existing calendar once; booking then occurs only in a free slot and creates exactly one event in that connected calendar.
 - Confirmation contains the correct date, time, timezone, and business identity.
 - STOP suppresses further automated conversation; HELP and human handoff work.
 - Duplicate and out-of-order webhooks do not duplicate texts or appointments.
@@ -136,18 +139,25 @@ Pricing can change and must be rechecked before purchase. Sources:
 
 ## Approval gates
 
-No telecom account activation, number purchase, paid usage, production messaging, or customer traffic without Michael’s explicit approval. The SignalWire path has a $15/month ceiling, but Michael must still perform the purchase/payment steps in his browser. Google Cloud authentication and service-account setup also require his participation. No credential values belong in project files.
+No telecom account activation, number purchase, paid usage, production messaging, customer traffic, or production OAuth-app registration without Michael’s explicit approval. The SignalWire path has a $15/month ceiling, but Michael must still perform purchase/payment steps in his browser. Calendar consent is a one-time in-app owner onboarding step, not a service-account or token-file procedure. No credential values belong in project files.
 
 ## Current open items (2026-08-20)
 
 1. SignalWire Space is funded and one local voice/SMS-capable pilot number was purchased 2026-08-21 at $0.50/month under the existing $15/month approval. Exact number is config-only outside Git. Re-verified 2026-08-28 via authenticated Compatibility API: number active with voice/SMS/MMS/fax capabilities, `voice_url`/`sms_url` both unset, and Michael confirms the account holds funds. Next browser gate: verify Michael's personal mobile for Platform Free Trial; do not submit a paid Brand/Campaign without reviewing its displayed fees. Michael is currently a sole proprietor and the LLC is pending. Public-HTTPS deployment decision (tunnel vs. durable Caddy+domain) was explicitly deferred by Michael on 2026-08-28 — no exposure work until he picks.
-2. Michael: Google sign-in for `mdrilesbutler@gmail.com` hit an "access blocked" page mid-flow (2026-08-20); exact error wording still unreported. Fallbacks documented in NEXT-SESSION.md.
-3. After gcloud auth lands: scripted GCP setup — create project, enable `calendar-json.googleapis.com`, create service account + key to `~/.config/text_back/sa_key.json` (never git), Michael shares the pilot calendar with the SA email.
+2. Build the customer-facing one-time **Connect calendar** flow: OAuth callbacks/account selection for Google and Microsoft, Apple connection onboarding, encrypted connection state, silent refresh/rotation, and a single exceptional reconnect action only when a provider revokes access.
+3. Register provider applications and redirect URLs only after the public deployment domain is approved. The parked operator `gcloud auth`/service-account path is not the product onboarding architecture.
 4. Code, done locally: explicit `preferred_time` values are parsed in the configured timezone and all four collected fields feed the free/busy-rechecked Calendar stub booking gate. Vague, past, nonexistent, ambiguous, and unavailable times do not produce confirmations. The local voicemail-style forwarded greeting is implemented with `<Say>` + `<Hangup>` and no retained recording.
-5. Finish live SignalWire attachment and the Google Calendar adapter once credentials exist. The outbound REST adapter and inbound `X-SignalWire-Signature`/cXML boundary are implemented locally but not configured or exercised against a live account; keep confirmation gated on the Calendar event ID.
+5. Finish live SignalWire attachment and the calendar connection/runtime after the public URL and provider registrations exist. The outbound REST adapter and inbound `X-SignalWire-Signature`/cXML boundary are implemented locally but not configured or exercised against a live account; keep confirmation gated on the provider event ID.
 6. Deploy through Paperclip Hermes on Hostinger; real-phone end-to-end smoke test.
-7. Before first client launch: replace pilot identity/calendar/phone with client-owned values; per-client 10DLC registration.
+7. Before first client launch: replace pilot identity/phone with client-owned values, complete the owner's one-time calendar connection, and finish per-client 10DLC registration.
 8. Connect the tested handoff payload to an approved operator delivery adapter; the current notifier is in-memory only and sends nothing externally.
+
+## Product decision — 2026-08-29 (Michael)
+
+- Calendar onboarding is one human action: the owner connects the calendar already used by the business once inside text_back; normal operation requires no further setup.
+- Google, Microsoft/Outlook, and iCloud are hidden provider adapters behind that single experience. Cal.com, service-account sharing, token files, and recurring credential work are not customer workflows.
+- text_back owns secure credential storage, refresh/rotation, health, and provider calls. A provider-forced revocation is handled as an exceptional in-app reconnect, never as technical instructions to the owner.
+- The separate FluxWorks website booking embed is unaffected.
 
 ## Session record — 2026-08-28 (hermes-vcn-0, Claude)
 

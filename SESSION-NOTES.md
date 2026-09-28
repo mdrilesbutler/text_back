@@ -1,5 +1,23 @@
 # text_back — Session Notes
 
+## 2026-08-29 night — one-time human calendar onboarding locked (piclaw, Hermes)
+
+Michael corrected the product framing: business owners are humans, not system
+operators. They connect the Google, Microsoft/Outlook, or iCloud calendar they
+already use **one time inside text_back**, and normal operation requires nothing
+else. Cal.com, service-account sharing, token files, provider repair skills, and
+recurring credential work are not customer workflows. The canonical contract is
+now `docs/CALENDAR-PROVIDERS.md`; PRD and handoff were aligned. The API adapters
+remain hidden plumbing. The production connection screen, OAuth callbacks,
+encrypted connection store, silent refresh/rotation broker, and calendar picker
+are still unbuilt and must be the next calendar feature.
+
+Official Graph docs exposed one implementation defect in the just-landed
+Microsoft adapter: `getSchedule` does not support delegated personal Outlook.com
+accounts. Availability now uses bounded, pagination-safe `calendarView`, which
+supports personal Outlook.com and Microsoft 365 accounts; untrusted Graph
+pagination links fail closed.
+
 ## 2026-08-29 night — multi-provider calendar layer + Google OAuth DONE (piclaw, Claude)
 
 Michael decided: Google Calendar primary ("everyone has a gmail account"),
@@ -7,7 +25,8 @@ with iCloud/Outlook/M365 wired in as options — helps client onboarding. Built
 the same night (workflow: design → 3 TDD lanes → verify → adversarial review
 → fix): `src/text_back/calendars/` package — CalendarProvider protocol,
 Google adapter (Calendar v3 freebusy + insert, deterministic event ids),
-Microsoft Graph adapter (getSchedule + events, covers Outlook.com and M365),
+Microsoft Graph adapter (`calendarView` + events, covers delegated Outlook.com
+and M365 accounts),
 iCloud CalDAV adapter (VFREEBUSY REPORT + PUT .ics, endpoint pinned to
 *.icloud.com), all behind an injected transport (no live network in tests, no
 new deps, redirect-refusing urllib opener). Review caught and fixed a
