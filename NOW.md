@@ -15,7 +15,7 @@ Run the real-phone Recover pilot per `docs/ONBOARDING-FORWARDING.md` on hermes-v
 BLOCKED · real-phone Recover pilot · needs PR #1 merged + device facts · NEED YOU: merge #1; confirm which mobile is verified in the SignalWire Dashboard and name a second voice phone to forward from
 
 ## OWNER
-none
+claude-alienware#38ab · 2026-09-29T00:42Z
 
 ## NEXT
 - Decide canon migration for `local/tdd-core` (collapse CLAUDE.md into AGENTS.md; state to canon-state NOW.md) — Michael's call.
