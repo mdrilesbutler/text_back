@@ -103,3 +103,12 @@ def test_help_is_answered_even_for_opted_out_contacts():
     _sms(store, telecom, "SM-1", "STOP")
     _sms(store, telecom, "SM-2", "HELP")
     assert [m.kind for m in telecom.outbound] == ["opt_out_ack", "help"]
+
+
+@pytest.mark.parametrize("body", ["YES123", "yes 2pm", "yesterday"])
+def test_only_a_bare_yes_resubscribes(body):
+    assert not policy.is_resubscribe_reply(body)
+    store, telecom = Store(), FakeTelecom()
+    _sms(store, telecom, "SM-1", "STOP")
+    _sms(store, telecom, "SM-2", body)
+    assert store.is_opted_out(CALLER)

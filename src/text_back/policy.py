@@ -181,4 +181,4 @@ def classify_inbound_sms(body: str) -> str:
 
 def is_resubscribe_reply(body: str) -> bool:
     """A bare YES re-subscribes a contact who previously opted out."""
-    return re.findall(r"[a-z]+", body.strip().lower()) == ["yes"]
+    return re.findall(r"[a-z0-9]+", body.strip().lower()) == ["yes"]
