@@ -5,6 +5,7 @@ import urllib.parse
 
 from text_back.calendar_stub import CalendarStub
 from text_back.calendars.google import GoogleCalendarProvider
+from text_back.calendars.credentials import GoogleCredentials
 from text_back.calendars.icloud import ICloudCalDAVProvider
 from text_back.calendars.microsoft import MicrosoftGraphProvider
 from text_back.calendars.protocol import CalendarProvider
@@ -37,7 +38,7 @@ def calendar_from_config(config, *, timezone_name: str) -> CalendarProvider:
         _require_credential_file("TEXT_BACK_GOOGLE_TOKEN_FILE", config.google_token_file)
         return GoogleCalendarProvider(
             calendar_id=config.google_calendar_id,
-            token_provider=file_token_provider(config.google_token_file),
+            token_provider=GoogleCredentials(config.google_token_file, client_file=getattr(config, "google_client_file", None)),
             transport=urllib_transport,
         )
 

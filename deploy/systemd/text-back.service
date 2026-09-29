@@ -1,0 +1,23 @@
+[Unit]
+Description=text_back Recover
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/projects/text_back
+EnvironmentFile=/home/ubuntu/.config/text_back/runtime.env
+Environment=PYTHONPATH=/home/ubuntu/projects/text_back/src
+ExecStart=/home/ubuntu/projects/text_back/.venv/bin/python -m text_back
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=300
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/.local/state/text_back /home/ubuntu/.config/text_back
+
+[Install]
+WantedBy=default.target

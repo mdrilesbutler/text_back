@@ -80,6 +80,7 @@ def test_create_app_builds_signalwire_telecom_from_environment(monkeypatch, tmp_
     monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_PROJECT_ID", "project-id")
     monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_API_TOKEN", "secret-token")
     monkeypatch.setenv("TEXT_BACK_SIGNALWIRE_FROM_NUMBER", "+15551234567")
+    monkeypatch.setenv("TEXT_BACK_DB_PATH", str(tmp_path / "runtime.db"))
     # SignalWire mode refuses the stub calendar, so wire a real provider too.
     token_file = tmp_path / "google.token"
     token_file.write_text("tok-test\n")
@@ -168,3 +169,19 @@ def test_invalid_booking_configuration_fails_at_startup():
 
     with pytest.raises(ValueError, match="must be positive"):
         create_app(appointment_duration_minutes=0)
+
+
+def test_signalwire_runtime_requires_persistent_database(monkeypatch, tmp_path):
+    monkeypatch.setenv('TEXT_BACK_TELECOM_MODE','signalwire')
+    monkeypatch.setenv('TEXT_BACK_WEBHOOK_SECRET','test-signing-key')
+    monkeypatch.setenv('TEXT_BACK_PUBLIC_BASE_URL','https://example.test')
+    monkeypatch.setenv('TEXT_BACK_SIGNALWIRE_SPACE_URL','https://example.signalwire.com')
+    monkeypatch.setenv('TEXT_BACK_SIGNALWIRE_PROJECT_ID','test-project')
+    monkeypatch.setenv('TEXT_BACK_SIGNALWIRE_API_TOKEN','test-token')
+    monkeypatch.setenv('TEXT_BACK_SIGNALWIRE_FROM_NUMBER','+15553334444')
+    monkeypatch.setenv('TEXT_BACK_CALENDAR_PROVIDER','google')
+    path=tmp_path/'token';path.write_text('test-token')
+    monkeypatch.setenv('TEXT_BACK_GOOGLE_TOKEN_FILE',str(path))
+    monkeypatch.setenv('TEXT_BACK_GOOGLE_CALENDAR_ID','primary')
+    with pytest.raises(ValueError,match='persistent'):
+        create_app(db_path=':memory:')

@@ -22,6 +22,9 @@ class CalendarStub:
                 return False
         return True
 
+    def find_event(self, *, conversation_id, start, end):
+        return next((key for key, value in self.events.items() if value['conversation_id'] == conversation_id and value['start'] == start and value['end'] == end), None)
+
     def create_event(
         self,
         *,

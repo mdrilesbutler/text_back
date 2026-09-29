@@ -1,10 +1,9 @@
 """Durable outbox + safe transports for operator handoff alerts.
 
-Michael has not chosen a live notifier channel; NO live destination exists
-here. 'disabled' (default) parks rows durably; 'log' writes to the process
-log; the in-memory transport is for tests. ``run_due_deliveries`` is a pure
-function of (store, transport, policy, injected now) — no cron, queue, or
-network. Operator alerts are time-critical: quiet hours deliberately do not
+The configured transport sends alerts; 'disabled' (default) parks rows durably,
+'log' writes redacted notices, and 'telegram' delivers to a configured operator.
+The in-memory transport is for tests. ``run_due_deliveries`` uses the supplied
+store, transport, policy, and clock. Operator alerts are time-critical: quiet hours deliberately do not
 apply (quiet hours protect customer SMS in the nurture lane only).
 
 Semantics: at-least-once to the operator, exactly-once in the ledger. Each
@@ -128,8 +127,13 @@ def transport_from_config(config) -> DeliveryTransport:
         return DisabledTransport()
     if config.handoff_delivery_channel == "log":
         return LogTransport()
+    if config.handoff_delivery_channel == "telegram":
+        from text_back.telegram import TelegramTransport
+        if not config.telegram_bot_token or not config.telegram_chat_id:
+            raise ValueError("Telegram delivery requires TEXT_BACK_TELEGRAM_BOT_TOKEN and TEXT_BACK_TELEGRAM_CHAT_ID")
+        return TelegramTransport(config.telegram_bot_token, config.telegram_chat_id)
     raise ValueError(
-        "invalid TEXT_BACK_HANDOFF_DELIVERY_CHANNEL; must be 'disabled' or 'log'"
+        "invalid TEXT_BACK_HANDOFF_DELIVERY_CHANNEL; must be 'disabled', 'log', or 'telegram'"
     )
 
 
@@ -236,15 +240,16 @@ def run_due_deliveries(
                 now + timedelta(minutes=policy.retry_minutes[attempt - 1])
             ).isoformat()
         else:
-            # Final attempt: no backoff slot remains; keep the row due so a
-            # crash mid-attempt dead-letters (with evidence) on the next run.
-            next_at_iso = row["next_attempt_at"]
+            # Final attempt still needs a lease: concurrent workers must not
+            # dead-letter an in-flight send. After a minute an interrupted
+            # final attempt can be dead-lettered with evidence.
+            next_at_iso = (now + timedelta(minutes=1)).isoformat()
         if not store.begin_handoff_delivery_attempt(
             alert_id, attempts=attempt, next_attempt_at=next_at_iso
         ):
             continue
-        alert = alert_from_payload_json(row["payload_json"])
         try:
+            alert = alert_from_payload_json(row["payload_json"])
             receipt_id = transport.deliver(alert)
         except Exception as exc:  # noqa: BLE001 - a transport bug must never
             # wedge this row or abort the remaining due rows.

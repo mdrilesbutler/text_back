@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>text_back story film</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Sans:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:#02080A;color:#F4F7FA;
+  font-family:"Atkinson Hyperlegible",sans-serif;}
+body{
+  display:flex;align-items:center;justify-content:center;gap:48px;padding:40px 56px;
+  background:
+    linear-gradient(180deg,rgba(2,8,12,.7),rgba(2,8,12,.48) 40%,rgba(2,8,12,.78)),
+    url("canvas-bg.jpg") center bottom / cover no-repeat;
+}
+.brand{position:absolute;top:28px;left:40px;display:flex;align-items:center;gap:10px}
+.mark{width:34px;height:34px;background:#F1E6D2;color:#1C1914;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Sans",sans-serif;font-weight:700}
+.word{font-family:"IBM Plex Sans",sans-serif;font-weight:700;font-size:18px}
+.word em{font-style:normal;color:#F0B429}
+.caption{position:absolute;top:34px;right:48px;font-family:"IBM Plex Mono",monospace;font-size:13px;color:#C5D0DA;letter-spacing:.08em;text-transform:uppercase}
+.phone{
+  width:390px;height:760px;background:#0B1014;border-radius:32px;border:10px solid #161C22;
+  box-shadow:0 30px 80px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden;position:relative;flex:0 0 auto;
+}
+.st{display:flex;justify-content:space-between;padding:10px 18px 4px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:#8B99A6}
+.hd{display:flex;align-items:center;gap:10px;padding:6px 14px 10px;border-bottom:1px solid rgba(180,196,210,.12)}
+.ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#F0B429,#FF6B4A);color:#1A1406;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Sans",sans-serif}
+.who{font-weight:700;font-size:15px}
+.meta{font-size:12px;color:#8B99A6;margin-top:2px}
+.th{flex:1;overflow:hidden;padding:14px;display:flex;flex-direction:column;gap:10px}
+.sys{align-self:center;font-size:11.5px;color:#8B99A6;background:rgba(255,255,255,.04);border-radius:99px;padding:4px 10px}
+.out{align-self:flex-end;max-width:86%;background:#F1E6D2;color:#1C1914;border-radius:16px 16px 4px 16px;padding:10px 12px;font-size:15px;line-height:1.45}
+.in{align-self:flex-start;max-width:86%;background:#24303A;color:#F4F7FA;border-radius:16px 16px 16px 4px;padding:10px 12px;font-size:15px;line-height:1.45}
+.ago{display:block;margin-top:6px;font-size:11px;opacity:.5}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.chip,.slot{border:1px solid rgba(180,196,210,.28);background:rgba(16,22,28,.95);color:#F4F7FA;border-radius:999px;padding:9px 13px;font-size:14px}
+.chip.on,.slot.on{background:#B9A6FF;color:#1A1424;border-color:#B9A6FF;font-weight:700}
+.slot{border-radius:12px;min-width:46%;flex:1}
+.slot b{display:block}
+.slot span{display:block;font-size:12px;color:#8B99A6;margin-top:2px;font-weight:400}
+.slot.on span{color:#3A3048}
+.cals{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cal{background:rgba(16,22,28,.95);border:1px solid rgba(61,219,160,.35);border-radius:12px;padding:10px}
+.cal h4{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#6FCFAB;font-family:"IBM Plex Mono",monospace;margin-bottom:4px}
+.cal p{font-size:14px;font-weight:700}
+.form{background:rgba(16,22,28,.95);border:1px solid rgba(180,196,210,.22);border-radius:14px;padding:12px}
+.form h3{font-size:15px;margin-bottom:6px}
+.form p{font-size:13px;color:#8B99A6;margin-bottom:8px}
+.field{font-size:11px;color:#8B99A6;margin:8px 0 3px;font-family:"IBM Plex Mono",monospace;text-transform:uppercase}
+.box{background:#0B1014;border:1px solid rgba(180,196,210,.22);border-radius:8px;padding:8px 10px;font-size:14px}
+.btn{margin-top:10px;background:#F0B429;color:#1A1406;text-align:center;border-radius:10px;padding:10px;font-weight:700}
+.ring{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
+.pulse{width:92px;height:92px;border-radius:50%;background:linear-gradient(135deg,#F0B429,#FF6B4A);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;color:#1A1406;font-family:"IBM Plex Sans",sans-serif}
+.missed{color:#FF8A72;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;font-family:"IBM Plex Mono",monospace;margin-top:8px}
+.cursor{position:absolute;z-index:8;width:34px;height:34px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));display:none}
+.cursor.show{display:block}
+.tap{position:absolute;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:3px solid #F0B429;background:rgba(240,180,41,.3);z-index:7;display:none}
+.tap.show{display:block}
+.board{width:420px;background:rgba(8,12,16,.78);border:1px solid rgba(180,196,210,.16);border-radius:18px;padding:18px 16px;backdrop-filter:blur(16px)}
+.board h2{font-family:"IBM Plex Sans",sans-serif;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:#C5D0DA;margin-bottom:14px}
+.fn{display:flex;gap:12px;align-items:flex-start;padding:10px 8px;border-radius:10px;color:#8B99A6;position:relative}
+.fn i{width:12px;height:12px;border-radius:50%;background:rgba(180,196,210,.25);margin-top:4px;flex:0 0 auto}
+.fn b{display:block;font-size:15px;color:inherit}
+.fn span{display:block;font-size:12px;margin-top:2px}
+.fn.on{background:rgba(185,166,255,.16);color:#F4F7FA}
+.fn.on i{background:#B9A6FF;box-shadow:0 0 12px #B9A6FF}
+.fn.done{color:#C9D3DC}
+.fn.done i{background:#3DDBA0}
+.fn + .fn::before{content:"";position:absolute;left:13px;top:-8px;width:2px;height:16px;background:rgba(180,196,210,.2)}
+.fn.on + .fn::before,.fn.done + .fn::before{background:#B9A6FF}
+.clickhint{position:absolute;bottom:28px;left:56px;font-family:"IBM Plex Mono",monospace;font-size:13px;color:#F0B429;letter-spacing:.06em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="brand"><div class="mark">tb</div><div class="word">text<em>_</em>back</div></div>
+<div class="caption" id="cap">Missed call → booked</div>
+
+<div class="phone" id="phone">
+  <div class="st"><span>9:41</span><span>text_back</span></div>
+  <div class="hd">
+    <div class="ava" id="ava">tb</div>
+    <div><div class="who" id="who">Business line</div><div class="meta" id="meta">Missed call · SMS</div></div>
+  </div>
+  <div class="th" id="th"></div>
+  <div class="cursor" id="cursor"><svg viewBox="0 0 32 32" width="32" height="32"><path fill="#F4F7FA" stroke="#1A1406" stroke-width="1.4" d="M6 3.5l.8 22.2 6.2-5.4 4.6 9.7 4.2-2-4.7-9.4L26.5 16z"/></svg></div>
+  <div class="tap" id="tap"></div>
+</div>
+
+<aside class="board">
+  <h2>Recover flow</h2>
+  <div class="fn" data-s="ring"><i></i><div><b>Missed call</b><span>Ring-out on the business line</span></div></div>
+  <div class="fn" data-s="trade"><i></i><div><b>Need a trade?</b><span>Plumber · HVAC · Electrician · Arborist</span></div></div>
+  <div class="fn" data-s="emergency"><i></i><div><b>Emergency?</b><span>Yes → first openings</span></div></div>
+  <div class="fn" data-s="slots"><i></i><div><b>Propose times</b><span>From the pro’s live calendar</span></div></div>
+  <div class="fn" data-s="booked"><i></i><div><b>Both calendars</b><span>Customer + professional, right then</span></div></div>
+  <div class="fn" data-s="form"><i></i><div><b>Job sheet</b><span>Form after the booking</span></div></div>
+</aside>
+<div class="clickhint" id="hint"></div>
+<script>
+const beats = {
+  0: {cap:'Incoming call', flow:'ring', who:'Business line', ava:'tb', meta:'Incoming', hint:'',
+      html:'<div class="ring"><div class="pulse">tb</div><h2 style="margin-top:10px;font-size:22px">Incoming call</h2><p style="color:#8B99A6">Your business line</p><div class="missed">Missed</div></div>'},
+  1: {cap:'Intro SMS', flow:'trade', who:'Business line', ava:'tb', meta:'Missed call · SMS', hint:'Customer taps a trade',
+      html:'<div class="sys">Missed call · just now</div><div class="out">Hey — sorry I missed you. I\'m on a job. Do you need a plumber, HVAC, electrician, or arborist?<span class="ago">now</span></div><div class="row"><div class="chip">Plumber</div><div class="chip">HVAC</div><div class="chip">Electrician</div><div class="chip" id="hit">Arborist</div></div>',
+      cursor:'hit', press:false},
+  2: {cap:'Tap: Arborist', flow:'trade', who:'Ridge Tree Care', ava:'RT', meta:'Missed call · SMS', hint:'Tap · Arborist',
+      html:'<div class="sys">Missed call · just now</div><div class="out">Hey — sorry I missed you. I\'m on a job. Do you need a plumber, HVAC, electrician, or arborist?<span class="ago">now</span></div><div class="row"><div class="chip">Plumber</div><div class="chip">HVAC</div><div class="chip">Electrician</div><div class="chip on" id="hit">Arborist</div></div>',
+      cursor:'hit', press:true},
+  3: {cap:'Emergency?', flow:'emergency', who:'Ridge Tree Care', ava:'RT', meta:'Missed call · SMS', hint:'Customer taps Yes — emergency',
+      html:'<div class="out">Hey — sorry I missed you. I\'m on a job. Do you need a plumber, HVAC, electrician, or arborist?<span class="ago">now</span></div><div class="in">Arborist<span class="ago">now</span></div><div class="out">Got it. Is this an emergency?<span class="ago">now</span></div><div class="row"><div class="chip" id="hit">Yes — emergency</div><div class="chip">No</div></div>',
+      cursor:'hit', press:false},
+  4: {cap:'Tap: Yes — emergency', flow:'emergency', who:'Ridge Tree Care', ava:'RT', meta:'Missed call · SMS', hint:'Tap · Yes — emergency',
+      html:'<div class="in">Arborist<span class="ago">now</span></div><div class="out">Got it. Is this an emergency?<span class="ago">now</span></div><div class="row"><div class="chip on" id="hit">Yes — emergency</div><div class="chip">No</div></div>',
+      cursor:'hit', press:true},
+  5: {cap:'First open times', flow:'slots', who:'Ridge Tree Care', ava:'RT', meta:'Missed call · SMS', hint:'Customer taps the first opening',
+      html:'<div class="in">Yes — emergency<span class="ago">now</span></div><div class="out">I\'m sending the first times I have open.<span class="ago">now</span></div><div class="row"><div class="slot" id="hit"><b>Today 5:40pm</b><span>First opening · on-site</span></div><div class="slot"><b>Today 7:15pm</b><span>After current job</span></div><div class="slot"><b>Tomorrow 7:30am</b><span>First light</span></div></div>',
+      cursor:'hit', press:false},
+  6: {cap:'Tap: Today 5:40pm', flow:'slots', who:'Ridge Tree Care', ava:'RT', meta:'Missed call · SMS', hint:'Tap · Today 5:40pm',
+      html:'<div class="out">I\'m sending the first times I have open.<span class="ago">now</span></div><div class="row"><div class="slot on" id="hit"><b>Today 5:40pm</b><span>First opening · on-site</span></div><div class="slot"><b>Today 7:15pm</b><span>After current job</span></div><div class="slot"><b>Tomorrow 7:30am</b><span>First light</span></div></div>',
+      cursor:'hit', press:true},
+  7: {cap:'Both calendars', flow:'booked', who:'Ridge Tree Care', ava:'RT', meta:'Booked · Today 5:40pm', hint:'',
+      html:'<div class="in">Today 5:40pm<span class="ago">now</span></div><div class="out">Locked in. That time is on your calendar and Ridge Tree Care\'s calendar right now.<span class="ago">now</span></div><div class="cals"><div class="cal"><h4>Your calendar</h4><p>Today 5:40pm</p></div><div class="cal"><h4>Ridge Tree Care</h4><p>Today 5:40pm</p></div></div><div class="sys">Appointment booked</div>'},
+  8: {cap:'Job sheet after booking', flow:'form', who:'Ridge Tree Care', ava:'RT', meta:'Booked · Today 5:40pm', hint:'',
+      html:'<div class="sys">Appointment booked</div><div class="out">One more thing — a short job sheet so I show up ready.<span class="ago">now</span></div><div class="form"><h3>Job sheet — after the booking</h3><p>This goes to Ridge Tree Care so they show up ready.</p><div class="field">Name</div><div class="box">Alex Rivera</div><div class="field">Address</div><div class="box">418 Maple Ave</div><div class="field">What is the tree doing?</div><div class="box">Storm limb over the driveway</div><div class="btn">Send to the crew</div></div>'}
+};
+const n = Number(new URLSearchParams(location.search).get('beat')||'0');
+const b = beats[n] || beats[0];
+document.getElementById('cap').textContent = b.cap;
+document.getElementById('who').textContent = b.who;
+document.getElementById('ava').textContent = b.ava;
+document.getElementById('meta').textContent = b.meta;
+document.getElementById('hint').textContent = b.hint || '';
+document.getElementById('th').innerHTML = b.html;
+const order=['ring','trade','emergency','slots','booked','form'];
+const idx=order.indexOf(b.flow);
+document.querySelectorAll('.fn').forEach(el=>{
+  const i=order.indexOf(el.dataset.s);
+  el.classList.toggle('on', i===idx);
+  el.classList.toggle('done', i<idx);
+});
+function placeCursor(){
+  const hit=document.getElementById('hit');
+  const cursor=document.getElementById('cursor');
+  const tap=document.getElementById('tap');
+  const phone=document.getElementById('phone');
+  if(!hit || !b.cursor || !phone) return;
+  const pr=phone.getBoundingClientRect();
+  const r=hit.getBoundingClientRect();
+  const x = r.left - pr.left + r.width * 0.72;
+  const y = r.top - pr.top + r.height * 0.62;
+  cursor.classList.add('show');
+  cursor.style.left=x+'px';
+  cursor.style.top=y+'px';
+  if(b.press){
+    tap.classList.add('show');
+    tap.style.left=(r.left-pr.left+r.width/2)+'px';
+    tap.style.top=(r.top-pr.top+r.height/2)+'px';
+  }
+}
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => requestAnimationFrame(placeCursor));
+} else {
+  requestAnimationFrame(placeCursor);
+}
+setTimeout(placeCursor, 200);
+</script>
+</body>
+</html>

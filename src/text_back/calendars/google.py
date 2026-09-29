@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import ClassVar
 
@@ -30,7 +30,7 @@ class GoogleCalendarProvider:
             "timeMax": rfc3339_utc(end),
             "items": [{"id": self.calendar_id}],
         }
-        response = self.transport(
+        response = self._send(
             self._request("POST", f"{self.base_url}/freeBusy", payload)
         )
         if response.status != 200:
@@ -54,6 +54,10 @@ class GoogleCalendarProvider:
                 "google calendar free/busy response was malformed"
             )
         return busy == []
+
+    def find_event(self, *, conversation_id, start, end):
+        encoded_calendar = urllib.parse.quote(self.calendar_id, safe="")
+        return self._verify_duplicate(encoded_calendar, google_event_id(conversation_id, start), start, end, allow_missing=True)
 
     def create_event(
         self,
@@ -81,7 +85,7 @@ class GoogleCalendarProvider:
             },
         }
         encoded_calendar = urllib.parse.quote(self.calendar_id, safe="")
-        response = self.transport(
+        response = self._send(
             self._request(
                 "POST",
                 f"{self.base_url}/calendars/{encoded_calendar}/events",
@@ -114,12 +118,13 @@ class GoogleCalendarProvider:
         deterministic_id: str,
         start: datetime,
         end: datetime,
-    ) -> str:
+        allow_missing: bool = False,
+    ) -> str | None:
         """A 409 on our deterministic ID is only success if the existing event
         is live and occupies exactly the requested slot. Anything else —
         cancelled tombstone, mismatched times, lookup failure — refuses the
         booking (fail closed, never phantom-confirm)."""
-        response = self.transport(
+        response = self._send(
             self._request(
                 "GET",
                 f"{self.base_url}/calendars/{encoded_calendar}/events/"
@@ -127,6 +132,8 @@ class GoogleCalendarProvider:
                 None,
             )
         )
+        if response.status == 404 and allow_missing:
+            return None
         if response.status != 200:
             raise CalendarProviderError(
                 "google calendar duplicate event could not be verified"
@@ -159,6 +166,15 @@ class GoogleCalendarProvider:
         if parsed.tzinfo is None:
             return False
         return parsed == expected
+
+    def _send(self, request):
+        response = self.transport(request)
+        if response.status == 401 and hasattr(self.token_provider, 'refresh'):
+            old = dict(request.headers).get('Authorization', '').removeprefix('Bearer ')
+            token = self.token_provider.refresh(rejected_token=old)
+            headers = tuple((key, 'Bearer '+token if key == 'Authorization' else value) for key, value in request.headers)
+            response = self.transport(replace(request, headers=headers))
+        return response
 
     def _request(self, method: str, url: str, payload: dict | None) -> HttpRequest:
         headers = [("Authorization", f"Bearer {self.token_provider()}")]

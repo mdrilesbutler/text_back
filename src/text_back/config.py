@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass, field
 
 from text_back.policy import WIRING_MODE_FORWARDED
@@ -37,11 +38,26 @@ class AppConfig:
     icloud_username: str
     icloud_app_password_file: str
     icloud_calendar_url: str
+    google_client_file: str = ""
+    operator_api_key: str = field(default="", repr=False)
+    telegram_bot_token: str = field(default="", repr=False)
+    telegram_chat_id: str = field(default="", repr=False)
+    pilot_recipients: tuple[str, ...] | None = field(default=None, repr=False)
 
 
 def load_config() -> AppConfig:
     """Load app configuration from the process environment."""
+    raw_recipients = os.environ.get('TEXT_BACK_PILOT_RECIPIENTS')
+    pilot_recipients = None if raw_recipients is None else tuple(
+        dict.fromkeys(number.strip() for number in raw_recipients.split(',') if number.strip()))
+    if pilot_recipients and any(not re.fullmatch(r'\+[1-9][0-9]{7,14}', number) for number in pilot_recipients):
+        raise ValueError('TEXT_BACK_PILOT_RECIPIENTS must contain E.164 numbers')
     return AppConfig(
+        pilot_recipients=pilot_recipients,
+        telegram_bot_token=os.environ.get("TEXT_BACK_TELEGRAM_BOT_TOKEN", ""),
+        telegram_chat_id=os.environ.get("TEXT_BACK_TELEGRAM_CHAT_ID", ""),
+        google_client_file=os.environ.get("TEXT_BACK_GOOGLE_CLIENT_FILE", ""),
+        operator_api_key=os.environ.get("TEXT_BACK_OPERATOR_API_KEY", ""),
         webhook_secret=os.environ.get(
             "TEXT_BACK_WEBHOOK_SECRET", DEFAULT_WEBHOOK_SECRET
         ),

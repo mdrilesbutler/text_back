@@ -256,19 +256,20 @@ def test_confirmation_transport_failure_has_no_confirmed_outcome():
         ("SM-fail-4", "John Smith"),
     )
 
-    with pytest.raises(RuntimeError, match="transport failure"):
-        for message_sid, body in replies:
-            _send(
-                store=store,
-                calendar=calendar,
-                telecom=telecom,
-                notifier=notifier,
-                message_sid=message_sid,
-                body=body,
-            )
+    for message_sid, body in replies:
+        _send(
+            store=store,
+            calendar=calendar,
+            telecom=telecom,
+            notifier=notifier,
+            message_sid=message_sid,
+            body=body,
+        )
 
     event_types = {
         event["event_type"] for event in store.list_outcome_events(CALLER)
     }
     assert "calendar.event_created" in event_types
     assert "appointment.confirmed" not in event_types
+
+    assert store.conn.execute("SELECT status FROM sms_outbox WHERE kind='booking_confirmation'").fetchone()[0] == "unknown"

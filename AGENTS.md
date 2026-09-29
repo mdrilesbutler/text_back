@@ -34,67 +34,67 @@ The status line reports THIS session. NOW.md is the NEXT session's handoff.
 - Can't finish properly (lint won't pass, release keeps failing)? Release anyway with the current `show` output plus one BLOCKED line describing it. Never leave the lock held.
 
 ## MERGING
-Only when Riles says "merge it" / "merge #n": `gh pr merge <n> --squash --delete-branch`, then `git switch <default> && git pull --ff-only`.
-Merging is what deploys. Never merge on your own judgment, never because a review said SAFE.
+Only when Riles says "merge it" / "merge #n": `gh pr merge <n> --squash --delete-branch`,
+then `git switch main && git pull --ff-only`, then `bash scripts/deploy.sh` (merging + this script is what deploys).
 
 ## WHAT THIS IS
-Missed-call recovery and scheduling assistant for field-service businesses (arborists, guides). An unanswered call
-triggers an SMS conversation that collects service, location, preferred time, name; books a real free calendar slot;
-confirms only after a provider event ID exists. Customers never reach a live human — escalation is a graceful exit plus
-an async operator lead. Sold per client from the fluxworks catalog: identity, numbers, calendar, hours live in config,
-never code. Done = one real-phone Recover pilot proves conversion.
+Missed-call recovery for field-service businesses (arborists, guides), modeled on Hatch. Unanswered call → SMS
+conversation collects service, location, preferred time, name → books a real free calendar slot → confirms only after
+a provider event ID exists. No live human: escalation = graceful exit + async operator lead. Per-client values live in
+config, never code. Done = one real-phone Recover pilot proves conversion.
 
-## WHAT'S LIVE
-- Repo: git@github.com:mdrilesbutler/text_back.git — app code is branch `local/tdd-core` (`main` is stale). Piclaw worktree: `~/projects/text_back-tdd-core`.
-- Runtime: hermes-vcn-0 (`ssh hermes-cloud`) — localhost-only `text-back.service` at 127.0.0.1:8000, stub telecom mode, `/health` green. No public URL, no deploy pipeline yet.
-- Credentials: hermes-cloud `~/.config/text_back/{pilot,runtime,signalwire}.env` + `google_token.json`, mode 600, never git. Signing key is in runtime.env — rotate at deploy.
-- SignalWire: FluxWorks space, funded, one voice/SMS/MMS pilot number, no handlers attached, $15/month ceiling.
-- Google Calendar: calendar-only OAuth token, live-verified as mdrilesbutler@gmail.com (2026-08-29).
-- CI: GitHub Actions runs pytest on every push/PR (py3.12/3.13).
-- Grok's lane: `deploy/textback-designer/` + `docs/demo/` (designer UI, story film). Claude/Codex never edit or commit those.
+## WHAT'S LIVE (how text_back works)
+- Call flow: caller dials the client's real number → carrier conditional-forwards unanswered calls to our SignalWire
+  number → `POST /webhooks/voice` (signed) → `<Say>`+`<Hangup>` and one intro SMS intent (keyed on CallSid) →
+  replies hit `POST /webhooks/sms` → `policy.py` handles STOP/HELP/handoff, `handlers.py` fills one field per reply →
+  `booking.py` rechecks free/busy and creates the Google event → confirmation SMS. No reply → `followup.py` nudges, then expires.
+- Durability: every webhook is stored first (`inbox.py`); SMS go through the `sms_outbox` (`sms.py`: intent commits
+  before send; ambiguous sends held `unknown`, reconciled by `/webhooks/sms-status`); bookings retry via `booking_jobs`;
+  operator alerts via `handoff_deliveries` → Telegram. One worker (`worker.py`) drains all lanes every 5 s.
+- Evidence: append-only `outcome_events` (`docs/OUTCOME-EVENTS.md`); `brief.py` renders the Recovered Revenue Brief.
+- Runs on hermes-vcn-0 (`ssh ubuntu@100.124.192.46`, Tailscale; alias `hermes-cloud` on piclaw): user unit
+  `text-back.service` → `~/projects/text_back` on `main`, `.venv`, 127.0.0.1:8000; public HTTPS via Tailscale Funnel
+  `https://hermes-cloud.tailefb1a4.ts.net:8443`; SQLite `~/.local/state/text_back/pilot.sqlite3`.
+- Deploy: never edit hermes-cloud's clone. Merge to `main`, then `bash scripts/deploy.sh` from any host: it SSHes in,
+  refuses a dirty tree, fast-forwards `main`, installs, runs tests, restarts, and checks `/health`.
+- Env var NAMES (values only in hermes-cloud `~/.config/text_back/runtime.env`, mode 600): TEXT_BACK_ + TELECOM_MODE,
+  PUBLIC_BASE_URL, DB_PATH, WEBHOOK_SECRET (SignalWire signing key), SIGNALWIRE_{SPACE_URL,PROJECT_ID,API_TOKEN,FROM_NUMBER},
+  BUSINESS_NAME, TIMEZONE, APPOINTMENT_DURATION_MINUTES, WIRING_MODE, CALENDAR_PROVIDER, GOOGLE_{CALENDAR_ID,TOKEN_FILE,
+  CLIENT_FILE}, FOLLOWUP_{DELAYS,EXPIRY}_MINUTES, QUIET_HOURS_{START,END}, HANDOFF_{DESTINATION,DELIVERY_CHANNEL},
+  TELEGRAM_{BOT_TOKEN,CHAT_ID}, OPERATOR_API_KEY, PILOT_RECIPIENTS (explicit allowlist; empty = texts nobody).
+  Full list with comments: `.env.example`. Never invent a credential; missing one = park the slice.
+- Test: `python3 -m venv .venv && .venv/bin/pip install -e '.[dev]' && .venv/bin/pytest`. CI runs the same on every
+  push/PR. Live checks: `scripts/pilot_check.py --env-file <runtime.env> --health --providers` (read-only).
+- 10DLC: pilot number is on SignalWire's Platform Free Trial — SMS reaches only Riles's one verified mobile. Brand +
+  Campaign registration is Riles's job in his browser; build as if approved. Only ever text Riles's verified number.
 
 ## HOW TO WORK WITH RILES
-- He does not code. Terse, decisive answers. Recommend; don't hand him option menus.
-- Small compartmentalized specs, one layer at a time.
-- State key decisions explicitly and get a yes before executing.
-- Never cut, kill, demote, or drop scope without his explicit agreement on the specific item.
-- Don't re-derive anything under LOCKED.
-- No telecom purchase, spend, production message, or call routing without his explicit approval; purchases happen only in his browser.
-- Commit on hermes-vcn-0 with `git -c user.name="Michael Riley" -c user.email="mdriles@gmail.com"` (no git identity on host).
+- He does not code. Terse, decisive answers. Recommend; don't hand him option menus. Settings, not questions:
+  anything he may tweak later is a setting with a Hatch-like default.
+- Never cut, kill, demote, or drop scope without his explicit agreement. Don't re-derive anything under LOCKED.
+- No telecom purchase, spend, account upgrade, or call routing change without his explicit approval; purchases happen
+  only in his browser. Cost cap $15/month.
 
 ## HARD RULES
-- State lives only in NOW.md on the `canon-state` branch, and only `canon_state.py` changes it. Never create a NOW.md on a code branch.
-  Never write status into this file, a PRD, or Obsidian.
-- Obsidian updates itself from GitHub (piclaw mirrors NOW.md every 2 min). Never edit the vault copy.
-- Never push to the default branch yourself (GitHub and a local hook both refuse it). Never force-push. Code = branch + PR.
+- State lives only in NOW.md on `canon-state`, changed only by `canon_state.py`; never a NOW.md on a code branch, never the vault copy.
+- Never delete files; supersede them. Never push to `main` yourself. Never force-push. Code = branch + PR. Never stack PRs.
 - Don't edit the PRD unless Riles named a requirement change. Docs and code disagree → believe code + tests.
-- Scratch notes go in `docs/notes/`. History is git.
+- Scratch notes go in `docs/notes/`. History is git. Grok owns `deploy/textback-designer/` + `docs/demo/`; others never touch them.
 
 ## LOCKED (settled — do not re-open)
-- Carrier: SignalWire (Twilio fallback). Spend ceiling $15/month (approved 2026-08-20).
-- Booking backend: Google Calendar primary (decided 2026-08-29, "everyone has a gmail"); Microsoft Graph and iCloud CalDAV adapters shipped as options. Selected via `TEXT_BACK_CALENDAR_PROVIDER`; production telecom refuses to boot with the stub calendar.
-- Customers never get a live human. Escalation = graceful exit + async operator lead. Guard: `tests/test_no_live_human_copy.py`.
-- Deterministic policy, never an LLM, owns STOP/HELP, consent, quiet hours, booking truth, and handoff.
-- `wiring_mode`: `forwarded` (default; first voice event per call_sid triggers) vs `managed` (terminal unanswered only). Never mix the rules.
-- Webhooks verify `X-SignalWire-Signature` and fail closed; every side effect is idempotent via `claim_event`.
-- No booking is claimed without a Calendar event ID. Revenue comes only from explicit `revenue.attributed` events with evidence — never inferred from a booking.
-- Product order: Recover first — Answer (voice) and Grow (journeys) wait until the real-phone Recover pilot proves conversion. GTM: Koerner ladder TB-ASSESS → TB-RECOVER → TB-CARE; sell missed-call recovery, not "AI".
-- More LOCKED items (OAuth mint, customer reauth, credential intake, onboarding checklist, two-lane protocol): `docs/notes/agents-reference.md`.
+- Carrier SignalWire (Twilio fallback); $15/month ceiling. Booking: Google Calendar primary; Microsoft/iCloud adapters optional
+  via `TEXT_BACK_CALENDAR_PROVIDER`; production telecom refuses to boot with the stub calendar.
+- Customers never get a live human (guard: `tests/test_no_live_human_copy.py`). Deterministic policy, never an LLM, owns
+  STOP/HELP, consent, quiet hours, booking truth, and handoff.
+- `wiring_mode`: `forwarded` (default; first voice event per CallSid triggers) vs `managed` (terminal unanswered only).
+- Webhooks verify `X-SignalWire-Signature` and fail closed; side effects idempotent; no booking claimed without a Calendar
+  event ID; revenue only from explicit `revenue.attributed` evidence.
+- Product order: Recover first; Answer (voice) and Grow (journeys) wait for the pilot. GTM: TB-ASSESS → TB-RECOVER → TB-CARE.
+- More LOCKED items (OAuth mint, reauth, credential intake, onboarding checklist, gotchas): `docs/notes/agents-reference.md`.
 
-## KILLED (dead — never resurface; deleted from runtime, not archived)
-- `cal.com` as booking backend (Google decision 2026-08-29).
-- `gcloud` auth / GCP service-account path for Calendar (wrong path; token comes from the skill pattern).
-- `google-voice` as telecom backend.
-- `live-human` transfer or "call the business line" escalation copy.
-
-## ROADMAP (order is locked; build only the current phase)
-- Done 2026-08-29: v1 Recover (built locally, TDD; 302 tests green) — missed call → SMS → qualification → booking or handoff → follow-up sequence → Recovered Revenue Brief.
-- v1 live pilot (current): public HTTPS host, attach SignalWire handlers, real-phone smoke test per `docs/ONBOARDING-FORWARDING.md`, first client via per-client config.
-- v2 Answer, v3 Grow, and the money-gated PDF/Stripe extras: `docs/notes/agents-reference.md`.
+## KILLED (dead — never resurface)
+- `cal.com` booking backend · `gcloud`/service-account Calendar auth · `google-voice` telecom · `live-human` transfer copy.
 
 ## SPEC
-- `docs/PRD-text_back.md` — requirements and architecture; no status log lives there.
-- `docs/PRODUCT-MODEL.md`, `docs/COMPETITOR-MATRIX.md`, `docs/gtm/KOERNER-MODEL.md` — product and GTM.
-- `docs/SIGNALWIRE-INTEGRATION.md`, `docs/ONBOARDING-FORWARDING.md`, `docs/CALENDAR-PROVIDERS.md`, `docs/OUTCOME-EVENTS.md` — contracts.
-- `README.md` — how to run and test.
-- `docs/notes/agents-reference.md` — SignalWire/runner gotchas + LOCKED/ROADMAP overflow from the old CLAUDE.md.
+`docs/PRD-text_back.md` (requirements) · `docs/PRODUCT-MODEL.md` (Recover P0/P1) · `docs/SIGNALWIRE-INTEGRATION.md` ·
+`docs/ONBOARDING-FORWARDING.md` · `docs/RECOVER-OPERATIONS.md` · `docs/OUTCOME-EVENTS.md` · `docs/CALENDAR-PROVIDERS.md`.
