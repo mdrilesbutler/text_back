@@ -1,8 +1,8 @@
 # NOW — text_back
 
 ## STATE (as of 2026-09-29)
-- PR #1 merged into `local/tdd-core` (followup crash tests). PR #2 open, review SAFE: moves app code into `main`, AGENTS.md "how it works", `scripts/deploy.sh`.
-- Until #2 merges, app code is on `local/tdd-core`; after it, `main` is the only working branch and deploy = merge + `bash scripts/deploy.sh`.
+- 2026-09-29 PR #2 merged (Riles): `main` is now the app branch. NOT yet deployed — hermes-vcn-0 still runs `local/tdd-core` @ 3a7faa3; `scripts/deploy.sh` switches it to `main`.
+- PR #3 open, parked (carrier keywords): two DON'T MERGE reviews fixed (phrase false-positives, YES123); 409 tests; needs Riles's review/merge.
 - hermes-vcn-0 (ubuntu@100.124.192.46): text-back.service healthy on `local/tdd-core` @ 3a7faa3, clean tree, SignalWire + Google live, pilot_recipient_count 0.
 - Reconciled 2026-09-29 against docs/: built+tested = forwarded/managed triggers, signatures, STOP/HELP basics, 4-field slot filling, booking with recheck, handoff→Telegram, follow-ups, outboxes, brief, operator revenue writes. 370 tests green.
 - Missing = NEXT below (PRD + PRODUCT-MODEL Recover P0/P1). Excluded by locked roadmap: Answer/Grow (P2).
@@ -11,16 +11,15 @@
 - 10DLC Brand+Campaign: Riles's job in his browser; build as if approved.
 
 ## NOW
-Merge PR #2 and run `bash scripts/deploy.sh`; confirm hermes-vcn-0 is on `main` and healthy.
+Deploy `main` to hermes-vcn-0 with `bash scripts/deploy.sh`, then merge/deploy PR #3 and live-test STOP→YES123→START→HELP from Riles's verified mobile only.
 
 ## BLOCKED
-BLOCKED · merge PR #2 · Claude's auto-mode guard refuses `gh pr merge` even with a SAFE review · NEED YOU: merge #2 (or allow `gh pr merge` for Claude), then say "go"
+BLOCKED · deploy main + PR #3 · Claude's permission guard refuses production deploys and merges · NEED YOU: run `bash scripts/deploy.sh` (or allow it for Claude) and review/merge #3
 
 ## OWNER
-claude-wsl#f8fe · 2026-09-29T01:32Z
+none
 
 ## NEXT
-- carrier-keywords: exact-match STOP/STOPALL/UNSUBSCRIBE/CANCEL/END/QUIT/OPTOUT/REVOKE; START/UNSTOP re-opt-in; HELP names business + contact number; tests
 - settings-file: TEXT_BACK_SETTINGS_FILE TOML with Hatch-like defaults for all customer wording, intro delay, business hours, contact phone, service area, booking link; env keeps secrets
 - working-hours: bookings only inside configured working hours with a travel buffer around existing events (PRD calendar reqs)
 - offer-slots: when the requested time is taken or outside hours, text the next 3 open slots; customer replies 1/2/3 to book
@@ -37,3 +36,4 @@ claude-wsl#f8fe · 2026-09-29T01:32Z
 - value-estimate: per-service default job value + lead-source tag; brief shows estimated pipeline separate from attributed revenue (P1)
 - monthly-brief: worker sends the Recovered Revenue Brief to the operator channel on the 1st of each month (TB-CARE)
 - real-phone-pilot: allowlist Riles's verified mobile, run docs/ONBOARDING-FORWARDING.md checklist — needs Riles on a physical phone
+
