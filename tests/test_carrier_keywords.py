@@ -39,7 +39,8 @@ def test_opt_in_keywords(body):
 
 @pytest.mark.parametrize("body", [
     "Tree removal", "start time 2pm works", "the stump is at the end of the drive",
-    "yes", "123 Main St",
+    "yes", "123 Main St", "do not text before 9", "stop-by Thursday works",
+    "unstop all", "please don't text my wife, text me",
 ])
 def test_ordinary_answers_are_conversation(body):
     assert policy.classify_inbound_sms(body) == "conversation"

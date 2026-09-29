@@ -3,14 +3,16 @@ from __future__ import annotations
 import re
 
 TERMINAL_UNANSWERED = frozenset({"no-answer", "busy", "failed", "canceled"})
-# Carrier (CTIA) and FCC 2025 revocation keywords. A reply that starts with one,
-# or contains one of the phrases, is an opt-out; wording never needs to be exact.
+# Carrier (CTIA) and FCC 2025 revocation keywords. A reply whose first word is
+# one ("STOP please"), or that is only an opt-out request ("please stop texting
+# me"), is an opt-out. Phrases must be the whole reply, so ordinary answers such
+# as "do not text before 9" or "stop-by Thursday" stay conversation.
 STOP_KEYWORDS = frozenset(
     {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "optout", "revoke"}
 )
-STOP_PHRASES = (
-    "opt out", "stop all", "stop texting", "stop messaging", "stop sending",
-    "unsubscribe", "do not text", "dont text", "don't text",
+STOP_REQUEST = re.compile(
+    r"^(?:please )?(?:stop all|stop texting|stop messaging|stop sending(?: texts| messages)?"
+    r"|do not text|don't text|dont text|opt out|unsubscribe)(?: me| us)?(?: please)?(?: now)?$"
 )
 # Opt-in keywords re-subscribe only when the whole reply is the keyword, so an
 # ordinary answer such as "start time 2pm" stays a conversation reply.
@@ -161,12 +163,14 @@ def is_terminal_unanswered(call_status: str) -> bool:
 
 
 def classify_inbound_sms(body: str) -> str:
-    lowered = body.strip().lower().replace("-", " ")
-    tokens = re.findall(r"[a-z0-9']+", lowered)
+    # Hyphenated words stay whole: "opt-out" is a keyword, "stop-by" is not.
+    tokens = re.findall(r"[a-z0-9']+(?:-[a-z0-9']+)*", body.strip().lower())
     if not tokens:
         return "conversation"
-    normalized = " ".join(tokens)
-    if tokens[0] in STOP_KEYWORDS or any(phrase in normalized for phrase in STOP_PHRASES):
+    first = tokens[0].replace("-", "")
+    normalized = " ".join(tokens).replace("-", " ")
+    if (first in STOP_KEYWORDS and "-" not in tokens[0] or first == "optout"
+            or STOP_REQUEST.fullmatch(normalized)):
         return "stop"
     if tokens[0] in HELP_KEYWORDS:
         return "help"
