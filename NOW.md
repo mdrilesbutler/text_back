@@ -17,7 +17,7 @@ Run the real-phone Recover pilot on hermes-vcn-0 (`local/tdd-core`, pull 7107639
 BLOCKED · real-phone Recover pilot · Claude on Alienware denied production access to hermes-cloud · NEED YOU: allow hermes-cloud SSH for the pilot, or run it from piclaw/hermes-cloud
 
 ## OWNER
-none
+claude-alienware#487c · 2026-09-29T00:56Z
 
 ## NEXT
 - Decide canon migration for `local/tdd-core` (collapse CLAUDE.md into AGENTS.md; state to canon-state NOW.md) — Michael's call.
