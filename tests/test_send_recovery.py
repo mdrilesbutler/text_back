@@ -179,3 +179,72 @@ def test_calendar_event_survives_crash_before_local_appointment_commit(tmp_path,
     assert result['booked']
     assert len(calendar.events)==1
     assert len(telecom.outbound)==1
+
+
+class ProcessInterrupted(BaseException):
+    """Process loss: nothing after this point runs in the dying process."""
+
+
+class InterruptedTelecom(FakeTelecom):
+    def send_sms(self, **kwargs):
+        raise ProcessInterrupted()
+
+
+def _followup_request(telecom):
+    return dict(telecom=telecom, policy=POLICY,
+                business_name=BUSINESS_NAME, business_number=BUSINESS_NUMBER)
+
+
+def test_followup_crash_after_intent_commit_sends_once_after_restart(tmp_path, monkeypatch):
+    import text_back.followup as followup
+
+    path = str(tmp_path / "followup-crash-before-send.db")
+    store = Store(path)
+    schedule_followup_sequence(store=store, policy=POLICY, phone=CALLER,
+                               call_sid="CA-crash-before-send", now=NOW)
+
+    def die(**kwargs):
+        raise ProcessInterrupted()
+
+    monkeypatch.setattr(followup, "run_due_sms", die)
+    telecom = FakeTelecom()
+    with suppress(ProcessInterrupted):
+        run_due_followups(store=store, now=NOW + timedelta(minutes=1), **_followup_request(telecom))
+    assert telecom.outbound == []
+    assert store.get_followup(CALLER)["attempts_sent"] == 0
+    store.conn.close()
+    monkeypatch.undo()
+
+    restarted = Store(path)
+    later = NOW + timedelta(minutes=2)
+    run_due_followups(store=restarted, now=later, **_followup_request(telecom))
+    run_due_followups(store=restarted, now=later, **_followup_request(telecom))
+
+    assert [sms.kind for sms in telecom.outbound] == ["followup"]
+    accepted = _outcomes(restarted, "followup.sent")
+    assert [event["metadata"]["attempt"] for event in accepted] == [1]
+    assert restarted.get_followup(CALLER)["attempts_sent"] == 1
+
+
+def test_followup_crash_mid_send_is_held_not_resent_or_advanced(tmp_path):
+    path = str(tmp_path / "followup-crash-mid-send.db")
+    store = Store(path)
+    schedule_followup_sequence(store=store, policy=POLICY, phone=CALLER,
+                               call_sid="CA-crash-mid-send", now=NOW)
+
+    with suppress(ProcessInterrupted):
+        run_due_followups(store=store, now=NOW + timedelta(minutes=1),
+                          **_followup_request(InterruptedTelecom()))
+    store.conn.close()
+
+    restarted, telecom = Store(path), FakeTelecom()
+    for minutes in (2, 5, 30, 90):
+        run_due_followups(store=restarted, now=NOW + timedelta(minutes=minutes),
+                          **_followup_request(telecom))
+
+    # Acceptance is unknowable after a mid-send crash: hold, never double-text.
+    assert telecom.outbound == []
+    assert _outcomes(restarted, "followup.sent") == []
+    assert restarted.get_followup(CALLER)["attempts_sent"] == 0
+    rows = restarted.conn.execute("SELECT status FROM sms_outbox WHERE kind='followup'").fetchall()
+    assert [row["status"] for row in rows] == ["unknown"]
