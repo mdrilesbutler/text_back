@@ -17,7 +17,7 @@ Run the real-phone Recover pilot on hermes-vcn-0 (`local/tdd-core` @ 7107639): c
 BLOCKED · real-phone Recover pilot · Claude on Alienware denied hermes-cloud access; test caller must be a second phone that can receive trial SMS · NEED YOU: allow hermes-cloud SSH (or run from piclaw) + name the test caller phone
 
 ## OWNER
-none
+claude-wsl#21c6 · 2026-09-29T01:24Z
 
 ## NEXT
 - Decide canon migration for `local/tdd-core` (collapse CLAUDE.md into AGENTS.md; state to canon-state NOW.md) — Michael's call.
