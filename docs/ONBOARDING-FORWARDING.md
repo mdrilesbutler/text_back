@@ -113,7 +113,7 @@ Use `docs/RECOVER-OPERATIONS.md` for configuration and recovery procedures.
    The post-STOP missed call can still count as a missed call; it must not count
    as another contacted lead. Revenue stays zero without explicit attribution.
 
-Record actual results in `CLAUDE.md`: UTC window, call/message/event or alert IDs,
+Record actual results in NOW.md STATE (via `canon_state.py`): UTC window, call/message/event or alert IDs,
 handset and operator acknowledgments, failures, and retest results. Keep full
 phone numbers, customer content, and credentials out of repository documentation.
 Provider SMS acceptance, delivery status callbacks, and human receipt are distinct

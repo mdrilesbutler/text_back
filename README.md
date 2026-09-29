@@ -7,17 +7,17 @@ Missed-call recovery and scheduling assistant for field-service businesses.
 - **Competitive synthesis:** `docs/COMPETITOR-MATRIX.md`
 - **GTM / sales model:** `docs/gtm/KOERNER-MODEL.md` (assessment → Recover install → Care; sell recovery, not “AI”)
 - **Client outcome report:** `docs/gtm/RECOVERED-REVENUE-BRIEF-TEMPLATE.md`
-- State and next step: `CLAUDE.md` (the only file that carries state)
+- Rules and how it works: `AGENTS.md`; state: NOW.md on the `canon-state` branch
 
 ## Run locally
 
 ```bash
-cd /home/ubuntu/projects/text_back
+python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/pytest tests/
 PYTHONPATH=src .venv/bin/python -m text_back   # 127.0.0.1:8000 only
 ```
 
-Project state lives only in `CLAUDE.md`. Contracts: `docs/SIGNALWIRE-INTEGRATION.md`,
+Project state lives only in NOW.md on the `canon-state` branch. Deploy: `bash scripts/deploy.sh` after a merge to `main`. Contracts: `docs/SIGNALWIRE-INTEGRATION.md`,
 `docs/OUTCOME-EVENTS.md`, `docs/CALENDAR-PROVIDERS.md`.
 
 ## Wiring mode
