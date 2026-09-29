@@ -17,7 +17,7 @@ Merge PR #2 and run `bash scripts/deploy.sh`; confirm hermes-vcn-0 is on `main` 
 BLOCKED · merge PR #2 · Claude's auto-mode guard refuses `gh pr merge` even with a SAFE review · NEED YOU: merge #2 (or allow `gh pr merge` for Claude), then say "go"
 
 ## OWNER
-none
+claude-wsl#f8fe · 2026-09-29T01:32Z
 
 ## NEXT
 - carrier-keywords: exact-match STOP/STOPALL/UNSUBSCRIBE/CANCEL/END/QUIT/OPTOUT/REVOKE; START/UNSTOP re-opt-in; HELP names business + contact number; tests
