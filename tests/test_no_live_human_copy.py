@@ -24,6 +24,8 @@ def _all_customer_copy() -> list[str]:
     return [
         policy.intro_sms("Mike's Tree Care"),
         policy.help_sms("Mike's Tree Care"),
+        policy.help_sms("Mike's Tree Care", "", "+15553334444"),
+        policy.opt_in_ack_sms("Mike's Tree Care"),
         policy.handoff_ack_sms("safety"),
         policy.handoff_ack_sms("customer_requested"),
         policy.booking_error_sms(),

@@ -75,7 +75,7 @@ def _cancelled(store, row, completion):
     phone, kind = row['phone'], row['kind']
     if kind not in ('opt_out_ack', 'help') and store.is_opted_out(phone):
         return True
-    if kind not in ('opt_out_ack', 'help', 'handoff_ack'):
+    if kind not in ('opt_out_ack', 'opt_in_ack', 'help', 'handoff_ack'):
         if store.active_handoff(phone):
             return True
     if kind in ('missed_call_intro', 'followup'):
@@ -169,7 +169,7 @@ def run_due_sms(*, store, telecom, now, policy=None, keys=None, callback_base_ur
                 continue
             # Customer-initiated immediate replies and STOP/HELP are allowed;
             # nurture sends and every delayed retry respect quiet hours.
-            if policy and row['kind'] not in ('help', 'opt_out_ack') and (not immediate or row['attempts'] or row['kind'] == 'followup' or now > datetime.fromisoformat(row['created_at']) + timedelta(seconds=5)):
+            if policy and row['kind'] not in ('help', 'opt_out_ack', 'opt_in_ack') and (not immediate or row['attempts'] or row['kind'] == 'followup' or now > datetime.fromisoformat(row['created_at']) + timedelta(seconds=5)):
                 allowed = next_allowed_send_time(now, policy)
                 if allowed > now:
                     store.conn.execute("UPDATE sms_outbox SET next_attempt_at=? WHERE key=?", (allowed.isoformat(), key))

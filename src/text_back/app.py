@@ -172,6 +172,7 @@ def create_app(
     app.state.db_path = db_path
     app.state.wiring_mode = wiring_mode
     app.state.business_name = business_name.strip()
+    app.state.business_contact = config.business_contact
     app.state.timezone_name = timezone_name
     app.state.appointment_duration_minutes = appointment_duration_minutes
     app.state.calendar = selected_calendar

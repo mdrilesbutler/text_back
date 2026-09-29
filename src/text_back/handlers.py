@@ -24,7 +24,9 @@ from text_back.policy import (
     help_sms,
     handoff_ack_sms,
     intro_sms,
+    is_resubscribe_reply,
     is_terminal_unanswered,
+    opt_in_ack_sms,
     next_missing_field,
     preferred_time_reprompt,
     slot_unavailable_sms,
@@ -99,6 +101,7 @@ def handle_sms_event(
     business_name: str,
     timezone_name: str,
     appointment_duration_minutes: int,
+    business_contact: str = "",
     now: datetime | None = None,
 ) -> dict:
     claimed = store.claim_event("sms", message_sid, "inbound")
@@ -117,14 +120,24 @@ def handle_sms_event(
     # Any customer response immediately ends the no-response sequence.
     cancel_followup(store, from_number, "customer_replied")
     kind = classify_inbound_sms(body)
+    occurred_at = (now or datetime.now(timezone.utc)).isoformat()
     if kind == "stop":
         store.set_opted_out(from_number, True)
+        store.record_outcome(lead_id=from_number, event_type="lead.opted_out", occurred_at=occurred_at,
+                             idempotency_key=f"sms:{message_sid}:opted_out", evidence_id=message_sid, metadata={})
         telecom.send_sms(to=from_number, body=OPT_OUT_ACK, from_number=to_number, kind="opt_out_ack")
         return {"accepted": True, "duplicate": False, "action": "opt_out"}
+    if kind == "start" or (store.is_opted_out(from_number) and is_resubscribe_reply(body)):
+        store.set_opted_out(from_number, False)
+        store.record_outcome(lead_id=from_number, event_type="lead.opted_in", occurred_at=occurred_at,
+                             idempotency_key=f"sms:{message_sid}:opted_in", evidence_id=message_sid, metadata={})
+        telecom.send_sms(to=from_number, body=opt_in_ack_sms(business_name),
+                         from_number=to_number, kind="opt_in_ack")
+        return {"accepted": True, "duplicate": False, "action": "opt_in"}
     if kind == "help":
         telecom.send_sms(
             to=from_number,
-            body=help_sms(business_name),
+            body=help_sms(business_name, business_contact, to_number),
             from_number=to_number,
             kind="help",
         )

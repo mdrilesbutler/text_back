@@ -59,7 +59,7 @@ config, never code. Done = one real-phone Recover pilot proves conversion.
   refuses a dirty tree, fast-forwards `main`, installs, runs tests, restarts, and checks `/health`.
 - Env var NAMES (values only in hermes-cloud `~/.config/text_back/runtime.env`, mode 600): TEXT_BACK_ + TELECOM_MODE,
   PUBLIC_BASE_URL, DB_PATH, WEBHOOK_SECRET (SignalWire signing key), SIGNALWIRE_{SPACE_URL,PROJECT_ID,API_TOKEN,FROM_NUMBER},
-  BUSINESS_NAME, TIMEZONE, APPOINTMENT_DURATION_MINUTES, WIRING_MODE, CALENDAR_PROVIDER, GOOGLE_{CALENDAR_ID,TOKEN_FILE,
+  BUSINESS_{NAME,CONTACT}, TIMEZONE, APPOINTMENT_DURATION_MINUTES, WIRING_MODE, CALENDAR_PROVIDER, GOOGLE_{CALENDAR_ID,TOKEN_FILE,
   CLIENT_FILE}, FOLLOWUP_{DELAYS,EXPIRY}_MINUTES, QUIET_HOURS_{START,END}, HANDOFF_{DESTINATION,DELIVERY_CHANNEL},
   TELEGRAM_{BOT_TOKEN,CHAT_ID}, OPERATOR_API_KEY, PILOT_RECIPIENTS (explicit allowlist; empty = texts nobody).
   Full list with comments: `.env.example`. Never invent a credential; missing one = park the slice.
