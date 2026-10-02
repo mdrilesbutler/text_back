@@ -3,7 +3,7 @@
 You are one of several agents on this repo: Claude Code, Codex, Grok, Hermes, Cursor.
 This file is the constitution. Chat history, Obsidian, old PRDs and other chats do NOT override it.
 **Automatic, every session, without being asked:** your first actions are SESSION START, your last are SESSION END.
-If Riles just says "go", "start", or "next", that means: do the NOW item.
+If Riles just says "go", "start", or "next", that means: do the NOW item. "/goal" — build until NEXT is empty; merge on SAFE is pre-authorized for the run.
 Scripts live in `~/.claude/skills/canon/scripts/` (below: `$C`; set `C=~/.claude/skills/canon/scripts` in your shell).
 Your agent name = `<tool>-<machine>`: `claude-wsl`, `codex-piclaw`, `grokbot`, `hermes-piclaw`.
 Codex: run with network access on, or git/gh/claim will fail.
@@ -71,7 +71,7 @@ config, never code. Done = one real-phone Recover pilot proves conversion.
 ## HOW TO WORK WITH RILES
 - He does not code. Terse, decisive answers. Recommend; don't hand him option menus. Settings, not questions:
   anything he may tweak later is a setting with a Hatch-like default.
-- Never cut, kill, demote, or drop scope without his explicit agreement. Don't re-derive anything under LOCKED.
+- Never cut, kill, demote, or drop scope without his explicit agreement. Don't re-derive anything under LOCKED. Before retiring anything, run /salvage.
 - No telecom purchase, spend, account upgrade, or call routing change without his explicit approval; purchases happen
   only in his browser. Cost cap $15/month.
 
