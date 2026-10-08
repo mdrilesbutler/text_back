@@ -75,7 +75,7 @@ def _cancelled(store, row, completion):
     phone, kind = row['phone'], row['kind']
     if kind not in ('opt_out_ack', 'help') and store.is_opted_out(phone):
         return True
-    if kind not in ('opt_out_ack', 'help', 'handoff_ack'):
+    if kind not in ('opt_out_ack', 'opt_in_ack', 'help', 'handoff_ack'):
         if store.active_handoff(phone):
             return True
     if kind in ('missed_call_intro', 'followup'):

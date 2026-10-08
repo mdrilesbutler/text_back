@@ -2,6 +2,8 @@ import base64
 import hashlib
 import hmac
 
+import pytest
+
 from fastapi.testclient import TestClient
 
 from text_back.app import create_app
@@ -129,3 +131,92 @@ def test_invalid_sms_signature_is_rejected():
     )
     assert response.status_code == 403
     assert telecom.outbound == []
+
+
+def _sms(client, body, sid):
+    params = {"MessageSid": sid, "From": "+15551112222",
+              "To": "+15553334444", "Body": body}
+    return client.post("/webhooks/sms", data=params,
+                       headers={"X-Twilio-Signature": _sign(SMS_URL, params)})
+
+
+@pytest.mark.parametrize("keyword", ["START", "unstop", "  Start  "])
+def test_explicit_opt_in_restores_scheduling_without_capturing_keyword(keyword):
+    client, telecom = _app()
+    _sms(client, "STOP", "SM-stop")
+    telecom.outbound.clear()
+
+    response = _sms(client, keyword, "SM-opt-in")
+
+    assert response.json()["action"] == "opt_in"
+    assert not client.app.state.store.is_opted_out("+15551112222")
+    assert client.app.state.store.get_conversation_fields("+15551112222") == {}
+    assert len(telecom.outbound) == 1
+    assert telecom.outbound[0].kind == "opt_in_ack"
+    assert "Mike" in telecom.outbound[0].body
+    assert "STOP" in telecom.outbound[0].body
+    assert _sms(client, keyword, "SM-opt-in").json()["duplicate"] is True
+    assert len(telecom.outbound) == 1
+
+    reply = _sms(client, "tree trimming", "SM-service")
+    assert reply.json()["field"] == "service"
+    assert client.app.state.store.get_conversation_fields("+15551112222")["service"] == "tree trimming"
+
+
+@pytest.mark.parametrize("body", ["start tree removal", "please restart", "don't start", "START STOP"])
+def test_conversational_text_cannot_clear_opt_out(body):
+    client, telecom = _app()
+    _sms(client, "STOP", "SM-stop")
+    telecom.outbound.clear()
+    assert _sms(client, body, "SM-ordinary").json()["action"] == "suppressed"
+    assert client.app.state.store.is_opted_out("+15551112222")
+    assert telecom.outbound == []
+
+
+def test_opt_in_preserves_active_handoff_and_does_not_restart_automation():
+    client, telecom = _app()
+    _sms(client, "human", "SM-handoff")
+    handoff = client.app.state.store.active_handoff("+15551112222")
+    _sms(client, "STOP", "SM-stop")
+    telecom.outbound.clear()
+
+    assert _sms(client, "UNSTOP", "SM-opt-in").json()["action"] == "opt_in"
+    assert client.app.state.store.active_handoff("+15551112222") == handoff
+    assert [sms.kind for sms in telecom.outbound] == ["opt_in_ack"]
+    assert _sms(client, "tree trimming", "SM-service").json()["reason"] == "handoff_active"
+    assert len(telecom.outbound) == 1
+
+
+def test_invalid_signature_cannot_restore_opted_out_contact():
+    client, telecom = _app()
+    _sms(client, "STOP", "SM-stop")
+    telecom.outbound.clear()
+    params = {"MessageSid": "SM-forged-start", "From": "+15551112222",
+              "To": "+15553334444", "Body": "START"}
+    response = client.post("/webhooks/sms", data=params,
+                           headers={"X-Twilio-Signature": "invalid"})
+    assert response.status_code == 403
+    assert client.app.state.store.is_opted_out("+15551112222")
+    assert telecom.outbound == []
+
+
+def test_stop_cancels_pending_opt_in_ack_even_if_customer_later_resubscribes(monkeypatch):
+    from text_back.telecom import RetryableSmsError
+
+    client, telecom = _app()
+    _sms(client, "STOP", "SM-stop")
+    original_send = telecom.send_sms
+
+    def reject(**kwargs):
+        raise RetryableSmsError("definitely not accepted")
+
+    monkeypatch.setattr(telecom, "send_sms", reject)
+    _sms(client, "START", "SM-start-pending")
+    assert client.app.state.store.get_sms("SM-start-pending:opt_in_ack")["status"] == "pending"
+
+    monkeypatch.setattr(telecom, "send_sms", original_send)
+    _sms(client, "STOP", "SM-stop-again")
+    _sms(client, "UNSTOP", "SM-start-again")
+
+    assert client.app.state.store.get_sms("SM-start-pending:opt_in_ack")["status"] == "cancelled"
+    assert [sms.kind for sms in telecom.outbound].count("opt_in_ack") == 1

@@ -81,7 +81,7 @@ were rechecked on 2026-10-08 when clarifying the existing-number pilot.
   to another local US number using our platform." Brand review is usually one
   business day; campaign review 3-5 business days; number assignment up to 24
   hours. Brand submission and a monthly campaign fee with a three-month minimum
-  apply. Every client pilot after this one needs an approved campaign; treat
+  apply. Every pilot reaching callers outside PFT needs an approved campaign; treat
   registration as part of TB-RECOVER onboarding, priced into the SKU.
 - The only pre-registration path is **Platform Free Trial (PFT)**: one
   SignalWire number may text exactly one verified mobile number, up to 200
@@ -111,6 +111,83 @@ were rechecked on 2026-10-08 when clarifying the existing-number pilot.
   `POST /api/messaging/messages` endpoint (`to`, `from`, `body`,
   `status_callback`), whose status callback is JSON (`id`, `status`) rather
   than form-encoded `MessageSid`/`MessageStatus`.
+
+## Registration worksheet for existing-number Recover
+
+Use the existing SignalWire number as the campaign sender and the owner's
+existing cell as the public business/forwarding number. A marketing name or
+SignalWire Space name is not evidence of the legal business name or EIN.
+Enter the legal identity, address, website and owner contact details directly
+in the provider's protected form; do not put EINs or home addresses in git.
+
+Recommended pilot classification to confirm in the registration wizard:
+`LOW_VOLUME_MIXED`, with `CUSTOMER_CARE` and `ACCOUNT_NOTIFICATION`. The draft
+campaign name is **Recover — missed-call scheduling**. The business named in
+messages must match the approved brand/DBA; configure `TEXT_BACK_BUSINESS_NAME`
+to that identity before generating final samples.
+
+Draft description:
+
+> The business keeps its existing public phone number. Unanswered calls forward
+> to its dedicated SignalWire number. Recover texts the caller about the service
+> they requested, collects job type, location, preferred appointment time and
+> name, and confirms an appointment only after a calendar event exists. Requests
+> requiring the owner create an asynchronous lead notification. Bounded
+> no-response follow-ups stop on a reply, opt-out, booking, handoff or expiry.
+> This campaign does not send marketing promotions or sell customer leads.
+
+Describe lead recovery accurately when answering the provider's
+`lead_generation` question; do not automatically set it false merely because
+messages are not promotional. The actual campaign description and provider
+classification must agree.
+
+Generate message samples from the deployed policy functions, replacing only the
+business name with the confirmed brand/DBA:
+
+| Registration field | Implementation source |
+|---|---|
+| Initial missed-call text / sample 1 | `policy.intro_sms(business_name)` |
+| No-response follow-up / sample 2 | `followup.followup_sms(business_name, 1)` |
+| Opt-in confirmation | `policy.opt_in_sms(business_name)` |
+| Opt-out confirmation | `policy.OPT_OUT_ACK` |
+| HELP response | `policy.help_sms(business_name)` |
+| Application opt-in keywords | Whole-message `START`, `UNSTOP` |
+| Application opt-out keywords | `STOP`, `STOPALL`, `UNSUBSCRIBE`, `CANCEL`, `END`, `QUIT` |
+| Application HELP keywords | `HELP`, `INFO` |
+
+The application does not treat START/UNSTOP as a job description. They restore
+SMS permission without clearing an active handoff or restarting a cancelled
+follow-up sequence. A later STOP cancels a queued opt-in acknowledgment.
+SignalWire's network-level STOP/UNSTOP behavior is separate: verify which
+keywords and acknowledgments actually reach the application in the live pilot.
+
+For the `message_flow` field, document the actual consent mechanism and its
+evidence. A voice call is not proof of a consumer-initiated SMS conversation.
+The existing voice handler announces a text and hangs up; it does not collect
+an affirmative consent response. For an allowlisted pilot, record the tester's
+explicit agreement to scheduling texts before sending. Describe the implemented
+customer consent process for a broader deployment; do not claim an online
+checkbox, recorded verbal agreement or published legal pages that do not exist.
+The provider's [messaging requirements](https://share.signalwire.com/hubfs/PDFs/Messaging-Requirements-and-Code-of-Conduct.pdf)
+distinguish consumer-initiated texts from business-initiated informational texts
+and require consent appropriate to the message type. Re-enrollment support does
+not establish permission for the original missed-call intro.
+
+Fees from the [public rate deck](https://signalwire.com/pricing/rates), checked
+2026-10-08: brand $4.50 once, DCA vetting $7.50 per campaign submission, Low Volume
+Mixed $1.50/month. With three months prepaid, the initial registration estimate
+is $16.50, excluding usage, number rental, taxes and any additional charges.
+This is not an authenticated quote. The same deck lists a $250 fee after 60
+consecutive inactive days; establish an appropriate campaign closure process
+before leaving a paid pilot inactive. Compare the actual wizard quote and
+recurring total against the approved $15/month ceiling before submission.
+
+The [registration process](https://signalwire.com/docs/platform/messaging/campaign-registry/registration)
+requires verified business identity before campaign approval and number
+assignment. Submission is not delivery readiness: verify approval and assignment
+for the already-owned number, then execute the full phone checklist. Account
+terms and the final consent description must be reviewed as actual commitments,
+not automatically populated from this worksheet.
 
 ## Pre-live checklist
 

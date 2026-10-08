@@ -42,6 +42,14 @@ Immediate customer replies remain conversational; delayed retries and worker
 messages obey quiet hours. A provider request already authorized and in flight
 cannot be recalled by a later STOP. Pending work is cancelled.
 
+A signed inbound whole-message START or UNSTOP restores application SMS
+permission and queues a branded confirmation. Phrases containing those words
+do not clear an opt-out. Re-enrollment preserves active handoffs, collected
+fields and cancelled follow-ups; it does not start a new booking or a new
+follow-up sequence. STOP cancels any pending opt-in confirmation. The provider
+may handle network-level STOP/UNSTOP separately, so prove both provider and
+application behavior during the real-phone checks.
+
 Qualified bookings survive temporary calendar outages. Up to four attempts are
 made, followed by a durable operator handoff. Revoked Google credentials pause
 booking attempts until reconnection. Google retries verify the deterministic

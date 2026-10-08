@@ -151,9 +151,10 @@ def test_concurrent_runners_send_one_provider_request(tmp_path):
     assert first_store.get_sms(KEY)["provider_id"] == "SM-0001"
 
 
-def test_stop_received_before_retry_cancels_pending_customer_sms():
+@pytest.mark.parametrize("kind", ["missed_call_intro", "opt_in_ack"])
+def test_stop_received_before_retry_cancels_pending_customer_sms(kind):
     store, telecom = Store(), RejectingTelecom(failures=1)
-    _enqueue(store)
+    _enqueue(store, kind=kind)
     run_due_sms(store=store, telecom=telecom, now=NOW)
     store.set_opted_out(CALLER, True)
 

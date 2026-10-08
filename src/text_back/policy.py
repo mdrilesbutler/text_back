@@ -5,6 +5,7 @@ import re
 TERMINAL_UNANSWERED = frozenset({"no-answer", "busy", "failed", "canceled"})
 STOP_KEYWORDS = frozenset({"stop", "stopall", "unsubscribe", "cancel", "end", "quit"})
 HELP_KEYWORDS = frozenset({"help", "info"})
+OPT_IN_KEYWORDS = frozenset({"start", "unstop"})
 HANDOFF_SAFETY_TERMS = frozenset(
     {"danger", "emergency", "fire", "injured", "injury", "urgent"}
 )
@@ -30,7 +31,7 @@ WIRING_MODE_FORWARDED = "forwarded"
 WIRING_MODE_MANAGED = "managed"
 WIRING_MODES = frozenset({WIRING_MODE_FORWARDED, WIRING_MODE_MANAGED})
 
-OPT_OUT_ACK = "You are unsubscribed and will not receive more automated texts. Reply START only if you want scheduling messages again. STOP request recorded."
+OPT_OUT_ACK = "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded."
 
 # Deterministic conversation field collection. No LLM/NLP extraction: each
 # inbound "conversation" SMS is treated as the verbatim answer to whichever
@@ -110,7 +111,14 @@ def handoff_ack_sms(reason: str) -> str:
 def intro_sms(business_name: str) -> str:
     return (
         f"Hey, sorry we missed your call—this is {business_name}'s scheduling assistant. "
-        "What were you calling about?"
+        "What were you calling about? Reply STOP to opt out."
+    )
+
+
+def opt_in_sms(business_name: str) -> str:
+    return (
+        f"You're subscribed to {business_name}'s scheduling texts. "
+        "Reply HELP for help or STOP to opt out."
     )
 
 
@@ -127,6 +135,10 @@ def is_terminal_unanswered(call_status: str) -> bool:
 
 
 def classify_inbound_sms(body: str) -> str:
+    # Consent must be an explicit whole-message keyword, not a phrase such as
+    # "don't start" or a service request beginning with "start".
+    if body.strip().lower() in OPT_IN_KEYWORDS:
+        return "opt_in"
     tokens = body.strip().lower().replace(",", " ").split()
     if not tokens:
         return "conversation"
