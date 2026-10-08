@@ -3,9 +3,17 @@ from __future__ import annotations
 import re
 
 TERMINAL_UNANSWERED = frozenset({"no-answer", "busy", "failed", "canceled"})
-STOP_KEYWORDS = frozenset({"stop", "stopall", "unsubscribe", "cancel", "end", "quit"})
+STOP_KEYWORDS = frozenset(
+    {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "optout", "revoke"}
+)
+STOP_REQUEST = re.compile(
+    r"^(?:please )?(?:stop all|stop texting|stop messaging|stop sending(?: texts| messages)?"
+    r"|do not text|don't text|dont text|opt out|unsubscribe)(?: me| us)?(?: please)?(?: now)?$"
+)
+# Opt-in keywords re-subscribe only when the whole reply is the keyword, so an
+# ordinary answer such as "start time 2pm" stays a conversation reply.
+OPT_IN_KEYWORDS = frozenset({"start", "unstop", "subscribe"})
 HELP_KEYWORDS = frozenset({"help", "info"})
-OPT_IN_KEYWORDS = frozenset({"start", "unstop"})
 HANDOFF_SAFETY_TERMS = frozenset(
     {"danger", "emergency", "fire", "injured", "injury", "urgent"}
 )
@@ -118,15 +126,30 @@ def intro_sms(business_name: str) -> str:
 def opt_in_sms(business_name: str) -> str:
     return (
         f"You're subscribed to {business_name}'s scheduling texts. "
-        "Reply HELP for help or STOP to opt out."
+        "Msg & data rates may apply. Reply HELP for help or STOP to opt out."
     )
 
 
-def help_sms(business_name: str) -> str:
+def format_contact_number(number: str) -> str:
+    digits = re.sub(r"\D", "", number)
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    if len(digits) == 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    return number
+
+def help_sms(business_name: str, business_contact: str = "", text_number: str = "") -> str:
+    """Carrier HELP reply: identity, contact info, rates notice, opt-out.
+
+    The contact defaults to the number the customer is already texting; it is
+    never the business's own line (customers never get routed to a person).
+    """
+    contact = business_contact.strip() or format_contact_number(text_number)
+    contact_line = f" Contact: {contact}." if contact else ""
     return (
         f"{business_name}'s scheduling assistant. Reply with the job type, location, "
         "and a time that works. Anything we can't handle by text, the owner "
-        "follows up on. Reply STOP to opt out."
+        f"follows up on.{contact_line} Msg & data rates may apply. Reply STOP to opt out."
     )
 
 
@@ -135,15 +158,22 @@ def is_terminal_unanswered(call_status: str) -> bool:
 
 
 def classify_inbound_sms(body: str) -> str:
-    # Consent must be an explicit whole-message keyword, not a phrase such as
-    # "don't start" or a service request beginning with "start".
-    if body.strip().lower() in OPT_IN_KEYWORDS:
-        return "opt_in"
-    tokens = body.strip().lower().replace(",", " ").split()
+    # Hyphenated words stay whole: "opt-out" is a keyword, "stop-by" is not.
+    tokens = re.findall(r"[a-z0-9']+(?:-[a-z0-9']+)*", body.strip().lower())
     if not tokens:
         return "conversation"
-    if tokens[0] in STOP_KEYWORDS:
+    first = tokens[0].replace("-", "")
+    normalized = " ".join(tokens).replace("-", " ")
+    if (first in STOP_KEYWORDS and "-" not in tokens[0] or first == "optout"
+            or STOP_REQUEST.fullmatch(normalized)):
         return "stop"
     if tokens[0] in HELP_KEYWORDS:
         return "help"
+    if re.fullmatch(r"(?:start|unstop|subscribe)[.!?]*", body.strip(), re.I):
+        return "opt_in"
     return "conversation"
+
+
+def is_resubscribe_reply(body: str) -> bool:
+    """A bare YES re-subscribes a contact who previously opted out."""
+    return re.fullmatch(r"yes[.!?]*", body.strip(), re.I) is not None
