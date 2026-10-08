@@ -100,6 +100,34 @@ the provider. Privately apply the staged value to `TEXT_BACK_WEBHOOK_SECRET`,
 restart the service, and verify signatures during the real-phone checks.
 Remove `TEXT_BACK_SETUP_DIRECTORY` and restart after intake is complete.
 
+The same optional intake supports a Google Web OAuth client JSON without asking
+for the existing signing key again. Issue a separate, purpose-bound invitation:
+
+```sh
+PYTHONPATH=src .venv/bin/python -m text_back.setup_intake \
+  --directory /home/ubuntu/.config/text_back/setup \
+  --public-base-url https://hermes-cloud.tailefb1a4.ts.net:8443 \
+  --purpose google-client
+```
+
+The browser page displays the exact callback URI and accepts a downloaded
+**Web application** client JSON. Per Google's current instructions, download
+the file when creating the client, since the secret is only shown at creation.
+The server validates the client type, Google endpoints and matching redirect URI,
+then atomically stages `google-web-client.pending.json` with mode 600. Its upload
+token cannot save a signing key, and a signing-key invitation cannot save a
+Google client. Uploads are limited to 32 KB; no secret is echoed to the browser.
+An existing staged file is never overwritten.
+
+Saving is not Google authorization. Privately inspect the staged client, point
+`TEXT_BACK_GOOGLE_CLIENT_FILE` to the protected file and restart the service,
+then create a calendar reconnect link and have the operator complete Google
+consent. Keep the existing `google_token.json` intact: refresh continues using
+its original client until browser reconnection validates calendar write access
+and saves the new authorized credentials. Verify Google free/busy afterwards.
+
+Reference: [Google Web application credentials](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred).
+
 Test this flow through a separate temporary directory with dummy data. Never
 consume a live invitation during verification or put a signing key in chat,
 logs, source, or documentation.

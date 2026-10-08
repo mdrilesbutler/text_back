@@ -120,6 +120,13 @@ SignalWire Space name is not evidence of the legal business name or EIN.
 Enter the legal identity, address, website and owner contact details directly
 in the provider's protected form; do not put EINs or home addresses in git.
 
+For an ordinary privately held, for-profit LLC, use the managed-brand private
+company path (`PRIVATE_PROFIT` in the API), its exact registered legal name and
+its actual EIN. LLC status alone does not supply those values. Keep the marketing
+name/DBA in `name` and the registered name in `company_name`; do not append LLC to
+the marketing name unless that is the actual legal name. See the provider's
+[brand fields](https://signalwire.com/docs/apis/rest/campaign-registry/brands/create-brand).
+
 Recommended pilot classification to confirm in the registration wizard:
 `LOW_VOLUME_MIXED`, with `CUSTOMER_CARE` and `ACCOUNT_NOTIFICATION`. The draft
 campaign name is **Recover — missed-call scheduling**. The business named in
