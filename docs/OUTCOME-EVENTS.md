@@ -20,6 +20,8 @@ Each row contains:
 | `call.missed` | provider call SID | Forwarded call arrives, or managed call reaches a terminal-unanswered status |
 | `sms.initial_sent` | outbound provider message ID | Missed-call intro transport accepts the message |
 | `sms.customer_replied` | inbound provider message ID | A unique inbound SMS is accepted, including STOP/HELP |
+| `lead.opted_out` | inbound provider message ID | A reply matches a carrier/FCC opt-out keyword or phrase; automated texts stop |
+| `lead.opted_in` | inbound provider message ID | START/UNSTOP/SUBSCRIBE, or a bare YES from an opted-out contact, re-subscribes them |
 | `lead.field_captured` | inbound provider message ID | One deterministic field is persisted; metadata names the field only |
 | `lead.qualified` | final inbound provider message ID | All required fields are present |
 | `lead.handoff_requested` | notifier alert ID | The handoff notifier accepts the operator payload |

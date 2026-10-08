@@ -220,3 +220,12 @@ def test_stop_cancels_pending_opt_in_ack_even_if_customer_later_resubscribes(mon
 
     assert client.app.state.store.get_sms("SM-start-pending:opt_in_ack")["status"] == "cancelled"
     assert [sms.kind for sms in telecom.outbound].count("opt_in_ack") == 1
+
+
+def test_signed_help_webhook_uses_configured_contact(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_BUSINESS_CONTACT", "https://example.test/support")
+    client, telecom = _app()
+    response = _sms(client, "HELP", "SM-contact")
+    assert response.json()["action"] == "help"
+    assert "https://example.test/support" in telecom.outbound[0].body
+    assert "Msg & data rates may apply" in telecom.outbound[0].body

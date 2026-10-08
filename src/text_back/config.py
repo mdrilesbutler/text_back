@@ -43,6 +43,7 @@ class AppConfig:
     telegram_bot_token: str = field(default="", repr=False)
     telegram_chat_id: str = field(default="", repr=False)
     pilot_recipients: tuple[str, ...] | None = field(default=None, repr=False)
+    business_contact: str = ""
 
 
 def load_config() -> AppConfig:
@@ -54,6 +55,7 @@ def load_config() -> AppConfig:
         raise ValueError('TEXT_BACK_PILOT_RECIPIENTS must contain E.164 numbers')
     return AppConfig(
         pilot_recipients=pilot_recipients,
+        business_contact=os.environ.get("TEXT_BACK_BUSINESS_CONTACT", ""),
         telegram_bot_token=os.environ.get("TEXT_BACK_TELEGRAM_BOT_TOKEN", ""),
         telegram_chat_id=os.environ.get("TEXT_BACK_TELEGRAM_CHAT_ID", ""),
         google_client_file=os.environ.get("TEXT_BACK_GOOGLE_CLIENT_FILE", ""),

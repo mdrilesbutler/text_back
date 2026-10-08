@@ -45,7 +45,8 @@ def _process(state, key, now):
         else:
             result=handle_sms_event(**common,**params,calendar=state.calendar,
                 handoff_notifier=state.handoff_notifier,handoff_destination=state.handoff_destination,
-                timezone_name=state.timezone_name,appointment_duration_minutes=state.appointment_duration_minutes)
+                timezone_name=state.timezone_name,appointment_duration_minutes=state.appointment_duration_minutes,
+                business_contact=getattr(state,'business_contact',''))
     except Exception:
         with store.transaction():
             store.conn.execute("UPDATE inbound_jobs SET status=?,next_attempt_at=? WHERE key=?",
