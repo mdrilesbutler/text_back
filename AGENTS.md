@@ -11,19 +11,28 @@ Codex: run with network access on, or git/gh/claim will fail.
 ## SESSION START
 1. Read `CLAUDE.md`; it is the canonical project state. Resume from NEXT and NEXT SESSION PROMPT.
 2. Inspect `git status --short --branch`; preserve existing work and ownership boundaries.
-3. Work from `main`, fetching and integrating `origin/main` without force-pushing or discarding local changes.
+3. Start from `main`, fetch/prune and fast-forward `origin/main` without discarding local changes. Use a temporary integration branch only while a required PR is open.
 4. Run `python3 $C/canon_check.py`. Preserve the explicitly required CLAUDE.md state even if the generic checker recommends migrating it.
 
 ## SESSION END
 1. Run checks appropriate to the change and record actual evidence in `CLAUDE.md`.
 2. Commit only named, reviewed paths with the identity recorded in CLAUDE.md. A merge commit records the reviewed merge result as a whole.
-3. Push completed work to `origin/main`; verify the remote commit. Never leave finished work only on a development branch.
+3. Deliver completed work to `main` through a PR with independent review and successful `canon/review`; verify the merge commit. Delete merged temporary branches locally and on GitHub, check out `main`, and finish clean with `main == origin/main`.
 4. Run `bash $C/canon_wrapup.sh --now` and report its fleet summary plus one DONE/BLOCKED line.
 
 ## MERGING
-Michael explicitly instructed on 2026-10-08: always push finished work to `main`.
-Integrate existing remote changes, test, and push `main` without another approval question.
-Use a normal merge when histories diverge; never force-push. If GitHub requires a PR, use that path to deliver to `main`.
+Michael explicitly instructed on 2026-10-08: `main` is the only permanent branch.
+Temporary PR branches must be deleted after merging. GitHub requires a PR and `canon/review`; run `bash $C/canon_review.sh <pr> <author-agent>`
+for an independent review, resolve findings, and merge after checks pass. This is already
+user-authorized; do not ask again. Never bypass protection or force-push. Inspect overlapping/squashed content and document exclusions before deletion.
+State remains in CLAUDE.md. Do not recreate a state branch or use state-branch tools here. The generic canon state-migration warning is
+an explicit project exception, not a reason to delete canonical state.
+Fleet WIP snapshots are disabled here: GitHub ruleset `text-back-no-automation-branches`
+blocks creation/update of `wip/*`, nested WIP refs, and `canon-state`. Removing `canon-state`
+removes this repository from canon fleet snapshot discovery; clean default-branch pulls
+still work. Stale/offline fleet inventories cannot recreate the prohibited refs. Do not
+weaken this guard or change other repositories. At wrap-up still run the required fleet
+command; completed text_back work must already be merged and clean before running it.
 Deploy merged application changes with `bash scripts/deploy.sh`; preserve private configuration and unrelated services.
 
 ## WHAT THIS IS
