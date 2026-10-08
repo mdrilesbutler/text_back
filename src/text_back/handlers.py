@@ -26,6 +26,7 @@ from text_back.policy import (
     intro_sms,
     is_terminal_unanswered,
     next_missing_field,
+    opt_in_sms,
     preferred_time_reprompt,
     slot_unavailable_sms,
 )
@@ -113,7 +114,7 @@ def handle_sms_event(
         metadata={},
     )
     store.conn.execute("""UPDATE sms_outbox SET status='cancelled' WHERE phone=? AND status='pending'
-        AND kind IN ('missed_call_intro','followup','field_prompt','preferred_time_reprompt','slot_unavailable','booking_error')""", (from_number,))
+        AND kind IN ('missed_call_intro','followup','field_prompt','preferred_time_reprompt','slot_unavailable','booking_error','opt_in_ack')""", (from_number,))
     # Any customer response immediately ends the no-response sequence.
     cancel_followup(store, from_number, "customer_replied")
     kind = classify_inbound_sms(body)
@@ -129,6 +130,15 @@ def handle_sms_event(
             kind="help",
         )
         return {"accepted": True, "duplicate": False, "action": "help"}
+    if kind == "opt_in":
+        store.set_opted_out(from_number, False)
+        telecom.send_sms(
+            to=from_number,
+            body=opt_in_sms(business_name),
+            from_number=to_number,
+            kind="opt_in_ack",
+        )
+        return {"accepted": True, "duplicate": False, "action": "opt_in"}
     handoff_reason = classify_handoff_request(body)
     if store.is_opted_out(from_number):
         if handoff_reason is not None:

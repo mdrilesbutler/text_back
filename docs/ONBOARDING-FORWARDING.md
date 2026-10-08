@@ -5,6 +5,15 @@ enable **conditional call forwarding** (busy / no-answer only — never
 forward-all) from their phone to their assigned text_back number. One-time,
 reversible, no carrier plan change.
 
+The existing business cell remains the public number customers call. The
+SignalWire number handles forwarded missed calls and sends the recovery texts;
+it does not replace the business cell. The separate caller in the checks below
+is a tester using an existing phone, not another business line to buy or adopt.
+If only the business owner's cell is eligible to receive Platform Free Trial
+messages, complete messaging registration on the existing SignalWire number
+before testing recovery texts to other callers. Do not swap the business cell
+into the caller role and claim that proves recovery on the business's number.
+
 Codes verified against first-party carrier pages 2026-08-20 unless marked
 UNVERIFIED. Re-verify before onboarding a client on an UNVERIFIED path.
 Dial codes from the client's phone, then press Call/Send.
@@ -113,7 +122,7 @@ Use `docs/RECOVER-OPERATIONS.md` for configuration and recovery procedures.
    The post-STOP missed call can still count as a missed call; it must not count
    as another contacted lead. Revenue stays zero without explicit attribution.
 
-Record actual results in NOW.md STATE (via `canon_state.py`): UTC window, call/message/event or alert IDs,
+Record actual results in `CLAUDE.md`: UTC window, call/message/event or alert IDs,
 handset and operator acknowledgments, failures, and retest results. Keep full
 phone numbers, customer content, and credentials out of repository documentation.
 Provider SMS acceptance, delivery status callbacks, and human receipt are distinct
