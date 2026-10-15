@@ -59,6 +59,10 @@ internal URL into this setting.
   retained.
 - In `managed` mode, voice callbacks receive an empty cXML response. The
   existing terminal-unanswered policy remains unchanged.
+- Callers outside an explicit `TEXT_BACK_PILOT_RECIPIENTS` allowlist create no
+  inbound job, intent or SMS. In `forwarded` mode they still hear the branded
+  greeting that does not promise a text, so a forwarded line never answers
+  with dead air; `managed` mode and SMS callbacks stay empty.
 - `call_sid` and `message_sid` idempotency gates remain in front of duplicate
   outbound messages.
 - Handoff pauses automated replies and commits a durable operator alert. The

@@ -169,3 +169,81 @@ def test_signalwire_handoff_pause_does_not_promise_a_followup_text():
     say_text = ElementTree.fromstring(response.text).findtext("Say") or ""
     assert "text you" not in say_text.lower()
     assert telecom.outbound == []
+
+
+def _assert_no_work(client, telecom):
+    store = client.app.state.store
+    assert telecom.outbound == []
+    assert store.conn.execute("SELECT count(*) FROM inbound_jobs").fetchone()[0] == 0
+    assert store.conn.execute("SELECT count(*) FROM sms_outbox").fetchone()[0] == 0
+
+
+def test_forwarded_caller_outside_allowlist_hears_greeting_without_text_promise(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_PILOT_RECIPIENTS", "+15559990000")
+    client, telecom = _client(business_name="Oak & Pine Tree Care")
+    params = _voice_params("CA-outside-allowlist")
+
+    response = client.post(
+        "/webhooks/voice",
+        data=params,
+        headers={"X-SignalWire-Signature": _sign(VOICE_URL, params)},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/xml")
+    root = ElementTree.fromstring(response.text)
+    assert [child.tag for child in root] == ["Say", "Hangup"]
+    say_text = root.findtext("Say") or ""
+    assert "Oak & Pine Tree Care" in say_text
+    assert "text" not in say_text.lower()
+    _assert_no_work(client, telecom)
+
+
+def test_forwarded_caller_outside_empty_allowlist_hears_greeting_without_text_promise(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_PILOT_RECIPIENTS", "")
+    client, telecom = _client(business_name="Oak & Pine Tree Care")
+    params = _voice_params("CA-empty-allowlist")
+
+    response = client.post(
+        "/webhooks/voice",
+        data=params,
+        headers={"X-SignalWire-Signature": _sign(VOICE_URL, params)},
+    )
+
+    assert response.status_code == 200
+    say_text = ElementTree.fromstring(response.text).findtext("Say") or ""
+    assert "Oak & Pine Tree Care" in say_text
+    assert "text" not in say_text.lower()
+    _assert_no_work(client, telecom)
+
+
+def test_managed_caller_outside_allowlist_still_gets_empty_cxml(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_PILOT_RECIPIENTS", "+15559990000")
+    client, telecom = _client(wiring_mode="managed")
+    params = _voice_params("CA-managed-outside")
+
+    response = client.post(
+        "/webhooks/voice",
+        data=params,
+        headers={"X-SignalWire-Signature": _sign(VOICE_URL, params)},
+    )
+
+    assert response.status_code == 200
+    assert response.text == "<Response />"
+    _assert_no_work(client, telecom)
+
+
+def test_sms_outside_allowlist_still_gets_empty_cxml(monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_PILOT_RECIPIENTS", "+15559990000")
+    client, telecom = _client()
+    params = {"MessageSid": "SM-outside", "From": CALLER, "To": BUSINESS_NUMBER, "Body": "hello"}
+
+    response = client.post(
+        "/webhooks/sms",
+        data=params,
+        headers={"X-SignalWire-Signature": _sign(SMS_URL, params)},
+    )
+
+    assert response.status_code == 200
+    assert response.text == "<Response />"
+    _assert_no_work(client, telecom)
