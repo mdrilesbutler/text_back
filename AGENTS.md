@@ -53,8 +53,9 @@ config, never code. Done = one real-phone Recover pilot proves conversion.
 - Runs on hermes-vcn-0 (`ssh ubuntu@100.124.192.46`, Tailscale; alias `hermes-cloud` on piclaw): user unit
   `text-back.service` → `~/projects/text_back` on `main`, `.venv`, 127.0.0.1:8000; public HTTPS via Tailscale Funnel
   `https://hermes-cloud.tailefb1a4.ts.net:8443`; SQLite `~/.local/state/text_back/pilot.sqlite3`.
-- Deploy: merge to `main`, then `bash scripts/deploy.sh` from any host: it SSHes in,
-  refuses a dirty tree, fast-forwards `main`, installs, runs tests, restarts, and checks `/health`.
+- Deploy: merge to `main`, then `bash scripts/deploy.sh` from any host: it SSHes in (or runs
+  the same steps locally when already on hermes-vcn-0), refuses a dirty tree, fast-forwards
+  `main`, installs (uv when the venv has no pip), runs tests, restarts, and checks `/health`.
 - Env var NAMES (values only in hermes-cloud `~/.config/text_back/runtime.env`, mode 600): TEXT_BACK_ + TELECOM_MODE,
   PUBLIC_BASE_URL, DB_PATH, WEBHOOK_SECRET (SignalWire signing key), SIGNALWIRE_{SPACE_URL,PROJECT_ID,API_TOKEN,FROM_NUMBER},
   BUSINESS_NAME, TIMEZONE, APPOINTMENT_DURATION_MINUTES, WIRING_MODE, CALENDAR_PROVIDER, GOOGLE_{CALENDAR_ID,TOKEN_FILE,
