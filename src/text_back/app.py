@@ -249,7 +249,19 @@ def create_app(
         except SignatureError as exc:
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         if config.pilot_recipients is not None and from_number not in config.pilot_recipients:
-            return Response(content=empty_response(), media_type='application/xml')
+            # Outside the explicit pilot allowlist no work is created and no SMS is
+            # queued. A forwarded caller still reached a live line, so give them the
+            # branded greeting that does not promise a text instead of dead air.
+            if (
+                request.app.state.telecom.provider_name == "signalwire"
+                and request.app.state.wiring_mode == WIRING_MODE_FORWARDED
+            ):
+                content = forwarded_call_response(
+                    request.app.state.business_name, text_will_follow=False
+                )
+            else:
+                content = empty_response()
+            return Response(content=content, media_type='application/xml')
         result = await asyncio.to_thread(submit_event, state=app.state, kind='voice',
             params=dict(call_sid=call_sid, call_status=call_status, from_number=from_number, to_number=to_number))
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
