@@ -34,6 +34,8 @@ class CalendarStub:
         location: str,
         caller: str,
         conversation_id: str,
+        attendee_email: str | None = None,
+        description: str | None = None,
     ) -> str | None:
         if not self.is_free(start, end):
             return None
@@ -47,6 +49,8 @@ class CalendarStub:
             "location": location,
             "caller": caller,
             "conversation_id": conversation_id,
+            "attendee_email": attendee_email,
+            "description": description,
         }
         self.busy.append((start, end))
         return event_id

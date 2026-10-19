@@ -83,3 +83,12 @@ does not support delegated personal accounts. It follows bounded Graph paginatio
 treats unknown availability as busy, and verifies exact live slot times when recovering
 a duplicate event. Optional Microsoft/iCloud connections have offline test coverage;
 the live pilot continues to use Google.
+
+## Customer invitations (2026-10-19)
+
+`create_event` accepts `attendee_email` and `description`. Providers that
+can email an invitation advertise `sends_invites = True` (Google, Microsoft
+Graph); the booking passes the customer's email only to those, and the
+confirmation text then says an invite is on its way. iCloud CalDAV accepts
+the arguments and ignores the attendee (no scheduling agent is wired), so
+no invite is promised there.

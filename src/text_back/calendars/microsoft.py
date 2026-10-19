@@ -32,6 +32,7 @@ class MicrosoftGraphProvider:
     """
 
     provider_name: ClassVar[str] = "microsoft"
+    sends_invites: ClassVar[bool] = True
     user: str  # target mailbox UPN (Outlook.com and M365)
     token_provider: TokenProvider
     transport: HttpTransport
@@ -60,6 +61,8 @@ class MicrosoftGraphProvider:
         location: str,
         caller: str,
         conversation_id: str,
+        attendee_email: str | None = None,
+        description: str | None = None,
     ) -> str | None:
         transaction_id = ms_transaction_id(conversation_id, start)
         payload = {
@@ -70,9 +73,12 @@ class MicrosoftGraphProvider:
             "end": {"dateTime": rfc3339_utc(end), "timeZone": "UTC"},
             "body": {
                 "contentType": "text",
-                "content": f"text_back conversation {conversation_id}",
+                "content": description or f"text_back conversation {conversation_id}",
             },
         }
+        if attendee_email:
+            # Graph sends the invitation to required attendees on creation.
+            payload["attendees"] = [{"emailAddress": {"address": attendee_email}, "type": "required"}]
         response = self.transport(
             self._request("POST", f"{self._user_url()}/calendar/events", payload)
         )

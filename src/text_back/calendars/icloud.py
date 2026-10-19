@@ -106,6 +106,8 @@ class ICloudCalDAVProvider:
         location: str,
         caller: str,
         conversation_id: str,
+        attendee_email: str | None = None,  # CalDAV scheduling is not wired; no invite is sent
+        description: str | None = None,
     ) -> str | None:
         uid = icloud_uid(conversation_id, start)
         lines = (

@@ -19,6 +19,7 @@ from text_back.calendars.transport import (
 @dataclass
 class GoogleCalendarProvider:
     provider_name: ClassVar[str] = "google"
+    sends_invites: ClassVar[bool] = True
     calendar_id: str
     token_provider: TokenProvider
     transport: HttpTransport
@@ -68,13 +69,15 @@ class GoogleCalendarProvider:
         location: str,
         caller: str,
         conversation_id: str,
+        attendee_email: str | None = None,
+        description: str | None = None,
     ) -> str | None:
         deterministic_id = google_event_id(conversation_id, start)
         payload = {
             "id": deterministic_id,
             "summary": summary,
             "location": location,
-            "description": "text_back booking",
+            "description": description or "text_back booking",
             "start": {"dateTime": rfc3339_utc(start)},
             "end": {"dateTime": rfc3339_utc(end)},
             "extendedProperties": {
@@ -85,13 +88,12 @@ class GoogleCalendarProvider:
             },
         }
         encoded_calendar = urllib.parse.quote(self.calendar_id, safe="")
-        response = self._send(
-            self._request(
-                "POST",
-                f"{self.base_url}/calendars/{encoded_calendar}/events",
-                payload,
-            )
-        )
+        url = f"{self.base_url}/calendars/{encoded_calendar}/events"
+        if attendee_email:
+            # Google emails the invitation itself when a guest is added with sendUpdates.
+            payload["attendees"] = [{"email": attendee_email}]
+            url += "?sendUpdates=all"
+        response = self._send(self._request("POST", url, payload))
         if response.status == 409:
             # Our deterministic (conversation, slot) event ID already exists.
             # That SHOULD mean an earlier attempt for this exact slot landed,

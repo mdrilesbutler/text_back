@@ -17,6 +17,8 @@ class CalendarProvider(Protocol):
         transport/API/malformed-response failure (fail closed — a slot whose
         freeness cannot be proven is not bookable)."""
 
+    sends_invites: bool = False
+
     def create_event(
         self,
         *,
@@ -26,7 +28,11 @@ class CalendarProvider(Protocol):
         location: str,
         caller: str,
         conversation_id: str,
+        attendee_email: str | None = None,
+        description: str | None = None,
     ) -> str | None:
         """Create the event; return the provider's stable event ID.
+        attendee_email, when given and the provider supports invitations
+        (``sends_invites``), is added as a guest so the provider emails an invite.
         Return None ONLY when the provider itself refused/detected a conflict.
         Raises CalendarProviderError on transport/API/malformed response."""
