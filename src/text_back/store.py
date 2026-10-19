@@ -156,6 +156,12 @@ class Store:
         self.conn.execute("""CREATE TABLE IF NOT EXISTS calendar_oauth_states (
             state_hash TEXT PRIMARY KEY, cookie_hash TEXT NOT NULL, verifier TEXT NOT NULL,
             expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0)""")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS client_login_codes (
+            phone TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)""")
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS client_sessions (
+            token_hash TEXT PRIMARY KEY, csrf TEXT NOT NULL, phone TEXT NOT NULL,
+            expires_at TEXT NOT NULL, created_at TEXT NOT NULL, pending INTEGER NOT NULL DEFAULT 0)""")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS booking_jobs (
             key TEXT PRIMARY KEY, phone TEXT NOT NULL, payload_json TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 1,
