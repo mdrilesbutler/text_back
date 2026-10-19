@@ -187,6 +187,8 @@ def create_app(
     # Handler outbox drains use the same policy and signed callback route.
     app.state.store.sms_policy = app.state.followup_policy
     app.state.store.callback_base_url = app.state.public_base_url
+    from text_back.calendar_links import CalendarLinks
+    app.state.store.calendar_links = CalendarLinks(app.state.public_base_url, webhook_secret)
     app.state.delivery_policy = delivery_policy
     app.state.delivery_transport = selected_delivery_transport
 
@@ -336,6 +338,8 @@ def create_app(
     install_routes(app)
     from text_back.client_portal import install_routes as install_client_routes
     install_client_routes(app)
+    from text_back.calendar_links import install_routes as install_link_routes
+    install_link_routes(app)
     if setup_directory := os.environ.get('TEXT_BACK_SETUP_DIRECTORY'):
         from text_back.setup_intake import install_routes as install_setup_routes
         install_setup_routes(app, directory=setup_directory, public_base_url=public_base_url)

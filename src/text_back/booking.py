@@ -146,8 +146,10 @@ def _queue_confirmation(store, telecom, appointment, business_number, business_n
     from text_back.messages import DEFAULT_MESSAGES
     event_id = appointment['event_id']
     when = datetime.fromisoformat(appointment['start']).astimezone(ZoneInfo(timezone_name)).strftime("%A, %b %d at %I:%M %p %Z").replace(" 0", " ")
+    from text_back.calendar_links import links_for_appointment
     body = (messages or DEFAULT_MESSAGES).render("booking_confirmation", business_name=business_name,
-        service=appointment['service'], when=when, location=appointment['location'], event_id=event_id)
+        service=appointment['service'], when=when, location=appointment['location'], event_id=event_id,
+        **links_for_appointment(store, appointment))
     key = f"{appointment['conversation_id']}:confirmation:{event_id}"
     enqueue_sms(store=store, key=key, to=appointment['caller'], from_number=business_number,
                 kind="booking_confirmation", now=now or datetime.now(timezone.utc),
