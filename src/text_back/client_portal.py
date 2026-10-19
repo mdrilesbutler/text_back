@@ -202,6 +202,11 @@ def install_routes(app):
             )
         run_due_sms(store=state.store, telecom=state.telecom, now=now, policy=state.followup_policy,
                     keys=[key], callback_base_url=state.public_base_url, immediate=True)
+        with state.store.transaction():
+            # Once handed to the carrier the code has no business sitting in the outbox.
+            state.store.conn.execute(
+                "UPDATE sms_outbox SET body='[sign-in code]' WHERE key=? AND status IN ('sent','unknown','dead_letter')", (key,)
+            )
 
     @app.get("/client", include_in_schema=False)
     @app.get("/client/", include_in_schema=False)
@@ -268,11 +273,14 @@ def install_routes(app):
             row = state.store.conn.execute(
                 "SELECT * FROM client_login_codes WHERE phone=? AND expires_at>?", (pending["phone"], now.isoformat())
             ).fetchone()
+            # One message for a wrong code, an expired code, too many guesses and a
+            # number that is not on file, so the page never confirms which number is.
+            failure = "That code is not right or has expired. Check the text or send a new code."
             if row is None or row["attempts"] >= CODE_ATTEMPTS:
-                return _verify_form(error="That code has expired. Send a new one.")
+                return _verify_form(error=failure)
             state.store.conn.execute("UPDATE client_login_codes SET attempts=attempts+1 WHERE phone=?", (pending["phone"],))
             if len(code) != 6 or not hmac.compare_digest(row["code_hash"], _mac(state, code)):
-                return _verify_form(error="That code is not right. Check the text and try again.")
+                return _verify_form(error=failure)
             state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (pending["phone"],))
             state.store.conn.execute("DELETE FROM client_sessions WHERE token_hash=?", (pending["token_hash"],))
             token = secrets.token_urlsafe(32)

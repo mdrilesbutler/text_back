@@ -51,7 +51,8 @@ def test_login_texts_a_code_only_to_the_number_on_file(tmp_path, monkeypatch):
     other = client.post("/client/login", data={"mobile": "980 555 9999"}, follow_redirects=False)
     assert other.status_code == 303 and other.headers["location"] == "/client/verify"  # same answer, no leak
     assert not [m for m in telecom.outbound if m.kind == "login_code"]
-    assert client.post("/client/verify", data={"code": "123456"}).status_code == 200  # expired/absent code page
+    unknown = client.post("/client/verify", data={"code": "123456"})
+    assert unknown.status_code == 200 and "not right or has expired" in unknown.text  # same words as a wrong code
 
     client.post("/client/login", data={"mobile": "980-555-0123"}, follow_redirects=False)
     code, text = code_from(telecom)
@@ -66,8 +67,8 @@ def test_wrong_code_five_times_then_locked_and_expiry(tmp_path, monkeypatch):
     code, _ = code_from(telecom)
     for _ in range(5):
         page = client.post("/client/verify", data={"code": "000000"})
-        assert "not right" in page.text
-    assert "expired" in client.post("/client/verify", data={"code": code}).text  # locked after 5 guesses
+        assert "not right or has expired" in page.text
+    assert "not right or has expired" in client.post("/client/verify", data={"code": code}).text  # locked after 5 guesses
     client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
     code, _ = code_from(telecom)
     clock[0] += timedelta(minutes=11)
@@ -153,3 +154,23 @@ def test_a_pending_login_cookie_is_not_a_session(tmp_path, monkeypatch):
     csrf_probe = client.post("/client/messages", data={"csrf": "x", "intro": "pwned"},
                              cookies={"text_back_client": pending}, follow_redirects=False)
     assert csrf_probe.status_code == 303 and csrf_probe.headers["location"] == "/client/login"
+
+
+def test_verify_error_is_identical_for_unknown_number_and_wrong_code(tmp_path, monkeypatch):
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    client.post("/client/login", data={"mobile": "980 555 9999"}, follow_redirects=False)
+    unknown = client.post("/client/verify", data={"code": "123456"}).text
+    client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
+    wrong = client.post("/client/verify", data={"code": "000000"}).text
+    assert unknown == wrong
+
+
+def test_code_is_sent_even_if_the_owner_texted_stop_and_is_redacted_afterwards(tmp_path, monkeypatch):
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    store = client.app.state.store
+    store.set_opted_out(OWNER, True)
+    client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
+    code, text = code_from(telecom)
+    assert code in text.body
+    row = store.conn.execute("SELECT body,status FROM sms_outbox WHERE kind='login_code'").fetchone()
+    assert row["status"] == "sent" and row["body"] == "[sign-in code]"
