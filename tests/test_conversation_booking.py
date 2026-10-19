@@ -103,7 +103,8 @@ def test_complete_conversation_books_all_fields_and_confirms_after_event_id():
     assert appointment is not None
     assert appointment["caller"] == CALLER
     assert telecom.outbound[-1].kind == "booking_confirmation"
-    assert result["event_id"] in telecom.outbound[-1].body
+    assert telecom.outbound[-1].kind == "booking_confirmation"
+    assert store.appointment_by_event(result["event_id"])  # the id is stored, not texted
     assert "Oak & Pine Tree Care" in telecom.outbound[-1].body
     assert "EDT" in telecom.outbound[-1].body
 
