@@ -175,6 +175,7 @@ def create_app(
     app.state.business_name = business_name.strip()
     app.state.business_contact = config.business_contact
     app.state.messages = MessageSource(config.messages_file or None)  # fails closed on a bad file at boot
+    app.state.owner_mobile = config.owner_mobile
     app.state.timezone_name = timezone_name
     app.state.appointment_duration_minutes = appointment_duration_minutes
     app.state.calendar = selected_calendar
@@ -333,6 +334,8 @@ def create_app(
         return Response(content=empty_response(), media_type="application/xml")
 
     install_routes(app)
+    from text_back.client_portal import install_routes as install_client_routes
+    install_client_routes(app)
     if setup_directory := os.environ.get('TEXT_BACK_SETUP_DIRECTORY'):
         from text_back.setup_intake import install_routes as install_setup_routes
         install_setup_routes(app, directory=setup_directory, public_base_url=public_base_url)

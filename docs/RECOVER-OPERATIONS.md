@@ -89,6 +89,25 @@ mention 911, handoff acknowledgements must promise a follow-up,
 `booking_error` must say no booking was made and must not say "call", and no
 template may promise a person or the business line.
 
+### Client settings page
+
+`<public base URL>/client` is the business owner's own settings page. It is
+passwordless: the owner types the business mobile, and only if it equals
+`TEXT_BACK_OWNER_MOBILE` does the app text a six-digit code (through the
+normal outbox, kind `login_code`, exempt from quiet hours) to that number.
+The page answers identically for any other number. A code lives ten minutes,
+allows five guesses, and at most three codes are texted per number per
+fifteen minutes. A signed-in browser keeps an `httponly`, `secure`,
+`samesite=lax` cookie for twelve hours; forms carry a CSRF token; sign-out
+deletes the session row. Sessions and codes live in the `client_sessions`
+and `client_login_codes` tables, hashed with the webhook secret.
+
+Saving the form validates the templates with the rules above and writes
+`TEXT_BACK_MESSAGES_FILE` atomically (mode 600); the running app picks the
+file up on the next send. Without `TEXT_BACK_MESSAGES_FILE` the page shows
+the copy but cannot save. Set both variables in `runtime.env`, restart the
+service, and have the owner open the page on their phone.
+
 ## Operator access
 
 Set a separate `TEXT_BACK_OPERATOR_API_KEY` in the protected environment file.

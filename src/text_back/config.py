@@ -45,6 +45,7 @@ class AppConfig:
     pilot_recipients: tuple[str, ...] | None = field(default=None, repr=False)
     business_contact: str = ""
     messages_file: str = ""
+    owner_mobile: str = ""
 
 
 def load_config() -> AppConfig:
@@ -58,6 +59,7 @@ def load_config() -> AppConfig:
         pilot_recipients=pilot_recipients,
         business_contact=os.environ.get("TEXT_BACK_BUSINESS_CONTACT", ""),
         messages_file=os.environ.get("TEXT_BACK_MESSAGES_FILE", ""),
+        owner_mobile=os.environ.get("TEXT_BACK_OWNER_MOBILE", "").strip(),
         telegram_bot_token=os.environ.get("TEXT_BACK_TELEGRAM_BOT_TOKEN", ""),
         telegram_chat_id=os.environ.get("TEXT_BACK_TELEGRAM_CHAT_ID", ""),
         google_client_file=os.environ.get("TEXT_BACK_GOOGLE_CLIENT_FILE", ""),

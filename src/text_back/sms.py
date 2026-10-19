@@ -73,6 +73,8 @@ def atomic_sms_handler(function):
 
 def _cancelled(store, row, completion):
     phone, kind = row['phone'], row['kind']
+    if kind == 'login_code':
+        return False  # the owner's own sign-in code, not customer messaging
     if kind not in ('opt_out_ack', 'help') and store.is_opted_out(phone):
         return True
     if kind not in ('opt_out_ack', 'opt_in_ack', 'help', 'handoff_ack'):
