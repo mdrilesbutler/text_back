@@ -171,7 +171,7 @@ def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTML
         "<h2>Extra questions</h2><p>The assistant always asks for the job, the location, the day and time, and a name.</p>"
         + "".join(
             f"<label><input type=checkbox name=ask_{field} value=1{' checked' if field in asked else ''}{'' if editable else ' disabled'}> {html.escape(label)}</label>"
-            for field, label in (("phone", "Also ask for the best phone number"), ("email", "Also ask for an email address (needed for calendar invites)"))
+            for field, label in (("phone", "Also ask for the best phone number"), ("email", "Also ask for an email address"))
         )
     )
     body = (

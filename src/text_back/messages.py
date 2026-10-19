@@ -50,7 +50,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     ),
     "prompt_name": "What name should we put the appointment under?",
     "prompt_phone": "Is this the best number to reach you? Reply YES, or send a different number.",
-    "prompt_email": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not.",
+    "prompt_email": "What's your email, in case we need to send appointment details? Reply SKIP if you'd rather not.",
     "phone_reprompt": "Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.",
     "email_reprompt": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP.",
     "fields": "service, location, preferred_time, name",
