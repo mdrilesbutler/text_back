@@ -45,7 +45,8 @@ def run_due_bookings(state):
         try:
             if attempt>4 or payload['start']<=now:
                 raise BookingError('booking retry window exhausted')
-            book_appointment(store=store,calendar=state.calendar,telecom=state.telecom,now=now,_deferred=True,**payload)
+            book_appointment(store=store,calendar=state.calendar,telecom=state.telecom,now=now,_deferred=True,
+                messages=state.messages.current() if getattr(state,'messages',None) else None,**payload)
         except SlotUnavailableError:
             with store.transaction():
                 store.delete_conversation_field(row['phone'],'preferred_time')

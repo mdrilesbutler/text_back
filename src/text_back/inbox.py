@@ -39,7 +39,8 @@ def _process(state, key, now):
                            (attempt,(now+timedelta(minutes=2)).isoformat(),key))
     try:
         common=dict(store=store,telecom=state.telecom,business_name=state.business_name,
-                    now=datetime.fromisoformat(row['received_at']), _send_now=now)
+                    now=datetime.fromisoformat(row['received_at']), _send_now=now,
+                    messages=state.messages.current() if getattr(state,'messages',None) else None)
         if row['kind']=='voice':
             result=handle_voice_event(**common,**params,wiring_mode=state.wiring_mode,followup_policy=state.followup_policy)
         else:

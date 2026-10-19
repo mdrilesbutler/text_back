@@ -56,6 +56,39 @@ booking attempts until reconnection. Google retries verify the deterministic
 provider event before treating its occupied slot as a conflict after a crash.
 Confirmation is queued only with a provider event ID.
 
+## Message copy
+
+`TEXT_BACK_MESSAGES_FILE` points at a per-client JSON object whose keys
+override the built-in templates in `src/text_back/messages.py`. Keep it next
+to the other private config (`~/.config/text_back/messages.json`, mode 600).
+The worker and handlers re-read it when its mtime or size changes, so an edit
+takes effect on the next send without a restart. `/health` reports
+`messages.source` (`file` or `default`) and `messages.last_error`; a file
+that fails validation at boot stops the service, and one that fails after an
+edit is logged while the previous good copy stays in use.
+
+| Key | Sent when | Placeholders |
+|---|---|---|
+| `intro` | first text after a missed call | `{business_name}` |
+| `followup_1`, `followup_2` | no-response follow-ups | `{business_name}` |
+| `prompt_service`, `prompt_location`, `prompt_preferred_time`, `prompt_name` | each qualification question | `{business_name}` |
+| `preferred_time_reprompt` | the time could not be understood | `{business_name}` |
+| `slot_unavailable` | the calendar slot is taken | `{business_name}` |
+| `booking_error` | the calendar failed; nothing booked | `{business_name}` |
+| `booking_confirmation` | after the calendar event exists | `{business_name}`, `{service}`, `{when}`, `{location}`, `{event_id}` |
+| `handoff_ack`, `handoff_ack_safety` | automated scheduling pauses for the owner | `{business_name}` |
+| `opt_in` | START/UNSTOP | `{business_name}` |
+| `help` | HELP/INFO | `{business_name}`, `{contact_line}` |
+| `opt_out_ack` | STOP | `{business_name}` |
+| `opt_out_suffix` | appended to `intro`, follow-ups, `opt_in` and `help` when they lack the word STOP | none |
+
+Rules enforced on every template: at most 480 characters, only the listed
+placeholders, `opt_out_suffix` must mention STOP (carrier requirement for the
+first automated text and re-engagement texts), `handoff_ack_safety` must
+mention 911, handoff acknowledgements must promise a follow-up,
+`booking_error` must say no booking was made and must not say "call", and no
+template may promise a person or the business line.
+
 ## Operator access
 
 Set a separate `TEXT_BACK_OPERATOR_API_KEY` in the protected environment file.

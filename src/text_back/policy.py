@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from text_back.messages import DEFAULT_MESSAGES, DEFAULT_TEMPLATES, FIELD_PROMPT_KEYS, MessageSet
+
 TERMINAL_UNANSWERED = frozenset({"no-answer", "busy", "failed", "canceled"})
 STOP_KEYWORDS = frozenset(
     {"stop", "stopall", "unsubscribe", "cancel", "end", "quit", "optout", "revoke"}
@@ -39,21 +41,16 @@ WIRING_MODE_FORWARDED = "forwarded"
 WIRING_MODE_MANAGED = "managed"
 WIRING_MODES = frozenset({WIRING_MODE_FORWARDED, WIRING_MODE_MANAGED})
 
-OPT_OUT_ACK = "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded."
+OPT_OUT_ACK = DEFAULT_TEMPLATES["opt_out_ack"]
 
 # Deterministic conversation field collection. No LLM/NLP extraction: each
 # inbound "conversation" SMS is treated as the verbatim answer to whichever
 # field is next in this fixed order.
 CONVERSATION_FIELDS: tuple[str, ...] = ("service", "location", "preferred_time", "name")
 
+# Default prompts; a client's message file can override any of them (see messages.py).
 FIELD_PROMPTS: dict[str, str] = {
-    "service": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?",
-    "location": "What's the address or location for the job?",
-    "preferred_time": (
-        "What day and time works best? "
-        "For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
-    ),
-    "name": "Last thing—what name should we put the appointment under?",
+    field: DEFAULT_TEMPLATES[key] for field, key in FIELD_PROMPT_KEYS.items()
 }
 
 
@@ -64,29 +61,24 @@ def next_missing_field(fields: dict[str, str]) -> str | None:
     return None
 
 
-def conversation_prompt(field: str) -> str:
-    return FIELD_PROMPTS[field]
+def conversation_prompt(field: str, business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).field_prompt(field, business_name=business_name)
 
 
-def preferred_time_reprompt() -> str:
-    return (
-        "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, "
-        "or Oct 22 at 4pm."
-    )
+def preferred_time_reprompt(business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("preferred_time_reprompt", business_name=business_name)
 
 
-def slot_unavailable_sms() -> str:
-    return (
-        "That time is unavailable. Please send another day and time, "
-        "like Thursday at 4."
-    )
+def slot_unavailable_sms(business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("slot_unavailable", business_name=business_name)
 
 
-def booking_error_sms() -> str:
-    return (
-        "We couldn't confirm that appointment. No booking was made. "
-        "Please send another date and time and we'll try again."
-    )
+def booking_error_sms(business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("booking_error", business_name=business_name)
+
+
+def opt_out_ack_sms(business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("opt_out_ack", business_name=business_name)
 
 
 def classify_handoff_request(body: str) -> str | None:
@@ -104,30 +96,17 @@ def classify_handoff_request(body: str) -> str | None:
     return None
 
 
-def handoff_ack_sms(reason: str) -> str:
-    if reason == "safety":
-        return (
-            "Automated scheduling is paused. The owner will follow up with you "
-            "as soon as possible. If anyone is in immediate danger, call 911 now."
-        )
-    return (
-        "Got it—automated scheduling is paused. The owner will follow up "
-        "with you directly."
-    )
+def handoff_ack_sms(reason: str, business_name: str = "", messages: MessageSet | None = None) -> str:
+    key = "handoff_ack_safety" if reason == "safety" else "handoff_ack"
+    return (messages or DEFAULT_MESSAGES).render(key, business_name=business_name)
 
 
-def intro_sms(business_name: str) -> str:
-    return (
-        f"Hey, sorry we missed your call—this is {business_name}'s scheduling assistant. "
-        "What were you calling about? Reply STOP to opt out."
-    )
+def intro_sms(business_name: str, messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("intro", business_name=business_name)
 
 
-def opt_in_sms(business_name: str) -> str:
-    return (
-        f"You're subscribed to {business_name}'s scheduling texts. "
-        "Msg & data rates may apply. Reply HELP for help or STOP to opt out."
-    )
+def opt_in_sms(business_name: str, messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("opt_in", business_name=business_name)
 
 
 def format_contact_number(number: str) -> str:
@@ -139,7 +118,8 @@ def format_contact_number(number: str) -> str:
     return number
 
 
-def help_sms(business_name: str, business_contact: str = "", text_number: str = "") -> str:
+def help_sms(business_name: str, business_contact: str = "", text_number: str = "",
+             messages: MessageSet | None = None) -> str:
     """Carrier HELP reply: identity, contact info, rates notice, opt-out.
 
     The contact defaults to the number the customer is already texting; it is
@@ -147,11 +127,7 @@ def help_sms(business_name: str, business_contact: str = "", text_number: str = 
     """
     contact = business_contact.strip() or format_contact_number(text_number)
     contact_line = f" Contact: {contact}." if contact else ""
-    return (
-        f"{business_name}'s scheduling assistant. Reply with the job type, location, "
-        "and a time that works. Anything we can't handle by text, the owner "
-        f"follows up on.{contact_line} Msg & data rates may apply. Reply STOP to opt out."
-    )
+    return (messages or DEFAULT_MESSAGES).render("help", business_name=business_name, contact_line=contact_line)
 
 
 def is_terminal_unanswered(call_status: str) -> bool:
