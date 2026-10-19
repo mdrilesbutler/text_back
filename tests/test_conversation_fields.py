@@ -148,7 +148,7 @@ def test_full_conversation_collects_all_four_fields_in_order():
     assert telecom.outbound[-1].kind == "booking_confirmation"
     assert "tree removal" in telecom.outbound[-1].body
     assert "12 Oak St" in telecom.outbound[-1].body
-    assert "02:00 PM" in telecom.outbound[-1].body
+    assert "2:00 PM" in telecom.outbound[-1].body
 
 
 def test_replies_after_completion_do_not_overwrite_fields_or_reprompt():

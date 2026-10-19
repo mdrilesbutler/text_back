@@ -143,7 +143,7 @@ def _finish_booking(*, store, telecom, caller, business_number, service, locatio
 
 def _queue_confirmation(store, telecom, appointment, business_number, business_name, timezone_name, now):
     event_id = appointment['event_id']
-    when = datetime.fromisoformat(appointment['start']).astimezone(ZoneInfo(timezone_name)).strftime("%Y-%m-%d %I:%M %p %Z")
+    when = datetime.fromisoformat(appointment['start']).astimezone(ZoneInfo(timezone_name)).strftime("%A, %b %d at %I:%M %p %Z").replace(" 0", " ")
     key = f"{appointment['conversation_id']}:confirmation:{event_id}"
     enqueue_sms(store=store, key=key, to=appointment['caller'], from_number=business_number,
                 kind="booking_confirmation", now=now or datetime.now(timezone.utc),

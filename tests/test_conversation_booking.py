@@ -121,7 +121,7 @@ def test_ambiguous_preferred_time_is_not_stored_and_gets_format_reprompt():
     assert result["action"] == "preferred_time_invalid"
     assert "preferred_time" not in store.get_conversation_fields(CALLER)
     assert telecom.outbound[-1].kind == "preferred_time_reprompt"
-    assert "YYYY-MM-DD 2:00 PM" in telecom.outbound[-1].body
+    assert "Wednesday at 2" in telecom.outbound[-1].body
     assert calendar.events == {}
 
 
