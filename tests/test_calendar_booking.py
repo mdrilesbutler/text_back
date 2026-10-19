@@ -39,8 +39,8 @@ def test_books_only_when_slot_is_free_and_persists_event_id():
     assert store.appointment_by_event(result["event_id"])["event_id"] == result["event_id"]
     assert len(telecom.outbound) == 1
     assert telecom.outbound[0].kind == "booking_confirmation"
-    assert "2026-08-20" in telecom.outbound[0].body
-    assert "03:00 PM" in telecom.outbound[0].body
+    assert "Thursday, Aug 20" in telecom.outbound[0].body
+    assert "3:00 PM" in telecom.outbound[0].body
     assert "UTC" in telecom.outbound[0].body
     assert "Mike" in telecom.outbound[0].body
 

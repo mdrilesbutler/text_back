@@ -50,8 +50,8 @@ FIELD_PROMPTS: dict[str, str] = {
     "service": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?",
     "location": "What's the address or location for the job?",
     "preferred_time": (
-        "What day and start time works best? "
-        "Please use YYYY-MM-DD with a time, or say tomorrow at 2 PM."
+        "What day and time works best? "
+        "For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
     ),
     "name": "Last thing—what name should we put the appointment under?",
 }
@@ -70,15 +70,15 @@ def conversation_prompt(field: str) -> str:
 
 def preferred_time_reprompt() -> str:
     return (
-        "Please send a specific future date and time, like YYYY-MM-DD 2:00 PM "
-        "or tomorrow at 2 PM."
+        "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, "
+        "or Oct 22 at 4pm."
     )
 
 
 def slot_unavailable_sms() -> str:
     return (
-        "That time is unavailable. Please send another future date and time, "
-        "like YYYY-MM-DD 2:00 PM."
+        "That time is unavailable. Please send another day and time, "
+        "like Thursday at 4."
     )
 
 
