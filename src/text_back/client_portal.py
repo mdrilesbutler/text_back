@@ -112,8 +112,9 @@ def _session(state, request: Request):
         return None
     now = _now(state)
     with state.store.lock:
+        # pending=0: a "code requested" row must never pass as a signed-in session.
         row = state.store.conn.execute(
-            "SELECT * FROM client_sessions WHERE token_hash=? AND expires_at>?", (_mac(state, token), now.isoformat())
+            "SELECT * FROM client_sessions WHERE token_hash=? AND pending=0 AND expires_at>?", (_mac(state, token), now.isoformat())
         ).fetchone()
     return dict(row) if row else None
 

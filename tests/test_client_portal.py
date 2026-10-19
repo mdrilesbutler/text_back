@@ -140,3 +140,16 @@ def test_login_code_ignores_quiet_hours(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
     code_from(telecom)
+
+
+def test_a_pending_login_cookie_is_not_a_session(tmp_path, monkeypatch):
+    """Requesting a code must not grant access; only a verified code does."""
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    response = client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
+    pending = response.cookies.get("text_back_client_login")
+    assert pending
+    forged = client.get("/client/messages", cookies={"text_back_client": pending}, follow_redirects=False)
+    assert forged.status_code == 303 and forged.headers["location"] == "/client/login"
+    csrf_probe = client.post("/client/messages", data={"csrf": "x", "intro": "pwned"},
+                             cookies={"text_back_client": pending}, follow_redirects=False)
+    assert csrf_probe.status_code == 303 and csrf_probe.headers["location"] == "/client/login"
