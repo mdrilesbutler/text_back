@@ -72,6 +72,9 @@ edit is logged while the previous good copy stays in use.
 | `intro` | first text after a missed call | `{business_name}` |
 | `followup_1`, `followup_2` | no-response follow-ups | `{business_name}` |
 | `prompt_service`, `prompt_location`, `prompt_preferred_time`, `prompt_name` | each qualification question | `{business_name}` |
+| `prompt_phone`, `prompt_email` | the optional contact questions (only when listed in `fields`) | `{business_name}` |
+| `phone_reprompt`, `email_reprompt` | the phone number or email could not be read | `{business_name}` |
+| `fields` | not a text: the questions to ask, in order, as a comma list from `service, location, preferred_time, name, phone, email`; the first four are mandatory | none |
 | `preferred_time_reprompt` | the time could not be understood | `{business_name}` |
 | `slot_unavailable` | the calendar slot is taken | `{business_name}` |
 | `booking_error` | the calendar failed; nothing booked | `{business_name}` |
@@ -81,6 +84,8 @@ edit is logged while the previous good copy stays in use.
 | `help` | HELP/INFO | `{business_name}`, `{contact_line}` |
 | `opt_out_ack` | STOP | `{business_name}` |
 | `opt_out_suffix` | appended to `intro`, follow-ups, `opt_in` and `help` when they lack the word STOP | none |
+
+For `phone`, a reply of YES (or similar) keeps the number the customer is texting from; any other reply must be a phone number. For `email`, SKIP/no/none is accepted and stored as `(skipped)`. The client settings page exposes the two optional questions as checkboxes.
 
 Rules enforced on every template: at most 480 characters, only the listed
 placeholders, `opt_out_suffix` must mention STOP (carrier requirement for the

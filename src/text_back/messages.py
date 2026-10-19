@@ -48,7 +48,12 @@ DEFAULT_TEMPLATES: dict[str, str] = {
         "What day and time works best? "
         "For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
     ),
-    "prompt_name": "Last thing—what name should we put the appointment under?",
+    "prompt_name": "What name should we put the appointment under?",
+    "prompt_phone": "Is this the best number to reach you? Reply YES, or send a different number.",
+    "prompt_email": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not.",
+    "phone_reprompt": "Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.",
+    "email_reprompt": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP.",
+    "fields": "service, location, preferred_time, name",
     "preferred_time_reprompt": (
         "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, "
         "or Oct 22 at 4pm."
@@ -99,6 +104,11 @@ PLACEHOLDERS: dict[str, frozenset[str]] = {
     "prompt_location": frozenset({"business_name"}),
     "prompt_preferred_time": frozenset({"business_name"}),
     "prompt_name": frozenset({"business_name"}),
+    "prompt_phone": frozenset({"business_name"}),
+    "prompt_email": frozenset({"business_name"}),
+    "phone_reprompt": frozenset({"business_name"}),
+    "email_reprompt": frozenset({"business_name"}),
+    "fields": frozenset(),
     "preferred_time_reprompt": frozenset({"business_name"}),
     "slot_unavailable": frozenset({"business_name"}),
     "booking_error": frozenset({"business_name"}),
@@ -131,7 +141,24 @@ FIELD_PROMPT_KEYS = {
     "location": "prompt_location",
     "preferred_time": "prompt_preferred_time",
     "name": "prompt_name",
+    "phone": "prompt_phone",
+    "email": "prompt_email",
 }
+# Questions a booking cannot do without; a client may add phone and email and reorder.
+REQUIRED_FIELDS = ("service", "location", "preferred_time", "name")
+
+
+def parse_fields(value: str) -> tuple[str, ...]:
+    names = tuple(name.strip() for name in value.split(",") if name.strip())
+    unknown = [n for n in names if n not in FIELD_PROMPT_KEYS]
+    if unknown:
+        raise MessageTemplateError(f"unknown question(s): {', '.join(unknown)}; choose from {', '.join(FIELD_PROMPT_KEYS)}")
+    if len(set(names)) != len(names):
+        raise MessageTemplateError("a question is listed twice")
+    missing = [n for n in REQUIRED_FIELDS if n not in names]
+    if missing:
+        raise MessageTemplateError(f"questions must include {', '.join(missing)}")
+    return names
 
 
 class MessageTemplateError(ValueError):
@@ -175,6 +202,9 @@ def validate_templates(templates: dict[str, str]) -> dict[str, str]:
         text = " ".join(value.split())
         if not text:
             raise MessageTemplateError(f"{key} cannot be empty")
+        if key == "fields":
+            merged[key] = ", ".join(parse_fields(text))
+            continue
         if len(text) > MAX_TEMPLATE_CHARS:
             raise MessageTemplateError(f"{key} is longer than {MAX_TEMPLATE_CHARS} characters")
         extra = _placeholders(text) - PLACEHOLDERS[key]
@@ -222,6 +252,11 @@ class MessageSet:
 
     def field_prompt(self, field: str, **values: str) -> str:
         return self.render(FIELD_PROMPT_KEYS[field], **values)
+
+    @property
+    def fields(self) -> tuple[str, ...]:
+        """The questions to ask, in order."""
+        return parse_fields(self.templates["fields"])
 
 
 DEFAULT_MESSAGES = MessageSet(dict(DEFAULT_TEMPLATES))

@@ -41,6 +41,10 @@ FIELDS = (
     ("prompt_location", "Question 2: the location", ""),
     ("prompt_preferred_time", "Question 3: day and time", ""),
     ("prompt_name", "Question 4: the name", ""),
+    ("prompt_phone", "Optional question: best phone number", "Asked only if ticked below. YES keeps the number they are texting from."),
+    ("prompt_email", "Optional question: email address", "Asked only if ticked below. SKIP is allowed."),
+    ("phone_reprompt", "When the phone number could not be read", ""),
+    ("email_reprompt", "When the email could not be read", ""),
     ("preferred_time_reprompt", "When the time could not be understood", ""),
     ("slot_unavailable", "When the calendar slot is taken", ""),
     ("booking_confirmation", "Booking confirmation", "Sent only after the calendar event exists."),
@@ -58,7 +62,7 @@ FIELDS = (
 STYLE = (
     "body{font:17px/1.5 system-ui,sans-serif;max-width:44rem;margin:4vh auto;padding:0 20px 40px;color:#18212b;background:#f6f8fa}"
     "h1{font-size:1.5rem;margin:0 0 .5rem}h2{font-size:1.05rem;margin:1.6rem 0 .3rem}"
-    "label{display:block;font-weight:600;margin-top:1.2rem}small{color:#5b6773;display:block}"
+    "label{display:block;font-weight:600;margin-top:1.2rem}small{color:#5b6773;display:block}h2+p+label,h2+p+label+label{font-weight:500;margin-top:.4rem}"
     "input,textarea{width:100%;box-sizing:border-box;font:inherit;padding:10px;border:1px solid #c5ccd3;border-radius:6px;background:#fff;margin-top:6px}"
     "textarea{min-height:5.5rem}button{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:6px;background:#1b5e9e;color:#fff;cursor:pointer;margin-top:1rem}"
     ".err{background:#fde8e8;border:1px solid #f3b4b4;padding:12px;border-radius:6px}.ok{background:#e6f4ea;border:1px solid #a9d8b4;padding:12px;border-radius:6px}"
@@ -162,6 +166,14 @@ def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTML
             + f">{html.escape(value)}</textarea>"
             + "<p class=def>Leave blank to use the standard wording shown in grey.</p>"
         )
+    asked = set(source.current().fields)
+    options = (
+        "<h2>Extra questions</h2><p>The assistant always asks for the job, the location, the day and time, and a name.</p>"
+        + "".join(
+            f"<label><input type=checkbox name=ask_{field} value=1{' checked' if field in asked else ''}{'' if editable else ' disabled'}> {html.escape(label)}</label>"
+            for field, label in (("phone", "Also ask for the best phone number"), ("email", "Also ask for an email address (needed for calendar invites)"))
+        )
+    )
     body = (
         "<nav><h1>Your messages</h1><form method=post action=/client/logout>"
         f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><button type=submit>Sign out</button></form></nav>"
@@ -170,6 +182,7 @@ def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTML
         + msg
         + "<form method=post action=/client/messages>"
         + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
+        + options
         + "".join(rows)
         + ("<button type=submit>Save messages</button>" if editable else "")
         + "</form>"
@@ -313,6 +326,9 @@ def install_routes(app):
             return _messages_form(state, session, error="Message editing is not set up for this account yet.")
         submitted = {key: str(form.get(key, "")).strip() for key, _, _ in FIELDS}
         overrides = {key: value for key, value in submitted.items() if value}
+        extra = [field for field in ("phone", "email") if form.get(f"ask_{field}")]
+        if extra:
+            overrides["fields"] = ", ".join(("service", "location", "preferred_time", "name", *extra))
         try:
             write_message_file(state.messages.path, overrides)
         except MessageTemplateError as exc:

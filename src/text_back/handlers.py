@@ -16,6 +16,11 @@ from text_back.handoff import (
 )
 from text_back.policy import (
     opt_out_ack_sms,
+    CONVERSATION_FIELDS,
+    email_reprompt,
+    parse_contact_email,
+    parse_contact_phone,
+    phone_reprompt,
     WIRING_MODE_MANAGED,
     booking_error_sms,
     classify_handoff_request,
@@ -119,7 +124,7 @@ def handle_sms_event(
         metadata={},
     )
     store.conn.execute("""UPDATE sms_outbox SET status='cancelled' WHERE phone=? AND status='pending'
-        AND kind IN ('missed_call_intro','followup','field_prompt','preferred_time_reprompt','slot_unavailable','booking_error','opt_in_ack')""", (from_number,))
+        AND kind IN ('missed_call_intro','followup','field_prompt','preferred_time_reprompt','phone_reprompt','email_reprompt','slot_unavailable','booking_error','opt_in_ack')""", (from_number,))
     # Any customer response immediately ends the no-response sequence.
     cancel_followup(store, from_number, "customer_replied")
     kind = classify_inbound_sms(body)
@@ -306,7 +311,8 @@ def _collect_conversation_field(
     free-text extraction is used; policy owns what field is asked for next.
     """
     fields = store.get_conversation_fields(from_number)
-    pending_field = next_missing_field(fields)
+    order = (messages.fields if messages is not None else None) or CONVERSATION_FIELDS
+    pending_field = next_missing_field(fields, order)
     if pending_field is None:
         if store.appointment_by_conversation(from_number) is None:
             # All fields were collected but no appointment was saved — the
@@ -356,6 +362,19 @@ def _collect_conversation_field(
                 "field": pending_field,
             }
 
+    if pending_field == "phone":
+        parsed = parse_contact_phone(value, from_number)
+        if parsed is None:
+            telecom.send_sms(to=from_number, body=phone_reprompt(business_name, messages), from_number=to_number, kind="phone_reprompt")
+            return {"accepted": True, "duplicate": False, "action": "phone_invalid", "field": pending_field}
+        value = parsed
+    if pending_field == "email":
+        parsed = parse_contact_email(value)
+        if parsed is None:
+            telecom.send_sms(to=from_number, body=email_reprompt(business_name, messages), from_number=to_number, kind="email_reprompt")
+            return {"accepted": True, "duplicate": False, "action": "email_invalid", "field": pending_field}
+        value = parsed
+
     store.set_conversation_field(from_number, pending_field, value)
     store.record_outcome(
         lead_id=from_number,
@@ -366,7 +385,7 @@ def _collect_conversation_field(
         metadata={"field": pending_field},
     )
     updated_fields = {**fields, pending_field: value}
-    next_field = next_missing_field(updated_fields)
+    next_field = next_missing_field(updated_fields, order)
     if next_field is None:
         store.record_outcome(
             lead_id=from_number,
