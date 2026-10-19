@@ -40,6 +40,8 @@ def book_appointment(
     conversation_id: str,
     now: datetime | None = None,
     messages=None,
+    customer_email: str = "",
+    customer_phone: str = "",
 ) -> dict:
     existing = store.appointment_by_conversation(conversation_id)
     if existing:
@@ -98,6 +100,12 @@ def book_appointment(
         raise SlotUnavailableError("requested slot is unavailable")
 
     try:
+        invite_to = customer_email if customer_email and "@" in customer_email else ""
+        contact_lines = [f"Caller: {caller}"]
+        if customer_phone and customer_phone != caller:
+            contact_lines.append(f"Best phone: {customer_phone}")
+        if invite_to:
+            contact_lines.append(f"Email: {invite_to}")
         event_id = calendar.create_event(
             start=start,
             end=end,
@@ -105,6 +113,8 @@ def book_appointment(
             location=location,
             caller=caller,
             conversation_id=conversation_id,
+            attendee_email=(invite_to or None) if getattr(calendar, "sends_invites", False) else None,
+            description=f"Booked by text with {business_name}'s scheduling assistant.\n" + "\n".join(contact_lines),
         )
     except CalendarProviderError:
         raise CalendarEventError(
@@ -114,11 +124,12 @@ def book_appointment(
         raise CalendarEventError("calendar did not return an event id")
     return _finish_booking(store=store, telecom=telecom, caller=caller, business_number=business_number,
         service=service, location=location, business_name=business_name, timezone_name=timezone_name,
-        start=start, conversation_id=conversation_id, event_id=event_id, now=now, messages=messages)
+        start=start, conversation_id=conversation_id, event_id=event_id, now=now, messages=messages,
+        invited_email=invite_to if getattr(calendar, "sends_invites", False) else "")
 
 
 def _finish_booking(*, store, telecom, caller, business_number, service, location,
-                    business_name, timezone_name, start, conversation_id, event_id, now, messages=None):
+                    business_name, timezone_name, start, conversation_id, event_id, now, messages=None, invited_email=""):
     store.record_outcome(
         lead_id=caller,
         event_type="calendar.event_created",
@@ -138,18 +149,19 @@ def _finish_booking(*, store, telecom, caller, business_number, service, locatio
     )
     store.cancel_followup(caller, "booked")
     _queue_confirmation(store, telecom, store.appointment_by_conversation(conversation_id),
-                        business_number, business_name, timezone_name, now, messages)
+                        business_number, business_name, timezone_name, now, messages, invited_email)
     return {"booked": True, "event_id": event_id, "duplicate": False}
 
 
-def _queue_confirmation(store, telecom, appointment, business_number, business_name, timezone_name, now, messages=None):
+def _queue_confirmation(store, telecom, appointment, business_number, business_name, timezone_name, now, messages=None, invited_email=""):
     from text_back.messages import DEFAULT_MESSAGES
     event_id = appointment['event_id']
     when = datetime.fromisoformat(appointment['start']).astimezone(ZoneInfo(timezone_name)).strftime("%A, %b %d at %I:%M %p %Z").replace(" 0", " ")
     from text_back.calendar_links import links_for_appointment
     body = (messages or DEFAULT_MESSAGES).render("booking_confirmation", business_name=business_name,
         service=appointment['service'], when=when, location=appointment['location'], event_id=event_id,
-        **links_for_appointment(store, appointment))
+        invite_line=f"A calendar invite is on its way to {invited_email}." if invited_email else "",
+        invited_email=invited_email, **links_for_appointment(store, appointment))
     key = f"{appointment['conversation_id']}:confirmation:{event_id}"
     enqueue_sms(store=store, key=key, to=appointment['caller'], from_number=business_number,
                 kind="booking_confirmation", now=now or datetime.now(timezone.utc),

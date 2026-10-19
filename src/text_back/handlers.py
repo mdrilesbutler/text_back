@@ -463,7 +463,7 @@ def _book_collected_fields(
     payload = dict(caller=from_number, business_number=to_number, service=fields['service'],
                    location=fields['location'], customer_name=fields['name'], business_name=business_name,
                    timezone_name=timezone_name, start=start, duration_minutes=appointment_duration_minutes,
-                   conversation_id=from_number)
+                   conversation_id=from_number, customer_email=fields.get('email', ''), customer_phone=fields.get('phone', ''))
     job_key = queue_booking(store, payload, now or datetime.now(timezone.utc))
     try:
         booking = book_appointment(calendar=calendar, store=store, telecom=telecom, now=now, messages=messages, **payload)

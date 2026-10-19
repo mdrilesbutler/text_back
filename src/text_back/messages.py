@@ -50,7 +50,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     ),
     "prompt_name": "What name should we put the appointment under?",
     "prompt_phone": "Is this the best number to reach you? Reply YES, or send a different number.",
-    "prompt_email": "What's your email, in case we need to send appointment details? Reply SKIP if you'd rather not.",
+    "prompt_email": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not.",
     "phone_reprompt": "Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.",
     "email_reprompt": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP.",
     "fields": "service, location, preferred_time, name",
@@ -68,7 +68,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     ),
     "booking_confirmation": (
         "Booked: {service} on {when} at {location}. "
-        "This is {business_name}'s scheduling assistant. {calendar_links}"
+        "This is {business_name}'s scheduling assistant. {invite_line} {calendar_links}"
     ),
     "handoff_ack": (
         "Got it—automated scheduling is paused. The owner will follow up "
@@ -113,7 +113,8 @@ PLACEHOLDERS: dict[str, frozenset[str]] = {
     "slot_unavailable": frozenset({"business_name"}),
     "booking_error": frozenset({"business_name"}),
     "booking_confirmation": frozenset({"business_name", "service", "when", "location", "event_id",
-                                       "calendar_links", "links_page", "google_link", "outlook_link", "ical_link"}),
+                                       "calendar_links", "links_page", "google_link", "outlook_link", "ical_link",
+                                       "invite_line", "invited_email"}),
     "handoff_ack": frozenset({"business_name"}),
     "handoff_ack_safety": frozenset({"business_name"}),
     "opt_in": frozenset({"business_name"}),

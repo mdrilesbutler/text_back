@@ -78,12 +78,14 @@ edit is logged while the previous good copy stays in use.
 | `preferred_time_reprompt` | the time could not be understood | `{business_name}` |
 | `slot_unavailable` | the calendar slot is taken | `{business_name}` |
 | `booking_error` | the calendar failed; nothing booked | `{business_name}` |
-| `booking_confirmation` | after the calendar event exists | `{business_name}`, `{service}`, `{when}`, `{location}`, `{event_id}`, `{calendar_links}` (the "Add to calendar: Google … Outlook … iCal …" line), or the single `{links_page}`, `{google_link}`, `{outlook_link}`, `{ical_link}` |
+| `booking_confirmation` | after the calendar event exists | `{business_name}`, `{service}`, `{when}`, `{location}`, `{event_id}`, `{calendar_links}` (the "Add to calendar: Google … Outlook … iCal …" line), or the single `{links_page}`, `{google_link}`, `{outlook_link}`, `{ical_link}`, `{invite_line}` ("A calendar invite is on its way to …" when a guest was added, else empty), `{invited_email}` |
 | `handoff_ack`, `handoff_ack_safety` | automated scheduling pauses for the owner | `{business_name}` |
 | `opt_in` | START/UNSTOP | `{business_name}` |
 | `help` | HELP/INFO | `{business_name}`, `{contact_line}` |
 | `opt_out_ack` | STOP | `{business_name}` |
 | `opt_out_suffix` | appended to `intro`, follow-ups, `opt_in` and `help` when they lack the word STOP | none |
+
+When the customer gave an email and the calendar provider can invite guests (Google and Microsoft Graph; not iCloud CalDAV or the stub), the booking adds them as an attendee and the provider emails the invitation itself (Google with `sendUpdates=all`, Graph on creation); the event description records the caller number, best phone and email for the owner either way.
 
 For `phone`, a reply of YES (or similar) keeps the number the customer is texting from; any other reply must be a phone number. For `email`, SKIP/no/none is accepted and stored as `(skipped)`. The client settings page exposes the two optional questions as checkboxes.
 
