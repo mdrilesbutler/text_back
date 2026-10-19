@@ -101,17 +101,10 @@ def next_allowed_send_time(at: datetime, policy: FollowupPolicy) -> datetime:
     return allowed_local.astimezone(at.tzinfo)
 
 
-def followup_sms(business_name: str, attempt: int) -> str:
-    if attempt == 1:
-        return (
-            f"Hi again from {business_name}'s scheduling assistant—still happy "
-            "to get you on the calendar. What job do you need done? "
-            "Reply STOP to opt out."
-        )
-    return (
-        f"Last check-in from {business_name}'s scheduling assistant. Reply with "
-        "the job you need and we'll set a time. Reply STOP to opt out."
-    )
+def followup_sms(business_name: str, attempt: int, messages=None) -> str:
+    from text_back.messages import DEFAULT_MESSAGES
+    key = "followup_1" if attempt == 1 else "followup_2"
+    return (messages or DEFAULT_MESSAGES).render(key, business_name=business_name)
 
 
 def schedule_followup_sequence(
@@ -155,6 +148,7 @@ def run_due_followups(
     business_name: str,
     business_number: str,
     now: datetime,
+    messages=None,
 ) -> list[dict]:
     """Process every active sequence whose next action is due at ``now``.
 
@@ -195,7 +189,7 @@ def run_due_followups(
                                        (f"{sequence['call_sid']}:intro",)).fetchone()
             sender = intro['from_number'] if intro else business_number
             enqueue_sms(store=store, key=key, to=phone, from_number=sender,
-                body=followup_sms(business_name, attempt), kind='followup', now=now,
+                body=followup_sms(business_name, attempt, messages), kind='followup', now=now,
                 completion={'event_type': 'followup.sent', 'outcome_key': key,
                             'call_sid': sequence['call_sid'], 'metadata': {'attempt': attempt},
                             'delays': list(policy.delays_minutes), 'expiry': policy.expiry_minutes})

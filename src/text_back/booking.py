@@ -39,10 +39,11 @@ def book_appointment(
     duration_minutes: int,
     conversation_id: str,
     now: datetime | None = None,
+    messages=None,
 ) -> dict:
     existing = store.appointment_by_conversation(conversation_id)
     if existing:
-        _queue_confirmation(store, telecom, existing, business_number, business_name, timezone_name, now)
+        _queue_confirmation(store, telecom, existing, business_number, business_name, timezone_name, now, messages)
         return {"booked": True, "event_id": existing["event_id"], "duplicate": True}
 
     if store.active_handoff(caller) is not None:
@@ -113,11 +114,11 @@ def book_appointment(
         raise CalendarEventError("calendar did not return an event id")
     return _finish_booking(store=store, telecom=telecom, caller=caller, business_number=business_number,
         service=service, location=location, business_name=business_name, timezone_name=timezone_name,
-        start=start, conversation_id=conversation_id, event_id=event_id, now=now)
+        start=start, conversation_id=conversation_id, event_id=event_id, now=now, messages=messages)
 
 
 def _finish_booking(*, store, telecom, caller, business_number, service, location,
-                    business_name, timezone_name, start, conversation_id, event_id, now):
+                    business_name, timezone_name, start, conversation_id, event_id, now, messages=None):
     store.record_outcome(
         lead_id=caller,
         event_type="calendar.event_created",
@@ -137,17 +138,20 @@ def _finish_booking(*, store, telecom, caller, business_number, service, locatio
     )
     store.cancel_followup(caller, "booked")
     _queue_confirmation(store, telecom, store.appointment_by_conversation(conversation_id),
-                        business_number, business_name, timezone_name, now)
+                        business_number, business_name, timezone_name, now, messages)
     return {"booked": True, "event_id": event_id, "duplicate": False}
 
 
-def _queue_confirmation(store, telecom, appointment, business_number, business_name, timezone_name, now):
+def _queue_confirmation(store, telecom, appointment, business_number, business_name, timezone_name, now, messages=None):
+    from text_back.messages import DEFAULT_MESSAGES
     event_id = appointment['event_id']
     when = datetime.fromisoformat(appointment['start']).astimezone(ZoneInfo(timezone_name)).strftime("%A, %b %d at %I:%M %p %Z").replace(" 0", " ")
+    body = (messages or DEFAULT_MESSAGES).render("booking_confirmation", business_name=business_name,
+        service=appointment['service'], when=when, location=appointment['location'], event_id=event_id)
     key = f"{appointment['conversation_id']}:confirmation:{event_id}"
     enqueue_sms(store=store, key=key, to=appointment['caller'], from_number=business_number,
                 kind="booking_confirmation", now=now or datetime.now(timezone.utc),
-                body=f"Booked: {appointment['service']} on {when} at {appointment['location']}. This is {business_name}'s scheduling assistant. Event {event_id}.",
+                body=body,
                 completion={"event_type": "appointment.confirmed", "outcome_key": f"calendar:{event_id}:confirmed", "metadata": {"calendar_event_id": event_id}})
     telecom.keys.append(key)
 

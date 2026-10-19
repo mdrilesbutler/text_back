@@ -20,6 +20,17 @@ PYTHONPATH=src .venv/bin/python -m text_back   # 127.0.0.1:8000 only
 Project state lives in `CLAUDE.md`. Finished work is pushed to `main`. Deploy: `bash scripts/deploy.sh` after a merge to `main`. Contracts: `docs/SIGNALWIRE-INTEGRATION.md`,
 `docs/OUTCOME-EVENTS.md`, `docs/CALENDAR-PROVIDERS.md`.
 
+## Message copy
+
+Every customer-facing text is a template in `src/text_back/messages.py`. A
+client overrides any of them with a JSON file named by
+`TEXT_BACK_MESSAGES_FILE` (keys and placeholders are listed in
+`docs/RECOVER-OPERATIONS.md`, "Message copy"). The file is re-read when it
+changes; a bad edit is rejected and the last good copy stays live. Opt-out
+wording (the editable `opt_out_suffix`) is appended to the first text,
+follow-ups, opt-in and HELP replies whenever a template leaves STOP out, and
+no template may promise a person or the business line.
+
 ## Wiring mode
 
 `wiring_mode` controls how our number relates to the client's real phone

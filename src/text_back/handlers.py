@@ -15,7 +15,7 @@ from text_back.handoff import (
     build_handoff_summary,
 )
 from text_back.policy import (
-    OPT_OUT_ACK,
+    opt_out_ack_sms,
     WIRING_MODE_MANAGED,
     booking_error_sms,
     classify_handoff_request,
@@ -31,6 +31,7 @@ from text_back.policy import (
     preferred_time_reprompt,
     slot_unavailable_sms,
 )
+from text_back.messages import MessageSet
 from text_back.preferred_time import PreferredTimeError, parse_preferred_time
 from text_back.sms import atomic_sms_handler, enqueue_sms
 from text_back.store import Store
@@ -50,6 +51,7 @@ def handle_voice_event(
     business_name: str,
     followup_policy: FollowupPolicy | None = None,
     now: datetime | None = None,
+    messages: MessageSet | None = None,
 ) -> dict:
     # "managed": our number is the client's own number, so only a terminal
     # unanswered status (no-answer/busy/failed/canceled) is a missed call.
@@ -76,7 +78,7 @@ def handle_voice_event(
         return {"accepted": True, "duplicate": True, "action": "noop"}
     key = f"{call_sid}:intro"
     enqueue_sms(
-        store=store, key=key, to=from_number, body=intro_sms(business_name),
+        store=store, key=key, to=from_number, body=intro_sms(business_name, messages),
         from_number=to_number, kind="missed_call_intro",
         now=now or datetime.now(timezone.utc),
         completion={"event_type": "sms.initial_sent", "outcome_key": f"call:{call_sid}:initial_sms",
@@ -103,6 +105,7 @@ def handle_sms_event(
     appointment_duration_minutes: int,
     business_contact: str = "",
     now: datetime | None = None,
+    messages: MessageSet | None = None,
 ) -> dict:
     claimed = store.claim_event("sms", message_sid, "inbound")
     if not claimed:
@@ -125,12 +128,12 @@ def handle_sms_event(
         store.record_outcome(lead_id=from_number, event_type="lead.opted_out",
             occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
             idempotency_key=f"sms:{message_sid}:opted_out", evidence_id=message_sid, metadata={})
-        telecom.send_sms(to=from_number, body=OPT_OUT_ACK, from_number=to_number, kind="opt_out_ack")
+        telecom.send_sms(to=from_number, body=opt_out_ack_sms(business_name, messages), from_number=to_number, kind="opt_out_ack")
         return {"accepted": True, "duplicate": False, "action": "opt_out"}
     if kind == "help":
         telecom.send_sms(
             to=from_number,
-            body=help_sms(business_name, business_contact, to_number),
+            body=help_sms(business_name, business_contact, to_number, messages),
             from_number=to_number,
             kind="help",
         )
@@ -142,7 +145,7 @@ def handle_sms_event(
             idempotency_key=f"sms:{message_sid}:opted_in", evidence_id=message_sid, metadata={})
         telecom.send_sms(
             to=from_number,
-            body=opt_in_sms(business_name),
+            body=opt_in_sms(business_name, messages),
             from_number=to_number,
             kind="opt_in_ack",
         )
@@ -161,6 +164,8 @@ def handle_sms_event(
                 reason=handoff_reason,
                 acknowledge_customer=False,
                 now=now,
+                business_name=business_name,
+                messages=messages,
             )
         return {"accepted": True, "duplicate": False, "action": "suppressed", "reason": "opted_out"}
     if handoff_reason is not None:
@@ -175,6 +180,8 @@ def handle_sms_event(
             reason=handoff_reason,
             acknowledge_customer=True,
             now=now,
+            business_name=business_name,
+            messages=messages,
         )
     if store.active_handoff(from_number) is not None:
         return {
@@ -195,6 +202,7 @@ def handle_sms_event(
         timezone_name=timezone_name,
         appointment_duration_minutes=appointment_duration_minutes,
         now=now,
+        messages=messages,
     )
 
 
@@ -210,6 +218,8 @@ def _request_handoff(
     reason: str,
     acknowledge_customer: bool,
     now: datetime | None,
+    business_name: str = "",
+    messages: MessageSet | None = None,
 ) -> dict:
     if not store.request_handoff(from_number, reason):
         current = store.active_handoff(from_number)
@@ -263,7 +273,7 @@ def _request_handoff(
     if acknowledge_customer:
         telecom.send_sms(
             to=from_number,
-            body=handoff_ack_sms(reason),
+            body=handoff_ack_sms(reason, business_name, messages),
             from_number=to_number,
             kind="handoff_ack",
         )
@@ -289,6 +299,7 @@ def _collect_conversation_field(
     timezone_name: str,
     appointment_duration_minutes: int,
     now: datetime | None,
+    messages: MessageSet | None = None,
 ) -> dict:
     """Deterministic slot-filling: each reply answers the next missing field
     in a fixed order (service, location, preferred_time, name). No LLM or
@@ -314,6 +325,7 @@ def _collect_conversation_field(
                 timezone_name=timezone_name,
                 appointment_duration_minutes=appointment_duration_minutes,
                 now=now,
+                messages=messages,
             )
         return {"accepted": True, "duplicate": False, "action": "conversation", "fields_complete": True}
 
@@ -321,7 +333,7 @@ def _collect_conversation_field(
     if not value:
         telecom.send_sms(
             to=from_number,
-            body=conversation_prompt(pending_field),
+            body=conversation_prompt(pending_field, business_name, messages),
             from_number=to_number,
             kind="field_prompt",
         )
@@ -333,7 +345,7 @@ def _collect_conversation_field(
         except PreferredTimeError:
             telecom.send_sms(
                 to=from_number,
-                body=preferred_time_reprompt(),
+                body=preferred_time_reprompt(business_name, messages),
                 from_number=to_number,
                 kind="preferred_time_reprompt",
             )
@@ -375,11 +387,12 @@ def _collect_conversation_field(
             timezone_name=timezone_name,
             appointment_duration_minutes=appointment_duration_minutes,
             now=now,
+            messages=messages,
         )
 
     telecom.send_sms(
         to=from_number,
-        body=conversation_prompt(next_field),
+        body=conversation_prompt(next_field, business_name, messages),
         from_number=to_number,
         kind="field_prompt",
     )
@@ -404,6 +417,7 @@ def _book_collected_fields(
     timezone_name: str,
     appointment_duration_minutes: int,
     now: datetime | None,
+    messages: MessageSet | None = None,
 ) -> dict:
     try:
         start = parse_preferred_time(
@@ -415,7 +429,7 @@ def _book_collected_fields(
         store.delete_conversation_field(from_number, "preferred_time")
         telecom.send_sms(
             to=from_number,
-            body=preferred_time_reprompt(),
+            body=preferred_time_reprompt(business_name, messages),
             from_number=to_number,
             kind="preferred_time_reprompt",
         )
@@ -433,14 +447,14 @@ def _book_collected_fields(
                    conversation_id=from_number)
     job_key = queue_booking(store, payload, now or datetime.now(timezone.utc))
     try:
-        booking = book_appointment(calendar=calendar, store=store, telecom=telecom, now=now, **payload)
+        booking = book_appointment(calendar=calendar, store=store, telecom=telecom, now=now, messages=messages, **payload)
         finish_booking_job(store, job_key)
     except SlotUnavailableError:
         finish_booking_job(store, job_key)
         store.delete_conversation_field(from_number, "preferred_time")
         telecom.send_sms(
             to=from_number,
-            body=slot_unavailable_sms(),
+            body=slot_unavailable_sms(business_name, messages),
             from_number=to_number,
             kind="slot_unavailable",
         )
@@ -453,7 +467,7 @@ def _book_collected_fields(
     except BookingError:
         telecom.send_sms(
             to=from_number,
-            body=booking_error_sms(),
+            body=booking_error_sms(business_name, messages),
             from_number=to_number,
             kind="booking_error",
         )

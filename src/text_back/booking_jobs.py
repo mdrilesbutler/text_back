@@ -7,6 +7,11 @@ from text_back.sms import QueuedTelecom, run_due_sms
 from text_back.policy import slot_unavailable_sms
 
 
+def _messages(state):
+    source = getattr(state, 'messages', None)
+    return source.current() if source else None
+
+
 def queue_booking(store, payload, now):
     key=payload['conversation_id']+':'+payload['start'].isoformat()
     encoded={**payload,'start':payload['start'].isoformat()}
@@ -45,12 +50,13 @@ def run_due_bookings(state):
         try:
             if attempt>4 or payload['start']<=now:
                 raise BookingError('booking retry window exhausted')
-            book_appointment(store=store,calendar=state.calendar,telecom=state.telecom,now=now,_deferred=True,**payload)
+            book_appointment(store=store,calendar=state.calendar,telecom=state.telecom,now=now,_deferred=True,
+                messages=_messages(state),**payload)
         except SlotUnavailableError:
             with store.transaction():
                 store.delete_conversation_field(row['phone'],'preferred_time')
                 queued=QueuedTelecom(store,key,now)
-                queued.send_sms(to=row['phone'],from_number=payload['business_number'],kind='slot_unavailable',body=slot_unavailable_sms())
+                queued.send_sms(to=row['phone'],from_number=payload['business_number'],kind='slot_unavailable',body=slot_unavailable_sms(payload['business_name'],_messages(state)))
                 finish_booking_job(store,key)
             run_due_sms(store=store,telecom=state.telecom,now=now,policy=state.followup_policy,keys=queued.keys)
         except Exception:
@@ -61,7 +67,8 @@ def run_due_bookings(state):
                     queued=QueuedTelecom(store,key,now)
                     _request_handoff(store=store,telecom=queued,handoff_notifier=state.handoff_notifier,
                         handoff_destination=state.handoff_destination,from_number=row['phone'],to_number=payload['business_number'],
-                        body='Calendar booking could not be completed after retries.',reason='calendar_unavailable',acknowledge_customer=True,now=now)
+                        body='Calendar booking could not be completed after retries.',reason='calendar_unavailable',acknowledge_customer=True,now=now,
+                        business_name=payload['business_name'],messages=_messages(state))
                     store.conn.execute("UPDATE booking_jobs SET status='dead_letter' WHERE key=?",(key,))
                 else:
                     store.conn.execute("UPDATE booking_jobs SET status='pending',next_attempt_at=? WHERE key=?",

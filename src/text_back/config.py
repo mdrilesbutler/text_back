@@ -44,6 +44,7 @@ class AppConfig:
     telegram_chat_id: str = field(default="", repr=False)
     pilot_recipients: tuple[str, ...] | None = field(default=None, repr=False)
     business_contact: str = ""
+    messages_file: str = ""
 
 
 def load_config() -> AppConfig:
@@ -56,6 +57,7 @@ def load_config() -> AppConfig:
     return AppConfig(
         pilot_recipients=pilot_recipients,
         business_contact=os.environ.get("TEXT_BACK_BUSINESS_CONTACT", ""),
+        messages_file=os.environ.get("TEXT_BACK_MESSAGES_FILE", ""),
         telegram_bot_token=os.environ.get("TEXT_BACK_TELEGRAM_BOT_TOKEN", ""),
         telegram_chat_id=os.environ.get("TEXT_BACK_TELEGRAM_CHAT_ID", ""),
         google_client_file=os.environ.get("TEXT_BACK_GOOGLE_CLIENT_FILE", ""),

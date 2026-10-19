@@ -19,6 +19,7 @@ from text_back.delivery import (
 )
 from text_back.followup import FollowupPolicy
 from text_back.handoff import FakeHandoffNotifier, HandoffNotifier
+from text_back.messages import MessageSource
 from text_back.policy import WIRING_MODES, WIRING_MODE_FORWARDED
 from text_back.signatures import SignatureError, verify_twilio_compat
 from text_back.sms import reconcile_sms
@@ -173,6 +174,7 @@ def create_app(
     app.state.wiring_mode = wiring_mode
     app.state.business_name = business_name.strip()
     app.state.business_contact = config.business_contact
+    app.state.messages = MessageSource(config.messages_file or None)  # fails closed on a bad file at boot
     app.state.timezone_name = timezone_name
     app.state.appointment_duration_minutes = appointment_duration_minutes
     app.state.calendar = selected_calendar
@@ -202,6 +204,7 @@ def create_app(
             "status": "ok",
             "production": app.state.telecom.provider_name == 'signalwire' and app.state.calendar.provider_name != 'stub',
             "calendar_credentials": credential_status,
+            "messages": {"source": "file" if app.state.messages.path else "default", "last_error": app.state.messages.last_error},
             "persistent_database": app.state.db_path != ':memory:',
             "sms_queue": sms_counts,
             "inbound_dead_letters": inbound_failed,
