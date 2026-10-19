@@ -54,11 +54,43 @@ FIELD_PROMPTS: dict[str, str] = {
 }
 
 
-def next_missing_field(fields: dict[str, str]) -> str | None:
-    for field in CONVERSATION_FIELDS:
+def next_missing_field(fields: dict[str, str], order: tuple[str, ...] = CONVERSATION_FIELDS) -> str | None:
+    for field in order:
         if not fields.get(field, "").strip():
             return field
     return None
+
+
+EMAIL_SKIPPED = "(skipped)"
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
+_SAME_NUMBER = frozenset({"yes", "y", "yes.", "yep", "yeah", "same", "this", "this one", "this number", "correct", "ok", "sure"})
+
+
+def normalize_phone(raw: str) -> str | None:
+    """A US/Canada number in any common spelling, or an explicit +country number."""
+    digits = re.sub(r"\D", "", raw or "")
+    if len(digits) == 10:
+        digits = "1" + digits
+    if len(digits) == 11 and digits.startswith("1"):
+        return "+" + digits
+    if 8 <= len(digits) <= 15 and raw.strip().startswith("+"):
+        return "+" + digits
+    return None
+
+
+def parse_contact_phone(value: str, caller: str) -> str | None:
+    """YES (or similar) means the number the customer is texting from."""
+    if value.strip().lower() in _SAME_NUMBER:
+        return caller
+    return normalize_phone(value)
+
+
+def parse_contact_email(value: str) -> str | None:
+    text = value.strip()
+    if text.lower().rstrip(".") in {"skip", "no", "none", "no thanks", "no email", "n/a", "na"}:
+        return EMAIL_SKIPPED
+    text = text.rstrip(".,;")
+    return text.lower() if _EMAIL_RE.match(text) else None
 
 
 def conversation_prompt(field: str, business_name: str = "", messages: MessageSet | None = None) -> str:
@@ -75,6 +107,14 @@ def slot_unavailable_sms(business_name: str = "", messages: MessageSet | None = 
 
 def booking_error_sms(business_name: str = "", messages: MessageSet | None = None) -> str:
     return (messages or DEFAULT_MESSAGES).render("booking_error", business_name=business_name)
+
+
+def phone_reprompt(business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("phone_reprompt", business_name=business_name)
+
+
+def email_reprompt(business_name: str = "", messages: MessageSet | None = None) -> str:
+    return (messages or DEFAULT_MESSAGES).render("email_reprompt", business_name=business_name)
 
 
 def opt_out_ack_sms(business_name: str = "", messages: MessageSet | None = None) -> str:

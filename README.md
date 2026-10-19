@@ -34,7 +34,9 @@ no template may promise a person or the business line.
 The business owner edits that copy themselves at `<public base URL>/client`:
 they enter the business mobile on file (`TEXT_BACK_OWNER_MOBILE`), receive a
 six-digit code by text, and get a form with every message, the standard
-wording shown in grey, and the placeholders each one may use. Saving writes
+wording shown in grey, the placeholders each one may use, and two
+checkboxes to also ask callers for their best phone number and an email
+address. Saving writes
 the JSON file above; a rejected edit shows the reason and changes nothing.
 
 ## Wiring mode
