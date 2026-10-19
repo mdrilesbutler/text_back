@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from string import Formatter
@@ -136,9 +137,21 @@ class MessageTemplateError(ValueError):
     """A custom template is unusable; the previous good set stays active."""
 
 
+_STOP_WORD = re.compile(r"\bstop\b", re.IGNORECASE)
+
+
+def _mentions_stop(text: str) -> bool:
+    """True only for the word STOP, not a business name like Pitstop."""
+    return _STOP_WORD.search(text) is not None
+
+
 def _placeholders(template: str) -> set[str]:
     names = set()
-    for _, field_name, _, _ in Formatter().parse(template):
+    try:
+        parsed = list(Formatter().parse(template))
+    except ValueError:
+        raise MessageTemplateError("unbalanced { or } in template") from None
+    for _, field_name, _, _ in parsed:
         if field_name is None:
             continue
         if field_name == "" or not field_name.isidentifier():
@@ -177,7 +190,7 @@ def validate_templates(templates: dict[str, str]) -> dict[str, str]:
                     f"{key} must not promise a person or the business line ({phrase!r})"
                 )
         merged[key] = text
-    if "stop" not in merged["opt_out_suffix"].lower():
+    if not _mentions_stop(merged["opt_out_suffix"]):
         raise MessageTemplateError("opt_out_suffix must tell the customer to reply STOP")
     if "911" not in merged["handoff_ack_safety"]:
         raise MessageTemplateError("handoff_ack_safety must direct emergencies to 911")
@@ -193,10 +206,16 @@ class MessageSet:
     templates: dict[str, str]
 
     def render(self, key: str, **values: str) -> str:
-        template = self.templates[key]
         context = {name: values.get(name, "") for name in PLACEHOLDERS[key]}
-        text = template.format_map(context)
-        if key in OPT_OUT_REQUIRED and "stop" not in text.lower():
+        try:
+            text = self.templates[key].format_map(context)
+        except (KeyError, ValueError, IndexError):
+            # Never let copy take a live send down: fall back to the shipped text.
+            log.error("message template %s failed to render; using default copy", key)
+            text = DEFAULT_TEMPLATES[key].format_map(context)
+        if key in OPT_OUT_REQUIRED and not _mentions_stop(self.templates[key]):
+            # Decide on the template, not the rendered text, so a business
+            # named "Pitstop" still gets the carrier-required opt-out line.
             text = f"{text} {self.templates['opt_out_suffix']}"
         return " ".join(text.split())
 

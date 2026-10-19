@@ -59,6 +59,8 @@ def test_custom_opt_out_suffix_is_used_and_must_mention_stop():
         ({"handoff_ack_safety": "We'll follow up soon."}, "911"),
         ({"booking_error": "Please call us"}, "no booking was made"),
         ({"intro": "Hi {}"}, "placeholders must look like"),
+        ({"intro": "Hi {business_name"}, "unbalanced"),
+        ({"prompt_name": "Name} please"}, "unbalanced"),
     ],
 )
 def test_bad_templates_are_rejected(templates, match):
@@ -121,3 +123,54 @@ def test_handlers_send_the_custom_copy():
     assert telecom.outbound[-1].body == "Where is the job?"
     handle_sms_event(message_sid="SM2", body="STOP", **common)
     assert telecom.outbound[-1].body == "Done, no more texts from Acme."
+
+
+def test_business_name_containing_stop_still_gets_the_opt_out_line():
+    from text_back.messages import MessageSet
+    custom = MessageSet(validate_templates({"intro": "{business_name} missed your call. What do you need?"}))
+    text = custom.render("intro", business_name="Pitstop Tire")
+    assert text.endswith("What do you need? Reply STOP to opt out.")
+    with pytest.raises(MessageTemplateError, match="STOP"):
+        validate_templates({"opt_out_suffix": "Pitstop says bye."})
+
+
+def test_render_never_raises_on_a_template_that_slipped_past_validation():
+    from text_back.messages import MessageSet
+    broken = MessageSet({**DEFAULT_TEMPLATES, "prompt_service": "Hi {business_name"})
+    assert broken.field_prompt("service", business_name="Acme") == DEFAULT_TEMPLATES["prompt_service"]
+
+
+def test_booking_retry_lane_uses_the_client_copy(tmp_path):
+    """A slot taken during a deferred calendar retry must text the client's wording."""
+    from datetime import timedelta, timezone
+    from text_back.app import create_app
+    from text_back.calendars.protocol import CalendarProviderError
+    from text_back.worker import run_once
+
+    class FlakyThenBusy(CalendarStub):
+        mode = "outage"
+
+        def is_free(self, start, end):
+            if self.mode == "outage":
+                raise CalendarProviderError("temporary outage")
+            return False  # slot taken once the calendar is back
+
+    path = tmp_path / "messages.json"
+    path.write_text(json.dumps({"slot_unavailable": "That slot is gone. Another day and time?"}))
+    now = datetime(2026, 9, 17, 14, tzinfo=timezone.utc)
+    clock = [now]
+    calendar = FlakyThenBusy()
+    app = create_app(db_path=str(tmp_path / "b.db"), calendar=calendar, telecom=FakeTelecom(), now_provider=lambda: clock[0])
+    app.state.messages = MessageSource(str(path))
+    for i, body in enumerate(["trimming", "Oak St", "2026-09-18 14:00", "Pat"]):
+        handle_sms_event(store=app.state.store, calendar=calendar, telecom=app.state.telecom,
+                         handoff_notifier=app.state.handoff_notifier, handoff_destination="queue",
+                         message_sid=f"m{i}", from_number="+15551112222", to_number="+15553334444", body=body,
+                         business_name="Acme", timezone_name="UTC", appointment_duration_minutes=60, now=now,
+                         messages=app.state.messages.current())
+    assert not app.state.store.appointment_by_conversation("+15551112222")
+    calendar.mode = "busy"
+    clock[0] += timedelta(minutes=2)
+    run_once(app.state)
+    bodies = [m.body for m in app.state.telecom.outbound if m.kind == "slot_unavailable"]
+    assert bodies == ["That slot is gone. Another day and time?"]
