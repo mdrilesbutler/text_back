@@ -75,7 +75,7 @@ edit is logged while the previous good copy stays in use.
 | `preferred_time_reprompt` | the time could not be understood | `{business_name}` |
 | `slot_unavailable` | the calendar slot is taken | `{business_name}` |
 | `booking_error` | the calendar failed; nothing booked | `{business_name}` |
-| `booking_confirmation` | after the calendar event exists | `{business_name}`, `{service}`, `{when}`, `{location}`, `{event_id}` |
+| `booking_confirmation` | after the calendar event exists | `{business_name}`, `{service}`, `{when}`, `{location}`, `{event_id}`, `{calendar_links}` (the "Add to calendar: Google … Outlook … iCal …" line), or the single `{links_page}`, `{google_link}`, `{outlook_link}`, `{ical_link}` |
 | `handoff_ack`, `handoff_ack_safety` | automated scheduling pauses for the owner | `{business_name}` |
 | `opt_in` | START/UNSTOP | `{business_name}` |
 | `help` | HELP/INFO | `{business_name}`, `{contact_line}` |

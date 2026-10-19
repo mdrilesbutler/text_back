@@ -150,7 +150,8 @@ def test_booking_confirmation_recovers_without_creating_another_event(tmp_path):
     assert result["booked"] is True
     assert result["event_id"] == event_id
     assert len(calendar.events) == 1
-    assert event_id in telecom.outbound[0].body
+    assert restarted.appointment_by_event(event_id)["event_id"] == event_id  # the same event, no second one
+    assert telecom.outbound[0].kind == "booking_confirmation"
     accepted = _outcomes(restarted, "appointment.confirmed")
     assert len(accepted) == 1
     assert accepted[0]["evidence_id"] == "SM-0001"

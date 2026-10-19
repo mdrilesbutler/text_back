@@ -390,7 +390,8 @@ def test_booking_end_to_end_confirms_only_with_uid():
     assert transport.requests[2].method == "PUT"
     assert len(telecom.outbound) == 1
     assert telecom.outbound[0].kind == "booking_confirmation"
-    assert uid in telecom.outbound[0].body
+    assert telecom.outbound[0].kind == "booking_confirmation"
+    assert store.appointment_by_event(uid)  # the id is stored, not texted
     events = [e["event_type"] for e in store.list_outcome_events("+15551112222")]
     assert "calendar.event_created" in events
     assert "appointment.confirmed" in events

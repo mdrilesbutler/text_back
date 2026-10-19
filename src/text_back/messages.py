@@ -63,7 +63,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     ),
     "booking_confirmation": (
         "Booked: {service} on {when} at {location}. "
-        "This is {business_name}'s scheduling assistant. Event {event_id}."
+        "This is {business_name}'s scheduling assistant. {calendar_links}"
     ),
     "handoff_ack": (
         "Got it—automated scheduling is paused. The owner will follow up "
@@ -102,7 +102,8 @@ PLACEHOLDERS: dict[str, frozenset[str]] = {
     "preferred_time_reprompt": frozenset({"business_name"}),
     "slot_unavailable": frozenset({"business_name"}),
     "booking_error": frozenset({"business_name"}),
-    "booking_confirmation": frozenset({"business_name", "service", "when", "location", "event_id"}),
+    "booking_confirmation": frozenset({"business_name", "service", "when", "location", "event_id",
+                                       "calendar_links", "links_page", "google_link", "outlook_link", "ical_link"}),
     "handoff_ack": frozenset({"business_name"}),
     "handoff_ack_safety": frozenset({"business_name"}),
     "opt_in": frozenset({"business_name"}),

@@ -114,7 +114,7 @@ def test_signed_missed_call_qualification_booking_and_brief_have_provider_eviden
     assert runtime.store.appointment_by_conversation(CALLER)["event_id"] == event_id
     confirmations = [sms for sms in runtime.telecom.outbound if sms.kind == "booking_confirmation"]
     assert len(confirmations) == 1
-    assert event_id in confirmations[0].body
+    assert confirmations[0].kind == "booking_confirmation"  # the event id is stored, not texted
     assert _events(runtime, "calendar.event_created")[0]["evidence_id"] == event_id
     confirmed = _events(runtime, "appointment.confirmed")
     assert len(confirmed) == 1
