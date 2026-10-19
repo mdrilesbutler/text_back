@@ -16,7 +16,7 @@ def fixture(tmp_path, monkeypatch):
     path.write_text(json.dumps(dict(token='expired',refresh_token='old-refresh',client_id='client',client_secret='secret',status='reauth_required')))
     responses=FakeHttpTransport([
         HttpResponse(200,(),json.dumps(dict(access_token='new-access',refresh_token='new-refresh',expires_in=3600,scope=CALENDAR_SCOPE)).encode()),
-        HttpResponse(200,(),b'{"accessRole":"owner"}')])
+        HttpResponse(200,(),json.dumps(dict(items=[dict(id='business@example.test',summary='Business',accessRole='owner',primary=True)])).encode())])
     credentials=GoogleCredentials(str(path),transport=responses,now_provider=lambda:NOW)
     calendar=GoogleCalendarProvider('business@example.test',credentials,responses)
     monkeypatch.setenv('TEXT_BACK_OPERATOR_API_KEY','test-operator-key')
@@ -57,3 +57,15 @@ def test_callback_without_browser_cookie_cannot_replace_credentials(tmp_path,mon
     assert result.status_code==400
     assert credentials.status()=='reauth_required'
     assert not transport.requests
+
+
+def test_an_account_without_the_configured_calendar_cannot_replace_credentials(tmp_path,monkeypatch):
+    client,credentials,transport=fixture(tmp_path,monkeypatch)
+    transport.responses[1]=HttpResponse(200,(),json.dumps(dict(items=[dict(id='someone@else.test',summary='Other',accessRole='owner',primary=True)])).encode())
+    link=client.post('/operator/calendar/reconnect',headers={'Authorization':'Bearer test-operator-key'}).json()['url']
+    response=client.get(link,follow_redirects=False)
+    state=parse_qs(urlsplit(response.headers['location']).query)['state'][0]
+    cookie=response.cookies.get('text_back_oauth')
+    bad=client.get('https://example.test/calendar/callback',params={'state':state,'code':'code'},headers={'Cookie':f'text_back_oauth={cookie}'})
+    assert bad.status_code==400
+    assert credentials.status()=='reauth_required'

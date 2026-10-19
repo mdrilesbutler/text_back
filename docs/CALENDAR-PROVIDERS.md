@@ -68,9 +68,12 @@ fail closed, preserve the lead and offer a reconnect action.
 
 This remains the intended product experience recovered from the August TDD snapshot,
 not a claim that every provider's onboarding has shipped. Google already implements
-authorized-user refresh, reconnect routes and a private Web-client intake. Unified
-provider onboarding, a calendar picker, per-business encrypted connection storage,
-expiry/rotation metadata and Microsoft refresh-token rotation remain unfinished.
+authorized-user refresh, reconnect routes, a private Web-client intake and, since
+2026-10-19, the owner-facing connect button and calendar picker on
+`/client/calendar` (`client_settings.py`; the chosen calendar is stored in
+`client_settings.google_calendar_id`). Unified provider onboarding for
+Microsoft/iCloud, per-business encrypted connection storage, expiry/rotation
+metadata and Microsoft refresh-token rotation remain unfinished.
 Secrets must stay out of logs, browser URLs, SMS and Git. Refresh should be automatic,
 with bounded retry and atomic credential rotation. iCloud's supported authorization
 or one-time app-specific credential must be handled within the onboarding experience.

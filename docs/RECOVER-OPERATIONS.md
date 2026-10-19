@@ -115,6 +115,29 @@ file up on the next send. Without `TEXT_BACK_MESSAGES_FILE` the page shows
 the copy but cannot save. Set both variables in `runtime.env`, restart the
 service, and have the owner open the page on their phone.
 
+The page has three tabs. **Messages** is the copy editor above. **Business**
+(`/client/business`) edits the business name (used in every text and the
+voice greeting), the phone number customers are given when they text HELP
+(blank shows the sending number), and the owner's own mobile. Changing the
+mobile texts a code to the *new* number and the change only takes effect once
+that code is entered on `/client/business/confirm`; until then the old number
+keeps signing in, so a borrowed browser session cannot move the account.
+**Calendar** (`/client/calendar`) shows whether the Google calendar is
+connected and which calendar is used, offers "Connect Google Calendar"
+(the owner's own browser consent, see Calendar reconnection below), and after
+consent lets the owner pick any calendar the account can write to; the
+assistant checks free/busy on that calendar and adds every booking to it.
+
+Saved values live in the `client_settings` table (`business_name`,
+`business_contact`, `owner_mobile`, `google_calendar_id`, the cached
+`calendar_choices`, and a transient `owner_mobile_pending`). They are applied
+at boot on top of the environment, so `TEXT_BACK_BUSINESS_NAME`,
+`TEXT_BACK_BUSINESS_CONTACT`, `TEXT_BACK_OWNER_MOBILE` and
+`TEXT_BACK_GOOGLE_CALENDAR_ID` become defaults for a new client rather than
+the final word. The Connect button appears only when
+`TEXT_BACK_GOOGLE_CLIENT_FILE` names a Web OAuth client; without it the page
+says the connection is still being set up.
+
 ## Operator access
 
 Set a separate `TEXT_BACK_OPERATOR_API_KEY` in the protected environment file.
@@ -209,7 +232,12 @@ A revoked calendar queues an operator alert containing a connection link. An
 operator can also request one with authenticated `POST /operator/calendar/reconnect`.
 Links expire after one day; the browser flow uses a 15-minute, single-use state,
 PKCE, and a Secure/HttpOnly cookie. The callback verifies write access to the
-configured calendar before saving new credentials.
+configured calendar before saving new credentials. The signed-in owner can
+start the same flow from `/client/calendar` (a 15-minute link with purpose
+`client`): there any Google account with at least one writable calendar is
+accepted, the writable calendars are listed for the owner to choose from, and
+the primary calendar is used until they choose. The operator path keeps
+refusing an account that cannot write the configured calendar.
 
 Configure a Google **Web application** OAuth client with the exact redirect URI
 `<TEXT_BACK_PUBLIC_BASE_URL>/calendar/callback`. Use

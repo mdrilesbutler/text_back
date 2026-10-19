@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
-from urllib.parse import urlencode, quote
+from urllib.parse import urlencode
 
 from text_back.calendars.protocol import CalendarProviderError
 from text_back.calendars.transport import HttpRequest, urllib_transport
@@ -147,7 +147,17 @@ class GoogleCredentials:
             scope=CALENDAR_SCOPE, access_type='offline', prompt='consent', state=state,
             code_challenge=challenge, code_challenge_method='S256'))
 
-    def reconnect(self, *, code, verifier, redirect_uri, calendar_id):
+    def reconnect(self, *, code, verifier, redirect_uri, calendar_id=None):
+        """Exchange the browser consent code and save the new credentials.
+
+        Returns the calendars the account can write to, as
+        ``[{"id", "summary", "primary"}]``. With ``calendar_id`` given (the
+        operator reconnect path) the configured calendar must be among them, so
+        an unrelated account can never replace this client's credentials. With
+        ``calendar_id=None`` (the owner connecting from the settings page) any
+        account with at least one writable calendar is accepted and the caller
+        picks the calendar from the returned list.
+        """
         with self._locked():
             data = self._read()
             client = self._client(data)
@@ -155,15 +165,40 @@ class GoogleCredentials:
                                           'redirect_uri':redirect_uri, 'code_verifier':verifier})
             if not payload.get('refresh_token') or CALENDAR_SCOPE not in payload.get('scope', '').split():
                 raise CalendarProviderError('Google Calendar offline access was not granted')
-            # Do not replace this client's credentials with an unrelated account.
-            response = self.transport(HttpRequest('GET', 'https://www.googleapis.com/calendar/v3/users/me/calendarList/'+quote(calendar_id,safe=''),
-                (('Authorization','Bearer '+payload['access_token']),)))
-            try:
-                calendar = json.loads(response.body)
-            except ValueError:
-                raise CalendarProviderError('Google calendar verification failed') from None
-            if response.status != 200 or not isinstance(calendar,dict) or calendar.get('accessRole') not in ('owner','writer'):
+            calendars = self._writable_calendars(payload['access_token'])
+            if calendar_id is not None and calendar_id not in {entry['id'] for entry in calendars}:
                 raise CalendarProviderError('Google account cannot write the configured calendar')
+            if not calendars:
+                raise CalendarProviderError('Google account has no calendar it can write to')
             data.update(client)
             data.pop('legacy', None)
             self._save_token(data, payload)
+            return calendars
+
+    def _writable_calendars(self, access_token):
+        """List the account's calendars with owner/writer access (bounded pagination, no secrets in errors)."""
+        calendars = []
+        page_token = None
+        for _ in range(10):
+            query = {'minAccessRole': 'writer', 'maxResults': '250'}
+            if page_token:
+                query['pageToken'] = page_token
+            response = self.transport(HttpRequest('GET', 'https://www.googleapis.com/calendar/v3/users/me/calendarList?' + urlencode(query),
+                (('Authorization', 'Bearer ' + access_token),)))
+            try:
+                body = json.loads(response.body)
+            except ValueError:
+                raise CalendarProviderError('Google calendar verification failed') from None
+            if response.status != 200 or not isinstance(body, dict) or not isinstance(body.get('items'), list):
+                raise CalendarProviderError('Google calendar list could not be read')
+            for item in body['items']:
+                if not isinstance(item, dict) or not isinstance(item.get('id'), str):
+                    continue
+                if item.get('accessRole') not in ('owner', 'writer') or item.get('deleted'):
+                    continue
+                calendars.append({'id': item['id'], 'summary': str(item.get('summaryOverride') or item.get('summary') or item['id']),
+                                  'primary': bool(item.get('primary'))})
+            page_token = body.get('nextPageToken')
+            if not page_token:
+                break
+        return calendars

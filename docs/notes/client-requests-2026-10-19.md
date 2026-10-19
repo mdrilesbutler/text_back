@@ -24,3 +24,19 @@ Each item becomes its own small layer, in this order, after the pilot proof.
 8. Everything above is customizable per client (copy, fields, links).
 
 Open decisions recorded with the layer that needs them, not here.
+
+## Added later on 2026-10-19: client GUI for phone number and calendar
+
+Michael: "I want a GUI built so clients can customize their responses, enter
+their phone number, their calendar so it can be cross referenced with the
+client calendar to make sure they have availability."
+
+- Responses: already the Messages tab of `/client`.
+- Phone number: Business tab (`/client/business`) — business name, the number
+  customers are given on HELP, and the owner's mobile (code-verified change).
+- Calendar: Calendar tab (`/client/calendar`) — Connect Google Calendar via the
+  owner's own browser consent, then pick the calendar; free/busy and bookings
+  use that calendar. Needs a Google **Web application** OAuth client
+  (`TEXT_BACK_GOOGLE_CLIENT_FILE`) with redirect
+  `<public base URL>/calendar/callback`; without it the tab says the
+  connection is still being set up.
