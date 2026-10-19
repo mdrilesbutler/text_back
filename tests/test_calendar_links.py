@@ -85,7 +85,7 @@ def test_ics_folds_long_lines_and_escapes():
     text = build_ics(event_id="e;1", summary="S" * 100, location="a,b;c", description="line1\nline2",
                      start=NOW, end=NOW, stamp=NOW)
     assert all(len(line.encode()) <= 75 for line in text.split("\r\n"))
-    assert "UID:e\;1@text-back" in text and "LOCATION:a\\,b\;c" in text and "DESCRIPTION:line1\\nline2" in text
+    assert r"UID:e\;1@text-back" in text and r"LOCATION:a\,b\;c" in text and r"DESCRIPTION:line1\nline2" in text
 
 
 def test_confirmation_without_an_app_has_no_dangling_links_line(tmp_path):
