@@ -1,4 +1,6 @@
-"""Client settings page: the business owner signs in and edits message copy.
+"""Client settings pages: the business owner signs in and edits message copy.
+Business details and the calendar connection live in client_settings.py and
+share the sign-in, page frame and code helpers defined here.
 
 Sign-in is passwordless. The owner enters the business mobile that is on
 file (TEXT_BACK_OWNER_MOBILE); if it matches, a six-digit code is texted to
@@ -33,6 +35,7 @@ CODE_WINDOW = timedelta(minutes=15)
 SESSION_TTL = timedelta(hours=12)
 SESSION_COOKIE = "text_back_client"
 PENDING_COOKIE = "text_back_client_login"
+CODE_FAILURE = "That code is not right or has expired. Check the text or send a new code."
 
 # Order and wording of the settings form. (key, label, when it is sent)
 FIELDS = (
@@ -68,7 +71,23 @@ STYLE = (
     ".err{background:#fde8e8;border:1px solid #f3b4b4;padding:12px;border-radius:6px}.ok{background:#e6f4ea;border:1px solid #a9d8b4;padding:12px;border-radius:6px}"
     ".def{color:#5b6773;font-size:.92rem;margin:.3rem 0 0}.count{font-size:.85rem;color:#5b6773;text-align:right}nav{display:flex;justify-content:space-between;align-items:center}"
     "nav form{margin:0}nav button{background:#e8ecf0;color:#18212b;margin:0;padding:6px 12px}"
+    ".tabs{display:flex;gap:1rem;margin:.2rem 0 1rem;font-weight:600}.tabs a{color:#1b5e9e;text-decoration:none}.tabs a.on{color:#18212b;border-bottom:2px solid #18212b}"
+    ".card{background:#fff;border:1px solid #c5ccd3;border-radius:6px;padding:14px 16px;margin:.8rem 0}.muted{color:#5b6773}"
 )
+
+TABS = (("messages", "Messages", "/client/messages"), ("business", "Business", "/client/business"), ("calendar", "Calendar", "/client/calendar"))
+
+
+def nav_html(session, title: str, active: str) -> str:
+    """Page heading, sign-out button and the three settings tabs."""
+    tabs = "".join(
+        f"<a href={href}{' class=on' if key == active else ''}>{label}</a>" for key, label, href in TABS
+    )
+    return (
+        f"<nav><h1>{html.escape(title)}</h1><form method=post action=/client/logout>"
+        f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><button type=submit>Sign out</button></form></nav>"
+        f"<div class=tabs>{tabs}</div>"
+    )
 
 COUNT_SCRIPT = (
     "document.querySelectorAll('textarea').forEach(function(t){var c=document.createElement('div');c.className='count';"
@@ -175,9 +194,8 @@ def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTML
         )
     )
     body = (
-        "<nav><h1>Your messages</h1><form method=post action=/client/logout>"
-        f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><button type=submit>Sign out</button></form></nav>"
-        f"<p>These are the texts <strong>{html.escape(state.business_name)}</strong>'s scheduling assistant sends. "
+        nav_html(session, "Your messages", "messages")
+        + f"<p>These are the texts <strong>{html.escape(state.business_name)}</strong>'s scheduling assistant sends. "
         "Edit any of them; {business_name} and the other bracketed words are filled in automatically.</p>"
         + msg
         + "<form method=post action=/client/messages>"
@@ -190,36 +208,55 @@ def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTML
     return _page("Your messages", body, script=COUNT_SCRIPT)
 
 
+def send_code(state, mobile: str, now: datetime, *, purpose: str = "sign-in") -> None:
+    """Text a fresh six-digit code to ``mobile`` (rate limited per number)."""
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    key = f"login:{mobile}:{secrets.token_hex(8)}"
+    with state.store.transaction():
+        # The outbox is the durable record of codes actually texted.
+        recent = state.store.conn.execute(
+            "SELECT count(*) FROM sms_outbox WHERE kind='login_code' AND phone=? AND created_at>?",
+            (mobile, (now - CODE_WINDOW).isoformat()),
+        ).fetchone()[0]
+        if recent >= CODES_PER_WINDOW:
+            return
+        state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (mobile,))
+        state.store.conn.execute(
+            "INSERT INTO client_login_codes(phone,code_hash,expires_at,attempts,created_at) VALUES(?,?,?,0,?)",
+            (mobile, _mac(state, code), (now + CODE_TTL).isoformat(), now.isoformat()),
+        )
+        enqueue_sms(
+            store=state.store, key=key, to=mobile, from_number=state.business_number, now=now,
+            kind="login_code", body=f"{state.business_name} settings {purpose} code: {code}. It expires in 10 minutes.",
+        )
+    run_due_sms(store=state.store, telecom=state.telecom, now=now, policy=state.followup_policy,
+                keys=[key], callback_base_url=state.public_base_url, immediate=True)
+    with state.store.transaction():
+        # Once handed to the carrier the code has no business sitting in the outbox.
+        state.store.conn.execute(
+            "UPDATE sms_outbox SET body='[sign-in code]' WHERE key=? AND status IN ('sent','unknown','dead_letter')", (key,)
+        )
+
+
+def check_code(state, phone: str, code: str, now: datetime) -> bool:
+    """True when ``code`` is the live code for ``phone``; the code is consumed on success.
+    Every failure (no code, expired, too many guesses, wrong digits) looks the same."""
+    code = re.sub(r"\D", "", code or "")
+    with state.store.transaction():
+        row = state.store.conn.execute(
+            "SELECT * FROM client_login_codes WHERE phone=? AND expires_at>?", (phone, now.isoformat())
+        ).fetchone()
+        if row is None or row["attempts"] >= CODE_ATTEMPTS:
+            return False
+        state.store.conn.execute("UPDATE client_login_codes SET attempts=attempts+1 WHERE phone=?", (phone,))
+        if len(code) != 6 or not hmac.compare_digest(row["code_hash"], _mac(state, code)):
+            return False
+        state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (phone,))
+        return True
+
+
 def install_routes(app):
     state = app.state
-
-    def send_code(mobile: str, now: datetime) -> None:
-        code = f"{secrets.randbelow(1_000_000):06d}"
-        key = f"login:{mobile}:{secrets.token_hex(8)}"
-        with state.store.transaction():
-            # The outbox is the durable record of codes actually texted.
-            recent = state.store.conn.execute(
-                "SELECT count(*) FROM sms_outbox WHERE kind='login_code' AND phone=? AND created_at>?",
-                (mobile, (now - CODE_WINDOW).isoformat()),
-            ).fetchone()[0]
-            if recent >= CODES_PER_WINDOW:
-                return
-            state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (mobile,))
-            state.store.conn.execute(
-                "INSERT INTO client_login_codes(phone,code_hash,expires_at,attempts,created_at) VALUES(?,?,?,0,?)",
-                (mobile, _mac(state, code), (now + CODE_TTL).isoformat(), now.isoformat()),
-            )
-            enqueue_sms(
-                store=state.store, key=key, to=mobile, from_number=state.business_number, now=now,
-                kind="login_code", body=f"{state.business_name} settings sign-in code: {code}. It expires in 10 minutes.",
-            )
-        run_due_sms(store=state.store, telecom=state.telecom, now=now, policy=state.followup_policy,
-                    keys=[key], callback_base_url=state.public_base_url, immediate=True)
-        with state.store.transaction():
-            # Once handed to the carrier the code has no business sitting in the outbox.
-            state.store.conn.execute(
-                "UPDATE sms_outbox SET body='[sign-in code]' WHERE key=? AND status IN ('sent','unknown','dead_letter')", (key,)
-            )
 
     @app.get("/client", include_in_schema=False)
     @app.get("/client/", include_in_schema=False)
@@ -241,7 +278,7 @@ def install_routes(app):
             return _login_form(error="Enter the mobile number as digits, like 704 555 0123.")
         owner = getattr(state, "owner_mobile", "")
         if owner and hmac.compare_digest(mobile, owner):
-            send_code(mobile, now)
+            send_code(state, mobile, now)
         # Same answer either way so the page never confirms which number is on file.
         response = RedirectResponse("/client/verify", status_code=303)
         pending = secrets.token_urlsafe(24)
@@ -280,21 +317,12 @@ def install_routes(app):
         if not pending:
             return RedirectResponse("/client/login", status_code=303)
         form = await request.form()
-        code = re.sub(r"\D", "", str(form.get("code", "")))
         now = _now(state)
+        # One message for a wrong code, an expired code, too many guesses and a
+        # number that is not on file, so the page never confirms which number is.
+        if not check_code(state, pending["phone"], str(form.get("code", "")), now):
+            return _verify_form(error=CODE_FAILURE)
         with state.store.transaction():
-            row = state.store.conn.execute(
-                "SELECT * FROM client_login_codes WHERE phone=? AND expires_at>?", (pending["phone"], now.isoformat())
-            ).fetchone()
-            # One message for a wrong code, an expired code, too many guesses and a
-            # number that is not on file, so the page never confirms which number is.
-            failure = "That code is not right or has expired. Check the text or send a new code."
-            if row is None or row["attempts"] >= CODE_ATTEMPTS:
-                return _verify_form(error=failure)
-            state.store.conn.execute("UPDATE client_login_codes SET attempts=attempts+1 WHERE phone=?", (pending["phone"],))
-            if len(code) != 6 or not hmac.compare_digest(row["code_hash"], _mac(state, code)):
-                return _verify_form(error=failure)
-            state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (pending["phone"],))
             state.store.conn.execute("DELETE FROM client_sessions WHERE token_hash=?", (pending["token_hash"],))
             token = secrets.token_urlsafe(32)
             state.store.conn.execute(

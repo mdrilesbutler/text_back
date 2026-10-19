@@ -30,12 +30,15 @@ def _credentials(state):
     return credentials
 
 
-def create_link(state):
+def create_link(state, purpose='operator', ttl=timedelta(days=1)):
+    """Single-use link that starts Google consent. purpose='operator' reconnects the
+    configured calendar; purpose='client' lets the signed-in owner connect any
+    account and pick a calendar afterwards (see client_settings)."""
     token = secrets.token_urlsafe(32)
     now = _now(state)
     with state.store.transaction():
-        state.store.conn.execute('INSERT INTO calendar_reconnect_links(token_hash,expires_at) VALUES(?,?)',
-            (_hash(token),(now+timedelta(days=1)).isoformat()))
+        state.store.conn.execute('INSERT INTO calendar_reconnect_links(token_hash,expires_at,purpose) VALUES(?,?,?)',
+            (_hash(token),(now+ttl).isoformat(),purpose))
     return state.public_base_url+'/calendar/connect?token='+token
 
 
@@ -104,11 +107,12 @@ def install_routes(app):
         except CalendarProviderError:
             raise HTTPException(503,'Calendar connection is not configured') from None
         with state.store.transaction():
-            consumed=state.store.conn.execute('UPDATE calendar_reconnect_links SET used=1 WHERE token_hash=? AND used=0 AND expires_at>?',(_hash(token),now.isoformat()))
-            if consumed.rowcount!=1:
+            link=state.store.conn.execute('SELECT purpose FROM calendar_reconnect_links WHERE token_hash=? AND used=0 AND expires_at>?',(_hash(token),now.isoformat())).fetchone()
+            if link is None:
                 raise HTTPException(400,'Connection link expired or already used')
-            state.store.conn.execute('INSERT INTO calendar_oauth_states(state_hash,cookie_hash,verifier,expires_at) VALUES(?,?,?,?)',
-                (_hash(oauth_state),_hash(cookie),verifier,(now+timedelta(minutes=15)).isoformat()))
+            state.store.conn.execute('UPDATE calendar_reconnect_links SET used=1 WHERE token_hash=?',(_hash(token),))
+            state.store.conn.execute('INSERT INTO calendar_oauth_states(state_hash,cookie_hash,verifier,expires_at,purpose) VALUES(?,?,?,?,?)',
+                (_hash(oauth_state),_hash(cookie),verifier,(now+timedelta(minutes=15)).isoformat(),link['purpose']))
         response=RedirectResponse(url,status_code=303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
         response.set_cookie('text_back_oauth',cookie,secure=True,httponly=True,samesite='lax',max_age=900,path='/calendar/callback')
         return response
@@ -123,15 +127,34 @@ def install_routes(app):
             if not row or not cookie or not hmac.compare_digest(row['cookie_hash'],_hash(cookie)):
                 raise HTTPException(400,'Calendar connection session expired or invalid')
             app_state.store.conn.execute('UPDATE calendar_oauth_states SET used=1 WHERE state_hash=?',(_hash(state),))
+        owner_flow = row['purpose'] == 'client'
         if error or not code:
+            if owner_flow:
+                return _back_to_settings(app_state, error='Google did not grant calendar access. Try connecting again.')
             raise HTTPException(400,'Calendar permission was not granted; request a new connection link')
         try:
-            await asyncio.to_thread(_credentials(app_state).reconnect,code=code,verifier=row['verifier'],
-                redirect_uri=app_state.public_base_url+'/calendar/callback',calendar_id=app_state.calendar.calendar_id)
+            # The owner may connect any account and pick a calendar next; the operator
+            # path must keep the configured calendar.
+            calendars = await asyncio.to_thread(_credentials(app_state).reconnect,code=code,verifier=row['verifier'],
+                redirect_uri=app_state.public_base_url+'/calendar/callback',
+                calendar_id=None if owner_flow else app_state.calendar.calendar_id)
         except CalendarProviderError:
+            if owner_flow:
+                return _back_to_settings(app_state, error='Google could not confirm a calendar this account can write to. Try again with the account that owns your business calendar.')
             raise HTTPException(400,'Calendar connection could not be verified; request a new link') from None
         with app_state.store.transaction():
             app_state.store.conn.execute("UPDATE handoff_deliveries SET status='cancelled' WHERE alert_id LIKE 'calendar-reauth:%' AND status='pending'")
+        if owner_flow:
+            from text_back.client_settings import remember_calendars
+            remember_calendars(app_state, calendars, now)
+            return _back_to_settings(app_state)
         response=HTMLResponse('<h1>Calendar connected</h1><p>Your scheduling assistant can book appointments again. You can close this page.</p>',headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
+        response.delete_cookie('text_back_oauth',path='/calendar/callback')
+        return response
+
+    def _back_to_settings(app_state, error=''):
+        from urllib.parse import urlencode
+        target='/client/calendar'+('?'+urlencode({'error':error}) if error else '')
+        response=RedirectResponse(target,status_code=303,headers={'Cache-Control':'no-store','Referrer-Policy':'no-referrer'})
         response.delete_cookie('text_back_oauth',path='/calendar/callback')
         return response

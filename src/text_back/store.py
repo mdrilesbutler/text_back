@@ -152,10 +152,20 @@ class Store:
             status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0,
             next_attempt_at TEXT NOT NULL)""")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS calendar_reconnect_links (
-            token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0)""")
+            token_hash TEXT PRIMARY KEY, expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0,
+            purpose TEXT NOT NULL DEFAULT 'operator')""")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS calendar_oauth_states (
             state_hash TEXT PRIMARY KEY, cookie_hash TEXT NOT NULL, verifier TEXT NOT NULL,
-            expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0)""")
+            expires_at TEXT NOT NULL, used INTEGER NOT NULL DEFAULT 0,
+            purpose TEXT NOT NULL DEFAULT 'operator')""")
+        # Databases created before the client-initiated connect flow lack the purpose column.
+        for table in ("calendar_reconnect_links", "calendar_oauth_states"):
+            columns = {row[1] for row in self.conn.execute(f"PRAGMA table_info({table})")}
+            if "purpose" not in columns:
+                self.conn.execute(f"ALTER TABLE {table} ADD COLUMN purpose TEXT NOT NULL DEFAULT 'operator'")
+        # Owner-editable business settings (name, phones, chosen calendar); env values are the defaults.
+        self.conn.execute("""CREATE TABLE IF NOT EXISTS client_settings (
+            key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)""")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS client_login_codes (
             phone TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL,
             attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)""")
@@ -171,6 +181,25 @@ class Store:
     def _commit(self) -> None:
         if not self._transaction_depth:
             self.conn.commit()
+
+    @synchronized
+    def setting(self, key: str, default: str | None = None) -> str | None:
+        row = self.conn.execute("SELECT value FROM client_settings WHERE key=?", (key,)).fetchone()
+        return row[0] if row else default
+
+    @synchronized
+    def set_setting(self, key: str, value: str | None, *, now: datetime | None = None) -> None:
+        """Store an owner-editable setting; None removes it so the env default applies again."""
+        if value is None:
+            self.conn.execute("DELETE FROM client_settings WHERE key=?", (key,))
+        else:
+            stamp = (now or datetime.now(timezone.utc)).isoformat()
+            self.conn.execute(
+                "INSERT INTO client_settings(key,value,updated_at) VALUES(?,?,?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+                (key, value, stamp),
+            )
+        self._commit()
 
     @contextmanager
     def transaction(self):

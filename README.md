@@ -31,7 +31,7 @@ wording (the editable `opt_out_suffix`) is appended to the first text,
 follow-ups, opt-in and HELP replies whenever a template leaves STOP out, and
 no template may promise a person or the business line.
 
-The business owner edits that copy themselves at `<public base URL>/client`:
+The business owner edits that copy themselves at `<public base URL>/client` (the Business tab holds the name and phone numbers, the Calendar tab connects their Google calendar and picks which one to book on):
 they enter the business mobile on file (`TEXT_BACK_OWNER_MOBILE`), receive a
 six-digit code by text, and get a form with every message, the standard
 wording shown in grey, the placeholders each one may use, and two

@@ -191,6 +191,9 @@ def create_app(
     app.state.store.calendar_links = CalendarLinks(app.state.public_base_url, webhook_secret)
     app.state.delivery_policy = delivery_policy
     app.state.delivery_transport = selected_delivery_transport
+    # The owner's saved business details and calendar choice override the env defaults.
+    from text_back.client_settings import apply_settings
+    apply_settings(app.state)
 
     @app.get("/health")
     def health() -> dict:
@@ -338,6 +341,8 @@ def create_app(
     install_routes(app)
     from text_back.client_portal import install_routes as install_client_routes
     install_client_routes(app)
+    from text_back.client_settings import install_routes as install_settings_routes
+    install_settings_routes(app)
     from text_back.calendar_links import install_routes as install_link_routes
     install_link_routes(app)
     if setup_directory := os.environ.get('TEXT_BACK_SETUP_DIRECTORY'):

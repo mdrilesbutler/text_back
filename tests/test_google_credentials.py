@@ -102,7 +102,7 @@ def test_web_client_migration_preserves_refresh_until_browser_reconnect(tmp_path
         _response(access_token="test-web-access", expires_in=3600,
                   refresh_token="test-web-refresh",
                   scope="https://www.googleapis.com/auth/calendar"),
-        _response(accessRole="owner"),
+        _response(items=[{"id": "primary", "summary": "Main", "accessRole": "owner", "primary": True}]),
         _response(access_token="test-web-refreshed", expires_in=3600),
     ])
     provider = GoogleCredentials(path, client_file=client_path,
