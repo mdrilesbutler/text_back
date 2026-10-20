@@ -22,7 +22,14 @@ import os
 from pathlib import Path
 import sys
 
-import httpx
+try:
+    import httpx
+except ModuleNotFoundError:  # system python3: re-run under the repo venv, which has httpx
+    _VENV = Path(__file__).resolve().parents[1] / ".venv"
+    _VENV_PYTHON = _VENV / "bin" / "python"
+    if _VENV_PYTHON.is_file() and Path(sys.prefix).resolve() != _VENV.resolve():
+        os.execv(str(_VENV_PYTHON), [str(_VENV_PYTHON), *sys.argv])
+    raise
 
 REDACTED_KEYS = {"ein", "company_address"}
 BRAND_REQUEST = "brand-request.json"
