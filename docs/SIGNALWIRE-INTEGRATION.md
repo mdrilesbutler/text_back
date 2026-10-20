@@ -200,6 +200,37 @@ for the already-owned number, then execute the full phone checklist. Account
 terms and the final consent description must be reviewed as actual commitments,
 not automatically populated from this worksheet.
 
+### Submitting the staged payloads through the API
+
+Once the worksheet values are final they are staged, outside git, as
+`~/.config/text_back/registration/brand-request.json` and `campaign-request.json`.
+`scripts/registration.py` submits and tracks them against the Campaign Registry
+endpoints (verified against the provider's REST reference on 2026-10-20:
+`POST …/registry/beta/brands`, `POST …/registry/beta/brands/{brand_id}/campaigns`
+with `brand_id` repeated in the body, `POST …/registry/beta/campaigns/{id}/orders`
+with `phone_numbers`, and the matching `GET`s). It reads the SignalWire
+credentials from `runtime.env`, saves each response beside the request (mode
+600) and refuses to re-POST a step whose response already exists. Before each
+paid POST it also lists the registry (`GET …/brands`, `GET …/brands/{id}/campaigns`)
+and adopts any record already there, so a transport error after a successful
+submission cannot lead to paying twice. Paid steps require `--yes`; `--dry-run` prints
+the request without sending or writing anything, with the EIN and address
+redacted. Michael runs the paid steps himself (the sandbox refuses them):
+
+```bash
+python3 scripts/registration.py brand --dry-run      # inspect, then:
+python3 scripts/registration.py brand --yes          # $4.50, saves brand-response.json
+python3 scripts/registration.py brand-status         # wait for an approved state
+python3 scripts/registration.py campaign --yes       # vetting + 3 months, campaign-response.json
+python3 scripts/registration.py campaign-status      # 3-5 business days
+python3 scripts/registration.py assign --yes         # binds TEXT_BACK_SIGNALWIRE_FROM_NUMBER
+python3 scripts/registration.py numbers              # assignment state per number
+```
+
+Assignment is complete when `numbers` reports the pilot number in a complete
+state; then send one real SMS and confirm the `[SignalWire Free Trial]` prefix
+is gone before the remaining `docs/ONBOARDING-FORWARDING.md` checks.
+
 ## Pre-live checklist
 
 1. Run `.venv/bin/pytest tests/` and require a fully green suite.
