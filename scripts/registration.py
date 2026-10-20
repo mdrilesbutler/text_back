@@ -146,6 +146,21 @@ class Registry:
     def _print(self, data: dict) -> None:
         print(json.dumps(redact(data), indent=2), file=self.out)
 
+    def _adopt_existing(self, listing_path: str, response_path: Path, label: str, status_step: str) -> None:
+        """Refuse a paid POST when the registry already holds a record for it.
+
+        A transport error after a successful POST leaves no response file; the
+        listing is the provider's truth, so adopt the first record and stop.
+        """
+        listing = self._request("GET", listing_path)
+        records = [item for item in listing.get("data", []) if isinstance(item, dict) and item.get("id")]
+        if records:
+            _write_private(response_path, records[0])
+            raise RegistrationError(
+                f"{label} already exists in the registry (id {records[0]['id']}, state {records[0].get('state')}); "
+                f"saved it to {response_path.name}, run {status_step} instead"
+            )
+
     # -- steps -----------------------------------------------------------
     def brand(self, yes: bool) -> dict:
         response_path = self.dir / BRAND_RESPONSE
@@ -155,6 +170,8 @@ class Registry:
         body = _read_json(self.dir / BRAND_REQUEST, "brand request")
         if not yes and not self.dry_run:
             raise RegistrationError("brand submission is a paid request (~$4.50); re-run with --yes to submit")
+        if not self.dry_run:
+            self._adopt_existing("/brands", response_path, "a brand", "brand-status")
         data = self._request("POST", "/brands", body)
         if not self.dry_run:
             _write_private(response_path, data)
@@ -182,6 +199,8 @@ class Registry:
         body["brand_id"] = brand_id
         if not yes and not self.dry_run:
             raise RegistrationError("campaign submission is a paid request (~$12 incl. 3 months); re-run with --yes to submit")
+        if not self.dry_run:
+            self._adopt_existing(f"/brands/{brand_id}/campaigns", response_path, "a campaign", "campaign-status")
         data = self._request("POST", f"/brands/{brand_id}/campaigns", body)
         if not self.dry_run:
             _write_private(response_path, data)

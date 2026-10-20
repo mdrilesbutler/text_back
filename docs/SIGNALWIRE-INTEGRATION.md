@@ -210,8 +210,10 @@ endpoints (verified against the provider's REST reference on 2026-10-20:
 with `brand_id` repeated in the body, `POST …/registry/beta/campaigns/{id}/orders`
 with `phone_numbers`, and the matching `GET`s). It reads the SignalWire
 credentials from `runtime.env`, saves each response beside the request (mode
-600) and refuses to re-POST a step whose response already exists, so a brand or
-campaign is never paid for twice. Paid steps require `--yes`; `--dry-run` prints
+600) and refuses to re-POST a step whose response already exists. Before each
+paid POST it also lists the registry (`GET …/brands`, `GET …/brands/{id}/campaigns`)
+and adopts any record already there, so a transport error after a successful
+submission cannot lead to paying twice. Paid steps require `--yes`; `--dry-run` prints
 the request without sending or writing anything, with the EIN and address
 redacted. Michael runs the paid steps himself (the sandbox refuses them):
 

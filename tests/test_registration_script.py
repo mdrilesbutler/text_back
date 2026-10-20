@@ -77,12 +77,13 @@ def test_brand_dry_run_redacts_ein_and_address_and_writes_nothing(staged):
 
 
 def test_brand_requires_yes_then_saves_response_privately(staged):
-    client = FakeClient([(201, {"id": "brand-1", "state": "pending", "ein": "12-3456789"})])
+    client = FakeClient([(200, {"data": []}), (201, {"id": "brand-1", "state": "pending", "ein": "12-3456789"})])
     code, out = run("brand", staged, client)
     assert code == 2 and "--yes" in out and client.calls == []
     code, out = run("brand", staged, client, "--yes")
     assert code == 0
-    method, url, body = client.calls[0]
+    assert client.calls[0][:2] == ("GET", "https://example.signalwire.com/api/relay/rest/registry/beta/brands")
+    method, url, body = client.calls[1]
     assert (method, url) == ("POST", "https://example.signalwire.com/api/relay/rest/registry/beta/brands")
     assert body == BRAND
     saved = staged / "brand-response.json"
@@ -103,10 +104,11 @@ def test_campaign_needs_brand_and_injects_brand_id_into_body_and_path(staged):
     code, out = run("campaign", staged, client, "--yes")
     assert code == 2 and "submit the brand first" in out
     (staged / "brand-response.json").write_text(json.dumps({"id": "brand-1", "state": "approved"}))
-    client = FakeClient([(201, {"id": "camp-1", "state": "pending", "name": "Recover"})])
+    client = FakeClient([(200, {"data": []}), (201, {"id": "camp-1", "state": "pending", "name": "Recover"})])
     code, out = run("campaign", staged, client, "--yes")
     assert code == 0
-    method, url, body = client.calls[0]
+    assert client.calls[0][:2] == ("GET", "https://example.signalwire.com/api/relay/rest/registry/beta/brands/brand-1/campaigns")
+    method, url, body = client.calls[1]
     assert (method, url) == ("POST", "https://example.signalwire.com/api/relay/rest/registry/beta/brands/brand-1/campaigns")
     assert body["brand_id"] == "brand-1" and body["sms_use_case"] == "LOW_VOLUME_MIXED"
     assert json.loads((staged / "campaign-response.json").read_text())["id"] == "camp-1"
@@ -146,7 +148,19 @@ def test_assign_posts_the_from_number_once_and_numbers_reports_state(staged):
 
 
 def test_http_errors_are_reported_without_the_token_and_without_saving(staged):
-    client = FakeClient([(422, {"errors": [{"detail": "ein invalid"}]})])
+    client = FakeClient([(200, {"data": []}), (422, {"errors": [{"detail": "ein invalid"}]})])
     code, out = run("brand", staged, client, "--yes")
     assert code == 2 and "HTTP 422" in out and "PTsecret" not in out
     assert not (staged / "brand-response.json").exists()
+
+
+def test_paid_steps_adopt_a_record_the_registry_already_holds(staged):
+    client = FakeClient([(200, {"data": [{"id": "brand-9", "state": "pending", "company_name": "FluxWorks, LLC"}]})])
+    code, out = run("brand", staged, client, "--yes")
+    assert code == 2 and "already exists" in out and "brand-9" in out
+    assert [c[0] for c in client.calls] == ["GET"]
+    assert json.loads((staged / "brand-response.json").read_text())["id"] == "brand-9"
+    client = FakeClient([(200, {"data": [{"id": "camp-9", "state": "pending"}]})])
+    code, out = run("campaign", staged, client, "--yes")
+    assert code == 2 and "camp-9" in out and [c[0] for c in client.calls] == ["GET"]
+    assert json.loads((staged / "campaign-response.json").read_text())["id"] == "camp-9"
