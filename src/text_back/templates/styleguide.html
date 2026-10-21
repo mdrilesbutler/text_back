@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+{% from "components/icons.html" import icon %}
+{% from "components/forms.html" import field, input, phone_input, textarea_counter, select, toggle, radio_pills, button, chips %}
+{% from "components/display.html" import card, section_header, status_pill, status_card, stat, flash, toast, empty_state, stepper, checklist %}
+{% from "components/data.html" import table, phone_preview %}
+{% set subtitle = 'Every component of the owner portal with sample data. Resize the window to see the phone and desktop layouts; the page follows your system light or dark setting.' %}
+
+{% block actions %}
+<button class="btn btn-secondary btn-sm" type="button" id="copy-demo" data-copy="https://hermes-cloud.tailefb1a4.ts.net:8443">{{ icon('copy') }}Copy base URL</button>
+{% endblock %}
+
+{% block content %}
+<div class="stack">
+
+{{ section_header('Status cards', 'Home shows three of these. Color, icon and a word always travel together.') }}
+<div class="grid cols-3">
+  {{ status_card('Calendar', 'ok', 'Bookings go to “Tree jobs” on Google Calendar.', 'Change calendar', '/client/calendar', state_word='Connected') }}
+  {{ status_card('Forwarding', 'warn', 'Three of five checks done. An answered call has not been tested yet.', 'Finish setup', '/client/business', state_word='Not verified') }}
+  {{ status_card('Messaging registration', 'err', 'The campaign was rejected: the sample texts did not mention how to opt out.', 'See details', '/client', state_word='Rejected') }}
+</div>
+
+{{ section_header('This week', 'Counts come straight from recorded events; nothing is estimated.') }}
+<div class="stats">
+  {{ stat('Missed calls', '14', 'since Monday') }}
+  {{ stat('Texts sent', '41', '3 segments on average') }}
+  {{ stat('Booked', '6', '43% of missed calls') }}
+  {{ stat('Handed off', '2', 'waiting on you') }}
+</div>
+
+{{ section_header('Pills, buttons and flashes') }}
+{% call card('Status pills') %}
+<div class="row">
+  {{ status_pill('ok', 'Booked') }} {{ status_pill('info', 'In progress') }} {{ status_pill('warn', 'Handed off') }}
+  {{ status_pill('err', 'Opted out') }} {{ status_pill('neutral', 'New') }} {{ status_pill('neutral', 'Expired', 'clock') }}
+</div>
+<hr>
+<div class="row">
+  {{ button('Save changes') }} {{ button('Verify', 'secondary', type='button') }} {{ button('Reset to default', 'ghost', type='button') }}
+  {{ button('Sign out everywhere', 'danger', type='button') }} {{ button('Small', 'secondary', size='sm', type='button') }}
+  {{ button('Open Google Calendar', 'secondary', href='https://calendar.google.com', icon_name='external') }} {{ button('Saving…', 'primary', disabled=true) }}
+</div>
+<hr>
+{{ flash(error='Not saved: opt_out_suffix must tell the customer to reply STOP.') }}
+{{ flash(notice='Saved. New conversations use these messages from now on.') }}
+<div class="row">{{ toast('Copied', 'ok') }} {{ toast('Could not reach Google Calendar', 'err') }} {{ toast('Checking availability…', 'info') }}</div>
+{% endcall %}
+
+{{ section_header('Forms', 'Every control has a label, a hint slot, an inline error slot and a grey default with Reset.') }}
+<div class="grid rail">
+  <div class="stack">
+    {% call card('Business', 'Shown in every text and on the sign-in screen.') %}
+      {{ input('business_name', 'Business name', value=business_name, hint='Up to 60 characters.', default='Oak & Pine Tree Care', reset_name='reset', maxlength=60, required=true) }}
+      {{ input('help_contact', 'Number customers get on HELP', value='', placeholder='(704) 555-0100', hint='Left blank, HELP replies name the business only.', error='Enter the customer phone number as digits, like 704 555 0123, or leave it blank.') }}
+      {{ phone_input('business_number', 'Your business number', value='+17045695600', hint='The number customers call. When it goes unanswered, the assistant texts them.', verify_label='Verify', status='Forwarding verified on Oct 19', status_kind='ok') }}
+      {{ phone_input('texting_number', 'Texting number', value='+19805550177', hint='The number texts come from. Type it exactly; it must already belong to this account.', verify_label='Verify', status='Not a number this account owns', status_kind='err', error='Not a number this account owns.') }}
+      {{ phone_input('owner_mobile', 'Your mobile', value='+19805550123', hint='Sign-in codes and alerts go here. Changing it texts a code to the new number first.', verify_label='', status='Confirmed', status_kind='ok') }}
+      {{ select('timezone', 'Timezone', [('America/New_York', 'Eastern (New York)'), ('America/Chicago', 'Central (Chicago)'), ('America/Denver', 'Mountain (Denver)'), ('America/Los_Angeles', 'Pacific (Los Angeles)')], value='America/New_York', default='Eastern (New York)', reset_name='reset') }}
+      {{ radio_pills('appointment_duration_minutes', 'Appointment length', [('30', '30 min'), ('60', '1 hour'), ('90', '90 min'), ('120', '2 hours')], value='60', hint='How long each booked slot blocks on the calendar.') }}
+    {% endcall %}
+
+    {% call card('First text', 'Sent the moment a call goes unanswered.') %}
+      {{ textarea_counter('intro', 'First text after a missed call', value='', placeholder='Hey, sorry we missed your call. This is {business_name}. What can we help with?', hint='{business_name} is filled in automatically.', default='Hey, sorry we missed your call. This is {business_name}. What can we help with?', reset_name='reset', describe='135 characters · 1 text') }}
+      {{ chips(['business_name'], 'intro') }}
+      {{ textarea_counter('opt_out_suffix', 'Opt-out line', value='Reply END to end', error='Must tell the customer to reply STOP; carriers require the word STOP.', hint='Added to the first text and follow-ups when they leave out the word STOP.', default='Reply STOP to opt out.', reset_name='reset', describe='16 characters · 1 text') }}
+      <div class="field">
+        {{ toggle('ask_phone', 'Also ask for the best phone number', on=false, hint='YES keeps the number they are texting from.') }}
+        {{ toggle('ask_email', 'Also ask for an email address', on=true, hint='SKIP is allowed. A calendar invite is emailed when given.') }}
+        {{ toggle('locked_example', 'Texts come from the texting number', on=true, disabled=true, hint='Fixed by the carrier setup.') }}
+      </div>
+    {% endcall %}
+  </div>
+  <div class="rail-side stack">
+    {% call card('Preview', 'Updates as you type. Sample customer: Dana, Thursday at 4.') %}
+      {{ phone_preview(bubbles, header=business_name, sub='Text message · today') }}
+      <p class="note">Until messaging registration completes the carrier adds “[SignalWire Free Trial]” to every text, which can push a message into a second segment.</p>
+    {% endcall %}
+  </div>
+</div>
+
+{{ section_header('Segmented tabs') }}
+{% call card() %}
+<div class="seg" role="tablist" aria-label="Message groups">
+  <button type="button" role="tab" id="tab-first" aria-selected="true" data-target="panel-first">First text</button>
+  <button type="button" role="tab" id="tab-q" aria-selected="false" data-target="panel-q">Questions</button>
+  <button type="button" role="tab" id="tab-c" aria-selected="false" data-target="panel-c">Confirmation</button>
+  <button type="button" role="tab" id="tab-f" aria-selected="false" data-target="panel-f">Follow-ups</button>
+  <button type="button" role="tab" id="tab-s" aria-selected="false" data-target="panel-s">STOP / HELP</button>
+</div>
+<div role="tabpanel" id="panel-first" aria-labelledby="tab-first" class="stack-sm"><p class="muted">Arrow keys move between tabs; the panel below swaps without a page load.</p></div>
+<div role="tabpanel" id="panel-q" aria-labelledby="tab-q" hidden><p>Questions panel</p></div>
+<div role="tabpanel" id="panel-c" aria-labelledby="tab-c" hidden><p>Confirmation panel</p></div>
+<div role="tabpanel" id="panel-f" aria-labelledby="tab-f" hidden><p>Follow-ups panel</p></div>
+<div role="tabpanel" id="panel-s" aria-labelledby="tab-s" hidden><p>STOP / HELP panel</p></div>
+{% endcall %}
+
+{{ section_header('Customers', 'Design only this session. Tap a phone number to open the conversation drawer.') }}
+{% call card('Customers', '5 this week', flush=true) %}
+  {% call(row) table([{'key': 'phone', 'label': 'Customer'}, {'key': 'service', 'label': 'Job'}, {'key': 'when', 'label': 'Preferred time'}, {'key': 'status', 'label': 'Status'}, {'key': 'last', 'label': 'Last activity'}],
+      customer_rows, id='customers', open_id='customers-d-c1') %}
+    <div class="grid cols-2">
+      <div>
+        <h3>Conversation</h3>
+        <div class="thread">
+          {% for b in bubbles[:4] %}<div class="bubble {{ b.dir }}">{{ b.text }}<span class="meta">{{ b.meta }}</span></div>{% endfor %}
+        </div>
+      </div>
+      <div class="stack-sm">
+        <h3>Timeline</h3>
+        <dl class="kv">
+          <dt>2:14 PM</dt><dd>Missed call from {{ row.cells.phone.text }}</dd>
+          <dt>2:14 PM</dt><dd>First text delivered</dd>
+          <dt>2:19 PM</dt><dd>Qualified: oak removal, Matthews, Thursday at 4</dd>
+          <dt>2:19 PM</dt><dd>Booked · <a href="https://calendar.google.com">Open calendar event {{ icon('external') }}</a></dd>
+        </dl>
+        <div class="row">{{ button('Export CSV', 'secondary', size='sm', type='button') }} <span class="muted">Handoff: none</span></div>
+      </div>
+    </div>
+  {% endcall %}
+{% endcall %}
+
+{{ section_header('Progress') }}
+<div class="grid cols-2">
+  {% call card('Messaging registration', 'Carrier approval runs in three steps.') %}
+    {{ stepper(steps) }}
+    <p class="note">Until the number is assigned, every text carries the “[SignalWire Free Trial]” tag. Nothing to do on your side.</p>
+  {% endcall %}
+  {% call card('Forwarding checklist', 'Ticked from recorded evidence where the assistant can see it.') %}
+    {{ checklist(forwarding_checks) }}
+  {% endcall %}
+</div>
+
+{{ section_header('Empty state and copy row') }}
+<div class="grid cols-2">
+  {% call card() %}
+    {{ empty_state('message', 'No conversations yet', 'The first missed call starts one. Forward your business number to see it here.', 'Set up forwarding', '/client/business') }}
+  {% endcall %}
+  {% call card('Forwarding code', 'Dial this on the phone that has your business number.') %}
+    <div class="copy-row"><code>*71 980 555 0177</code><button class="btn btn-secondary btn-sm copy-btn" type="button" data-copy="*719805550177">{{ icon('copy') }}Copy</button></div>
+    <p class="note">Verizon: *71 forwards unanswered calls; *73 turns it off.</p>
+  {% endcall %}
+</div>
+
+{{ section_header('Tokens', 'Neutral scale, one accent and four semantic pairs. The page follows prefers-color-scheme; both sets meet WCAG AA (ratios in portal.css).') }}
+{% call card() %}
+<div class="swatches">
+  {% for n in ['n0', 'n50', 'n100', 'n200', 'n300', 'n400', 'n500', 'n600', 'n700', 'n800', 'n900', 'accent', 'ok', 'warn', 'err', 'info'] %}
+  <div class="swatch {{ n }}"><i></i>--{{ n }}</div>
+  {% endfor %}
+</div>
+<p class="note">Type scale 13 / 15 / 17 / 20 / 24 / 30. Spacing on a 4px grid. Radii 6 / 10 / 14. Focus ring 2px accent with a 2px surface gap.</p>
+{% endcall %}
+
+</div>
+{% endblock %}

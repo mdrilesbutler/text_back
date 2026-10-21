@@ -38,7 +38,7 @@ def sign_in(client, telecom, mobile="(980) 555-0123"):
     assert client.post("/client/login", data={"mobile": mobile}, follow_redirects=False).status_code == 303
     code, _ = code_from(telecom)
     response = client.post("/client/verify", data={"code": code}, follow_redirects=False)
-    assert response.status_code == 303 and response.headers["location"] == "/client/messages"
+    assert response.status_code == 303 and response.headers["location"] == "/client"
 
 
 def csrf_of(page_html):
@@ -132,7 +132,7 @@ def test_without_a_messages_file_the_page_explains_and_cannot_save(tmp_path, mon
     client, telecom, clock, _ = make(tmp_path, monkeypatch, messages_file=False)
     sign_in(client, telecom)
     page = client.get("/client/messages")
-    assert "not set up" in page.text and "Save messages" not in page.text
+    assert "turned on for this account yet" in page.text and "Save messages" not in page.text
 
 
 def test_login_code_ignores_quiet_hours(tmp_path, monkeypatch):

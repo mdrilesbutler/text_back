@@ -155,7 +155,7 @@ def test_without_a_web_client_the_page_explains_and_connect_is_refused(tmp_path,
     client, telecom, credentials, transport = google_fixture(tmp_path, monkeypatch, client_file=False)
     sign_in(client, telecom)
     page = client.get("/client/calendar")
-    assert "still being set up" in page.text and "Connect Google Calendar" not in page.text
+    assert "turned on yet" in page.text and "Connect Google Calendar" not in page.text
     refused = client.post("/client/calendar", data={"csrf": csrf_of(page.text), "action": "connect"})
     assert "not set up" in refused.text
     assert client.get("/client/calendar", follow_redirects=False).status_code == 200

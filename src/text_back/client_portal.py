@@ -1,12 +1,13 @@
-"""Client settings pages: the business owner signs in and edits message copy.
+"""Owner portal (/client): passwordless sign-in, sessions, Home, Account, Messages.
 Business details and the calendar connection live in client_settings.py and
-share the sign-in, page frame and code helpers defined here.
+share the sign-in, page shell and code helpers defined here.
 
 Sign-in is passwordless. The owner enters the business mobile that is on
 file (TEXT_BACK_OWNER_MOBILE); if it matches, a six-digit code is texted to
 that number and nothing else. The code lives ten minutes, allows five
-guesses, and a browser session lasts twelve hours. Everything is
-server-rendered HTML with no external assets.
+guesses, and a browser session lasts twelve hours, or thirty days when the
+owner ticks "Remember this phone". Pages are server-rendered Jinja2
+templates (portal_ui.render) with no inline scripts or styles.
 """
 from __future__ import annotations
 
@@ -20,12 +21,14 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from text_back import portal_data
 from text_back.messages import (
     DEFAULT_TEMPLATES,
     PLACEHOLDERS,
     MessageTemplateError,
     write_message_file,
 )
+from text_back.portal_ui import flash_html, render
 from text_back.sms import enqueue_sms, run_due_sms
 
 CODE_TTL = timedelta(minutes=10)
@@ -33,9 +36,23 @@ CODE_ATTEMPTS = 5
 CODES_PER_WINDOW = 3
 CODE_WINDOW = timedelta(minutes=15)
 SESSION_TTL = timedelta(hours=12)
+REMEMBER_TTL = timedelta(days=30)
 SESSION_COOKIE = "text_back_client"
 PENDING_COOKIE = "text_back_client_login"
 CODE_FAILURE = "That code is not right or has expired. Check the text or send a new code."
+REMEMBER_ON = "This phone stays signed in for 30 days."
+REMEMBER_OFF = "This phone signs out after 12 hours."
+HOME = "/client"
+NO_MESSAGES_FILE = "Message editing isn't turned on for this account yet. Contact text_back to turn it on."
+
+# Nav for the routes that exist in this build: (key, label, href, icon).
+# Scheduling and Phone arrive in later layers; nothing here may point at a missing route.
+NAV: tuple[tuple[str, str, str, str], ...] = (
+    ("home", "Home", "/client", "home"),
+    ("messages", "Messages", "/client/messages", "message"),
+    ("business", "Business", "/client/business", "phone"),
+    ("calendar", "Calendar", "/client/calendar", "calendar"),
+)
 
 # Order and wording of the settings form. (key, label, when it is sent)
 FIELDS = (
@@ -62,48 +79,44 @@ FIELDS = (
     ("opt_out_suffix", "Opt-out line", "Added to the first text, follow-ups, START and HELP replies when they leave out the word STOP. Must mention STOP."),
 )
 
-STYLE = (
-    "body{font:17px/1.5 system-ui,sans-serif;max-width:44rem;margin:4vh auto;padding:0 20px 40px;color:#18212b;background:#f6f8fa}"
-    "h1{font-size:1.5rem;margin:0 0 .5rem}h2{font-size:1.05rem;margin:1.6rem 0 .3rem}"
-    "label{display:block;font-weight:600;margin-top:1.2rem}small{color:#5b6773;display:block}h2+p+label,h2+p+label+label{font-weight:500;margin-top:.4rem}"
-    "input,textarea{width:100%;box-sizing:border-box;font:inherit;padding:10px;border:1px solid #c5ccd3;border-radius:6px;background:#fff;margin-top:6px}"
-    "textarea{min-height:5.5rem}button{font:inherit;font-weight:600;padding:10px 18px;border:0;border-radius:6px;background:#1b5e9e;color:#fff;cursor:pointer;margin-top:1rem}"
-    ".err{background:#fde8e8;border:1px solid #f3b4b4;padding:12px;border-radius:6px}.ok{background:#e6f4ea;border:1px solid #a9d8b4;padding:12px;border-radius:6px}"
-    ".def{color:#5b6773;font-size:.92rem;margin:.3rem 0 0}.count{font-size:.85rem;color:#5b6773;text-align:right}nav{display:flex;justify-content:space-between;align-items:center}"
-    "nav form{margin:0}nav button{background:#e8ecf0;color:#18212b;margin:0;padding:6px 12px}"
-    ".tabs{display:flex;gap:1rem;margin:.2rem 0 1rem;font-weight:600}.tabs a{color:#1b5e9e;text-decoration:none}.tabs a.on{color:#18212b;border-bottom:2px solid #18212b}"
-    ".card{background:#fff;border:1px solid #c5ccd3;border-radius:6px;padding:14px 16px;margin:.8rem 0}.muted{color:#5b6773}"
-)
-
-TABS = (("messages", "Messages", "/client/messages"), ("business", "Business", "/client/business"), ("calendar", "Calendar", "/client/calendar"))
-
 
 def nav_html(session, title: str, active: str) -> str:
-    """Page heading, sign-out button and the three settings tabs."""
-    tabs = "".join(
-        f"<a href={href}{' class=on' if key == active else ''}>{label}</a>" for key, label, href in TABS
-    )
-    return (
-        f"<nav><h1>{html.escape(title)}</h1><form method=post action=/client/logout>"
-        f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><button type=submit>Sign out</button></form></nav>"
-        f"<div class=tabs>{tabs}</div>"
-    )
-
-COUNT_SCRIPT = (
-    "document.querySelectorAll('textarea').forEach(function(t){var c=document.createElement('div');c.className='count';"
-    "function u(){var n=(t.value||t.placeholder).length;c.textContent=n+' characters, '+Math.max(1,Math.ceil(n/160))+' text segment'+(n>160?'s':'');}"
-    "t.after(c);t.addEventListener('input',u);u();});"
-)
+    """Kept for the older string-built pages. The shell now draws the heading,
+    the nav and the sign-out control, so there is nothing left to emit here."""
+    return ""
 
 
-def _page(title: str, body: str, *, script: str = "") -> HTMLResponse:
-    doc = (
-        "<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>"
-        f"<title>{html.escape(title)}</title><style>{STYLE}</style></head><body><main>{body}</main>"
-        + (f"<script>{script}</script>" if script else "")
-        + "</body></html>"
-    )
-    return HTMLResponse(doc, headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY"})
+def _shell(state, session, *, title: str, active: str, **ctx) -> dict:
+    """Context every signed-in page passes to layout.html."""
+    base = {
+        "title": title,
+        "active": active,
+        "business_name": state.business_name,
+        "csrf": session["csrf"] if session else "",
+        "remember": bool(session.get("remember")) if session else False,
+        "nav": list(NAV),
+    }
+    base.update(ctx)
+    return base
+
+
+def _page(title: str, body: str, *, script: str = "", session=None, active: str = "", state=None) -> HTMLResponse:
+    """Bridge for the older string-built pages: the old body is shown inside the new shell.
+
+    ``script`` is ignored: the CSP blocks inline scripts, and the shared
+    portal.js handles counters through ``data-counter``.
+    """
+    business_name = getattr(state, "business_name", "") if state is not None else ""
+    ctx = {
+        "title": title,
+        "active": active,
+        "business_name": business_name,
+        "csrf": session["csrf"] if session else "",
+        "remember": bool(session.get("remember")) if session else False,
+        "nav": list(NAV),
+        "body": body,
+    }
+    return render("pages/legacy.html", **ctx)
 
 
 def _now(state):
@@ -142,70 +155,67 @@ def _session(state, request: Request):
     return dict(row) if row else None
 
 
-def _login_form(error: str = "", notice: str = "") -> HTMLResponse:
-    msg = f"<p class=err>{html.escape(error)}</p>" if error else (f"<p class=ok>{html.escape(notice)}</p>" if notice else "")
-    return _page(
-        "Sign in",
-        "<h1>Scheduling assistant settings</h1>"
-        "<p>Enter the business mobile number on file. We'll text you a sign-in code.</p>"
-        f"{msg}<form method=post action=/client/login><label for=mobile>Business mobile</label>"
-        "<input id=mobile name=mobile type=tel autocomplete=tel inputmode=tel required maxlength=24>"
-        "<button type=submit>Text me a code</button></form>",
-    )
+def _login_form(state, error: str = "", notice: str = "") -> HTMLResponse:
+    return render("pages/login.html", title="Sign in", business_name=state.business_name, error=error, notice=notice)
 
 
-def _verify_form(error: str = "") -> HTMLResponse:
-    msg = f"<p class=err>{html.escape(error)}</p>" if error else ""
-    return _page(
-        "Enter code",
-        "<h1>Check your phone</h1><p>Enter the six-digit code we just texted. It expires in ten minutes.</p>"
-        f"{msg}<form method=post action=/client/verify><label for=code>Sign-in code</label>"
-        "<input id=code name=code inputmode=numeric autocomplete=one-time-code pattern='[0-9]{6}' required maxlength=6>"
-        "<button type=submit>Sign in</button></form><p><a href=/client/login>Send a new code</a></p>",
-    )
+def _verify_form(state, error: str = "") -> HTMLResponse:
+    # No csrf, no nonce, no timestamp: two error responses must be byte-identical.
+    remember_default = state.store.setting("remember_default") == "1"
+    return render("pages/verify.html", title="Check your phone", business_name=state.business_name,
+                  error=error, remember_default=remember_default)
 
 
 def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTMLResponse:
     source = state.messages
     current = source.current().templates
     editable = source.path is not None
-    msg = f"<p class=err>{html.escape(error)}</p>" if error else (f"<p class=ok>{html.escape(notice)}</p>" if notice else "")
+    msg = flash_html(error, notice)
     if not editable:
-        msg += "<p class=err>Message editing is not set up for this account yet. Ask your operator to enable it.</p>"
+        msg += flash_html(NO_MESSAGES_FILE)
     rows = []
     for key, label, hint in FIELDS:
         value = current[key] if current[key] != DEFAULT_TEMPLATES[key] else ""
         allowed = " ".join("{" + p + "}" for p in sorted(PLACEHOLDERS[key]))
         rows.append(
-            f"<label for=f_{key}>{html.escape(label)}</label>"
-            + (f"<small>{html.escape(hint)}</small>" if hint else "")
-            + (f"<small>You can use: {html.escape(allowed)}</small>" if allowed else "")
-            + f"<textarea id=f_{key} name={key} maxlength=480 placeholder=\"{html.escape(DEFAULT_TEMPLATES[key], quote=True)}\""
+            f"<div class=field><label class=label for=f_{key}>{html.escape(label)}</label>"
+            + f"<textarea class=textarea id=f_{key} name={key} rows=3 maxlength=480 data-counter placeholder=\"{html.escape(DEFAULT_TEMPLATES[key], quote=True)}\""
             + ("" if editable else " disabled")
             + f">{html.escape(value)}</textarea>"
-            + "<p class=def>Leave blank to use the standard wording shown in grey.</p>"
+            + f"<p class=counter id=f_{key}-count aria-live=polite></p>"
+            + (f"<span class=hint>{html.escape(hint)}</span>" if hint else "")
+            + (f"<span class=hint>You can use: {html.escape(allowed)}</span>" if allowed else "")
+            + "<p class=default><span>Leave blank to use the standard wording shown in grey.</span></p></div>"
         )
     asked = set(source.current().fields)
     options = (
         "<h2>Extra questions</h2><p>The assistant always asks for the job, the location, the day and time, and a name.</p>"
         + "".join(
-            f"<label><input type=checkbox name=ask_{field} value=1{' checked' if field in asked else ''}{'' if editable else ' disabled'}> {html.escape(label)}</label>"
+            f"<p><label><input type=checkbox name=ask_{field} value=1{' checked' if field in asked else ''}{'' if editable else ' disabled'}> {html.escape(label)}</label></p>"
             for field, label in (("phone", "Also ask for the best phone number"), ("email", "Also ask for an email address"))
         )
     )
     body = (
-        nav_html(session, "Your messages", "messages")
-        + f"<p>These are the texts <strong>{html.escape(state.business_name)}</strong>'s scheduling assistant sends. "
+        f"<p>These are the texts <strong>{html.escape(state.business_name)}</strong>'s scheduling assistant sends. "
         "Edit any of them; {business_name} and the other bracketed words are filled in automatically.</p>"
         + msg
-        + "<form method=post action=/client/messages>"
+        + "<form method=post action=/client/messages class=stack>"
         + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
         + options
         + "".join(rows)
-        + ("<button type=submit>Save messages</button>" if editable else "")
+        + ("<button type=submit class='btn btn-primary'>Save messages</button>" if editable else "")
         + "</form>"
     )
-    return _page("Your messages", body, script=COUNT_SCRIPT)
+    return _page("Your messages", body, session=session, active="messages", state=state)
+
+
+def _owner_reason(reason: str) -> str:
+    """'opt_out_suffix must ...' -> 'Opt-out line must ...' with a full stop."""
+    labels = {key: label for key, label, _ in FIELDS}
+    head, _, rest = reason.partition(" ")
+    if head in labels:
+        reason = f"{labels[head]} {rest}"
+    return reason if reason.endswith((".", "!", "?")) else reason + "."
 
 
 def send_code(state, mobile: str, now: datetime, *, purpose: str = "sign-in") -> None:
@@ -255,19 +265,121 @@ def check_code(state, phone: str, code: str, now: datetime) -> bool:
         return True
 
 
+def _set_session_cookie(response, state, token: str, remember: bool) -> None:
+    ttl = REMEMBER_TTL if remember else SESSION_TTL
+    response.set_cookie(SESSION_COOKIE, token, secure=_secure(state), httponly=True, samesite="lax",
+                        max_age=int(ttl.total_seconds()), path="/client")
+
+
+# --- Home ----------------------------------------------------------------------
+
+def _calendar_card(state) -> dict:
+    from text_back.client_settings import calendar_choices, calendar_status  # circular at import time
+
+    view = calendar_status(state)
+    names = {entry["id"]: entry.get("summary") or entry["id"] for entry in calendar_choices(state)}
+    current = names.get(view["calendar_id"], view["calendar_id"]) or "your calendar"
+    status = view["status"]
+    card = {"action_href": "/client/calendar"}
+    if status == "ready":
+        card.update(title="Calendar connected", state="ok", state_word="Connected", detail=f"{current} \u00b7 Google", action_label="Open")
+    elif status == "reauth_required":
+        card.update(title="Calendar needs reconnecting", state="warn", state_word="Needs attention",
+                    detail="Bookings are paused until you reconnect.", action_label="Reconnect")
+    elif status == "unavailable":
+        card.update(title="Calendar connection can't be read", state="err", state_word="Not working",
+                    detail="Reconnect to resume bookings.", action_label="Open")
+    elif status == "none":
+        card.update(title="No calendar yet", state="warn", state_word="Not set up",
+                    detail="Bookings aren't recorded anywhere.", action_label="Set up")
+    else:
+        provider = {"microsoft": "Microsoft 365", "icloud": "iCloud"}.get(view["provider"], view["provider"].title())
+        card.update(title="Calendar connected", state="ok", state_word="Connected", detail=f"{provider}, managed for you", action_label="Open")
+    return card
+
+
+def _forwarding_card(state) -> dict:
+    checklist = portal_data.forwarding_checklist(state)
+    total, done = len(checklist["steps"]), checklist["done_count"]
+    words = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five"}
+    if checklist["verified"]:
+        return {"title": "Forwarding verified", "state": "ok", "state_word": "Verified",
+                "detail": "All five checks done.", "action_label": "Open", "action_href": "/client/business"}
+    left = total - done
+    return {"title": f"Forwarding {done} of {total}", "state": "warn", "state_word": "Needs attention",
+            "detail": f"{words.get(left, left)} check{'s' if left != 1 else ''} left.",
+            "action_label": "Finish setup", "action_href": "/client/business"}
+
+
+def _registration_card() -> dict | None:
+    status = portal_data.registration_status()
+    if status is None:
+        return None
+    detail = status["detail"]
+    if status["state"]:
+        detail = f"{detail} Status: {status['state'].replace('_', ' ').capitalize()}."
+    return {"title": "Messaging registration", "state": "ok" if status["complete"] else "info",
+            "state_word": status["headline"], "detail": detail}
+
+
+def _home(state, session) -> HTMLResponse:
+    now = _now(state)
+    tz_name = state.timezone_name
+    conversations = portal_data.recent_conversations(state.store, limit=10, now=now, tz_name=tz_name)
+    rows = [{"id": index + 1, "cells": {
+        "who": {"text": conv["display"], "sub": portal_data.format_contact_number(conv["phone"]) if conv["name"] else ""},
+        "status": conv["status"], "last": conv["last_label"], "snippet": conv["snippet"] or "—"}}
+        for index, conv in enumerate(conversations)]
+    monday = portal_data.week_start(tz_name, now)
+    return render("pages/home.html", **_shell(
+        state, session, title="Home", active="home",
+        calendar_card=_calendar_card(state), forwarding_card=_forwarding_card(state),
+        registration_card=_registration_card(),
+        week=portal_data.week_counts(state.store, tz_name, now),
+        week_caption=f"Since Monday, {monday.strftime('%b %d').replace(' 0', ' ')}.",
+        conversation_rows=rows,
+    ))
+
+
+def _account(state, session, *, notice: str = "", error: str = "") -> HTMLResponse:
+    until = portal_data._parse(session["expires_at"])
+    zone = portal_data._tz(state.timezone_name)
+    label = until.astimezone(zone).strftime("%b %d, %Y").replace(" 0", " ") if until else "the session ends"
+    return render("pages/account.html", **_shell(
+        state, session, title="Account", active="",
+        owner_mobile=session.get("phone", ""), signed_in_until=label, notice=notice, error=error))
+
+
 def install_routes(app):
     state = app.state
+
+    def _require(request: Request):
+        session = _session(state, request)
+        if not session:
+            raise _Redirect("/client/login")
+        return session
+
+    class _Redirect(Exception):
+        def __init__(self, target):
+            self.target = target
+
+    @app.exception_handler(_Redirect)
+    async def _redirect(request, exc):
+        return RedirectResponse(exc.target, status_code=303)
 
     @app.get("/client", include_in_schema=False)
     @app.get("/client/", include_in_schema=False)
     def client_root(request: Request):
-        return RedirectResponse("/client/messages" if _session(state, request) else "/client/login", status_code=303)
+        session = _session(state, request)
+        if not session:
+            return RedirectResponse("/client/login", status_code=303)
+        return _home(state, session)
 
     @app.get("/client/login", include_in_schema=False)
     def login_page(request: Request):
         if _session(state, request):
-            return RedirectResponse("/client/messages", status_code=303)
-        return _login_form()
+            return RedirectResponse(HOME, status_code=303)
+        return _login_form(state)
 
     @app.post("/client/login", include_in_schema=False)
     async def login(request: Request):
@@ -275,7 +387,7 @@ def install_routes(app):
         mobile = normalize_mobile(str(form.get("mobile", "")))
         now = _now(state)
         if mobile is None:
-            return _login_form(error="Enter the mobile number as digits, like 704 555 0123.")
+            return _login_form(state, error="Enter the mobile number as digits, like 704 555 0123.")
         owner = getattr(state, "owner_mobile", "")
         if owner and hmac.compare_digest(mobile, owner):
             send_code(state, mobile, now)
@@ -306,10 +418,10 @@ def install_routes(app):
     @app.get("/client/verify", include_in_schema=False)
     def verify_page(request: Request):
         if _session(state, request):
-            return RedirectResponse("/client/messages", status_code=303)
+            return RedirectResponse(HOME, status_code=303)
         if not _pending(request):
             return RedirectResponse("/client/login", status_code=303)
-        return _verify_form()
+        return _verify_form(state)
 
     @app.post("/client/verify", include_in_schema=False)
     async def verify(request: Request):
@@ -321,18 +433,51 @@ def install_routes(app):
         # One message for a wrong code, an expired code, too many guesses and a
         # number that is not on file, so the page never confirms which number is.
         if not check_code(state, pending["phone"], str(form.get("code", "")), now):
-            return _verify_form(error=CODE_FAILURE)
+            return _verify_form(state, error=CODE_FAILURE)
+        remember = str(form.get("remember", "")) == "1"
+        ttl = REMEMBER_TTL if remember else SESSION_TTL
         with state.store.transaction():
             state.store.conn.execute("DELETE FROM client_sessions WHERE token_hash=?", (pending["token_hash"],))
             token = secrets.token_urlsafe(32)
             state.store.conn.execute(
-                "INSERT INTO client_sessions(token_hash,csrf,phone,expires_at,created_at,pending) VALUES(?,?,?,?,?,0)",
-                (_mac(state, token), secrets.token_urlsafe(24), pending["phone"], (now + SESSION_TTL).isoformat(), now.isoformat()),
+                "INSERT INTO client_sessions(token_hash,csrf,phone,expires_at,created_at,pending,remember) VALUES(?,?,?,?,?,0,?)",
+                (_mac(state, token), secrets.token_urlsafe(24), pending["phone"], (now + ttl).isoformat(), now.isoformat(), int(remember)),
             )
-        response = RedirectResponse("/client/messages", status_code=303)
-        response.set_cookie(SESSION_COOKIE, token, secure=_secure(state), httponly=True, samesite="lax",
-                            max_age=int(SESSION_TTL.total_seconds()), path="/client")
+        response = RedirectResponse(HOME, status_code=303)
+        _set_session_cookie(response, state, token, remember)
         response.delete_cookie(PENDING_COOKIE, path="/client")
+        return response
+
+    @app.get("/client/account", include_in_schema=False)
+    def account_page(request: Request):
+        session = _require(request)
+        return _account(state, session)
+
+    @app.post("/client/account", include_in_schema=False)
+    @app.post("/client/account/remember", include_in_schema=False)
+    async def account_remember(request: Request):
+        session = _require(request)
+        form = await request.form()
+        if not hmac.compare_digest(str(form.get("csrf", "")), session["csrf"]):
+            raise HTTPException(400, "Form expired; reload the page and try again")
+        now = _now(state)
+        remember = str(form.get("remember", "")) == "1"
+        with state.store.transaction():
+            if remember:
+                expires = now + REMEMBER_TTL
+            else:
+                current = portal_data._parse(session["expires_at"]) or now
+                expires = min(current, now + SESSION_TTL)
+            state.store.conn.execute(
+                "UPDATE client_sessions SET remember=?, expires_at=? WHERE token_hash=?",
+                (int(remember), expires.isoformat(), session["token_hash"]),
+            )
+            state.store.set_setting("remember_default", "1" if remember else "0", now=now)
+        session = dict(session, remember=int(remember), expires_at=expires.isoformat())
+        response = _account(state, session, notice=REMEMBER_ON if remember else REMEMBER_OFF)
+        token = request.cookies.get(SESSION_COOKIE, "")
+        if token:
+            _set_session_cookie(response, state, token, remember)
         return response
 
     @app.get("/client/messages", include_in_schema=False)
@@ -351,7 +496,7 @@ def install_routes(app):
         if not hmac.compare_digest(str(form.get("csrf", "")), session["csrf"]):
             raise HTTPException(400, "Form expired; reload the page and try again")
         if state.messages.path is None:
-            return _messages_form(state, session, error="Message editing is not set up for this account yet.")
+            return _messages_form(state, session, error=NO_MESSAGES_FILE)
         submitted = {key: str(form.get(key, "")).strip() for key, _, _ in FIELDS}
         overrides = {key: value for key, value in submitted.items() if value}
         extra = [field for field in ("phone", "email") if form.get(f"ask_{field}")]
@@ -360,7 +505,7 @@ def install_routes(app):
         try:
             write_message_file(state.messages.path, overrides)
         except MessageTemplateError as exc:
-            return _messages_form(state, session, error=f"Not saved: {exc}")
+            return _messages_form(state, session, error=f"Not saved: {_owner_reason(str(exc))}")
         state.messages.current()  # pick up the new file right away
         return _messages_form(state, session, notice="Saved. New conversations use these messages from now on.")
 

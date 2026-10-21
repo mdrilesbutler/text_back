@@ -6,9 +6,14 @@ copy must never promise a person or route the caller back to the business line
 follow-up instead; the safety ack must still direct emergencies to 911.
 """
 
-from text_back import policy
+import re
+from pathlib import Path
+
+from text_back import messages, policy
 from text_back.cxml import forwarded_call_response
 from text_back.followup import followup_sms
+
+PACKAGE = Path(policy.__file__).resolve().parent
 
 FORBIDDEN = (
     "business line",
@@ -56,3 +61,17 @@ def test_booking_error_keeps_the_customer_in_the_text_thread():
     copy = policy.booking_error_sms().lower()
     assert "no booking was made" in copy
     assert "call" not in copy
+
+
+def test_every_portal_template_and_script_obeys_the_copy_rules():
+    """Owner-facing pages never promise a person, never say 'business line', never say 'AI'."""
+    files = sorted(PACKAGE.glob("templates/**/*.html")) + sorted(PACKAGE.glob("static/*.js"))
+    assert len(files) >= 10, [p.name for p in files]
+    for path in files:
+        text = path.read_text()
+        lowered = text.lower()
+        for phrase in messages.FORBIDDEN_PHRASES:
+            assert phrase not in lowered, f"{phrase!r} in {path.relative_to(PACKAGE)}"
+        for phrase in FORBIDDEN:
+            assert phrase not in lowered, f"{phrase!r} in {path.relative_to(PACKAGE)}"
+        assert not re.search(r"\bAI\b", text), f"'AI' in {path.relative_to(PACKAGE)}"

@@ -1,0 +1,19 @@
+{#- Code entry. Context: title, business_name, error, remember_default (bool).
+    Nothing on this page may vary per request: two error bodies must be byte-identical. -#}
+{% extends "auth.html" %}
+{% from "components/forms.html" import field, toggle, button %}
+{% block heading %}Check your phone{% endblock %}
+{% block lead %}Enter the six-digit code we texted. It expires in ten minutes.{% endblock %}
+{% block content %}
+<form method="post" action="/client/verify">
+  {% call field('Sign-in code', 'code', error=error if error is defined else '') %}
+  <input class="input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required maxlength="6"
+    {%- if error is defined and error %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
+  {% endcall %}
+  <div class="field">
+    {{ toggle('remember', 'Remember this phone for 30 days', on=remember_default, hint='Otherwise this phone signs out after 12 hours.') }}
+  </div>
+  {{ button('Sign in', 'primary', cls='btn-block') }}
+</form>
+{% endblock %}
+{% block foot %}<a href="/client/login">Send a new code</a>{% endblock %}

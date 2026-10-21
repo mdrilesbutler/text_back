@@ -1,0 +1,103 @@
+{#- Display macros. Import with:
+   {% from "components/display.html" import card, section_header, status_pill, status_card, stat, flash, toast, empty_state, stepper, checklist %} -#}
+{% from "components/icons.html" import icon, kind_icon %}
+
+{#- {% call card('Title', subtitle='...', actions=...) %}body{% endcall %}. actions is a Markup/HTML string or omitted;
+    pass flush=true to drop body padding (tables). cls adds classes. -#}
+{% macro card(title='', subtitle='', actions='', flush=false, cls='', id='') %}
+<section class="card{% if flush %} flush{% endif %}{% if cls %} {{ cls }}{% endif %}"{% if id %} id="{{ id }}"{% endif %}>
+  {% if title or actions %}
+  <div class="card-head">
+    <div>{% if title %}<h2>{{ title }}</h2>{% endif %}{% if subtitle %}<p>{{ subtitle }}</p>{% endif %}</div>
+    {% if actions %}<div class="row">{{ actions }}</div>{% endif %}
+  </div>
+  {% endif %}
+  <div class="card-body">{{ caller() }}</div>
+</section>
+{% endmacro %}
+
+{% macro section_header(title, subtitle='', actions='') %}
+<div class="section-head">
+  <div><h2>{{ title }}</h2>{% if subtitle %}<p>{{ subtitle }}</p>{% endif %}</div>
+  {% if actions %}<div class="row">{{ actions }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{#- kind: ok | warn | err | info | neutral. Color + icon + word, never color alone. -#}
+{% macro status_pill(kind, text, icon_name='') %}
+<span class="pill-status {{ kind }}">{{ icon(icon_name or (kind_icon(kind) if kind != 'neutral' else 'clock')) }}{{ text }}</span>
+{%- endmacro %}
+
+{#- Home status card. state: ok | warn | err | info; state_word e.g. "Connected". -#}
+{% macro status_card(title, state, detail, action_label='', action_href='', state_word='') %}
+{% set words = {'ok': 'Working', 'warn': 'Needs attention', 'err': 'Not working', 'info': 'In progress'} %}
+<section class="card status-card {{ state }}">
+  <span class="glyph">{{ icon(kind_icon(state)) }}</span>
+  <div>
+    <div class="state">{{ state_word or words.get(state, state) }}</div>
+    <h3>{{ title }}</h3>
+    <p>{{ detail }}</p>
+  </div>
+  {% if action_label and action_href %}
+  <div class="action"><a class="btn {{ 'btn-primary' if state != 'ok' else 'btn-secondary' }} btn-sm" href="{{ action_href }}">{{ action_label }}{{ icon('chevron') }}</a></div>
+  {% endif %}
+</section>
+{% endmacro %}
+
+{% macro stat(label, value, hint='') %}
+<div class="card stat">
+  <div class="label">{{ label }}</div>
+  <div class="value">{{ value }}</div>
+  {% if hint %}<div class="hint">{{ hint }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{#- Server-side flash: error wins, else notice. Announced once by its role; no toast mirror. -#}
+{% macro flash(error='', notice='') %}
+{% if error %}
+<div class="flash err" role="alert">{{ icon('alert') }}<div>{{ error }}</div></div>
+{% elif notice %}
+<div class="flash ok" role="status">{{ icon('check') }}<div>{{ notice }}</div></div>
+{% endif %}
+{% endmacro %}
+
+{#- A pre-rendered toast (for pages without JS, or the styleguide). -#}
+{% macro toast(text, kind='info') %}
+<div class="toast {{ kind }}">{{ icon(kind_icon(kind)) }}{{ text }}</div>
+{% endmacro %}
+
+{% macro empty_state(icon_name, title, body='', action_label='', action_href='') %}
+<div class="empty-state">
+  <span class="glyph">{{ icon(icon_name) }}</span>
+  <h3>{{ title }}</h3>
+  {% if body %}<p>{{ body }}</p>{% endif %}
+  {% if action_label and action_href %}<a class="btn btn-primary" href="{{ action_href }}">{{ action_label }}</a>{% endif %}
+</div>
+{% endmacro %}
+
+{#- steps: [{label, state: done|current|todo}] -#}
+{% macro stepper(steps) %}
+<ol class="stepper" aria-label="Progress">
+  {% for s in steps %}
+  <li class="{{ s.state }}"{% if s.state == 'current' %} aria-current="step"{% endif %}>
+    <span>{% if s.state == 'done' %}{{ icon('check') }}{% elif s.state == 'current' %}{{ icon('refresh') }}{% endif %}{{ s.label }}
+      <span class="sr-only">{{ {'done': ' (done)', 'current': ' (in progress)', 'todo': ' (not started)'}[s.state] }}</span></span>
+  </li>
+  {% endfor %}
+</ol>
+{% endmacro %}
+
+{#- items: [{text, done, evidence}] -#}
+{% macro checklist(items) %}
+<ul class="checklist">
+  {% for it in items %}
+  <li class="{{ 'done' if it.done else 'todo' }}">
+    <span class="box" aria-hidden="true">{% if it.done %}{{ icon('check') }}{% endif %}</span>
+    <div>
+      <span class="sr-only">{{ 'Done: ' if it.done else 'Not yet: ' }}</span>{{ it.text }}
+      {% if it.evidence %}<span class="evidence">{{ it.evidence }}</span>{% elif not it.done %}<span class="evidence">No evidence recorded yet</span>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}

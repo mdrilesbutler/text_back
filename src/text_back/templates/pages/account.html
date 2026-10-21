@@ -1,0 +1,27 @@
+{#- Account: the two session controls on a full page. Context (plus layout): owner_mobile, signed_in_until. -#}
+{% extends "layout.html" %}
+{% from "components/display.html" import card %}
+{% from "components/forms.html" import button %}
+{% block content %}
+<div class="stack">
+  {% call card('Signed in', subtitle=business_name ~ ' · Signed in as ' ~ (owner_mobile | phone)) %}
+    <form method="post" action="/client/account" class="row between">
+      <input type=hidden name=csrf value='{{ csrf }}'>
+      <input type="hidden" name="remember" value="{{ '0' if remember else '1' }}">
+      <div>
+        <strong id="remember-label">Remember this phone for 30 days</strong><br>
+        <small>{{ 'On · this phone stays signed in for 30 days.' if remember else 'Off · this phone signs out after 12 hours.' }}</small>
+      </div>
+      <button class="btn btn-secondary" type="submit" aria-describedby="remember-label">{{ 'Turn off' if remember else 'Turn on' }}</button>
+    </form>
+    <p class="note">Signed in until {{ signed_in_until }}.</p>
+  {% endcall %}
+  {% call card('Sign out') %}
+    <form method="post" action="/client/logout">
+      <input type=hidden name=csrf value='{{ csrf }}'>
+      {{ button('Sign out', 'secondary') }}
+    </form>
+    <p class="note">To change the mobile that signs you in, open the <a href="/client/business">Business</a> page.</p>
+  {% endcall %}
+</div>
+{% endblock %}

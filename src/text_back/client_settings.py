@@ -26,11 +26,11 @@ from text_back.client_portal import (
     _page,
     _session,
     check_code,
-    nav_html,
     normalize_mobile,
     send_code,
 )
 from text_back.policy import format_contact_number
+from text_back.portal_ui import flash_html
 
 NAME_MAX = 60
 CONNECT_LINK_TTL = timedelta(minutes=15)
@@ -81,48 +81,53 @@ def calendar_choices(state) -> list[dict]:
 # --- pages ---------------------------------------------------------------------
 
 def _flash(error: str = "", notice: str = "") -> str:
-    if error:
-        return f"<p class=err>{html.escape(error)}</p>"
-    return f"<p class=ok>{html.escape(notice)}</p>" if notice else ""
+    return flash_html(error, notice)
 
 
-def _business_form(state, session, *, error: str = "", notice: str = "", values: dict | None = None):
+_FLASH_OK_ICON = '<svg class="i" aria-hidden="true"><use href="#i-check"></use></svg>'
+
+
+def _attrs(name: str, field: str) -> str:
+    """aria-describedby to the hint, plus aria-invalid on the field the error names."""
+    return f' aria-describedby={name}-hint' + (' aria-invalid=true' if field == name else '')
+
+
+def _business_form(state, session, *, error: str = "", notice: str = "", values: dict | None = None, field: str = ""):
     values = values or {}
     name = values.get("business_name", state.business_name)
     contact = values.get("business_contact", state.business_contact or "")
     mobile = values.get("owner_mobile", format_contact_number(state.owner_mobile) if state.owner_mobile else "")
     body = (
-        nav_html(session, "Your business", "business")
-        + "<p>How the assistant introduces the business and where it reaches you.</p>"
+        "<p>How the assistant introduces the business and where it reaches you.</p>"
         + _flash(error, notice)
-        + "<form method=post action=/client/business>"
+        + "<form method=post action=/client/business class=stack>"
         + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + "<label for=business_name>Business name</label><small>Used in every text, for example \"Thanks for calling {business_name}\".</small>"
-        + f"<input id=business_name name=business_name required maxlength={NAME_MAX} value=\"{html.escape(name, quote=True)}\">"
-        + "<label for=business_contact>Phone number customers should call</label>"
-        + "<small>Shown when a customer texts HELP. Leave blank to show the number the texts come from.</small>"
-        + f"<input id=business_contact name=business_contact type=tel inputmode=tel maxlength=24 value=\"{html.escape(contact, quote=True)}\">"
-        + "<label for=owner_mobile>Your mobile</label>"
-        + "<small>Signs you in here. Changing it texts a code to the new number, which you enter before the change counts.</small>"
-        + f"<input id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 value=\"{html.escape(mobile, quote=True)}\">"
-        + "<button type=submit>Save business details</button></form>"
+        + "<div class=field><label class=label for=business_name>Business name</label>"
+        + f"<input class=input id=business_name name=business_name required maxlength={NAME_MAX} value=\"{html.escape(name, quote=True)}\"{_attrs('business_name', field)}>"
+        + f"<span class=hint id=business_name-hint>Used in every text, for example \"Thanks for calling {html.escape(state.business_name)}\".</span></div>"
+        + "<div class=field><label class=label for=business_contact>Number customers get on HELP</label>"
+        + f"<input class=input id=business_contact name=business_contact type=tel inputmode=tel maxlength=24 value=\"{html.escape(contact, quote=True)}\"{_attrs('business_contact', field)}>"
+        + "<span class=hint id=business_contact-hint>Shown when a customer texts HELP. Leave blank to show the number the texts come from.</span></div>"
+        + "<div class=field><label class=label for=owner_mobile>Your mobile</label>"
+        + f"<input class=input id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 value=\"{html.escape(mobile, quote=True)}\"{_attrs('owner_mobile', field)}>"
+        + "<span class=hint id=owner_mobile-hint>Signs you in here. Changing it texts a code to the new number, which you enter before the change counts.</span></div>"
+        + "<button type=submit class='btn btn-primary'>Save business details</button></form>"
     )
-    return _page("Your business", body)
+    return _page("Your business", body, session=session, active="business", state=state)
 
 
-def _confirm_form(session, pending_mobile: str, *, error: str = ""):
+def _confirm_form(state, session, pending_mobile: str, *, error: str = ""):
     body = (
-        nav_html(session, "Confirm your new mobile", "business")
-        + f"<p>We texted a six-digit code to <strong>{html.escape(format_contact_number(pending_mobile))}</strong>. "
+        f"<p>We texted a six-digit code to <strong>{html.escape(format_contact_number(pending_mobile))}</strong>. "
         "Enter it to switch sign-in to that number. It expires in ten minutes.</p>"
         + _flash(error)
-        + "<form method=post action=/client/business/confirm>"
+        + "<form method=post action=/client/business/confirm class=stack>"
         + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + "<label for=code>Code</label><input id=code name=code inputmode=numeric autocomplete=one-time-code pattern='[0-9]{6}' required maxlength=6>"
-        + "<button type=submit>Confirm new mobile</button></form>"
+        + "<div class=field><label class=label for=code>Confirmation code</label><input class=input id=code name=code inputmode=numeric autocomplete=one-time-code pattern='[0-9]{6}' required maxlength=6></div>"
+        + "<button type=submit class='btn btn-primary'>Confirm new mobile</button></form>"
         + "<p><a href=/client/business/keep>Keep my current mobile</a></p>"
     )
-    return _page("Confirm your new mobile", body)
+    return _page("Confirm your new mobile", body, session=session, active="business", state=state)
 
 
 def calendar_status(state) -> dict:
@@ -154,22 +159,23 @@ def _calendar_page(state, session, *, error: str = "", notice: str = ""):
     current_label = names.get(current, current)
     if view["provider"] == "google":
         if view["status"] == "ready":
-            state_line = f"<p class=ok>Google Calendar is connected. Appointments are checked against and booked on <strong>{html.escape(current_label)}</strong>.</p>"
+            state_line = (f"<div class='flash ok' role='status'>{_FLASH_OK_ICON}<div>Google Calendar is connected. Appointments are checked against "
+                          f"and booked on <strong>{html.escape(current_label)}</strong>.</div></div>")
         elif view["status"] == "reauth_required":
-            state_line = "<p class=err>Google has disconnected the calendar. Bookings are paused until you reconnect.</p>"
+            state_line = _flash(error="Google has disconnected the calendar. Bookings are paused until you reconnect.")
         else:
-            state_line = "<p class=err>The calendar connection could not be read. Reconnect to resume bookings.</p>"
+            state_line = _flash(error="The calendar connection could not be read. Reconnect to resume bookings.")
         if view["can_connect"]:
             verb = "Reconnect" if view["status"] == "ready" else "Connect"
             connect = (
                 "<form method=post action=/client/calendar>"
                 f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><input type=hidden name=action value=connect>"
-                f"<button type=submit>{verb} Google Calendar</button></form>"
+                f"<button type=submit class='btn btn-primary'>{verb} Google Calendar</button></form>"
                 "<p class=muted>You will be sent to Google to choose the account that owns your business calendar and allow calendar access. "
                 "Nothing else in that account is read.</p>"
             )
         else:
-            connect = "<p class=muted>Connecting a calendar from this page is still being set up by your operator.</p>"
+            connect = "<p class=muted>Connecting a calendar from this page isn't turned on yet.</p>"
         picker = ""
         if len(choices) > 1:
             options = "".join(
@@ -178,24 +184,23 @@ def _calendar_page(state, session, *, error: str = "", notice: str = ""):
                 for entry in choices
             )
             picker = (
-                "<h2>Which calendar should the assistant use?</h2>"
+                "<h2>Calendar the assistant uses</h2>"
                 "<p>Free times are checked on this calendar and new appointments are added to it.</p>"
                 "<form method=post action=/client/calendar>"
                 f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>{options}"
-                "<button type=submit>Use this calendar</button></form>"
+                "<button type=submit class='btn btn-primary'>Use this calendar</button></form>"
             )
         body_main = state_line + connect + picker
     elif view["provider"] == "stub":
-        body_main = "<p class=err>No real calendar is connected (test mode). Bookings are not recorded anywhere yet.</p>"
+        body_main = _flash(error="No calendar is connected yet. Bookings are not recorded anywhere.")
     else:
-        body_main = f"<p class=ok>Your {html.escape(view['provider'])} calendar is connected and managed by your operator.</p>"
+        body_main = _flash(notice=f"Your {view['provider']} calendar is connected and managed for you.")
     body = (
-        nav_html(session, "Your calendar", "calendar")
-        + "<p>The assistant only offers times that are free on this calendar, and every booking is added to it before the customer gets a confirmation.</p>"
+        "<p>The assistant offers only free times on this calendar. Every booking is added before the customer is told.</p>"
         + _flash(error, notice)
         + body_main
     )
-    return _page("Your calendar", body)
+    return _page("Your calendar", body, session=session, active="calendar", state=state)
 
 
 def install_routes(app):
@@ -226,7 +231,7 @@ def install_routes(app):
         session = _require(request)
         pending = state.store.setting("owner_mobile_pending")
         if pending:
-            return _confirm_form(session, pending)
+            return _confirm_form(state, session, pending)
         return _business_form(state, session)
 
     @app.post("/client/business", include_in_schema=False)
@@ -237,16 +242,16 @@ def install_routes(app):
         submitted = {key: str(form.get(key, "")).strip() for key in ("business_name", "business_contact", "owner_mobile")}
         name = " ".join(submitted["business_name"].split())
         if not name or len(name) > NAME_MAX:
-            return _business_form(state, session, error=f"Enter a business name of 1 to {NAME_MAX} characters.", values=submitted)
+            return _business_form(state, session, error=f"Enter a business name of 1 to {NAME_MAX} characters.", values=submitted, field="business_name")
         contact = ""
         if submitted["business_contact"]:
             normalized = normalize_mobile(submitted["business_contact"])
             if normalized is None:
-                return _business_form(state, session, error="Enter the customer phone number as digits, like 704 555 0123, or leave it blank.", values=submitted)
+                return _business_form(state, session, error="Enter the customer phone number as digits, like 704 555 0123, or leave it blank.", values=submitted, field="business_contact")
             contact = format_contact_number(normalized)
         mobile = normalize_mobile(submitted["owner_mobile"])
         if mobile is None:
-            return _business_form(state, session, error="Enter your mobile as digits, like 704 555 0123.", values=submitted)
+            return _business_form(state, session, error="Enter your mobile as digits, like 704 555 0123.", values=submitted, field="owner_mobile")
         state.store.set_setting("business_name", name, now=now)
         state.store.set_setting("business_contact", contact, now=now)
         state.business_name = name
@@ -254,7 +259,7 @@ def install_routes(app):
         if mobile != state.owner_mobile:
             state.store.set_setting("owner_mobile_pending", mobile, now=now)
             send_code(state, mobile, now, purpose="new mobile")
-            return _confirm_form(session, mobile)
+            return _confirm_form(state, session, mobile)
         return _business_form(state, session, notice="Saved.")
 
     @app.post("/client/business/confirm", include_in_schema=False)
@@ -269,7 +274,7 @@ def install_routes(app):
             state.store.set_setting("owner_mobile_pending", None)
             return _business_form(state, session, notice="Kept your current mobile.")
         if not check_code(state, pending, str(form.get("code", "")), now):
-            return _confirm_form(session, pending, error=CODE_FAILURE)
+            return _confirm_form(state, session, pending, error=CODE_FAILURE)
         state.store.set_setting("owner_mobile", pending, now=now)
         state.store.set_setting("owner_mobile_pending", None)
         state.owner_mobile = pending

@@ -191,6 +191,21 @@ def create_app(
     app.state.store.calendar_links = CalendarLinks(app.state.public_base_url, webhook_secret)
     app.state.delivery_policy = delivery_policy
     app.state.delivery_transport = selected_delivery_transport
+    # Env/kwarg values at boot, kept so the portal can show "Default: ..." and
+    # offer Reset after the owner's saved settings are applied on top.
+    app.state.defaults = {
+        "business_name": app.state.business_name,
+        "business_contact": config.business_contact,
+        "owner_mobile": config.owner_mobile,
+        "timezone": timezone_name,
+        "appointment_duration_minutes": appointment_duration_minutes,
+        "followup_delays_minutes": config.followup_delays_minutes,
+        "followup_expiry_minutes": config.followup_expiry_minutes,
+        "quiet_hours_start": config.quiet_hours_start,
+        "quiet_hours_end": config.quiet_hours_end,
+        "text_back_number": config.signalwire_from_number,
+        "google_calendar_id": config.google_calendar_id,
+    }
     # The owner's saved business details and calendar choice override the env defaults.
     from text_back.client_settings import apply_settings
     apply_settings(app.state)
@@ -343,6 +358,9 @@ def create_app(
     install_client_routes(app)
     from text_back.client_settings import install_routes as install_settings_routes
     install_settings_routes(app)
+    from text_back import client_portal, portal_ui
+    portal_ui.install_static(app)
+    portal_ui.install_styleguide(app, client_portal._session)
     from text_back.calendar_links import install_routes as install_link_routes
     install_link_routes(app)
     if setup_directory := os.environ.get('TEXT_BACK_SETUP_DIRECTORY'):

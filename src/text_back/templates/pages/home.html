@@ -1,0 +1,34 @@
+{#- Home: three status cards, this week's numbers, the last conversations.
+    Context (plus the layout contract): calendar_card, forwarding_card, registration_card (or none),
+    week (dict), conversations (list), week_caption. -#}
+{% extends "layout.html" %}
+{% from "components/display.html" import status_card, stat, section_header, card %}
+{% from "components/data.html" import table %}
+{% block content %}
+<div class="stack">
+  <section aria-labelledby="setup-heading">
+  <h2 class="sr-only" id="setup-heading">Setup</h2>
+  <div class="grid cols-3">
+    {{ status_card(calendar_card.title, calendar_card.state, calendar_card.detail, calendar_card.action_label, calendar_card.action_href, state_word=calendar_card.state_word) }}
+    {{ status_card(forwarding_card.title, forwarding_card.state, forwarding_card.detail, forwarding_card.action_label, forwarding_card.action_href, state_word=forwarding_card.state_word) }}
+    {% if registration_card %}
+    {{ status_card(registration_card.title, registration_card.state, registration_card.detail, state_word=registration_card.state_word) }}
+    {% endif %}
+  </div>
+  </section>
+
+  {{ section_header('This week', week_caption) }}
+  <div class="stats">
+    {{ stat('Missed calls', week.missed_calls) }}
+    {{ stat('Texts sent', week.texts_sent) }}
+    {{ stat('Booked', week.booked) }}
+    {{ stat('Handed off', week.handed_off) }}
+  </div>
+
+  {{ section_header('Last conversations', 'The ten most recent callers.') }}
+  {% call card(flush=true) %}
+  {{ table([{'key': 'who', 'label': 'Customer', 'nowrap': true}, {'key': 'status', 'label': 'Status'}, {'key': 'last', 'label': 'Last activity', 'nowrap': true}, {'key': 'snippet', 'label': 'Last message', 'hide': true}],
+           conversation_rows, id='conversations', empty='No conversations yet. They appear here after the first missed call.') }}
+  {% endcall %}
+</div>
+{% endblock %}

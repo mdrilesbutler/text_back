@@ -1,0 +1,5 @@
+{#- Bridge: an old string-built page body shown inside the new shell. Removed as each page is rebuilt. -#}
+{% extends "layout.html" %}
+{% block content %}
+<section class="card"><div class="card-body legacy">{{ body | safe }}</div></section>
+{% endblock %}

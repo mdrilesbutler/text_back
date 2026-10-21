@@ -1,0 +1,53 @@
+{#- Data macros. Import with: {% from "components/data.html" import table, phone_preview %} -#}
+{% from "components/icons.html" import icon, kind_icon %}
+{% from "components/display.html" import status_pill %}
+
+{#- columns: [{key, label, num?, nowrap?, hide?}] (hide: hidden below 600px); rows: [{id, cells: {key: value}}].
+    A cell value may be a string, or a (kind, text) pair which renders a status pill, or
+    {'text':..., 'sub':...}. With a caller, each row gets a drawer: {% call(row) table(...) %}...{% endcall %};
+    the first column becomes the toggle. open_id names a drawer rendered open. -#}
+{% macro table(columns, rows, id='tbl', empty='Nothing here yet', open_id='') %}
+<div class="table-wrap">
+<table class="table{% if caller is defined %} has-drawers{% endif %}" id="{{ id }}">
+  <thead><tr>{% for c in columns %}<th{% set cls = ('num ' if c.num else '') ~ ('nowrap ' if c.nowrap else '') ~ ('hide-sm' if c.hide else '') %}{% if cls | trim %} class="{{ cls | trim }}"{% endif %} scope="col">{{ c.label }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for row in rows %}
+    {% set rid = id ~ '-d-' ~ (row.id if row.id is defined else loop.index) %}
+    <tr>
+    {% for c in columns %}
+      {% set v = row.cells[c.key] if c.key in row.cells else '' %}
+      <td{% set cls = ('num ' if c.num else '') ~ ('nowrap ' if c.nowrap else '') ~ ('hide-sm' if c.hide else '') %}{% if cls | trim %} class="{{ cls | trim }}"{% endif %}>
+        {% if v is mapping %}{% set text = v.text %}{% set sub = v.sub %}{% else %}{% set text = v %}{% set sub = '' %}{% endif %}
+        {% if loop.first and caller is defined %}
+        <button type="button" class="row-toggle" data-drawer="{{ rid }}" aria-expanded="{{ 'true' if rid == open_id else 'false' }}" aria-controls="{{ rid }}">{{ icon('chevron') }}{{ text }}</button>
+        {% elif text is sequence and text is not string and text | length == 2 %}{{ status_pill(text[0], text[1]) }}
+        {% else %}{{ text }}{% endif %}
+        {% if sub %}<span class="cell-sub">{{ sub }}</span>{% endif %}
+      </td>
+    {% endfor %}
+    </tr>
+    {% if caller is defined %}
+    <tr class="drawer" id="{{ rid }}"{% if rid != open_id %} hidden{% endif %}><td colspan="{{ columns | length }}"><div class="drawer-inner">{{ caller(row) }}</div></td></tr>
+    {% endif %}
+  {% else %}
+    <tr><td colspan="{{ columns | length }}" class="empty">{{ empty }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{#- Phone-frame SMS thread. bubbles: [{dir: in|out, text, meta, prefix?}]; `out` = the assistant, `in` = the customer.
+    header: the name shown at the top of the screen. -#}
+{% macro phone_preview(bubbles, header='Customer', sub='Text message', id='') %}
+<figure class="phone"{% if id %} id="{{ id }}"{% endif %} aria-label="Preview of the text conversation">
+  <div class="screen">
+    <div class="status"><strong>{{ header }}</strong>{{ sub }}</div>
+    <div class="thread">
+      {% for b in bubbles %}
+      <div class="bubble {{ b.dir }}">{% if b.prefix %}<span class="prefix">{{ b.prefix }}</span> {% endif %}{{ b.text }}{% if b.meta %}<span class="meta">{{ b.meta }}</span>{% endif %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</figure>
+{% endmacro %}

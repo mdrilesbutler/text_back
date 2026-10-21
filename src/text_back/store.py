@@ -172,6 +172,13 @@ class Store:
         self.conn.execute("""CREATE TABLE IF NOT EXISTS client_sessions (
             token_hash TEXT PRIMARY KEY, csrf TEXT NOT NULL, phone TEXT NOT NULL,
             expires_at TEXT NOT NULL, created_at TEXT NOT NULL, pending INTEGER NOT NULL DEFAULT 0)""")
+        # Sessions created before "remember this phone" lack the remember flag.
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(client_sessions)")}
+        if "remember" not in columns:
+            self.conn.execute("ALTER TABLE client_sessions ADD COLUMN remember INTEGER NOT NULL DEFAULT 0")
+        # Read-path indexes for the owner portal's Home page (idempotent).
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_sms_outbox_phone ON sms_outbox(phone, created_at)")
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_inbound_jobs_phone ON inbound_jobs(phone, received_at)")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS booking_jobs (
             key TEXT PRIMARY KEY, phone TEXT NOT NULL, payload_json TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 1,

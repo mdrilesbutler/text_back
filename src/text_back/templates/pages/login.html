@@ -1,0 +1,14 @@
+{#- Sign-in: the owner's mobile. Context: title, business_name, error. Nothing per-request. -#}
+{% extends "auth.html" %}
+{% from "components/forms.html" import field, button %}
+{% block heading %}Sign in{% endblock %}
+{% block lead %}Enter your mobile. We'll text a six-digit code.{% endblock %}
+{% block content %}
+<form method="post" action="/client/login" novalidate>
+  {% call field('Your mobile', 'mobile', hint='The mobile on file for this business.', error=error if error is defined else '') %}
+  <input class="input" type="tel" id="mobile" name="mobile" autocomplete="tel" inputmode="tel" required maxlength="24" placeholder="(980) 555-0123"
+    {%- if error is defined and error %} aria-invalid="true" aria-describedby="mobile-error mobile-hint"{% else %} aria-describedby="mobile-hint"{% endif %}>
+  {% endcall %}
+  {{ button('Text me a code', 'primary', cls='btn-block') }}
+</form>
+{% endblock %}
