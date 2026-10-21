@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import urllib.parse
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import ClassVar
 
 from text_back.calendars.ids import google_event_id
@@ -25,10 +25,14 @@ class GoogleCalendarProvider:
     transport: HttpTransport
     base_url: str = "https://www.googleapis.com/calendar/v3"
 
-    def is_free(self, start: datetime, end: datetime) -> bool:
+    def busy_intervals(self, time_min: datetime, time_max: datetime) -> list[tuple[datetime, datetime]]:
+        """Busy periods on the calendar inside [time_min, time_max] as aware UTC pairs.
+
+        One POST /freeBusy; malformed entries fail closed with CalendarProviderError.
+        """
         payload = {
-            "timeMin": rfc3339_utc(start),
-            "timeMax": rfc3339_utc(end),
+            "timeMin": rfc3339_utc(time_min),
+            "timeMax": rfc3339_utc(time_max),
             "items": [{"id": self.calendar_id}],
         }
         response = self._send(
@@ -54,7 +58,31 @@ class GoogleCalendarProvider:
             raise CalendarProviderError(
                 "google calendar free/busy response was malformed"
             )
-        return busy == []
+        intervals = []
+        for item in busy:
+            start = self._instant(item.get("start") if isinstance(item, dict) else None)
+            end = self._instant(item.get("end") if isinstance(item, dict) else None)
+            if start is None or end is None:
+                raise CalendarProviderError(
+                    "google calendar free/busy response was malformed"
+                )
+            intervals.append((start, end))
+        return intervals
+
+    def is_free(self, start: datetime, end: datetime) -> bool:
+        return self.busy_intervals(start, end) == []
+
+    @staticmethod
+    def _instant(raw: object) -> datetime | None:
+        if not isinstance(raw, str):
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            return None
+        return parsed.astimezone(timezone.utc)
 
     def find_event(self, *, conversation_id, start, end):
         encoded_calendar = urllib.parse.quote(self.calendar_id, safe="")

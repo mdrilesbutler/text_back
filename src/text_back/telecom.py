@@ -33,16 +33,42 @@ class OutboundSms:
     kind: str
 
 
+@dataclass(frozen=True)
+class NumberLookup:
+    """What the provider knows about one incoming number this project may own.
+
+    ``owned`` is False when the number is not on the account at all; the URLs
+    are the voice/SMS handlers attached to it (empty when none is attached).
+    """
+
+    owned: bool
+    phone_number: str = ""
+    voice_url: str = ""
+    sms_url: str = ""
+    verification_status: str = ""
+
+
 @dataclass
 class FakeTelecom:
     provider_name: ClassVar[str] = "stub"
     outbound: list[OutboundSms] = field(default_factory=list)
+    # e164 -> {"voice_url": ..., "sms_url": ..., "verification_status": ...}
+    owned_numbers: dict[str, dict] = field(default_factory=dict)
+    lookups: list[str] = field(default_factory=list)
 
     def send_sms(self, *, to: str, body: str, from_number: str, kind: str) -> str:
         self.outbound.append(
             OutboundSms(to=to, body=body, from_number=from_number, kind=kind)
         )
         return f"SM-{len(self.outbound):04d}"
+
+    def lookup_number(self, e164: str) -> NumberLookup:
+        self.lookups.append(e164)
+        entry = self.owned_numbers.get(e164)
+        if entry is None:
+            return NumberLookup(False)
+        return NumberLookup(True, e164, str(entry.get("voice_url", "")), str(entry.get("sms_url", "")),
+                            str(entry.get("verification_status", "")))
 
 
 @dataclass
@@ -82,6 +108,47 @@ class SignalWireTelecom:
             f"{self.space_url}/api/laml/2010-04-01/Accounts/"
             f"{self.project_id}/Messages"
         )
+
+    @property
+    def numbers_url(self) -> str:
+        return (
+            f"{self.space_url}/api/laml/2010-04-01/Accounts/"
+            f"{self.project_id}/IncomingPhoneNumbers"
+        )
+
+    def lookup_number(self, e164: str) -> NumberLookup:
+        """Is ``e164`` a number this project owns, and where do its handlers point?
+
+        Read-only: GET IncomingPhoneNumbers filtered by PhoneNumber (the same
+        call scripts/pilot_check.py makes). Never buys, ports or provisions.
+        """
+        request_client = self.client or httpx.Client()
+        close_client = self.client is None
+        try:
+            response = request_client.get(
+                self.numbers_url,
+                auth=httpx.BasicAuth(self.project_id, self.api_token),
+                params={"PhoneNumber": e164},
+                timeout=self.timeout_seconds,
+                follow_redirects=False,
+            )
+        except httpx.RequestError as exc:
+            raise TelecomError(f"SignalWire number lookup failed ({type(exc).__name__})") from None
+        finally:
+            if close_client:
+                request_client.close()
+        if not response.is_success:
+            raise TelecomError(f"SignalWire number lookup returned HTTP {response.status_code}")
+        try:
+            payload = response.json()
+        except ValueError:
+            raise TelecomError("SignalWire number lookup response was not valid JSON") from None
+        numbers = payload.get("incoming_phone_numbers", []) if isinstance(payload, dict) else []
+        match = next((n for n in numbers if isinstance(n, dict) and n.get("phone_number") == e164), None)
+        if match is None:
+            return NumberLookup(False)
+        return NumberLookup(True, e164, str(match.get("voice_url") or ""), str(match.get("sms_url") or ""),
+                            str(match.get("verification_status") or ""))
 
     def send_sms(self, *, to: str, body: str, from_number: str, kind: str) -> str:
         return self.send_sms_with_callback(to=to, body=body, from_number=from_number, kind=kind)

@@ -22,6 +22,11 @@ class CalendarStub:
                 return False
         return True
 
+    def busy_intervals(self, time_min: datetime, time_max: datetime) -> list[tuple[datetime, datetime]]:
+        """Busy periods (seeded and booked) that overlap the window, earliest first."""
+        periods = list(self.busy) + [(event["start"], event["end"]) for event in self.events.values()]
+        return sorted((s, e) for s, e in periods if s < time_max and e > time_min)
+
     def find_event(self, *, conversation_id, start, end):
         return next((key for key, value in self.events.items() if value['conversation_id'] == conversation_id and value['start'] == start and value['end'] == end), None)
 

@@ -1,6 +1,6 @@
 """Owner portal (/client): passwordless sign-in, sessions, Home, Account, Messages, Scheduling.
-Business details and the calendar connection live in client_settings.py and
-share the sign-in, page shell and code helpers defined here.
+The Calendar and Phone pages live in client_settings.py and share the
+sign-in, page shell and code helpers defined here.
 
 Sign-in is passwordless. The owner enters the business mobile that is on
 file (TEXT_BACK_OWNER_MOBILE); if it matches, a six-digit code is texted to
@@ -39,23 +39,16 @@ REMEMBER_OFF = "This phone signs out after 12 hours."
 HOME = "/client"
 NO_MESSAGES_FILE = "Message editing isn't turned on for this account yet. Contact text_back to turn it on."
 
-# Nav for the routes that exist in this build: (key, label, href, icon).
-# Scheduling and Phone arrive in later layers; nothing here may point at a missing route.
+# Nav: (key, label, href, icon). Every entry points at a route that exists.
 NAV: tuple[tuple[str, str, str, str], ...] = (
     ("home", "Home", "/client", "home"),
     ("messages", "Messages", "/client/messages", "message"),
     ("scheduling", "Scheduling", "/client/scheduling", "clock"),
-    ("business", "Business", "/client/business", "phone"),
     ("calendar", "Calendar", "/client/calendar", "calendar"),
+    ("phone", "Phone", "/client/phone", "phone"),
 )
 MESSAGES_SUBTITLE = "Edit any text. Words in {braces} fill in by themselves."
 SCHEDULING_SUBTITLE = "The few timing rules the assistant follows. Reset returns a rule to its default."
-
-def nav_html(session, title: str, active: str) -> str:
-    """Kept for the older string-built pages. The shell now draws the heading,
-    the nav and the sign-out control, so there is nothing left to emit here."""
-    return ""
-
 
 def _shell(state, session, *, title: str, active: str, **ctx) -> dict:
     """Context every signed-in page passes to layout.html."""
@@ -69,25 +62,6 @@ def _shell(state, session, *, title: str, active: str, **ctx) -> dict:
     }
     base.update(ctx)
     return base
-
-
-def _page(title: str, body: str, *, script: str = "", session=None, active: str = "", state=None) -> HTMLResponse:
-    """Bridge for the older string-built pages: the old body is shown inside the new shell.
-
-    ``script`` is ignored: the CSP blocks inline scripts, and the shared
-    portal.js handles counters through ``data-counter``.
-    """
-    business_name = getattr(state, "business_name", "") if state is not None else ""
-    ctx = {
-        "title": title,
-        "active": active,
-        "business_name": business_name,
-        "csrf": session["csrf"] if session else "",
-        "remember": bool(session.get("remember")) if session else False,
-        "nav": list(NAV),
-        "body": body,
-    }
-    return render("pages/legacy.html", **ctx)
 
 
 def _now(state):
@@ -240,11 +214,11 @@ def _forwarding_card(state) -> dict:
     words = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five"}
     if checklist["verified"]:
         return {"title": "Forwarding verified", "state": "ok", "state_word": "Verified",
-                "detail": "All five checks done.", "action_label": "Open", "action_href": "/client/business"}
+                "detail": "All five checks done.", "action_label": "Open", "action_href": "/client/phone#forwarding"}
     left = total - done
     return {"title": f"Forwarding {done} of {total}", "state": "warn", "state_word": "Needs attention",
             "detail": f"{words.get(left, left)} check{'s' if left != 1 else ''} left.",
-            "action_label": "Finish setup", "action_href": "/client/business"}
+            "action_label": "Finish setup", "action_href": "/client/phone#forwarding"}
 
 
 def _registration_card() -> dict | None:

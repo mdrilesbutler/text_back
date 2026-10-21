@@ -1,0 +1,133 @@
+{#- Phone: business name, the three typed numbers with Verify, the HELP contact, the owner-mobile
+    confirm card, carrier forwarding codes with Copy, and the five-step checklist.
+    Context (plus the layout contract): values, errors, statuses, hints, pending, code_error, carriers,
+    carrier, carrier_blocks, has_number, checklist, forward_all_warning, evidence_note.
+    The carrier pills live in the Forwarding card but belong to the main form (form="phone-form"),
+    so the one Save covers everything (a pill switches the codes at once); the checklist has its own small form. -#}
+{% extends "layout.html" %}
+{% from "components/forms.html" import field, input, phone_input, button %}
+{% from "components/display.html" import card %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+<div class="grid phone-grid">
+  <div class="stack">
+    {% if pending %}
+    {% call card('Confirm your new mobile') %}
+      <p>We texted a six-digit code to <strong>{{ pending | phone }}</strong>. Enter it to switch sign-in to that number. It expires in ten minutes.</p>
+      <form method="post" action="/client/phone/confirm" class="stack">
+        <input type=hidden name=csrf value='{{ csrf }}'>
+        {% call field('Confirmation code', 'code', error=code_error) %}
+        <input class="input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required maxlength="6"
+          {%- if code_error %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
+        {% endcall %}
+        <div class="row">
+          {{ button('Confirm new mobile') }}
+          {{ button('Keep my current mobile', 'secondary', name='cancel', value='1') }}
+        </div>
+      </form>
+    {% endcall %}
+    {% else %}
+    <form method="post" action="/client/phone" id="phone-form" class="stack" novalidate>
+      <input type=hidden name=csrf value='{{ csrf }}'>
+      {% call card('Business') %}
+        {{ input('business_name', 'Business name', value=values.business_name, required=true, maxlength=60,
+                 autocomplete='organization', hint=hints.business_name, error=errors.business_name) }}
+      {% endcall %}
+
+      {% call card('Numbers', subtitle='Typed in and checked here. Your business number never changes.') %}
+        {% set st = statuses.get('business_line') %}
+        {{ phone_input('business_line', 'Your business number', value=values.business_line, hint=hints.business_line,
+                       error=errors.business_line, verify_label='Verify', verify_action='/client/phone/verify',
+                       status=(st[1] if st else ''), status_kind=(st[0] if st else 'info')) }}
+        {% set st = statuses.get('text_back_number') %}
+        {{ phone_input('text_back_number', 'Texting number', value=values.text_back_number, hint=hints.text_back_number,
+                       error=errors.text_back_number, verify_label='Verify', verify_action='/client/phone/verify',
+                       status=(st[1] if st else ''), status_kind=(st[0] if st else 'info')) }}
+        {% set st = statuses.get('owner_mobile') %}
+        {{ phone_input('owner_mobile', 'Your mobile', value=values.owner_mobile, hint=hints.owner_mobile, required=true,
+                       error=errors.owner_mobile, verify_label='Verify', verify_action='/client/phone/verify',
+                       status=(st[1] if st else ''), status_kind=(st[0] if st else 'info')) }}
+        {{ phone_input('business_contact', 'Number shown in HELP replies', value=values.business_contact,
+                       hint=hints.business_contact, error=errors.business_contact) }}
+        <div class="row end save-row">{{ button('Save', id='save-phone') }}</div>
+      {% endcall %}
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="stack" id="forwarding">
+    <section class="card" aria-labelledby="forwarding-heading">
+      <div class="card-head"><div><h2 id="forwarding-heading">Forwarding</h2><p>Forward calls you don't answer to your texting number. Your business number stays the same.</p></div></div>
+      <div class="card-body stack">
+        {% if not pending %}
+        <fieldset class="field{% if errors.carrier %} has-error{% endif %}">
+          <legend class="label">Your carrier</legend>
+          <div class="pills" id="carrier-pills">
+            {% for key, name in carriers %}
+            <label><input type="radio" name="carrier" value="{{ key }}" form="phone-form"{% if key == carrier %} checked{% endif %}
+              {%- if errors.carrier %} aria-invalid="true" aria-describedby="carrier-error"{% endif %}><span class="pill">{{ name }}</span></label>
+            {% endfor %}
+          </div>
+          {% if errors.carrier %}<p class="error" id="carrier-error">{{ icon('alert') }}<span>{{ errors.carrier }}</span></p>{% endif %}
+        </fieldset>
+        {% endif %}
+        {% if not pending %}<p class="note" id="codes-none"{% if carrier %} hidden{% endif %}>Pick your carrier to see the codes.</p>{% endif %}
+        {% for c in carrier_blocks %}
+        <div class="codes stack-sm" data-codes="{{ c.key }}"{% if c.key != carrier %} hidden{% endif %}>
+          {% if c.steps %}<p>{{ c.steps }}</p>{% endif %}
+          {% if c.on %}
+          <h3>Turn forwarding on</h3>
+          <ul class="code-list">
+            {% for row in c.on %}
+            <li class="code-row"><span class="code-label">{{ row.label }}</span><code>{{ row.code }}</code>
+              {%- if has_number %}<button type="button" class="btn btn-secondary btn-sm needs-js" data-copy="{{ row.code }}" aria-label="{{ row.aria }}">{{ icon('copy') }}Copy</button>{% endif %}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% if c.off %}
+          <h3>Turn it off</h3>
+          <ul class="code-list">
+            {% for row in c.off %}
+            <li class="code-row"><span class="code-label">{{ row.label }}</span><code>{{ row.code }}</code>
+              {%- if has_number %}<button type="button" class="btn btn-secondary btn-sm needs-js" data-copy="{{ row.code }}" aria-label="{{ row.aria }}">{{ icon('copy') }}Copy</button>{% endif %}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+          {% for n in c.notes %}<p class="note">{{ n }}</p>{% endfor %}
+          {% if not c.verified %}<p class="warn-note">{{ icon('alert') }}<span>These codes are unverified on {{ c.name }}. Check the result with a test call.</span></p>{% endif %}
+        </div>
+        {% endfor %}
+        {% if not has_number %}<p class="note">Enter your texting number above to fill in the codes.</p>{% endif %}
+        <p class="note">{{ forward_all_warning }}</p>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="checks-heading">
+      <div class="card-head"><div><h2 id="checks-heading">Checks</h2><p>{{ checklist.done_count }} of {{ checklist.steps | length }} done{% if checklist.verified %} · forwarding verified{% endif %}.</p></div></div>
+      <div class="card-body">
+        <form method="post" action="/client/phone/checklist" class="stack">
+          <input type=hidden name=csrf value='{{ csrf }}'>
+          <ol class="checklist steps">
+            {% for s in checklist.steps %}
+            <li class="{{ 'done' if s.done else 'todo' }}">
+              {% if s.manual %}
+              <input type="checkbox" class="box-input" id="check-{{ s.n }}" name="{{ s.name }}" value="1"{% if s.done %} checked{% endif %}>
+              <label for="check-{{ s.n }}"><span class="step-n">{{ s.n }}.</span>{{ s.label }}<span class="state-word">{{ 'Done' if s.done else 'Not yet' }}</span>
+                {% if s.code %}<span class="evidence">Turn-off code: <code>{{ s.code }}</code></span>{% endif %}
+                {% if s.evidence %}<span class="evidence">{{ s.evidence }}</span>{% endif %}</label>
+              {% else %}
+              <span class="box" aria-hidden="true">{% if s.done %}{{ icon('check') }}{% endif %}</span>
+              <div><span class="step-n">{{ s.n }}.</span>{{ s.label }}<span class="state-word">{{ 'Done' if s.done else 'Not yet' }}</span>
+                <span class="evidence">{{ s.evidence or 'No call recorded yet' }}</span></div>
+              {% endif %}
+            </li>
+            {% endfor %}
+          </ol>
+          <p class="note">{{ evidence_note }}</p>
+          <div class="row end">{{ button('Save checks', 'secondary') }}</div>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

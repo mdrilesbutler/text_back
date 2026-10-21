@@ -58,7 +58,7 @@ def test_styleguide_needs_a_session(tmp_path, monkeypatch):
     assert "Oak &amp; Pine Tree Care" in html
     for _, label, href, _ in client_portal.NAV:
         assert f"<span>{label}</span>" in html and f'href="{href}"' in html  # bottom tabs, routes that exist
-    assert "/client/phone" not in html and "data-toast" not in html
+    assert "/client/customers" not in html and "data-toast" not in html
     assert html.count("action=\"/client/logout\"") == 1
     assert re.search(r"name=csrf value='([^']+)'", html)  # csrf_of() keeps working
     assert "Remember this phone for 30 days" in html

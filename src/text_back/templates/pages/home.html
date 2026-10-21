@@ -28,7 +28,7 @@
   {{ section_header('Last conversations', 'The ten most recent callers.') }}
   {% call card(flush=true) %}
   {{ table([{'key': 'who', 'label': 'Customer', 'nowrap': true}, {'key': 'status', 'label': 'Status'}, {'key': 'last', 'label': 'Last activity', 'nowrap': true}, {'key': 'snippet', 'label': 'Last message', 'hide': true}],
-           conversation_rows, id='conversations', empty='No conversations yet. They appear here after the first missed call.') }}
+           conversation_rows, id='conversations', empty='No conversations yet. They appear here after the first missed call.', stack_sm=true) }}
   {% endcall %}
 </div>
 {% endblock %}

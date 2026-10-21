@@ -1,4 +1,4 @@
-"""Client settings pages: business details, owner mobile change, calendar connection."""
+"""Client settings pages: phone details, owner mobile change, calendar connection."""
 import json
 import re
 from datetime import datetime, timezone
@@ -21,12 +21,12 @@ NOW = datetime(2026, 10, 19, 15, 0, tzinfo=timezone.utc)
 def test_business_details_are_saved_applied_and_survive_restart(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    page = client.get("/client/business")
+    page = client.get("/client/phone")
     assert page.status_code == 200 and 'value="Oak &amp; Pine Tree Care"' in page.text
     assert "/client/calendar" in page.text and "/client/messages" in page.text  # tabs
     csrf = csrf_of(page.text)
-    saved = client.post("/client/business", data={"csrf": csrf, "business_name": "  Oak &  Pine  ", "business_contact": "980-555-0100",
-                                                  "owner_mobile": "(980) 555-0123"})
+    saved = client.post("/client/phone", data={"csrf": csrf, "business_name": "  Oak &  Pine  ", "business_contact": "980-555-0100",
+                                               "owner_mobile": "(980) 555-0123"})
     assert "Saved." in saved.text
     assert client.app.state.business_name == "Oak & Pine"
     assert client.app.state.business_contact == "(980) 555-0100"
@@ -35,27 +35,31 @@ def test_business_details_are_saved_applied_and_survive_restart(tmp_path, monkey
                        business_name="Oak & Pine Tree Care", now_provider=lambda: clock[0])
     assert again.state.business_name == "Oak & Pine" and again.state.business_contact == "(980) 555-0100"
     # Bad input is refused with the typed values kept.
-    bad = client.post("/client/business", data={"csrf": csrf, "business_name": "", "business_contact": "", "owner_mobile": OWNER})
+    bad = client.post("/client/phone", data={"csrf": csrf, "business_name": "", "business_contact": "", "owner_mobile": OWNER})
     assert "Enter a business name" in bad.text and client.app.state.business_name == "Oak & Pine"
-    bad = client.post("/client/business", data={"csrf": csrf, "business_name": "Oak", "business_contact": "call me", "owner_mobile": OWNER})
+    bad = client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "business_contact": "call me", "owner_mobile": OWNER})
     assert "customer phone number" in bad.text and client.app.state.business_contact == "(980) 555-0100"
-    assert client.post("/client/business", data={"csrf": "forged", "business_name": "x", "owner_mobile": OWNER}).status_code == 400
+    assert client.post("/client/phone", data={"csrf": "forged", "business_name": "x", "owner_mobile": OWNER}).status_code == 400
+    # The old address still lands on the page.
+    assert client.post("/client/business", data={"business_name": "x"}, follow_redirects=False).status_code == 303
+    moved = client.get("/client/business", follow_redirects=False)
+    assert moved.status_code == 301 and moved.headers["location"] == "/client/phone"
 
 
 def test_changing_the_owner_mobile_requires_a_code_texted_to_the_new_number(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    csrf = csrf_of(client.get("/client/business").text)
-    page = client.post("/client/business", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care", "business_contact": "",
-                                                 "owner_mobile": "980 555 0199"})
+    csrf = csrf_of(client.get("/client/phone").text)
+    page = client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care", "business_contact": "",
+                                              "owner_mobile": "980 555 0199"})
     assert "Confirm your new mobile" in page.text and "(980) 555-0199" in page.text
     code, text = code_from(telecom)
     assert text.to == "+19805550199" and "new mobile code" in text.body
     assert client.app.state.owner_mobile == OWNER  # nothing changed yet
-    assert "/client/business/confirm" in client.get("/client/business").text  # still pending on reload
-    wrong = client.post("/client/business/confirm", data={"csrf": csrf, "code": "000000"})
+    assert "/client/phone/confirm" in client.get("/client/phone").text  # still pending on reload
+    wrong = client.post("/client/phone/confirm", data={"csrf": csrf, "code": "000000"})
     assert "not right or has expired" in wrong.text and client.app.state.owner_mobile == OWNER
-    done = client.post("/client/business/confirm", data={"csrf": csrf, "code": code})
+    done = client.post("/client/phone/confirm", data={"csrf": csrf, "code": code})
     assert "Sign-in codes now go to (980) 555-0199" in done.text
     assert client.app.state.owner_mobile == "+19805550199"
     # Only the new number can request a sign-in code from now on.
@@ -69,10 +73,10 @@ def test_changing_the_owner_mobile_requires_a_code_texted_to_the_new_number(tmp_
 def test_keeping_the_current_mobile_cancels_the_pending_change(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    csrf = csrf_of(client.get("/client/business").text)
-    client.post("/client/business", data={"csrf": csrf, "business_name": "Oak", "business_contact": "", "owner_mobile": "980 555 0199"})
-    assert "Kept your current mobile" in client.get("/client/business/keep").text
-    assert "Confirm your new mobile" not in client.get("/client/business").text
+    csrf = csrf_of(client.get("/client/phone").text)
+    client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "business_contact": "", "owner_mobile": "980 555 0199"})
+    assert "Kept your current mobile" in client.post("/client/phone/confirm", data={"csrf": csrf, "cancel": "1"}).text
+    assert "Confirm your new mobile" not in client.get("/client/phone").text
     assert client.app.state.owner_mobile == OWNER
 
 

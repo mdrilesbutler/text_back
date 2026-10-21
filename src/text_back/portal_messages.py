@@ -75,7 +75,7 @@ GROUPS: tuple[tuple[str, str, tuple[tuple[str, str, str, tuple[str, ...]], ...]]
         ("followup_2", "Last nudge (no reply)", "Sent {delay_2} after the first nudge.", ("business_name",)),
     )),
     ("stop_help", "STOP and HELP", (
-        ("help", "Reply to HELP", "The contact number is set on the Business page.", ("business_name", "contact_line")),
+        ("help", "Reply to HELP", "The contact number is set on the Phone page.", ("business_name", "contact_line")),
         ("opt_in", "Reply to START", "", ("business_name",)),
         ("opt_out_ack", "Reply to STOP", "", ("business_name",)),
         ("handoff_ack", "When the owner needs to step in", "Must promise a follow up (those two words).", ("business_name",)),

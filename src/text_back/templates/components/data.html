@@ -5,10 +5,11 @@
 {#- columns: [{key, label, num?, nowrap?, hide?}] (hide: hidden below 600px); rows: [{id, cells: {key: value}}].
     A cell value may be a string, or a (kind, text) pair which renders a status pill, or
     {'text':..., 'sub':...}. With a caller, each row gets a drawer: {% call(row) table(...) %}...{% endcall %};
-    the first column becomes the toggle. open_id names a drawer rendered open. -#}
-{% macro table(columns, rows, id='tbl', empty='Nothing here yet', open_id='') %}
+    the first column becomes the toggle. open_id names a drawer rendered open. stack_sm=true renders each row
+    as a stacked block below 600px (line 1: first column + status, line 2: the rest) instead of a clipped table. -#}
+{% macro table(columns, rows, id='tbl', empty='Nothing here yet', open_id='', stack_sm=false) %}
 <div class="table-wrap">
-<table class="table{% if caller is defined %} has-drawers{% endif %}" id="{{ id }}">
+<table class="table{% if caller is defined %} has-drawers{% endif %}{% if stack_sm %} stack-sm{% endif %}" id="{{ id }}">
   <thead><tr>{% for c in columns %}<th{% set cls = ('num ' if c.num else '') ~ ('nowrap ' if c.nowrap else '') ~ ('hide-sm' if c.hide else '') %}{% if cls | trim %} class="{{ cls | trim }}"{% endif %} scope="col">{{ c.label }}</th>{% endfor %}</tr></thead>
   <tbody>
   {% for row in rows %}
@@ -16,7 +17,7 @@
     <tr>
     {% for c in columns %}
       {% set v = row.cells[c.key] if c.key in row.cells else '' %}
-      <td{% set cls = ('num ' if c.num else '') ~ ('nowrap ' if c.nowrap else '') ~ ('hide-sm' if c.hide else '') %}{% if cls | trim %} class="{{ cls | trim }}"{% endif %}>
+      <td{% set cls = ('num ' if c.num else '') ~ ('nowrap ' if c.nowrap else '') ~ ('hide-sm ' if c.hide else '') ~ ('col-' ~ c.key if stack_sm else '') %}{% if cls | trim %} class="{{ cls | trim }}"{% endif %}>
         {% if v is mapping %}{% set text = v.text %}{% set sub = v.sub %}{% else %}{% set text = v %}{% set sub = '' %}{% endif %}
         {% if loop.first and caller is defined %}
         <button type="button" class="row-toggle" data-drawer="{{ rid }}" aria-expanded="{{ 'true' if rid == open_id else 'false' }}" aria-controls="{{ rid }}">{{ icon('chevron') }}{{ text }}</button>

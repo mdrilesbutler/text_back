@@ -334,3 +334,26 @@
   var bad = document.querySelector('[aria-invalid="true"]');
   if (bad && typeof bad.focus === 'function') bad.focus();
 })();
+/* Phone and Calendar: a carrier pill shows its codes at once (Save keeps it); Verify / Check buttons
+   show a busy label while the form posts (never disabled, or the pressed button would drop out of the post). */
+(function () {
+  'use strict';
+  var pills = document.getElementById('carrier-pills');
+  if (pills) {
+    var show = function () {
+      var on = pills.querySelector('input:checked'), key = on ? on.value : '';
+      Array.prototype.forEach.call(document.querySelectorAll('[data-codes]'), function (block) {
+        if (block.getAttribute('data-codes') === key) block.removeAttribute('hidden'); else block.setAttribute('hidden', '');
+      });
+      var none = document.getElementById('codes-none');
+      if (none) { if (key) none.setAttribute('hidden', ''); else none.removeAttribute('hidden'); }
+    };
+    Array.prototype.forEach.call(pills.querySelectorAll('input'), function (r) { r.addEventListener('change', show); });
+  }
+  document.addEventListener('submit', function (e) {
+    var b = e.submitter;
+    if (!b || !b.hasAttribute('data-busy-label')) return;
+    b.setAttribute('aria-busy', 'true');
+    b.textContent = b.getAttribute('data-busy-label');
+  });
+})();

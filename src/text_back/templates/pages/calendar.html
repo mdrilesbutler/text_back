@@ -1,0 +1,108 @@
+{#- Calendar: the connection state, Connect / Reconnect, the picker, a live availability check,
+    and the two calendars available on request. Context (plus the layout contract): card, availability,
+    request_cards. This page may use the word that marks a radio as on (it is not the Messages page). -#}
+{% extends "layout.html" %}
+{% from "components/forms.html" import button %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+<div class="stack">
+  <div class="grid calendar-grid">
+    <section class="card provider-card {{ card.kind }}" aria-labelledby="provider-heading">
+      <div class="card-body stack">
+        <div class="provider-head">
+          <span class="glyph">{{ icon(card.icon) }}</span>
+          <div>
+            <div class="state">{{ card.word }}</div>
+            <h2 id="provider-heading">{{ card.title }}</h2>
+          </div>
+        </div>
+        <p>
+          {%- if card.status == 'ready' -%}
+          Google Calendar is connected. Appointments are checked against and booked on <strong>{{ card.current_name }}</strong>.
+          {%- else -%}
+          {{ card.body }}
+          {%- endif -%}
+        </p>
+        {% if card.button %}
+        <form method="post" action="/client/calendar" class="stack-sm">
+          <input type=hidden name=csrf value='{{ csrf }}'>
+          <input type="hidden" name="action" value="connect">
+          {{ button(card.button, card.button_variant) }}
+          <p class="note">{{ card.consent_note }}</p>
+        </form>
+        {% elif card.note %}
+        <p class="note">{{ card.note }}</p>
+        {% endif %}
+        {% if card.show_picker %}
+        <form method="post" action="/client/calendar" class="picker stack-sm">
+          <input type=hidden name=csrf value='{{ csrf }}'>
+          <fieldset class="field">
+            <legend class="label">Which calendar</legend>
+            <div class="radios">
+              {% for entry in card.choices %}
+              <label class="radio-row"><input type="radio" name="calendar_id" value="{{ entry.id }}"{% if entry.id == card.current_id %} checked{% endif %}><span>{{ entry.summary or entry.id }}{% if entry.primary %} (main){% endif %}</span></label>
+              {% endfor %}
+            </div>
+            <span class="hint">Free times are checked here and bookings are added here.</span>
+          </fieldset>
+          {{ button('Use this calendar', 'secondary') }}
+        </form>
+        {% endif %}
+      </div>
+    </section>
+
+    {% set av = availability %}
+    <section class="card" aria-labelledby="free-heading">
+      <div class="card-head"><div><h2 id="free-heading">Next free times</h2><p>A real read of the calendar the assistant books on.</p></div></div>
+      <div class="card-body stack-sm">
+        {% if av.result and av.result.error %}
+        <div class="flash err" role="alert">{{ icon('alert') }}<div>{{ av.result.error }}</div></div>
+        {% endif %}
+        {% if av.result and av.result.checked %}
+          {% if av.result.slots %}
+          <ol class="slots" aria-label="Next free times">
+            {% for slot in av.result.slots %}<li>{{ icon('clock') }}{{ slot }}</li>{% endfor %}
+          </ol>
+          {% else %}
+          <p class="empty-note">{{ av.result.empty }}</p>
+          {% endif %}
+          <p class="note">{{ av.caption }}</p>
+        {% elif not av.result %}
+        <p class="note">{{ av.lead }}</p>
+        {% endif %}
+        {% if av.show_button %}
+        <form method="post" action="/client/calendar/availability">
+          <input type=hidden name=csrf value='{{ csrf }}'>
+          <button class="btn btn-primary" type="submit" data-busy-label="Checking…">{{ icon('refresh') }}Check availability now</button>
+        </form>
+        {% elif av.replaced %}
+        <p class="note">{{ av.replaced }}</p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  {% if request_cards %}
+  <section aria-labelledby="request-heading">
+    <h2 class="sr-only" id="request-heading">Other calendars</h2>
+    <div class="grid cols-2">
+      {% for rc in request_cards %}
+      <section class="card provider-card neutral request-card" aria-labelledby="request-{{ rc.key }}">
+        <div class="card-body stack-sm">
+          <div class="provider-head">
+            <span class="glyph">{{ icon('info') }}</span>
+            <div>
+              <div class="state">Available on request</div>
+              <h3 id="request-{{ rc.key }}">{{ rc.name }}</h3>
+            </div>
+          </div>
+          <p>{{ rc.body }}</p>
+          <p class="note">Ask text_back to connect it.</p>
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

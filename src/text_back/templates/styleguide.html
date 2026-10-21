@@ -15,7 +15,7 @@
 {{ section_header('Status cards', 'Home shows three of these. Color, icon and a word always travel together.') }}
 <div class="grid cols-3">
   {{ status_card('Calendar', 'ok', 'Bookings go to “Tree jobs” on Google Calendar.', 'Change calendar', '/client/calendar', state_word='Connected') }}
-  {{ status_card('Forwarding', 'warn', 'Three of five checks done. An answered call has not been tested yet.', 'Finish setup', '/client/business', state_word='Not verified') }}
+  {{ status_card('Forwarding', 'warn', 'Three of five checks done. An answered call has not been tested yet.', 'Finish setup', '/client/phone#forwarding', state_word='Not verified') }}
   {{ status_card('Messaging registration', 'err', 'The campaign was rejected: the sample texts did not mention how to opt out.', 'See details', '/client', state_word='Rejected') }}
 </div>
 
@@ -132,7 +132,7 @@
 {{ section_header('Empty state and copy row') }}
 <div class="grid cols-2">
   {% call card() %}
-    {{ empty_state('message', 'No conversations yet', 'The first missed call starts one. Forward your business number to see it here.', 'Set up forwarding', '/client/business') }}
+    {{ empty_state('message', 'No conversations yet', 'The first missed call starts one. Forward your business number to see it here.', 'Set up forwarding', '/client/phone#forwarding') }}
   {% endcall %}
   {% call card('Forwarding code', 'Dial this on the phone that has your business number.') %}
     <div class="copy-row"><code>*71 980 555 0177</code><button class="btn btn-secondary btn-sm copy-btn" type="button" data-copy="*719805550177">{{ icon('copy') }}Copy</button></div>

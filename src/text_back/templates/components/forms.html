@@ -37,11 +37,12 @@
 {% endmacro %}
 
 {#- Phone number: visible input (formatted, carries `name`), hidden `<name>_e164`, optional Verify
-    submit button (name="verify" value=name) and a status line (kind ok/warn/err/info + text). -#}
+    submit button (name="verify" value=name, formaction=verify_action, aria-label "Verify <label>") and a
+    status line (kind ok/warn/err/info + text) announced once and linked through aria-describedby. -#}
 {% macro phone_input(name, label, value='', id=None, hint='', error='', placeholder='(704) 555-0123', required=false,
-                     verify_label='', status='', status_kind='info', disabled=false, autocomplete='tel') %}
+                     verify_label='', verify_action='', status='', status_kind='info', disabled=false, autocomplete='tel') %}
 {% set id = id or name %}
-{% set ids = ([id ~ '-error'] if error else []) + ([id ~ '-hint'] if hint else []) %}
+{% set ids = ([id ~ '-error'] if error else []) + ([id ~ '-status'] if status else []) + ([id ~ '-hint'] if hint else []) %}
 {% call field(label, id, hint=hint, error=error, required=required) %}
 <div class="input-row">
   <input class="input" type="tel" id="{{ id }}" name="{{ name }}" value="{{ value | phone }}" data-phone
@@ -49,9 +50,10 @@
     {%- if required %} required{% endif %}{% if disabled %} disabled{% endif %}
     {%- if error %} aria-invalid="true"{% endif %}{% if ids %} aria-describedby="{{ ids | join(' ') }}"{% endif %}>
   <input type="hidden" name="{{ name }}_e164" value="{{ value }}" data-phone-e164>
-  {% if verify_label %}<button type="submit" class="btn btn-secondary" name="verify" value="{{ name }}"{% if disabled %} disabled{% endif %}>{{ verify_label }}</button>{% endif %}
+  {% if verify_label %}<button type="submit" class="btn btn-secondary" name="verify" value="{{ name }}" aria-label="{{ verify_label }} {{ label }}" data-busy-label="Checking…"
+    {%- if verify_action %} formaction="{{ verify_action }}"{% endif %}{% if disabled %} disabled{% endif %}>{{ verify_label }}</button>{% endif %}
 </div>
-{% if status %}<span class="status-line {{ status_kind }}">{{ icon({'ok': 'check', 'warn': 'alert', 'err': 'x', 'info': 'info'}.get(status_kind, 'info')) }}{{ status }}</span>{% endif %}
+{% if status %}<span class="status-line {{ status_kind }}" id="{{ id }}-status" role="{{ 'alert' if status_kind == 'err' else 'status' }}">{{ icon({'ok': 'check', 'warn': 'alert', 'err': 'x', 'info': 'info'}.get(status_kind, 'info')) }}{{ status }}</span>{% endif %}
 {% endcall %}
 {% endmacro %}
 
