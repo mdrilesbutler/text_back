@@ -8,6 +8,7 @@ from text_back.calendars.protocol import CalendarProvider, CalendarProviderError
 from text_back.sms import atomic_sms_handler, enqueue_sms
 from text_back.store import Store
 from text_back.telecom import Telecom
+from text_back.working_hours import parse_working_hours, slot_within_hours
 
 
 class BookingError(Exception):
@@ -57,11 +58,19 @@ def book_appointment(
     if duration_minutes <= 0:
         raise BookingError("appointment duration must be positive")
     try:
-        ZoneInfo(timezone_name)
+        zone = ZoneInfo(timezone_name)
     except ZoneInfoNotFoundError:
         raise BookingError("business timezone is invalid") from None
 
     end = slot_end(start, duration_minutes)
+    # The owner's working hours (Scheduling page) are checked before the
+    # calendar is asked: a request outside the open window is declined like a
+    # busy slot, so the customer is asked for another time. No setting means
+    # any day, any time.
+    if not slot_within_hours(start, end, parse_working_hours(store.setting("working_hours")), zone):
+        _record_slot_check(store=store, caller=caller, conversation_id=conversation_id, start=start,
+                           available=False, checks=0, reason="outside_hours")
+        raise SlotUnavailableError("requested slot is outside working hours")
     try:
         first_check_available = calendar.is_free(start, end)
     except CalendarProviderError:
@@ -178,11 +187,15 @@ def _record_slot_check(
     start: datetime,
     available: bool,
     checks: int,
+    reason: str = "",
 ) -> None:
+    metadata: dict[str, object] = {"available": available, "checks": checks}
+    if reason:
+        metadata["reason"] = reason
     store.record_outcome(
         lead_id=caller,
         event_type="calendar.slot_checked",
         idempotency_key=f"conversation:{conversation_id}:slot:{start.isoformat()}",
         evidence_id=start.isoformat(),
-        metadata={"available": available, "checks": checks},
+        metadata=metadata,
     )

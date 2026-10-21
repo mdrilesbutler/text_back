@@ -210,3 +210,24 @@ def test_revoked_calendar_pauses_booking_attempts_then_resumes_after_reconnectio
     assert app.state.store.appointment_by_conversation(CALLER)["event_id"] in calendar.events
     assert [sms.kind for sms in app.state.telecom.outbound].count("booking_confirmation") == 1
     assert app.state.worker_errors == []
+
+
+def test_retry_outside_working_hours_sends_slot_unavailable_and_finishes_the_job(tmp_path):
+    import json
+    app, clock, calendar, key = _qualified_pending_booking(tmp_path)  # 2026-09-19 14:00 UTC is a Saturday
+    app.state.store.set_setting("working_hours", json.dumps({
+        "mon": {"open": "08:00", "close": "17:00"}, "tue": {"open": "08:00", "close": "17:00"},
+        "wed": {"open": "08:00", "close": "17:00"}, "thu": {"open": "08:00", "close": "17:00"},
+        "fri": {"open": "08:00", "close": "17:00"}, "sat": None, "sun": None}))
+    calendar.unavailable = False
+
+    clock[0] = NOW + timedelta(minutes=2)
+    run_once(app.state)
+
+    assert _booking_job(app, key)["status"] == "done"
+    assert calendar.availability_checks == 1 and calendar.create_attempts == 0 and calendar.events == {}
+    assert app.state.store.appointment_by_conversation(CALLER) is None
+    assert "preferred_time" not in app.state.store.get_conversation_fields(CALLER)
+    assert app.state.telecom.outbound[-1].kind == "slot_unavailable"
+    assert not any(sms.kind == "booking_confirmation" for sms in app.state.telecom.outbound)
+    assert app.state.worker_errors == []

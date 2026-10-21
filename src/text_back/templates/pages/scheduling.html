@@ -1,0 +1,113 @@
+{#- Scheduling: appointment length, time zone, working hours, quiet hours, nudges. One Save.
+    Context (plus the layout contract): values, errors, defaults (display strings), raw_defaults (control
+    values), timezone_options, duration_presets, day_rows, quiet_options, delay1_options, delay2_options,
+    expiry_options, hours_warning, hours_hints.
+    Reset buttons: name=reset value=<group> posts the form with that group's defaults (server) and, with JS,
+    data-reset names the controls to put back to their data-default without a round trip. -#}
+{% extends "layout.html" %}
+{% from "components/forms.html" import select, toggle, button %}
+{% from "components/display.html" import card %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+<form method="post" action="/client/scheduling" class="stack narrow" id="scheduling-form" novalidate>
+  <input type=hidden name=csrf value='{{ csrf }}'>
+  {% if hours_warning %}
+  <div class="flash warn" role="alert">{{ icon('alert') }}<div>{{ hours_warning }}</div></div>
+  {% endif %}
+
+  {% call card('Appointments', subtitle='How long each booking blocks on the calendar, and the clock it follows.') %}
+    <div class="field{% if errors.appointment_duration_minutes %} has-error{% endif %}">
+      <label class="label" for="appointment_duration_minutes">Appointment length</label>
+      <div class="unit-row">
+        <input class="input" type="number" id="appointment_duration_minutes" name="appointment_duration_minutes"
+               value="{{ values.appointment_duration_minutes }}" min="15" max="480" step="5" inputmode="numeric" required
+               data-default="{{ raw_defaults.appointment_duration_minutes }}"
+               {%- if errors.appointment_duration_minutes %} aria-invalid="true"{% endif %}
+               aria-describedby="{% if errors.appointment_duration_minutes %}appointment_duration_minutes-error {% endif %}appointment_duration_minutes-hint">
+        <span class="unit">minutes</span>
+      </div>
+      <div class="chips needs-js" role="group" aria-label="Common lengths">
+        {% for p in duration_presets %}<button type="button" data-set-for="appointment_duration_minutes" data-set-value="{{ p }}">{{ p }} min</button>{% endfor %}
+      </div>
+      {% if errors.appointment_duration_minutes %}<p class="error" id="appointment_duration_minutes-error">{{ icon('alert') }}<span>{{ errors.appointment_duration_minutes }}</span></p>{% endif %}
+      <span class="hint" id="appointment_duration_minutes-hint">Changes the length on new bookings. 15 to 480 minutes, in steps of 5.</span>
+      <p class="default"><span>Default: {{ defaults.appointment_duration_minutes }}</span><button type="submit" class="btn btn-ghost btn-sm" name="reset" value="appointment_duration_minutes" data-reset="appointment_duration_minutes" aria-label="Reset Appointment length">Reset</button></p>
+    </div>
+    {{ select('timezone', 'Time zone', timezone_options, value=values.timezone,
+              hint='Used for working hours, quiet hours and the times in texts.', error=errors.timezone,
+              default=defaults.timezone, reset_name='reset', data={'default': raw_defaults.timezone}) }}
+  {% endcall %}
+
+  {% call card('Working hours', subtitle='When the assistant may book a job.') %}
+    {% set hours_bad = errors.hours_mode or errors.hours %}
+    {% set hours_ids = 'hours_mode-hint' ~ (' hours_mode-error' if errors.hours_mode else '') ~ (' hours-error' if errors.hours else '') %}
+    <fieldset class="field{% if hours_bad %} has-error{% endif %}">
+      <legend class="label">Hours</legend>
+      <div class="pills" id="hours-mode">
+        <label><input type="radio" name="hours_mode" id="hours_mode-any" value="any"{% if values.hours_mode == 'any' %} checked{% endif %} data-default="1"
+          {%- if hours_bad %} aria-invalid="true"{% endif %} aria-describedby="{{ hours_ids }}"><span class="pill">Any day, any time</span></label>
+        <label><input type="radio" name="hours_mode" id="hours_mode-set" value="set"{% if values.hours_mode == 'set' %} checked{% endif %} data-default="0"
+          {%- if hours_bad %} aria-invalid="true"{% endif %} aria-describedby="{{ hours_ids }}"><span class="pill">Set hours</span></label>
+      </div>
+      {% if errors.hours_mode %}<p class="error" id="hours_mode-error">{{ icon('alert') }}<span>{{ errors.hours_mode }}</span></p>{% endif %}
+      {% if errors.hours %}<p class="error" id="hours-error">{{ icon('alert') }}<span>{{ errors.hours }}</span></p>{% endif %}
+      <span class="hint" id="hours_mode-hint" data-hint-any="{{ hours_hints.any }}" data-hint-set="{{ hours_hints.set }}">{{ hours_hints.set if values.hours_mode == 'set' else hours_hints.any }}</span>
+    </fieldset>
+    <div class="hours-rows" id="hours-rows">
+      {% for r in day_rows %}
+      <div class="hours-row{% if r.error %} has-error{% endif %}">
+        {{ toggle('open_' ~ r.key, r.name, on=r.on, aria_label='Open on ' ~ r.name, describedby=('hours_' ~ r.key ~ '-error' if r.error else '')) }}
+        <div class="times">
+          <label class="sr-only" for="{{ r.key }}_open">{{ r.name }} opening time</label>
+          <select class="select" id="{{ r.key }}_open" name="{{ r.key }}_open"{% if r.error %} aria-invalid="true" aria-describedby="hours_{{ r.key }}-error"{% endif %}>
+            {% for v, l in r.open_options %}<option value="{{ v }}"{% if v == r.open %} selected{% endif %}>{{ l }}</option>{% endfor %}
+          </select>
+          <span class="dash" aria-hidden="true">&ndash;</span>
+          <label class="sr-only" for="{{ r.key }}_close">{{ r.name }} closing time</label>
+          <select class="select" id="{{ r.key }}_close" name="{{ r.key }}_close"{% if r.error %} aria-invalid="true" aria-describedby="hours_{{ r.key }}-error"{% endif %}>
+            {% for v, l in r.close_options %}<option value="{{ v }}"{% if v == r.close %} selected{% endif %}>{{ l }}</option>{% endfor %}
+          </select>
+        </div>
+        {% if r.error %}<p class="error" id="hours_{{ r.key }}-error">{{ icon('alert') }}<span>{{ r.error }}</span></p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="default"><span>Default: {{ defaults.working_hours }}</span><button type="submit" class="btn btn-ghost btn-sm" name="reset" value="working_hours" data-reset="hours_mode-any hours_mode-set" aria-label="Reset Working hours">Reset</button></p>
+  {% endcall %}
+
+  {% call card('Quiet hours', subtitle='Nudges and retried texts wait until quiet hours end. The first text, replies to a customer who is texting, and STOP/HELP replies go out right away.') %}
+    <fieldset class="field{% if errors.quiet_hours %} has-error{% endif %}">
+      <legend class="label">No texts between</legend>
+      <div class="times">
+        <label class="sr-only" for="quiet_hours_start">Quiet hours start</label>
+        <select class="select" id="quiet_hours_start" name="quiet_hours_start" data-default="{{ raw_defaults.quiet_hours_start }}"{% if errors.quiet_hours %} aria-invalid="true" aria-describedby="quiet_hours-error"{% endif %}>
+          {% for v, l in quiet_options %}<option value="{{ v }}"{% if v == values.quiet_hours_start %} selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+        <span class="dash">and</span>
+        <label class="sr-only" for="quiet_hours_end">Quiet hours end</label>
+        <select class="select" id="quiet_hours_end" name="quiet_hours_end" data-default="{{ raw_defaults.quiet_hours_end }}"{% if errors.quiet_hours %} aria-invalid="true" aria-describedby="quiet_hours-error"{% endif %}>
+          {% for v, l in quiet_options %}<option value="{{ v }}"{% if v == values.quiet_hours_end %} selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      {% if errors.quiet_hours %}<p class="error" id="quiet_hours-error">{{ icon('alert') }}<span>{{ errors.quiet_hours }}</span></p>{% endif %}
+    </fieldset>
+    {{ toggle('no_quiet_hours', 'No quiet hours', on=values.no_quiet_hours, hint='Texts may go out at any hour.', data={'default': raw_defaults.no_quiet_hours}) }}
+    <p class="default"><span>Default: {{ defaults.quiet_hours }}</span><button type="submit" class="btn btn-ghost btn-sm" name="reset" value="quiet_hours" data-reset="quiet_hours_start quiet_hours_end t_no_quiet_hours" aria-label="Reset Quiet hours">Reset</button></p>
+  {% endcall %}
+
+  {% call card('Nudges', subtitle='Two reminders when a caller never replies to the first text, then the lead is closed.') %}
+    {{ select('followup_delay_1', 'First nudge', delay1_options, value=values.followup_delay_1,
+              hint='After the first text.', error=errors.followup_delay_1, default=defaults.followup_delay_1, reset_name='reset',
+              data={'default': raw_defaults.followup_delay_1}) }}
+    {{ select('followup_delay_2', 'Last nudge', delay2_options, value=values.followup_delay_2,
+              hint='After the first nudge.', error=errors.followup_delay_2, default=defaults.followup_delay_2, reset_name='reset',
+              data={'default': raw_defaults.followup_delay_2}) }}
+    {{ select('followup_expiry_minutes', 'Close the lead', expiry_options, value=values.followup_expiry_minutes,
+              hint='After the last nudge. The lead is marked expired.', error=errors.followup_expiry_minutes,
+              default=defaults.followup_expiry_minutes, reset_name='reset', data={'default': raw_defaults.followup_expiry_minutes}) }}
+    <p class="note">A nudge that is already scheduled keeps its time. Later nudges use the new delays.</p>
+  {% endcall %}
+
+  <div class="row end save-row">{{ button('Save', id='save-scheduling') }}</div>
+</form>
+{% endblock %}

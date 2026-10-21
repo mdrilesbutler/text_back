@@ -52,7 +52,7 @@ def test_landing_is_home_and_nav_links_only_to_routes_that_exist(tmp_path, monke
         assert f'href="{href}"' in home.text and f"<span>{label}</span>" in home.text
         assert client.get(href, follow_redirects=False).status_code == 200, href
     styleguide = client.get("/client/styleguide").text
-    for missing in ("/client/customers", "/client/scheduling", "/client/phone"):
+    for missing in ("/client/customers", "/client/phone"):
         assert missing not in home.text and missing not in styleguide
     assert '<h2 class="sr-only" id="setup-heading">Setup</h2>' in home.text and 'class="hide-sm"' in home.text
     assert 'href="/client" aria-current="page"' in home.text
@@ -69,7 +69,7 @@ def test_every_portal_page_carries_the_security_headers(tmp_path, monkeypatch):
     verify = client.get("/client/verify")
     assert verify.status_code == 200
     sign_in(client, telecom)
-    responses = [login, verify] + [client.get(path) for path in ("/client", "/client/account", "/client/messages", "/client/business", "/client/calendar", "/client/styleguide")]
+    responses = [login, verify] + [client.get(path) for path in ("/client", "/client/account", "/client/messages", "/client/scheduling", "/client/business", "/client/calendar", "/client/styleguide")]
     for response in responses:
         assert response.status_code == 200, response.url
         csp = response.headers["content-security-policy"]

@@ -1,22 +1,28 @@
 {#- Form macros. Import with:
    {% from "components/forms.html" import field, input, phone_input, textarea_counter, select, toggle, radio_pills, button, chips %}
-   Rules: no inline style/script (CSP); never emit the word "checked" unless a box is on. -#}
+   Rules: no inline style/script (CSP); never emit the word "checked" unless a box is on.
+   Every control's aria-describedby lists, in order, its error, its hint and (textareas) its counter. -#}
 {% from "components/icons.html" import icon %}
 
 {#- Wrapper used by every control. Call form:
-    {% call field('Business name', 'business_name', hint='Shown in every text', error=errors.business_name, default='Oak & Pine') %}<input ...>{% endcall %} -#}
-{% macro field(label, id, hint='', error='', required=false, default='', reset_name='') %}
+    {% call field('Business name', 'business_name', hint='Shown in every text', error=errors.business_name, default='Oak & Pine') %}<input ...>{% endcall %}
+    default + reset_name render "Default: … [Reset <label>]"; empty_note alone renders a plain note
+    (used for "Standard wording." when nothing is overridden, so no Reset that would do nothing). -#}
+{% macro field(label, id, hint='', error='', required=false, default='', reset_name='', empty_note='') %}
 <div class="field{% if error %} has-error{% endif %}">
   <label class="label" for="{{ id }}">{{ label }}{% if required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
   {{ caller() }}
   {% if error %}<p class="error" id="{{ id }}-error">{{ icon('alert') }}<span>{{ error }}</span></p>{% endif %}
   {% if hint %}<span class="hint" id="{{ id }}-hint">{{ hint }}</span>{% endif %}
-  {% if default %}<p class="default"><span>Default: {{ default }}</span>{% if reset_name %}<button type="submit" class="btn btn-ghost btn-sm" name="{{ reset_name }}" value="{{ id }}">Reset</button>{% endif %}</p>{% endif %}
+  {% if default %}<p class="default"><span>Default: {{ default }}</span>{% if reset_name %}<button type="submit" class="btn btn-ghost btn-sm" name="{{ reset_name }}" value="{{ id }}" aria-label="Reset {{ label }}">Reset</button>{% endif %}</p>
+  {% elif empty_note %}<p class="default"><span>{{ empty_note }}</span></p>{% endif %}
 </div>
 {% endmacro %}
 
-{% macro input(name, label, value='', type='text', id=None, hint='', error='', placeholder='', required=false, autocomplete='', inputmode='', maxlength='', disabled=false, default='', reset_name='', cls='') %}
+{#- data: optional {suffix: value} emitted as data-<suffix> attributes on the control. -#}
+{% macro input(name, label, value='', type='text', id=None, hint='', error='', placeholder='', required=false, autocomplete='', inputmode='', maxlength='', disabled=false, default='', reset_name='', cls='', data=None) %}
 {% set id = id or name %}
+{% set ids = ([id ~ '-error'] if error else []) + ([id ~ '-hint'] if hint else []) %}
 {% call field(label, id, hint=hint, error=error, required=required, default=default, reset_name=reset_name) %}
 <input class="input{% if cls %} {{ cls }}{% endif %}" type="{{ type }}" id="{{ id }}" name="{{ name }}" value="{{ value }}"
   {%- if placeholder %} placeholder="{{ placeholder }}"{% endif %}
@@ -25,7 +31,8 @@
   {%- if inputmode %} inputmode="{{ inputmode }}"{% endif %}
   {%- if maxlength %} maxlength="{{ maxlength }}"{% endif %}
   {%- if disabled %} disabled{% endif %}
-  {%- if error %} aria-invalid="true" aria-describedby="{{ id }}-error"{% elif hint %} aria-describedby="{{ id }}-hint"{% endif %}>
+  {%- for k, v in (data or {}).items() %} data-{{ k }}="{{ v }}"{% endfor %}
+  {%- if error %} aria-invalid="true"{% endif %}{% if ids %} aria-describedby="{{ ids | join(' ') }}"{% endif %}>
 {% endcall %}
 {% endmacro %}
 
@@ -34,12 +41,13 @@
 {% macro phone_input(name, label, value='', id=None, hint='', error='', placeholder='(704) 555-0123', required=false,
                      verify_label='', status='', status_kind='info', disabled=false, autocomplete='tel') %}
 {% set id = id or name %}
+{% set ids = ([id ~ '-error'] if error else []) + ([id ~ '-hint'] if hint else []) %}
 {% call field(label, id, hint=hint, error=error, required=required) %}
 <div class="input-row">
   <input class="input" type="tel" id="{{ id }}" name="{{ name }}" value="{{ value | phone }}" data-phone
     placeholder="{{ placeholder }}" inputmode="tel" autocomplete="{{ autocomplete }}" maxlength="24"
     {%- if required %} required{% endif %}{% if disabled %} disabled{% endif %}
-    {%- if error %} aria-invalid="true" aria-describedby="{{ id }}-error"{% elif hint %} aria-describedby="{{ id }}-hint"{% endif %}>
+    {%- if error %} aria-invalid="true"{% endif %}{% if ids %} aria-describedby="{{ ids | join(' ') }}"{% endif %}>
   <input type="hidden" name="{{ name }}_e164" value="{{ value }}" data-phone-e164>
   {% if verify_label %}<button type="submit" class="btn btn-secondary" name="verify" value="{{ name }}"{% if disabled %} disabled{% endif %}>{{ verify_label }}</button>{% endif %}
 </div>
@@ -47,23 +55,32 @@
 {% endcall %}
 {% endmacro %}
 
-{#- Textarea with live counter (#<id>-count). placeholder = the default text shown in grey. -#}
-{% macro textarea_counter(name, label, value='', id=None, hint='', error='', placeholder='', maxlength=480, rows=3, disabled=false, default='', reset_name='', describe='') %}
+{#- Textarea with counter (#<id>-count, read on focus through aria-describedby; not a live region).
+    placeholder = the default text shown in grey. data: optional {suffix: value} emitted as data-<suffix>
+    attributes. describedby: extra ids appended (a lock note). A call block, if given, is rendered
+    between the textarea and the counter (placeholder chips). -#}
+{% macro textarea_counter(name, label, value='', id=None, hint='', error='', placeholder='', maxlength=480, rows=3, disabled=false, default='', reset_name='', describe='', data=None, describedby='', empty_note='') %}
 {% set id = id or name %}
-{% call field(label, id, hint=hint, error=error, default=default, reset_name=reset_name) %}
+{% set extra = caller if caller is defined else none %}
+{% set ids = ([id ~ '-error'] if error else []) + ([id ~ '-hint'] if hint else []) + [id ~ '-count'] + ([describedby] if describedby else []) %}
+{% call field(label, id, hint=hint, error=error, default=default, reset_name=reset_name, empty_note=empty_note) %}
 <textarea class="textarea" id="{{ id }}" name="{{ name }}" rows="{{ rows }}" maxlength="{{ maxlength }}" data-counter
+  {%- for k, v in (data or {}).items() %} data-{{ k }}="{{ v }}"{% endfor %}
   {%- if placeholder %} placeholder="{{ placeholder }}"{% endif %}{% if disabled %} disabled{% endif %}
-  {%- if error %} aria-invalid="true" aria-describedby="{{ id }}-error"{% elif hint %} aria-describedby="{{ id }}-hint"{% endif %}>{{ value }}</textarea>
-<p class="counter" id="{{ id }}-count" aria-live="polite">{{ describe }}</p>
+  {%- if error %} aria-invalid="true"{% endif %} aria-describedby="{{ ids | join(' ') }}">{{ value }}</textarea>
+{% if extra %}{{ extra() }}{% endif %}
+<p class="counter" id="{{ id }}-count">{{ describe }}</p>
 {% endcall %}
 {% endmacro %}
 
-{#- options: list of (value, label) or plain strings -#}
-{% macro select(name, label, options, value='', id=None, hint='', error='', disabled=false, default='', reset_name='') %}
+{#- options: list of (value, label) or plain strings. data: optional data-* attributes (data-default for Reset). -#}
+{% macro select(name, label, options, value='', id=None, hint='', error='', disabled=false, default='', reset_name='', data=None) %}
 {% set id = id or name %}
+{% set ids = ([id ~ '-error'] if error else []) + ([id ~ '-hint'] if hint else []) %}
 {% call field(label, id, hint=hint, error=error, default=default, reset_name=reset_name) %}
 <select class="select" id="{{ id }}" name="{{ name }}"{% if disabled %} disabled{% endif %}
-  {%- if error %} aria-invalid="true" aria-describedby="{{ id }}-error"{% elif hint %} aria-describedby="{{ id }}-hint"{% endif %}>
+  {%- for k, v in (data or {}).items() %} data-{{ k }}="{{ v }}"{% endfor %}
+  {%- if error %} aria-invalid="true"{% endif %}{% if ids %} aria-describedby="{{ ids | join(' ') }}"{% endif %}>
   {% for opt in options %}
   {% set v = opt[0] if opt is not string else opt %}{% set l = opt[1] if opt is not string else opt %}
   <option value="{{ v }}"{% if v == value %} selected{% endif %}>{{ l }}</option>
@@ -72,12 +89,16 @@
 {% endcall %}
 {% endmacro %}
 
-{#- Switch. Emits ` checked` ONLY when on. Markup kept as `name=X value=1 checked` for existing tests. -#}
-{% macro toggle(name, label, on=false, value='1', hint='', id=None, disabled=false) %}
+{#- Switch. Emits ` checked` ONLY when on. Markup kept as `name=X value=1 checked` for existing tests.
+    aria_label: a fuller accessible name than the visible text ("Open on Monday" for a row that shows "Monday").
+    describedby: error id(s) the switch shares with its row. data: data-* attributes (data-default). -#}
+{% macro toggle(name, label, on=false, value='1', hint='', id=None, disabled=false, aria_label='', describedby='', data=None) %}
 {% set id = id or ('t_' ~ name) %}
 <label class="toggle" for="{{ id }}">
   <span class="text">{{ label }}{% if hint %}<span class="hint">{{ hint }}</span>{% endif %}</span>
-  <input type=checkbox id={{ id }} name={{ name }} value={{ value }}{% if on %} checked{% endif %}{% if disabled %} disabled{% endif %}>
+  <input type=checkbox id={{ id }} name={{ name }} value={{ value }}{% if on %} checked{% endif %}{% if disabled %} disabled{% endif %}
+    {%- for k, v in (data or {}).items() %} data-{{ k }}="{{ v }}"{% endfor %}
+    {%- if aria_label %} aria-label="{{ aria_label }}"{% endif %}{% if describedby %} aria-describedby="{{ describedby }}"{% endif %}>
   <span class="track" aria-hidden="true"></span>
 </label>
 {% endmacro %}
@@ -106,12 +127,15 @@
 {% endif %}
 {% endmacro %}
 
-{#- Placeholder chips that insert into the textarea #target at the caret. items: ['business_name', ...] -#}
-{% macro chips(items, target) %}
+{#- Placeholder chips that insert into the textarea #target at the caret.
+    items: ['business_name', ...] or [('business_name', 'Business name'), ...] (label shown, token as secondary text).
+    disabled: read-only page (the chips must not write into a disabled textarea). -#}
+{% macro chips(items, target, disabled=false) %}
 {% if items %}
-<div class="chips" aria-label="Insert a placeholder">
+<div class="chips" role="group" aria-label="Fill-ins for this text">
   {% for item in items %}
-  <button type="button" data-insert="{{ '{' ~ item ~ '}' }}" data-for="{{ target }}">{{ '{' ~ item ~ '}' }}</button>
+  {% set token = item if item is string else item[0] %}{% set label = '' if item is string else item[1] %}
+  <button type="button" data-insert="{{ '{' ~ token ~ '}' }}" data-for="{{ target }}" aria-label="Insert {{ label or token }}"{% if disabled %} disabled{% endif %}>{% if label %}<span>{{ label }}</span> {% endif %}<code>{{ '{' ~ token ~ '}' }}</code></button>
   {% endfor %}
 </div>
 {% endif %}

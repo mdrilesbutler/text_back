@@ -1,0 +1,76 @@
+{#- Messages: every customer text grouped by stage, one Save, a live phone-frame preview.
+    Context (plus the layout contract): groups, editable, ask, trial, samples, preview, max_chars.
+    Rule for this page: the word that marks a checkbox as on appears only inside an on-state
+    checkbox attribute (tests/test_contact_fields.py), so no copy here may use it.
+    Below 1100px the preview is a <details> sheet fixed above the tab bar; from 1100px it is the right rail. -#}
+{% extends "layout.html" %}
+{% from "components/forms.html" import textarea_counter, toggle, button, chips %}
+{% from "components/icons.html" import icon %}
+{% block content %}
+<div class="grid rail-lg messages-page">
+  <div class="stack">
+    <form method="post" action="/client/messages" class="stack" id="messages-form" novalidate>
+      <input type=hidden name=csrf value='{{ csrf }}'>
+      {% for g in groups %}
+      <section class="card group" aria-labelledby="g-{{ g.key }}">
+        <div class="card-head">
+          <div class="group-head"><h2 id="g-{{ g.key }}">{{ g.title }}</h2>{% if g.edited %}<span class="pill-status info">{{ icon('info') }}{{ g.edited }} edited</span>{% endif %}</div>
+        </div>
+        <div class="card-body stack">
+          {% for f in g.fields %}
+          <div class="msg-field" id="wrap-{{ f.key }}">
+            {% call textarea_counter(f.key, f.label, value=f.value, hint=f.hint, error=f.error, placeholder=f.default,
+                                     maxlength=max_chars, disabled=not editable,
+                                     default=(f.default if f.value else ''), empty_note='Standard wording.',
+                                     reset_name=('reset' if editable else ''), describe=f.describe,
+                                     describedby=('opt_out_suffix-lock' if f.key == 'opt_out_suffix' else ''),
+                                     data={'key': f.key, 'allowed': f.allowed, 'suffix-required': f.suffix_required}) %}
+              {% if f.chips %}{{ chips(f.chips, f.key, disabled=not editable) }}{% else %}<p class="note">No fill-ins in this text.</p>{% endif %}
+            {% endcall %}
+            {% if f.key == 'opt_out_suffix' %}
+            <p class="lock-note{% if f.error %} err{% endif %}" id="opt_out_suffix-lock">{{ icon('lock') }}<span>STOP stays in. Carriers require the word STOP.</span></p>
+            {% endif %}
+            {% if f.toggle %}
+            {{ toggle(f.toggle.name, f.toggle.label, on=f.toggle.on, disabled=not editable, hint='Adds this question after the name.') }}
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+      {% if editable %}
+      <div class="sticky-save"><span class="note">Edits apply to new conversations.</span>{{ button('Save messages', id='save-messages') }}</div>
+      {% endif %}
+    </form>
+  </div>
+
+  <aside class="rail-side preview-rail" aria-labelledby="preview-heading">
+    <details class="preview-sheet" id="preview-sheet">
+      <summary class="sheet-summary">{{ icon('message') }}<span>Preview</span>{{ icon('chevron') }}</summary>
+      <div class="sheet-body">
+        <h2 id="preview-heading">Preview</h2>
+        <p class="note">The conversation with sample details for {{ sample_caller }}. Edits show here as you type.</p>
+        <figure class="phone" id="preview" aria-hidden="true" data-sample='{{ samples | tojson }}' data-trial="{{ '1' if trial else '0' }}">
+          <div class="screen">
+            <div class="status"><strong>{{ business_name }}</strong>Text message</div>
+            <div class="thread">
+              {% for b in preview %}
+              {% if b.kind == 'caption' %}
+              <div class="thread-sep"{% if b.when %} data-when="{{ b.when }}"{% endif %}{% if b.hidden %} hidden{% endif %}>{{ b.text }}</div>
+              {% elif b.kind == 'in' %}
+              <div class="bubble in"{% if b.when %} data-when="{{ b.when }}"{% endif %}{% if b.hidden %} hidden{% endif %}>{{ b.text }}</div>
+              {% else %}
+              <div class="bubble out{% if b.cond %} cond{% endif %}" data-key="{{ b.key }}"{% if b.when %} data-when="{{ b.when }}"{% endif %}{% if b.hidden %} hidden{% endif %}>
+                {%- if b.prefix %}<span class="prefix">{{ b.prefix }}</span> {% endif %}<span class="text">{{ b.text }}</span>
+                {%- if b.meta %}<span class="meta">{{ b.meta }}</span>{% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </figure>
+      </div>
+    </details>
+  </aside>
+</div>
+{% endblock %}

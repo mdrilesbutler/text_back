@@ -1,4 +1,4 @@
-"""Owner portal (/client): passwordless sign-in, sessions, Home, Account, Messages.
+"""Owner portal (/client): passwordless sign-in, sessions, Home, Account, Messages, Scheduling.
 Business details and the calendar connection live in client_settings.py and
 share the sign-in, page shell and code helpers defined here.
 
@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import html
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -21,14 +20,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from text_back import portal_data
-from text_back.messages import (
-    DEFAULT_TEMPLATES,
-    PLACEHOLDERS,
-    MessageTemplateError,
-    write_message_file,
-)
-from text_back.portal_ui import flash_html, render
+from text_back import portal_data, portal_messages, portal_scheduling
+from text_back.messages import DEFAULT_TEMPLATES, MessageTemplateError, write_message_file
+from text_back.portal_ui import render
 from text_back.sms import enqueue_sms, run_due_sms
 
 CODE_TTL = timedelta(minutes=10)
@@ -50,35 +44,12 @@ NO_MESSAGES_FILE = "Message editing isn't turned on for this account yet. Contac
 NAV: tuple[tuple[str, str, str, str], ...] = (
     ("home", "Home", "/client", "home"),
     ("messages", "Messages", "/client/messages", "message"),
+    ("scheduling", "Scheduling", "/client/scheduling", "clock"),
     ("business", "Business", "/client/business", "phone"),
     ("calendar", "Calendar", "/client/calendar", "calendar"),
 )
-
-# Order and wording of the settings form. (key, label, when it is sent)
-FIELDS = (
-    ("intro", "First text after a missed call", "Sent the moment a call goes unanswered."),
-    ("prompt_service", "Question 1: the job", "Asked after the caller replies."),
-    ("prompt_location", "Question 2: the location", ""),
-    ("prompt_preferred_time", "Question 3: day and time", ""),
-    ("prompt_name", "Question 4: the name", ""),
-    ("prompt_phone", "Optional question: best phone number", "Asked only if ticked below. YES keeps the number they are texting from."),
-    ("prompt_email", "Optional question: email address", "Asked only if ticked below. SKIP is allowed."),
-    ("phone_reprompt", "When the phone number could not be read", ""),
-    ("email_reprompt", "When the email could not be read", ""),
-    ("preferred_time_reprompt", "When the time could not be understood", ""),
-    ("slot_unavailable", "When the calendar slot is taken", ""),
-    ("booking_confirmation", "Booking confirmation", "Sent only after the calendar event exists."),
-    ("booking_error", "When the calendar failed", "Must say no booking was made."),
-    ("followup_1", "First follow-up (no reply)", "Sent after the first follow-up delay."),
-    ("followup_2", "Last follow-up (no reply)", ""),
-    ("handoff_ack", "When the owner needs to step in", "Must promise a follow-up."),
-    ("handoff_ack_safety", "Safety hand-off", "Must mention 911 and promise a follow-up."),
-    ("opt_in", "Reply to START", ""),
-    ("help", "Reply to HELP", ""),
-    ("opt_out_ack", "Reply to STOP", ""),
-    ("opt_out_suffix", "Opt-out line", "Added to the first text, follow-ups, START and HELP replies when they leave out the word STOP. Must mention STOP."),
-)
-
+MESSAGES_SUBTITLE = "Edit any text. Words in {braces} fill in by themselves."
+SCHEDULING_SUBTITLE = "The few timing rules the assistant follows. Reset returns a rule to its default."
 
 def nav_html(session, title: str, active: str) -> str:
     """Kept for the older string-built pages. The shell now draws the heading,
@@ -166,56 +137,21 @@ def _verify_form(state, error: str = "") -> HTMLResponse:
                   error=error, remember_default=remember_default)
 
 
-def _messages_form(state, session, *, error: str = "", notice: str = "") -> HTMLResponse:
-    source = state.messages
-    current = source.current().templates
-    editable = source.path is not None
-    msg = flash_html(error, notice)
-    if not editable:
-        msg += flash_html(NO_MESSAGES_FILE)
-    rows = []
-    for key, label, hint in FIELDS:
-        value = current[key] if current[key] != DEFAULT_TEMPLATES[key] else ""
-        allowed = " ".join("{" + p + "}" for p in sorted(PLACEHOLDERS[key]))
-        rows.append(
-            f"<div class=field><label class=label for=f_{key}>{html.escape(label)}</label>"
-            + f"<textarea class=textarea id=f_{key} name={key} rows=3 maxlength=480 data-counter placeholder=\"{html.escape(DEFAULT_TEMPLATES[key], quote=True)}\""
-            + ("" if editable else " disabled")
-            + f">{html.escape(value)}</textarea>"
-            + f"<p class=counter id=f_{key}-count aria-live=polite></p>"
-            + (f"<span class=hint>{html.escape(hint)}</span>" if hint else "")
-            + (f"<span class=hint>You can use: {html.escape(allowed)}</span>" if allowed else "")
-            + "<p class=default><span>Leave blank to use the standard wording shown in grey.</span></p></div>"
-        )
-    asked = set(source.current().fields)
-    options = (
-        "<h2>Extra questions</h2><p>The assistant always asks for the job, the location, the day and time, and a name.</p>"
-        + "".join(
-            f"<p><label><input type=checkbox name=ask_{field} value=1{' checked' if field in asked else ''}{'' if editable else ' disabled'}> {html.escape(label)}</label></p>"
-            for field, label in (("phone", "Also ask for the best phone number"), ("email", "Also ask for an email address"))
-        )
-    )
-    body = (
-        f"<p>These are the texts <strong>{html.escape(state.business_name)}</strong>'s scheduling assistant sends. "
-        "Edit any of them; {business_name} and the other bracketed words are filled in automatically.</p>"
-        + msg
-        + "<form method=post action=/client/messages class=stack>"
-        + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + options
-        + "".join(rows)
-        + ("<button type=submit class='btn btn-primary'>Save messages</button>" if editable else "")
-        + "</form>"
-    )
-    return _page("Your messages", body, session=session, active="messages", state=state)
+def _messages_page(state, session, *, error: str = "", notice: str = "", drafts=None, errors=None, ask=None) -> HTMLResponse:
+    """The Messages page from the current file (or the owner's rejected draft)."""
+    ctx = portal_messages.page_context(state, drafts=drafts, errors=errors, ask=ask)
+    if not ctx["editable"] and not error:
+        error = NO_MESSAGES_FILE
+    return render("pages/messages.html", **_shell(
+        state, session, title="Messages", active="messages", subtitle=MESSAGES_SUBTITLE,
+        error=error, notice=notice, **ctx))
 
 
-def _owner_reason(reason: str) -> str:
-    """'opt_out_suffix must ...' -> 'Opt-out line must ...' with a full stop."""
-    labels = {key: label for key, label, _ in FIELDS}
-    head, _, rest = reason.partition(" ")
-    if head in labels:
-        reason = f"{labels[head]} {rest}"
-    return reason if reason.endswith((".", "!", "?")) else reason + "."
+def _scheduling_page(state, session, *, error: str = "", notice: str = "", values=None, errors=None) -> HTMLResponse:
+    values = values if values is not None else portal_scheduling.current_values(state)
+    return render("pages/scheduling.html", **_shell(
+        state, session, title="Scheduling", active="scheduling", subtitle=SCHEDULING_SUBTITLE,
+        error=error, notice=notice, **portal_scheduling.page_context(state, values, errors)))
 
 
 def send_code(state, mobile: str, now: datetime, *, purpose: str = "sign-in") -> None:
@@ -485,7 +421,7 @@ def install_routes(app):
         session = _session(state, request)
         if not session:
             return RedirectResponse("/client/login", status_code=303)
-        return _messages_form(state, session)
+        return _messages_page(state, session)
 
     @app.post("/client/messages", include_in_schema=False)
     async def save_messages(request: Request):
@@ -496,18 +432,50 @@ def install_routes(app):
         if not hmac.compare_digest(str(form.get("csrf", "")), session["csrf"]):
             raise HTTPException(400, "Form expired; reload the page and try again")
         if state.messages.path is None:
-            return _messages_form(state, session, error=NO_MESSAGES_FILE)
-        submitted = {key: str(form.get(key, "")).strip() for key, _, _ in FIELDS}
-        overrides = {key: value for key, value in submitted.items() if value}
-        extra = [field for field in ("phone", "email") if form.get(f"ask_{field}")]
-        if extra:
-            overrides["fields"] = ", ".join(("service", "location", "preferred_time", "name", *extra))
+            return _messages_page(state, session, error=NO_MESSAGES_FILE)
+        # A Reset button posts the whole form with that one field back to its default,
+        # so it works without JS and never discards the owner's other edits.
+        drafts, overrides, ask, reset_key = portal_messages.read_form(form)
+        current = state.messages.current().templates
+        base = {key: value for key, value in current.items() if value != DEFAULT_TEMPLATES[key]}
+        errors = portal_messages.validate_fields(overrides, base)
+        if errors:
+            first = next(errors[key] for key in portal_messages.EDITABLE_KEYS if key in errors)
+            return _messages_page(state, session, error=f"Not saved: {first}", drafts=drafts, errors=errors, ask=ask)
         try:
             write_message_file(state.messages.path, overrides)
-        except MessageTemplateError as exc:
-            return _messages_form(state, session, error=f"Not saved: {_owner_reason(str(exc))}")
+        except MessageTemplateError as exc:  # the merged set is validated once more on write
+            return _messages_page(state, session, error=f"Not saved: {portal_messages.owner_reason(str(exc))}",
+                                  drafts=drafts, ask=ask)
         state.messages.current()  # pick up the new file right away
-        return _messages_form(state, session, notice="Saved. New conversations use these messages from now on.")
+        return _messages_page(state, session, notice=portal_messages.RESET if reset_key else portal_messages.SAVED)
+
+    @app.get("/client/scheduling", include_in_schema=False)
+    def scheduling_page(request: Request):
+        session = _require(request)
+        return _scheduling_page(state, session)
+
+    @app.post("/client/scheduling", include_in_schema=False)
+    async def save_scheduling(request: Request):
+        session = _require(request)
+        form = await request.form()
+        if not hmac.compare_digest(str(form.get("csrf", "")), session["csrf"]):
+            raise HTTPException(400, "Form expired; reload the page and try again")
+        now = _now(state)
+        reset_key = str(form.get("reset", "") or "")
+        if reset_key:
+            # Reset = this post with one group's fields at their defaults; everything else is kept.
+            form = portal_scheduling.reset_form(form, reset_key, state)
+            if form is None:
+                return _scheduling_page(state, session, error="Nothing was reset. Reload the page and try again.")
+        values, errors = portal_scheduling.parse_form(form, state)
+        if errors:
+            return _scheduling_page(state, session, error=f"Not saved: {portal_scheduling.first_error(errors)}",
+                                    values=values, errors=errors)
+        problem = portal_scheduling.save(state, values["_settings"], now)
+        if problem:
+            return _scheduling_page(state, session, error=f"Not saved: {problem}.", values=values)
+        return _scheduling_page(state, session, notice=portal_scheduling.RESET if reset_key else portal_scheduling.SAVED)
 
     @app.post("/client/logout", include_in_schema=False)
     async def logout(request: Request):

@@ -1,3 +1,4 @@
+import json
 import base64
 import hashlib
 import hmac
@@ -272,3 +273,56 @@ def test_webhook_conversation_uses_configured_calendar_timezone_and_duration():
     event = calendar.events[payload["event_id"]]
     assert event["start"] == REQUESTED_START
     assert event["end"] == REQUESTED_START + timedelta(minutes=90)
+
+
+# --- working hours (Scheduling page) are enforced before the calendar is asked ---
+
+WEEKDAY_HOURS = json.dumps({"mon": {"open": "08:00", "close": "17:00"}, "tue": {"open": "08:00", "close": "17:00"},
+                            "wed": {"open": "08:00", "close": "17:00"}, "thu": {"open": "08:00", "close": "17:00"},
+                            "fri": {"open": "08:00", "close": "17:00"}, "sat": None, "sun": None})
+
+
+def _slot_checks(store):
+    checks = [e for e in store.list_outcome_events(CALLER) if e["event_type"] == "calendar.slot_checked"]
+    out = []
+    for event in checks:
+        meta = event.get("metadata") or event.get("metadata_json") or {}
+        out.append(json.loads(meta) if isinstance(meta, str) else meta)
+    return out
+
+
+def test_saturday_request_outside_weekday_hours_is_declined_and_monday_books():
+    store, calendar, telecom = Store(), CalendarStub(TIMEZONE_NAME), FakeTelecom()
+    store.set_setting("working_hours", WEEKDAY_HOURS)
+    _collect_through_time(store, calendar, telecom, preferred_time="2026-08-29 2:00 PM")  # a Saturday
+
+    result = _send(store=store, calendar=calendar, telecom=telecom, message_sid="SM-name", body="John Smith")
+
+    assert result["action"] == "slot_unavailable"
+    assert "preferred_time" not in store.get_conversation_fields(CALLER)
+    assert telecom.outbound[-1].kind == "slot_unavailable"
+    assert calendar.events == {} and store.appointment_by_conversation(CALLER) is None
+    assert _slot_checks(store)[-1] == {"available": False, "checks": 0, "reason": "outside_hours"}
+
+    result = _send(store=store, calendar=calendar, telecom=telecom, message_sid="SM-monday", body="2026-08-24 10:00 AM")
+    assert result["action"] == "booked"
+    assert calendar.events[result["event_id"]]["start"] == datetime(2026, 8, 24, 10, 0, tzinfo=EASTERN)
+    assert telecom.outbound[-1].kind == "booking_confirmation"
+
+
+def test_slot_must_end_inside_the_window():
+    store, calendar, telecom = Store(), CalendarStub(TIMEZONE_NAME), FakeTelecom()
+    store.set_setting("working_hours", WEEKDAY_HOURS)
+    _collect_through_time(store, calendar, telecom, preferred_time="2026-08-24 4:30 PM")  # 60 minutes runs past 17:00
+
+    result = _send(store=store, calendar=calendar, telecom=telecom, message_sid="SM-name", body="John Smith")
+
+    assert result["action"] == "slot_unavailable" and calendar.events == {}
+    assert _slot_checks(store)[-1]["reason"] == "outside_hours"
+
+
+def test_without_the_setting_every_time_still_books():
+    store, calendar, telecom = Store(), CalendarStub(TIMEZONE_NAME), FakeTelecom()
+    _collect_through_time(store, calendar, telecom, preferred_time="2026-08-29 2:00 PM")  # Saturday, no hours set
+    result = _send(store=store, calendar=calendar, telecom=telecom, message_sid="SM-name", body="John Smith")
+    assert result["action"] == "booked"
