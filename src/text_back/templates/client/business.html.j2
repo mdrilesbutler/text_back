@@ -1,0 +1,42 @@
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, page_head, notice as notice_box, field_error, button, csrf_input %}
+{% block page_class %}business{% endblock %}
+{% block content %}
+{% set bad = error.field if error else None %}
+{{ page_head("Your business", "How the assistant introduces the business, where customers are pointed, and where sign-in codes go.") }}
+{% if error %}
+<div class="notice notice--danger error-summary" id=error-summary role=alert tabindex=-1>
+  {{ icon("circle-alert", "notice__icon") }}
+  <p class=notice__text><strong>Not saved.</strong> {% if bad %}<a href=#{{ bad }} data-error-link>{{ error.message }}</a>{% else %}{{ error.message }}{% endif %}</p>
+</div>
+{% endif %}
+{% if page_error %}{{ notice_box("danger", page_error) }}{% endif %}
+<form method=post action=/client/business class=page__body>
+  {{ csrf_input(csrf) }}
+  <div class="card card--form">
+    <div class=field>
+      <label class=field__label for=business_name>Business name</label>
+      <p class=field-help id=business_name-help>Used in every text customers get.</p>
+      <input class=input id=business_name name=business_name required maxlength={{ name_max }} autocomplete=organization value="{{ values.business_name }}" aria-describedby="business_name-help{{ ' business_name-error' if bad == 'business_name' else '' }}"{% if bad == "business_name" %} aria-invalid=true{% endif %}>
+      {% if bad == "business_name" %}{{ field_error("business_name-error", error.message) }}{% endif %}
+      <div class="well field-preview">
+        <p class="eyebrow eyebrow--muted">In the first text</p>
+        <div class="sms sms--textback"><p class=sms__bubble data-name-preview data-template="{{ name_preview.template }}" data-suffix="{{ name_preview.suffix }}" data-saved-name="{{ name_preview.saved_name }}">{{ name_preview.text }}</p></div>
+      </div>
+    </div>
+    <div class=field>
+      <label class=field__label for=business_contact>Number in the HELP reply <span class=tag>Optional</span></label>
+      <p class=field-help id=business_contact-help>Shown when a customer texts HELP. Leave blank to show {% if sender[:1] == "(" %}<span class="tnum nowrap">{{ sender }}</span>{% else %}{{ sender }}{% endif %}. Customers are never transferred to it; the assistant handles the texting.</p>
+      <input class="input input--tel tnum" id=business_contact name=business_contact type=tel inputmode=tel autocomplete=off maxlength=24{% if sender[:1] == "(" %} placeholder="{{ sender }}"{% endif %} value="{{ values.business_contact }}" aria-describedby="business_contact-help{{ ' business_contact-error' if bad == 'business_contact' else '' }}"{% if bad == "business_contact" %} aria-invalid=true{% endif %}>
+      {% if bad == "business_contact" %}{{ field_error("business_contact-error", error.message) }}{% endif %}
+    </div>
+    <div class=field>
+      <label class=field__label for=owner_mobile>Your mobile</label>
+      <p class=field-help id=owner_mobile-help>Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it.</p>
+      <input class="input input--tel tnum" id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 autocomplete=tel value="{{ values.owner_mobile }}" aria-describedby="owner_mobile-help{{ ' owner_mobile-error' if bad == 'owner_mobile' else '' }}"{% if bad == "owner_mobile" %} aria-invalid=true{% endif %}>
+      {% if bad == "owner_mobile" %}{{ field_error("owner_mobile-error", error.message) }}{% endif %}
+    </div>
+  </div>
+  <div class=actions>{{ button("Save business details", block="block-phone", loading="Saving…") }}</div>
+</form>
+{% endblock %}

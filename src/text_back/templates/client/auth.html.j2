@@ -1,0 +1,14 @@
+{#- Signed-out layout: brand-only topbar and one narrow column (a card on a tinted page from 640). Renders no csrf, number, clock or per-request value. -#}
+{% extends "client/_document.html.j2" %}
+{% from "client/_macros.html.j2" import icon %}
+{% block body %}
+<header class="topbar topbar--auth">
+  <a class=brand href=/client/login>{{ icon("message-square-text", "brand__icon") }}<span>TextBack</span></a>
+</header>
+<main id=main class="page auth" tabindex=-1>
+<div class=auth__card>
+{% block content %}{% endblock %}
+</div>
+<p class=auth__foot>TextBack by FluxWorks</p>
+</main>
+{% endblock %}

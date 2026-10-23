@@ -1,0 +1,27 @@
+{#- The phone-frame rail: sample conversations drawn with the same rendered texts as the cards.
+    It sits outside form#messages, so the scenario select is never posted. Switching works without JS through
+    :has(option:checked); JS mirrors the selected option into data-active for browsers without :has().
+    The styleguide draws specimens with an id prefix (idp) and hook=False, so JS leaves them alone. -#}
+{% from "client/_macros.html.j2" import icon, thread_item %}
+
+{% macro rail(r, editable=True, asked=(), idp="", hook=True) -%}
+<aside class=rail id={{ idp }}conversation aria-labelledby={{ idp }}rail-title{% if hook %} data-rail{% endif %}>
+  <div class=rail__head>
+    <h2 class=rail__title id={{ idp }}rail-title>Conversation preview</h2>
+    <label class=rail__show for={{ idp }}scenario>Show</label>
+    <span class=select><select class=select__input id={{ idp }}scenario{% if hook %} data-scenario-select{% endif %}>
+      {% for s in r.scenarios %}<option value={{ s.id }}{% if loop.first %} selected{% endif %}>{{ s.label }}</option>{% endfor %}
+    </select>{{ icon("chevrons-up-down", "select__icon") }}</span>
+  </div>
+  <div class=phone role=group aria-label="Sample text conversation with {{ r.business_name }}">
+    <div class=phone__screen>
+      <div class=phone__head><span class=phone__avatar aria-hidden=true>{{ r.initials }}</span><div class=phone__who><p class=phone__name>{{ r.business_name }}</p><p class=phone__sub>Text message</p></div></div>
+      <div class=phone__log tabindex=0 role=group aria-label="Sample messages"{% if hook %} data-rail-log{% endif %}>
+      {% for s in r.scenarios %}<ol class=thread data-scenario={{ s.id }} aria-label="{{ s.label }}">{% for it in s.thread %}{{ thread_item(it, "li", hide=(not editable and it.ask and it.ask not in asked)) }}{% endfor %}</ol>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <p class=phone__foot>Sample conversation · nothing is sent · names invented</p>
+  {% if hook %}<a class=rail__back href=#main>{{ icon("arrow-up") }}Back to editing</a>{% endif %}
+</aside>
+{%- endmacro %}

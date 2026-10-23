@@ -1,0 +1,34 @@
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import otp, button, csrf_input, stepper %}
+{% block page_class %}confirm{% endblock %}
+{% block content %}
+<header class=page-head>
+  <h1>Confirm your new mobile</h1>
+  {{ stepper() }}
+  <p class=lead id=confirm-help>We texted a six-digit code to <strong class="tnum nowrap">{{ pending_display }}</strong>. Enter it to move sign-in to that number. It expires in ten minutes; until then codes still go to your current mobile.</p>
+</header>
+<div class=page__body>
+  <form method=post action=/client/business/confirm id=confirm-form>
+    {{ csrf_input(csrf) }}
+    <div class=field>
+      <label class=field__label for=code>Code from the text</label>
+      {{ otp(error=error, help_id="confirm-help") }}
+    </div>
+  </form>
+  <div class=actions>
+    {{ button("Confirm new mobile", block="block-phone", loading="Confirming…", form="confirm-form") }}
+    <form method=post action=/client/business/confirm class=actions__form>
+      {{ csrf_input(csrf) }}
+      <button type=submit class="btn btn--secondary btn--block-phone" name=cancel value=1 data-cancel>Keep my current mobile</button>
+    </form>
+  </div>
+  <form method=post action=/client/business class=resend>
+    {{ csrf_input(csrf) }}
+    <input type=hidden name=business_name value="{{ resend.business_name }}">
+    <input type=hidden name=business_contact value="{{ resend.business_contact }}">
+    <input type=hidden name=owner_mobile value="{{ resend.owner_mobile }}">
+    <span class=resend__text>Didn't get it?</span>
+    {{ button("Send the code again", variant="ghost", icon_name="refresh-cw", hook="data-resend", loading="Sending…") }}
+  </form>
+</div>
+{% endblock %}

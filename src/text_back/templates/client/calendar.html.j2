@@ -1,0 +1,63 @@
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, page_head, notice as notice_box, field_error, button, csrf_input, pill, status_block %}
+{% block page_class %}calendar{% endblock %}
+{% block content %}
+{#- Connect/Reconnect posts action=connect from inside the status block. Not connected: Connect is primary and
+    "What Google will ask" starts open under it. Connected: Reconnect is secondary and the explanation, a plain
+    disclosure, starts closed at the end of the page. -#}
+{% macro connect_form(c, token) -%}
+<form method=post action=/client/calendar data-connect>
+  {{ csrf_input(token) }}<input type=hidden name=action value=connect>
+  {{ button(c.verb ~ " Google Calendar", variant="primary" if c.primary else "secondary", block="block-phone", loading="Opening Google…") }}
+</form>
+{%- endmacro %}
+{% macro google_asks(c) -%}
+<section class="card card--asks" aria-labelledby=connect-title>
+  <details class=asks{% if c.primary %} open{% endif %}>
+    <summary class=asks__summary><h2 class=card__title id=connect-title>What Google will ask</h2>{{ icon("chevron-down", "asks__chev") }}</summary>
+    <ol class=steps-list>
+      <li>You pick the Google account that owns your business calendar.</li>
+      <li>Google asks you to let this assistant see and edit your calendars.</li>
+      <li>It only checks free times and adds appointments. Nothing else in that account is read.</li>
+      <li>Afterwards, you choose which calendar it uses.</li>
+    </ol>
+  </details>
+</section>
+{%- endmacro %}
+{{ page_head("Your calendar", "The assistant only offers times that are free on this calendar, and every booking is added to it before the customer gets a confirmation.") }}
+<div class=page__body>
+  {% if page_error %}{{ notice_box("danger", page_error) }}{% endif %}
+  {% if connect %}
+  {% call status_block(status, meta=not picker) %}{{ connect_form(connect, csrf) }}{% endcall %}
+  {% if connect.primary %}{{ google_asks(connect) }}{% endif %}
+  {% elif setup_note %}
+  {% call status_block(status) %}<p class=status__note data-connect-note>{{ icon("info") }}<span>{{ setup_note }}</span></p>{% endcall %}
+  {% else %}
+  {{ status_block(status, meta=not picker) }}
+  {% endif %}
+  {% if picker %}
+  <form method=post action=/client/calendar class=card data-picker>
+    {{ csrf_input(csrf) }}
+    <fieldset class=choice-list aria-describedby="picker-help{{ ' picker-error' if picker_error else '' }}">
+      <legend class=choice-list__legend>Which calendar should the assistant use?</legend>
+      <p class=field-help id=picker-help>Free times are checked on this calendar and new appointments are added to it.</p>
+      {% if picker_error %}{{ field_error("picker-error", picker_error) }}{% endif %}
+      <div class=choice-list__items>
+      {% for ch in picker %}
+        <label class=choice><input type=radio class=radio name=calendar_id value="{{ ch.id }}"{% if ch.in_use %} checked{% endif %}><span class=choice__text><span class=choice__name>{{ ch.name }}</span>{% if ch.main %} <span class=choice__meta>(main calendar)</span>{% endif %}</span>{% if ch.in_use %}{{ pill("success", "circle-check", "In use") }}{% endif %}</label>
+      {% endfor %}
+      </div>
+    </fieldset>
+    <div class=actions>{{ button("Use this calendar", variant="secondary", block="block-phone", loading="Saving…", hook="data-picker-save") }}</div>
+  </form>
+  {% endif %}
+  {% if only_calendar %}
+  <div class=empty>
+    <span class=empty__icon>{{ icon("calendar-days") }}</span>
+    <p class=empty__title>{{ only_calendar }}</p>
+    <p class=empty__body>This is the only calendar this account can add appointments to.</p>
+  </div>
+  {% endif %}
+  {% if connect and not connect.primary %}{{ google_asks(connect) }}{% endif %}
+</div>
+{% endblock %}

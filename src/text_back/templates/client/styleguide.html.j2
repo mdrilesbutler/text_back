@@ -1,0 +1,538 @@
+{#- GET /client/styleguide (owner-only, not in the nav): every token and component of the settings pages, in every
+    state, in a light and a dark panel ([data-theme] on each panel). Nothing posts: there is no form, specimen buttons
+    are type=button or outside any form, and specimen inputs have no csrf. Every id inside a panel carries that panel's
+    prefix (p), so the two panels never share an id. Static toasts carry no data-toast and the rail no data-rail,
+    so portal.js leaves the specimens alone; [data-demo-toast] and [data-demo-motion] are the only live demos. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, pill, notice as notice_box, field_error, otp, status_block, stepper, page_head %}
+{% from "client/_message_card.html.j2" import message_card, moment, anytime as anytime_section, error_summary %}
+{% from "client/_rail.html.j2" import rail as rail_panel %}
+{% block page_class %}styleguide{% endblock %}
+{% block content %}
+{% macro section(id, title, lead="") -%}
+<section class=sg-section id=sg-{{ id }} aria-labelledby=sg-{{ id }}-title>
+  <h2 class=sg-section__title id=sg-{{ id }}-title>{{ title }}</h2>
+  {% if lead %}<p class=sg-section__lead>{{ lead }}</p>{% endif %}
+  <div class=sg-panels>
+  {% for theme, label in (("light", "Light"), ("dark", "Dark")) %}
+    <div class=sg-panel data-theme={{ theme }} role=group aria-labelledby=sg-{{ id }}-{{ theme }}>
+      <p class="eyebrow eyebrow--muted sg-panel__label" id=sg-{{ id }}-{{ theme }}>{{ label }}</p>
+      {{ caller(theme, "sg-" ~ id ~ "-" ~ theme[0] ~ "-") }}
+    </div>
+  {% endfor %}
+  </div>
+</section>
+{%- endmacro %}
+{% macro spec(caption, wide=False) -%}
+<figure class="sg-spec{% if wide %} sg-spec--wide{% endif %}">{{ caller() }}<figcaption class=sg-cap>{{ caption }}</figcaption></figure>
+{%- endmacro %}
+{% macro toast_specimen(kind, text, action="", detail="") -%}
+<div class="notice notice--{{ kind }} toast toast--floating">
+  {{ icon("circle-check" if kind == "success" else "circle-alert", "notice__icon") }}
+  <p class=notice__text>{{ text }}{% if detail %} <span class=notice__detail>{{ detail }}</span>{% endif %}</p>
+  {% if action %}<button type=button class="btn btn--ghost toast__action">{{ action }}</button>{% endif %}
+  <button type=button class="icon-btn toast__close">{{ icon("x") }}<span class=vh>Dismiss</span></button>
+</div>
+{%- endmacro %}
+{% macro savebar_specimen(state, short="", long="", ic="") -%}
+<div class=savebar data-state={{ state }}>
+  <p class="savebar__status tnum">{% if ic %}{{ icon(ic, "spin" if state == "saving" else "") }}{% endif %}{% if short %}<span class=savebar__short aria-hidden=true>{{ short }}</span><span class=savebar__long>{{ long }}</span>{% elif state == "nojs" %}Saves every message at once{% endif %}</p>
+  <div class=savebar__actions>
+    {% if state == "error" %}<button type=button class="btn btn--ghost">Show</button>{% endif %}
+    {% if state == "dirty" %}<button type=button class="btn btn--danger-ghost">Discard</button>{% endif %}
+    {% if state == "saving" %}<button type=button class="btn btn--primary" aria-disabled=true>{{ icon("loader-circle", "spin") }}Saving…</button>
+    {% else %}<button type=button class="btn btn--primary"{% if state in ("clean", "saved") %} aria-disabled=true{% endif %}>Save changes</button>{% endif %}
+  </div>
+</div>
+{%- endmacro %}
+{% set sections = (("colour", "Colour"), ("type", "Type"), ("space", "Space, radius, elevation, motion"), ("icons", "Icons"),
+                   ("buttons", "Buttons"), ("fields", "Fields"), ("choices", "Choices"), ("status", "Status"),
+                   ("feedback", "Feedback"), ("conversation", "Conversation"), ("cards", "Message card"),
+                   ("spine", "Spine"), ("rail", "Phone rail"), ("savebar", "Save bar"), ("shell", "Shell")) %}
+{{ page_head("Styleguide", "Every token and component on the settings pages, in every state. For review only; nothing here saves.") }}
+<nav class=sg-toc aria-label="Styleguide sections"><ol>{% for id, title in sections %}<li><a href=#sg-{{ id }}>{{ title }}</a></li>{% endfor %}</ol></nav>
+
+{# ------------------------------------------------------------------ 1. colour #}
+{% call(theme, p) section("colour", "Colour", "Every colour token with its value in this theme. Foreground tokens list the pairs they must pass: 4.5:1 for text, 3:1 for borders, rings and dots.") %}
+{% for g in colour_groups %}
+<div class=sg-group>
+  <h3 class=sg-h>{{ g.name }}</h3>
+  {% if g.note %}<p class=sg-note>{{ g.note|capitalize }}</p>{% endif %}
+  <ul class=sg-swatches>
+  {% for s in g.swatches %}
+    <li class="sg-swatch{% if s.pairs %} sg-swatch--pairs{% endif %}">
+      <span class=sg-chip><svg width=100% height=100% aria-hidden=true focusable=false><rect width=100% height=100% fill="{{ s.hex[theme] }}"/></svg></span>
+      <code class=sg-code>--{{ s.token }}</code>
+      <span class="sg-code sg-hex">{{ s.hex[theme] }}</span>
+      {% if s.note[theme] %}<span class=sg-note>{{ s.note[theme] }}</span>{% endif %}
+      {% if s.pairs %}
+      <ul class=sg-pairs>
+      {% for pr in s.pairs %}
+        {% set sh = pr.shades[theme] %}
+        <li class=sg-pair>
+          <svg class=sg-aa width=44 height=28 viewBox="0 0 44 28" aria-hidden=true focusable=false><rect x=.5 y=.5 width=43 height=27 rx=6 fill="{{ sh.bg }}"/>{% if pr.kind == "Text" %}<text x=22 y=19 text-anchor=middle fill="{{ sh.fg }}">Aa</text>{% else %}<circle cx=22 cy=14 r=7 fill="{{ sh.fg }}"/>{% endif %}</svg>
+          <span class=sg-pair__what>on <code class=sg-code>--{{ pr.bg }}</code>{% if pr.use %} <span class=sg-note>{{ pr.use }}</span>{% endif %}</span>
+          <span class="sg-pair__ratio tnum">{% if not sh.ok %}{{ icon("circle-x") }}{% endif %}{{ "%.2f"|format(sh.ratio) }}:1<span class=sg-need>needs {{ pr.need }}</span></span>
+        </li>
+      {% endfor %}
+      </ul>
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+{% endcall %}
+
+{# ------------------------------------------------------------------ 2. type #}
+{% call(theme, p) section("type", "Type", "Archivo for the three heading levels only; Source Sans 3 for everything else. Nothing renders below 13px, and inputs are 17px so phones never zoom on focus.") %}
+<ul class=sg-type>
+{% for r in type_roles %}
+  <li class=sg-type__row><p class="sg-type__sample sg-type--{{ r.cls }}">{{ r.sample }}</p><p class=sg-note><strong>{{ r.name }}</strong> · {{ r.spec }} · {{ r.use }}</p></li>
+{% endfor %}
+</ul>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 3. space, radius, elevation, motion #}
+{% call(theme, p) section("space", "Space, radius, elevation, motion") %}
+<div class=sg-group>
+  <h3 class=sg-h>Space</h3>
+  <ul class=sg-scale>
+  {% for name, value, px in spaces %}<li class=sg-scale__row><span><code class=sg-code>--{{ name }}</code> <span class="sg-note tnum">{{ px }}px</span></span><svg class=sg-bar width={{ px }} height=12 aria-hidden=true focusable=false><rect width={{ px }} height=12 rx=2 /></svg></li>{% endfor %}
+  </ul>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Sizes</h3>
+  <dl class=sg-dl>{% for name, value, px in sizes %}<dt><code class=sg-code>--{{ name }}</code></dt><dd class=tnum>{{ px }}px</dd>{% endfor %}</dl>
+  <p class=sg-note>Every tap target is at least 44px. 36px controls appear only with a mouse or trackpad.</p>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Radius</h3>
+  <ul class=sg-tiles>
+  {% for name, value, px in radii %}<li class=sg-tile><svg class=sg-radius width=96 height=64 viewBox="0 0 96 64" aria-hidden=true focusable=false><rect x=1 y=1 width=94 height=62 rx={{ [px|int, 31]|min }} /></svg><code class=sg-code>--{{ name }}</code><span class="sg-note tnum">{{ value }}</span></li>{% endfor %}
+  </ul>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Elevation</h3>
+  <p class=sg-note>Only the phone frame, the account menu, toasts and the sticky save bar cast a shadow.</p>
+  <ul class="sg-tiles sg-tiles--wide">
+  {% for name, light, dark in shadows %}<li class=sg-tile><span class="sg-elev sg-elev--{{ name }}"></span><code class=sg-code>--{{ name }}</code></li>{% endfor %}
+  </ul>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Motion</h3>
+  <p class=sg-note>Durations ease with --ease-standard; easings run over --dur-slow. With reduced motion everything moves at once.</p>
+  <div class=sg-motion id={{ p }}motion>
+  {% for name, value in motion %}
+    <div class=sg-motion__row><span><code class=sg-code>--{{ name }}</code> <span class=sg-note>{{ value }}</span></span>{% if name == "dur-spin" %}{{ icon("loader-circle", "spin sg-spin") }}{% else %}<span class=sg-track><span class="sg-dot sg-dot--{{ name }}"></span></span>{% endif %}</div>
+  {% endfor %}
+  </div>
+  <div><button type=button class="btn btn--secondary" data-demo-motion aria-controls={{ p }}motion aria-pressed=false>{{ icon("arrow-right") }}Run</button></div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Layers</h3>
+  <dl class=sg-dl>{% for name, value in layers %}<dt><code class=sg-code>--{{ name }}</code></dt><dd class=tnum>{{ value }}</dd>{% endfor %}</dl>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 4. icons #}
+{% call(theme, p) section("icons", "Icons", "Lucide, drawn from the one inline sprite at 24px. Icons are decoration; a word always carries the meaning.") %}
+<ul class=sg-icons>
+{% for name in icons %}<li class=sg-icon>{{ icon(name) }}<code class=sg-code>{{ name }}</code></li>{% endfor %}
+</ul>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 5. buttons #}
+{% call(theme, p) section("buttons", "Buttons", "Disabled uses aria-disabled, so the control stays reachable and JavaScript blocks it. Loading swaps in a spinner and a label and keeps the width.") %}
+{% set states = (("Default", ""), ("Hover", "is-hover"), ("Focus", "is-focus"), ("Pressed", "is-active"), ("Disabled", "disabled"), ("Loading", "loading")) %}
+{% for variant, name, label, busy, ic in (("primary", "Primary", "Save changes", "Saving…", ""),
+                                         ("secondary", "Secondary", "Reconnect Google Calendar", "Opening Google…", ""),
+                                         ("ghost", "Ghost", "Send the code again", "Sending…", "refresh-cw"),
+                                         ("danger-ghost", "Danger ghost", "Discard", "", "")) %}
+<div class=sg-group>
+  <h3 class=sg-h>{{ name }}</h3>
+  <div class=sg-row>
+  {% for state, cls in states if cls != "loading" or busy %}
+    {% call spec(state) %}{% if cls == "loading" %}<button type=button class="btn btn--{{ variant }}" aria-disabled=true>{{ icon("loader-circle", "spin") }}{{ busy }}</button>{% else %}<button type=button class="btn btn--{{ variant }}{% if cls and cls != 'disabled' %} {{ cls }}{% endif %}"{% if cls == "disabled" %} aria-disabled=true{% endif %}>{% if ic %}{{ icon(ic) }}{% endif %}{{ label }}</button>{% endif %}{% endcall %}
+  {% endfor %}
+  </div>
+  {% if not busy %}<p class=sg-note>Discard acts at once, so it has no loading state.</p>{% endif %}
+</div>
+{% endfor %}
+<div class=sg-group>
+  <h3 class=sg-h>Icon button</h3>
+  <div class=sg-row>
+  {% for state, cls in states[:4] %}
+    {% call spec(state) %}<button type=button class="icon-btn{% if cls %} {{ cls }}{% endif %}">{{ icon("x") }}<span class=vh>Dismiss</span></button>{% endcall %}
+  {% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Sizes</h3>
+  <div class=sg-row>
+    {% call spec("Medium, 44") %}<button type=button class="btn btn--secondary">Keep my current mobile</button>{% endcall %}
+    {% call spec("Large, 48; every primary below 1024") %}<button type=button class="btn btn--primary btn--lg">Text me a code</button>{% endcall %}
+    {% call spec("Small, 36 with a mouse, 44 on touch") %}<button type=button class="btn btn--ghost btn--sm">Show</button>{% endcall %}
+    {% call spec("With an icon") %}<button type=button class="btn btn--ghost">{{ icon("rotate-ccw") }}Reset</button>{% endcall %}
+    {% call spec("Block: full width", wide=True) %}<button type=button class="btn btn--primary btn--block">Sign in</button>{% endcall %}
+  </div>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 6. fields #}
+{% call(theme, p) section("fields", "Fields", "Help sits above the control so it stays visible over a phone keyboard; the error sits below. Disabled fields are not used on the settings pages.") %}
+<div class=sg-group>
+  <h3 class=sg-h>Text input</h3>
+  <div class=sg-stack>
+  {% for state, cls, value, error in (("Empty", "", "", ""), ("Filled", "", "Oak & Pine Tree Care", ""), ("Focus", "is-focus", "Oak & Pine Tree Care", ""),
+                                      ("Error", "", "", errors.name), ("Disabled", "disabled", "Oak & Pine Tree Care", "")) %}
+    <div class=field>
+      <label class=field__label for={{ p }}in{{ loop.index }}>Business name <span class=tag>{{ state }}</span></label>
+      <input class="input{% if cls == 'is-focus' %} is-focus{% endif %}" id={{ p }}in{{ loop.index }} maxlength=60 value="{{ value }}"{% if error %} aria-invalid=true aria-describedby={{ p }}in{{ loop.index }}-error{% endif %}{% if cls == "disabled" %} disabled{% endif %}>
+      {% if error %}{{ field_error(p ~ "in" ~ loop.index ~ "-error", error) }}{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Phone number</h3>
+  <div class=sg-stack>
+  {% for state, value in (("As typed", "7045550100"), ("Formatted when you leave the field", "(704) 555-0100")) %}
+    <div class=field>
+      <label class=field__label for={{ p }}tel{{ loop.index }}>Your mobile <span class=tag>{{ state }}</span></label>
+      <input class="input input--tel tnum" id={{ p }}tel{{ loop.index }} type=tel inputmode=tel autocomplete=off maxlength=24 placeholder="704 555 0123" value="{{ value }}">
+    </div>
+  {% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Message editor</h3>
+  <div class=sg-stack>
+    <div class=field>
+      <label class=field__label for={{ p }}ta1>Short <span class=tag>4 rows without JavaScript</span></label>
+      <textarea class=textarea id={{ p }}ta1 rows=4 maxlength={{ max_chars }}>{{ short_text }}</textarea>
+    </div>
+    <div class=field>
+      <label class=field__label for={{ p }}ta2>Long <span class=tag>grows with the text</span></label>
+      <textarea class=textarea id={{ p }}ta2 rows=4 maxlength={{ max_chars }}>{{ long_text }}</textarea>
+    </div>
+    <div class=field>
+      <label class=field__label for={{ p }}ta3>Not saved <span class=tag>invalid</span></label>
+      {{ field_error(p ~ "ta3-error", rejected_reason) }}
+      <textarea class=textarea id={{ p }}ta3 rows=4 maxlength={{ max_chars }} aria-invalid=true aria-describedby={{ p }}ta3-error>{{ rejected_text }}</textarea>
+    </div>
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Length line</h3>
+  <div class=sg-row>
+    {% call spec("Shows from 420 characters") %}<p class="limit tnum">424 of {{ max_chars }} characters</p>{% endcall %}
+    {% call spec("Amber from 460") %}<p class="limit tnum" data-warn>466 of {{ max_chars }} characters</p>{% endcall %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Label, optional tag, help and error</h3>
+  <div class=field>
+    <label class=field__label for={{ p }}help>Number in the HELP reply <span class=tag>Optional</span></label>
+    <p class=field-help id={{ p }}help-help>Shown when a customer texts HELP. Customers are never transferred to it; the assistant handles the texting.</p>
+    <input class="input input--tel tnum" id={{ p }}help type=tel inputmode=tel autocomplete=off maxlength=24 value="704 555" aria-invalid=true aria-describedby="{{ p }}help-help {{ p }}help-error">
+    {{ field_error(p ~ "help-error", errors.contact) }}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Sign-in code</h3>
+  <div class=sg-stack>
+  {% for state, value, error in (("Empty", "", ""), ("Three digits typed", "481", ""), ("Wrong or expired", "481920", errors.code)) %}
+    <div class=field>
+      <label class=field__label for={{ p }}otp{{ loop.index }}-code>Sign-in code <span class=tag>{{ state }}</span></label>
+      {{ otp(error=error, value=value, autofocus=False, idp=p ~ "otp" ~ loop.index ~ "-") }}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 7. choices #}
+{% call(theme, p) section("choices", "Choices") %}
+<div class=sg-group>
+  <h3 class=sg-h>Switch</h3>
+  <div class=sg-stack>
+  {% for state, on, cls in (("Off", False, ""), ("On", True, ""), ("Focus", True, " is-focus")) %}
+    {% call spec(state, wide=True) %}<label class=switch-row for={{ p }}sw{{ loop.index }}><span class=switch-row__text>Also ask for the best phone number</span><input type=checkbox role=switch class="switch{{ cls }}" id={{ p }}sw{{ loop.index }}{% if on %} checked{% endif %}></label>{% endcall %}
+  {% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Radio list</h3>
+  <fieldset class=choice-list aria-describedby={{ p }}cal-help>
+    <legend class=choice-list__legend>Which calendar should the assistant use?</legend>
+    <p class=field-help id={{ p }}cal-help>Free times are checked on this calendar and new appointments are added to it.</p>
+    <div class=choice-list__items>
+      <label class=choice><input type=radio class=radio name={{ p }}cal><span class=choice__text><span class=choice__name>Personal</span> <span class=choice__meta>(main calendar)</span></span></label>
+      <label class=choice><input type=radio class=radio name={{ p }}cal checked><span class=choice__text><span class=choice__name>Tree jobs</span></span>{{ pill("success", "circle-check", "In use") }}</label>
+      <label class="choice is-hover"><input type=radio class=radio name={{ p }}cal><span class=choice__text><span class=choice__name>Crew schedule</span> <span class=choice__meta>(hover)</span></span></label>
+    </div>
+  </fieldset>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Pill radios</h3>
+  <p class=sg-note>The Appearance control. Checked is a solid fill, so it does not rest on colour alone.</p>
+  <div class=pill-radios>
+  {% for value, label, ic in (("system", "System", ""), ("light", "Light", "sun"), ("dark", "Dark", "moon")) %}<input class=vh-input type=radio name={{ p }}theme id={{ p }}theme-{{ value }}{% if loop.first %} checked{% endif %}><label class=pill-radio for={{ p }}theme-{{ value }}>{% if ic %}{{ icon(ic) }}{% endif %}{{ label }}</label>{% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Select</h3>
+  <p class=sg-note>A native select drawn as a 48px field with its own chevron: the rail's scenario switcher.</p>
+  <div class=rail__head><label class=rail__show for={{ p }}select>Show</label><span class=select><select class=select__input id={{ p }}select><option>Books a job</option><option>Unclear answers</option></select>{{ icon("chevrons-up-down", "select__icon") }}</span></div>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 8. status #}
+{% call(theme, p) section("status", "Status", "State is always an icon plus a word plus a colour, never colour alone.") %}
+<div class=sg-group>
+  <h3 class=sg-h>Pills</h3>
+  <div class=sg-row>
+    {{ pill("success", "circle-check", "Success") }}{{ pill("warning", "triangle-alert", "Warning") }}{{ pill("danger", "circle-x", "Danger") }}{{ pill("info", "info", "Info") }}{{ pill("neutral", "check", "Neutral") }}
+  </div>
+  <div class=sg-row>
+    {{ pill("success", "pencil", "Customized") }}{{ pill("warning", "circle-alert", "Unsaved") }}{{ pill("danger", "circle-alert", "Not saved") }}{{ pill("success", "check", "Asked") }}{{ pill("neutral", "x", "Not asked") }}{{ pill("success", "circle-check", "In use") }}
+  </div>
+  <div class=sg-row>
+    {% call spec("Standard state: a caption, not a pill") %}<span class=msg__std>{{ icon("check") }}Standard wording</span>{% endcall %}
+  </div>
+  <div class=sg-row>
+  {% for s in statuses %}{{ pill(s.pill_variant, s.pill_icon, s.pill_word) }}{% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Calendar status</h3>
+  <p class=sg-note>Pill, title, one sentence. The calendar in use shows only while connected; Connect sits inside the block when it is the next step.</p>
+  <div class=sg-stack>
+  {% for s in statuses %}
+    {% if s.kind in ("reauth_required", "unavailable") %}
+    {% call status_block(s, p ~ s.kind ~ loop.index ~ "-") %}<button type=button class="btn btn--primary btn--block-phone">Connect Google Calendar</button>{% endcall %}
+    {% elif s.kind == "none" %}
+    {% call status_block(s, p ~ s.kind ~ loop.index ~ "-") %}<p class=status__note>{{ icon("info") }}<span>{{ setup_note }}</span></p>{% endcall %}
+    {% else %}{{ status_block(s, p ~ s.kind ~ loop.index ~ "-") }}{% endif %}
+  {% endfor %}
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>What Google will ask</h3>
+  <p class=sg-note>Open while not connected; closed once connected, with Reconnect under it.</p>
+  <section class="card card--asks" aria-labelledby={{ p }}asks-title>
+    <details class=asks>
+      <summary class=asks__summary><h4 class=card__title id={{ p }}asks-title>What Google will ask</h4>{{ icon("chevron-down", "asks__chev") }}</summary>
+      <ol class=steps-list><li>You pick the Google account that owns your business calendar.</li><li>It only checks free times and adds appointments. Nothing else in that account is read.</li></ol>
+    </details>
+    <div><button type=button class="btn btn--secondary btn--block-phone">Reconnect Google Calendar</button></div>
+  </section>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Notices</h3>
+  <div class=sg-stack>
+    {{ notice_box("info", "Message editing is not set up for this account yet. Ask FluxWorks to enable it.") }}
+    {{ notice_box("warning", "Bookings are paused until you reconnect.", title="Warning (reserved, not used yet)") }}
+    {{ notice_box("danger", "Google did not grant calendar access. Try connecting again.") }}
+    {{ notice_box("success", "Saved. New conversations use these messages from now on.") }}
+  </div>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 9. feedback #}
+{% call(theme, p) section("feedback", "Feedback", "A save confirms with a toast that leaves by itself; a problem stays on the page next to its cause.") %}
+<div class=sg-group>
+  <h3 class=sg-h>Toast</h3>
+  <div class=sg-stack>
+    {% call spec("Success: leaves after 6 seconds, waits while hovered or focused; Escape dismisses it from anywhere", wide=True) %}{{ toast_specimen("success", "Saved.", detail=saved_detail) }}{% endcall %}
+    {% call spec("With Undo: 8 seconds, Undo takes focus", wide=True) %}{{ toast_specimen("success", "Changes discarded.", action="Undo") }}{% endcall %}
+    {% call spec("Error variant, for review only: page errors stay on the page as a notice", wide=True) %}{{ toast_specimen("danger", "Google did not grant calendar access. Try connecting again.") }}{% endcall %}
+  </div>
+  <div><button type=button class="btn btn--secondary" data-demo-toast="Saved. Changed: When you need to step in.">{{ icon("bell") }}Show toast</button></div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Error summary</h3>
+  <p class=sg-note>At the top of the card list. The link opens and focuses the box; the page title starts with Not saved.</p>
+  {{ error_summary({"key": "handoff_ack", "label": "When you need to step in", "reason": rejected_reason}, p) }}
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Inline error</h3>
+  {{ field_error(p ~ "inline-error", errors.mobile) }}
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Stepper</h3>
+  {{ stepper() }}
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Skeleton</h3>
+  <p class=sg-note>Reserved for content that loads later; every v1 page arrives with its data.</p>
+  <div class=sg-skel aria-hidden=true><span class="skeleton skeleton--text"></span><span class="skeleton skeleton--text sg-w-90"></span><span class="skeleton skeleton--text sg-w-60"></span><span class="skeleton sg-skel-block"></span></div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Empty state</h3>
+  <div class=empty>
+    <span class=empty__icon>{{ icon("calendar-days") }}</span>
+    <p class=empty__title>Personal</p>
+    <p class=empty__body>This is the only calendar this account can add appointments to.</p>
+  </div>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 10. conversation #}
+{% call(theme, p) section("conversation", "Conversation") %}
+<div class=sg-group>
+  <h3 class=sg-h>Bubbles in a card</h3>
+  <div class=well>
+    <div class="sms sms--customer"><span class=sms__badge>Customer</span><p class=sms__bubble>{{ texts.customer }}</p></div>
+    <div class="sms sms--textback"><span class=sms__badge>TextBack</span><p class=sms__bubble>{{ texts.textback }}</p></div>
+    <div class="sms sms--you"><span class=sms__badge>You</span><p class=sms__bubble>{{ texts.you }}</p></div>
+  </div>
+  <p class=sg-note>Role badges show only when two speakers share a preview. The You role exists for the styleguide only: TextBack does not relay owner texts.</p>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Added line and links</h3>
+  <div class=well>
+    <div class="sms sms--textback"><p class=sms__bubble>Hi, this is {{ business_name }}. What do you need done? <span class=sms__suffix>Reply STOP to opt out.</span></p></div>
+    <div class="sms sms--textback"><p class=sms__bubble>Add to calendar: Google <span class=sms__link>https://example.com/a/k7q2-ref/g</span></p></div>
+  </div>
+  <p class=sg-note>The opt-out line added for the owner is dotted-underlined; links may break anywhere, the rest of the bubble wraps between words.</p>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Bubbles in the rail</h3>
+  <div class="phone__log sg-log">
+    <div class=sg-thread>
+      <div class="sms sms--customer"><span class=sms__badge>Customer</span><p class=sms__bubble>{{ texts.customer }}</p></div>
+      <div class="sms sms--textback"><span class=sms__badge>TextBack</span><p class=sms__bubble>{{ texts.textback }}</p></div>
+      <div class="sms sms--you"><span class=sms__badge>You</span><p class=sms__bubble>{{ texts.you }}</p></div>
+      <div class="sms sms--textback"><span class=sms__badge>TextBack</span><span class=typing role=img aria-label="Typing"><i></i><i></i><i></i></span></div>
+    </div>
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Thread pills and the hand-off divider</h3>
+  <div class=well>
+    <p class="tpill tpill--missed">Missed call · just now</p>
+    <p class="tpill tpill--neutral">{{ icon("clock") }}No reply</p>
+    <p class="tpill tpill--neutral">{{ icon("bell") }}You get a lead with this conversation</p>
+    <p class="tpill tpill--booked">{{ icon("check") }}Booked · on your calendar</p>
+    <p class=handoff>You take it from here</p>
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Receipt line</h3>
+  <p class=sg-note>Under the last TextBack bubble: texts first, then characters. Pips and the amber billing line from 2 texts.</p>
+  <ul class=sg-stack>
+    <li class=sg-meter><p class="msg__receipt tnum"><span class=msg__added>STOP line added for you</span><span class=msg__meter><span>1 text · 107 characters</span><span class=pips aria-hidden=true></span></span></p><span class=sg-cap>The opt-out line was added</span></li>
+  {% for caption, label, bill, k in meters %}
+    <li class=sg-meter><p class="msg__receipt tnum"{% if k > 1 %} data-warn{% endif %}><span class=msg__meter><span>{{ label }}</span><span class=pips aria-hidden=true>{% if k > 1 %}{% for _ in range([k, 5]|min) %}<i></i>{% endfor %}{% if k > 5 %}<b>+</b>{% endif %}{% endif %}</span></span>{% if bill %}<span class=msg__bill>{{ icon("triangle-alert") }}<span>{{ bill }}</span></span>{% endif %}</p><span class=sg-cap>{{ caption }}</span></li>
+  {% endfor %}
+  </ul>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Placeholder chips</h3>
+  <p class=sg-note>Most useful first. A group labelled "Insert a detail", directly under the box.</p>
+  <div class=chips role=group aria-label="Insert a detail">{% for token, name in chips %}<button type=button class=chip>{{ icon("plus") }}{{ name }}<span class=vh> placeholder</span></button>{% endfor %}</div>
+  <dl class=sg-dl>{% for token, name in chips %}<dt>{{ name }}</dt><dd><code class=sg-code>{{ token }}</code></dd>{% endfor %}</dl>
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 11. message card #}
+{% call(theme, p) section("cards", "Message card", "Built with the same macro and view model as the Messages page, filled with the live business name. Head, preview band with its receipt, footer with the editor and Standard wording or Reset. In a list of 36rem or more each card lays out as a settings row, the preview an inset well on the right.") %}
+{% for sp in cards %}
+{% set q = p ~ "c" ~ loop.index ~ "-" %}
+<div class="sg-group sg-cards">
+  <h3 class=sg-h>{{ sp.name }}</h3>
+  <p class=sg-note>{{ sp.note }}</p>
+  <div class=qset>{{ message_card(sp.card, sp.editable, max_chars, q) }}{% for b in sp.branches %}{{ message_card(b, sp.editable, max_chars, q) }}{% endfor %}</div>
+</div>
+{% endfor %}
+{% endcall %}
+
+{# ------------------------------------------------------------------ 12. spine #}
+{% call(theme, p) section("spine", "Spine", "Two moments on the conversation spine, a branch, and the Any time section, a disclosure closed by default (open when one of its cards was rejected).") %}
+<div class=sg-spine>
+  <ol class=moments aria-label="The conversation, in order">
+  {% for m in spine %}{{ moment(m, True, max_chars, p) }}{% endfor %}
+  </ol>
+  {{ anytime_section(anytime, True, max_chars, p) }}
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 13. rail #}
+{% call(theme, p) section("rail", "Phone rail", "All seven sample conversations with the standard wording. The Show select switches them without JavaScript. Below 1024 the whole thread shows, followed by Back to editing; from 1024 the rail is sticky and the thread scrolls inside the phone.") %}
+{{ rail_panel(rail, True, (), p, False) }}
+{% endcall %}
+
+{# ------------------------------------------------------------------ 14. save bar #}
+{% call(theme, p) section("savebar", "Save bar", "Sticky while there is something to save or fix; at rest in its slot once everything is saved. A narrow bar shows the short label.") %}
+<div class=sg-stack>
+  {% call spec("No JavaScript: sticky, Save only", wide=True) %}{{ savebar_specimen("nojs") }}{% endcall %}
+  {% call spec("Clean: nothing to save", wide=True) %}{{ savebar_specimen("clean", "No unsaved changes", "No unsaved changes", "circle-check") }}{% endcall %}
+  {% call spec("Saved: stays until the next edit", wide=True) %}{{ savebar_specimen("saved", "Saved just now", "Saved just now", "circle-check") }}{% endcall %}
+  {% call spec("Dirty, two changes", wide=True) %}{{ savebar_specimen("dirty", "2 unsaved", "2 unsaved changes") }}{% endcall %}
+  {% call spec("Error: a rejected save, counting the edits still waiting", wide=True) %}{{ savebar_specimen("error", "Not saved", "Not saved · 2 unsaved changes", "circle-alert") }}{% endcall %}
+  {% call spec("Saving", wide=True) %}{{ savebar_specimen("saving", "Saving…", "Saving…", "loader-circle") }}{% endcall %}
+</div>
+{% endcall %}
+
+{# ------------------------------------------------------------------ 15. shell #}
+{% call(theme, p) section("shell", "Shell", "The frame around every signed-in page. The tab bar sits at the bottom below 1024; the sidebar replaces it from 1024.") %}
+<div class=sg-group>
+  <h3 class=sg-h>Top bar</h3>
+  {% call spec("Signed in", wide=True) %}<div class=sg-frame><div class=topbar><span class=brand>{{ icon("message-square-text", "brand__icon") }}<span>TextBack</span></span><span class=topbar__sep aria-hidden=true></span><span class=topbar__biz>{{ business_name }}</span><div class=menu><span class="menu__trigger icon-btn">{{ icon("circle-user-round", "menu__avatar") }}{{ icon("chevron-down", "menu__chev") }}</span></div></div></div>{% endcall %}
+  {% call spec("Signed out (phone; from 640 the brand is centred over the card, no hairline)", wide=True) %}<div class=sg-frame><div class="topbar topbar--auth"><span class=brand>{{ icon("message-square-text", "brand__icon") }}<span>TextBack</span></span></div></div>{% endcall %}
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Sign-in card</h3>
+  <p class=sg-note>From 640 the sign-in column is a card on a tinted page; on a phone it is the plain column.</p>
+  <div class="sg-auth auth__card">
+    <p class="eyebrow eyebrow--accent">Scheduling assistant settings</p>
+    <p class=sg-type--display>{{ business_name }}</p>
+    <p class=lead>Enter the business mobile on file and we'll text you a sign-in code.</p>
+    <button type=button class="btn btn--primary btn--lg btn--block">Text me a code</button>
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Navigation</h3>
+  {% call spec("Tab bar: Messages is the current page, Business default, Calendar hover", wide=True) %}
+  <div class="sg-frame sg-tabbar">
+    <span class=nav__item aria-current=page><span class=nav__icon>{{ icon("message-square-text") }}</span><span class=nav__label>Messages</span></span>
+    <span class=nav__item><span class=nav__icon>{{ icon("store") }}</span><span class=nav__label>Business</span></span>
+    <span class="nav__item is-hover"><span class=nav__icon>{{ icon("calendar-days") }}</span><span class=nav__label>Calendar</span></span>
+  </div>
+  {% endcall %}
+  {% call spec("Sidebar rows, drawn as rows from 1024: Messages current (tint, bold, 3px bar), Business focus, Calendar hover") %}
+  <div class="sg-frame sg-sidebar">
+    <span class=nav__item aria-current=page><span class=nav__icon>{{ icon("message-square-text") }}</span><span class=nav__label>Messages</span></span>
+    <span class="nav__item is-focus"><span class=nav__icon>{{ icon("store") }}</span><span class=nav__label>Business</span></span>
+    <span class="nav__item is-hover"><span class=nav__icon>{{ icon("calendar-days") }}</span><span class=nav__label>Calendar</span></span>
+    <p class=nav__foot>TextBack by FluxWorks</p>
+  </div>
+  {% endcall %}
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Account menu</h3>
+  <div class="menu__panel sg-menu">
+    <div class=menu__who><p class=menu__biz>{{ business_name }}</p><p class="menu__meta tnum">Signed in with <span class=nowrap>{{ signed_in_with }}</span></p></div>
+    <fieldset class=menu__theme>
+      <legend class="eyebrow eyebrow--muted">Appearance</legend>
+      <div class=pill-radios>
+      {% for value, label, ic in (("system", "System", ""), ("light", "Light", "sun"), ("dark", "Dark", "moon")) %}<input class=vh-input type=radio name={{ p }}menu-theme id={{ p }}menu-theme-{{ value }}{% if value == theme %} checked{% endif %}><label class=pill-radio for={{ p }}menu-theme-{{ value }}>{% if ic %}{{ icon(ic) }}{% endif %}{{ label }}</label>{% endfor %}
+      </div>
+    </fieldset>
+    <button type=button class=menu__item>{{ icon("log-out") }}Sign out</button>
+  </div>
+</div>
+<div class=sg-group>
+  <h3 class=sg-h>Page header</h3>
+  <div class=page-head>
+    <p class=sg-type--display>Your messages</p>
+    <p class=lead>The texts customers get after a missed call, in order.</p>
+    <p class=page-head__meta>{{ icon("info") }}<span>Green bubbles show what customers see. The job, address and time are made-up examples.</span></p>
+    <nav class="jump sg-jump" aria-label="Jump to (specimen)"><ul class=jump__list><li><a class=jump__link href=#sg-spine>Missed call</a></li><li><a class=jump__link href=#sg-cards>Questions</a></li><li><a class=jump__link href=#sg-rail>Whole conversation</a></li></ul></nav>
+  </div>
+  <p class=sg-note>The jump row shows below 1024 only and scrolls sideways inside itself, never the page.</p>
+</div>
+{% endcall %}
+{% endblock %}

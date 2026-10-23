@@ -11,30 +11,41 @@ session can never move the account to a stranger's phone.
 from __future__ import annotations
 
 import hmac
-import html
 import json
+import re
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from fastapi.responses import RedirectResponse
+from markupsafe import Markup
 
 from text_back.calendars.credentials import GoogleCredentials
 from text_back.calendars.protocol import CalendarProviderError
 from text_back.client_portal import (
     CODE_FAILURE,
-    _flash,
+    FormExpired,
     _now,
-    _page,
     _session,
+    _shell,
     check_code,
-    nav_html,
+    fill,
     normalize_mobile,
+    preview_text,
+    preview_values,
     send_code,
 )
 from text_back.policy import format_contact_number
+from text_back.portal_render import render
 
 NAME_MAX = 60
 CONNECT_LINK_TTL = timedelta(minutes=15)
+
+# Validation messages, shared by the checks and the error-to-field map so they cannot drift.
+NAME_ERROR = f"Enter a business name of 1 to {NAME_MAX} characters."
+CONTACT_ERROR = "Enter the customer phone number as digits, like 704 555 0123, or leave it blank."
+MOBILE_ERROR = "Enter your mobile as digits, like 704 555 0123."
+ERROR_FIELD = {NAME_ERROR: "business_name", CONTACT_ERROR: "business_contact", MOBILE_ERROR: "owner_mobile"}
 
 
 # --- settings applied to the running app -------------------------------------
@@ -81,47 +92,40 @@ def calendar_choices(state) -> list[dict]:
 
 # --- pages ---------------------------------------------------------------------
 
-def _business_form(state, session, *, error: str = "", notice: str = "", values: dict | None = None):
+def _business_form(request: Request, state, session, *, error: str = "", notice: str = "", values: dict | None = None):
     values = values or {}
-    name = values.get("business_name", state.business_name)
-    contact = values.get("business_contact", state.business_contact or "")
-    mobile = values.get("owner_mobile", format_contact_number(state.owner_mobile) if state.owner_mobile else "")
+    shown = {
+        "business_name": values.get("business_name", state.business_name),
+        "business_contact": values.get("business_contact", state.business_contact or ""),
+        "owner_mobile": values.get("owner_mobile", format_contact_number(state.owner_mobile) if state.owner_mobile else ""),
+    }
     sender = format_contact_number(getattr(state, "business_number", "") or "") or "the number the texts come from"
-    body = (
-        nav_html(state, session, "Your business", "business")
-        + "<p class=lead>How the assistant introduces the business, where customers are pointed, and where sign-in codes go.</p>"
-        + _flash(error, notice)
-        + "<form method=post action=/client/business><div class=card>"
-        + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + "<label for=business_name>Business name"
-        "<span class=help>Used in every text, for example \"Thanks for calling {business_name}\".</span></label>"
-        + f"<input id=business_name name=business_name required maxlength={NAME_MAX} autocomplete=organization value=\"{html.escape(name, quote=True)}\">"
-        + "<label for=business_contact>Phone number customers should call"
-        f"<span class=help>Shown when a customer texts HELP. Leave blank to show {html.escape(sender)}. "
-        "Customers are never transferred to it; the assistant handles the texting.</span></label>"
-        + f"<input id=business_contact name=business_contact type=tel inputmode=tel maxlength=24 placeholder='704 555 0123' value=\"{html.escape(contact, quote=True)}\">"
-        + "<label for=owner_mobile>Your mobile"
-        "<span class=help>Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it.</span></label>"
-        + f"<input id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 autocomplete=tel value=\"{html.escape(mobile, quote=True)}\">"
-        + "</div><p><button type=submit class=primary>Save business details</button></p></form>"
+    templates = state.messages.current().templates
+    name = shown["business_name"].strip() or state.business_name
+    name_preview = {
+        "text": preview_text("intro", templates, {**preview_values(state), "business_name": name}),
+        "template": templates["intro"],
+        "suffix": "" if re.search(r"\bstop\b", templates["intro"], re.IGNORECASE) else fill(templates["opt_out_suffix"], {}),
+        "saved_name": state.business_name,
+    }
+    return render(
+        request, "client/business.html.j2",
+        **_shell(state, session, title="Not saved · Business" if error else "Business", nav="business", notice=notice),
+        values=shown, name_max=NAME_MAX, sender=sender, name_preview=name_preview,
+        error={"field": ERROR_FIELD.get(error), "message": error} if error else None,
     )
-    return _page("Your business", body)
 
 
-def _confirm_form(state, session, pending_mobile: str, *, error: str = ""):
-    body = (
-        nav_html(state, session, "Confirm your new mobile", "business")
-        + "<div class=steps><div class='step done'>1. Details saved</div><div class='step now'>2. Confirm the new number</div></div>"
-        + f"<p class=lead>We texted a six-digit code to <strong>{html.escape(format_contact_number(pending_mobile))}</strong>. "
-        "Enter it to move sign-in to that number. It expires in ten minutes; until then codes still go to your current mobile.</p>"
-        + _flash(error)
-        + "<form method=post action=/client/business/confirm><div class=card>"
-        + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + "<label for=code>Code from the text</label><input id=code name=code class=code inputmode=numeric autocomplete=one-time-code pattern='[0-9]{6}' required maxlength=6 autofocus>"
-        + "</div><p><button type=submit class=primary>Confirm new mobile</button></p></form>"
-        + "<p><a href=/client/business/keep>Keep my current mobile instead</a></p>"
+def _confirm_form(request: Request, state, session, pending_mobile: str, *, error: str = ""):
+    pending_display = format_contact_number(pending_mobile)
+    return render(
+        request, "client/confirm_mobile.html.j2",
+        **_shell(state, session, title="Confirm your new mobile", nav="business"),
+        pending_display=pending_display, error=error,
+        # "Send the code again" re-posts these to POST /client/business (same route, same rate limit).
+        resend={"business_name": state.business_name, "business_contact": state.business_contact or "",
+                "owner_mobile": pending_display},
     )
-    return _page("Confirm your new mobile", body)
 
 
 def calendar_status(state) -> dict:
@@ -145,73 +149,81 @@ def calendar_status(state) -> dict:
     return view
 
 
-_ICONS = {
-    "ok": "<svg viewBox='0 0 24 24' aria-hidden=true><circle cx=12 cy=12 r=11 fill='#1d6b3a'/><path d='M7 12.5l3.2 3.2L17 9' stroke='#fff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>",
-    "warn": "<svg viewBox='0 0 24 24' aria-hidden=true><path d='M12 2.5L22.5 21h-21z' fill='#F0B429'/><path d='M12 9v5.5' stroke='#1c1300' stroke-width='2.4' stroke-linecap='round'/><circle cx=12 cy=17.5 r=1.4 fill='#1c1300'/></svg>",
-    "err": "<svg viewBox='0 0 24 24' aria-hidden=true><circle cx=12 cy=12 r=11 fill='#b3261e'/><path d='M8 8l8 8M16 8l-8 8' stroke='#fff' stroke-width='2.4' stroke-linecap='round'/></svg>",
-    "none": "<svg viewBox='0 0 24 24' aria-hidden=true><rect x=3 y=4 width=18 height=17 rx=3 fill='none' stroke='#596270' stroke-width='2'/><path d='M3 9h18M8 2.5v4M16 2.5v4' stroke='#596270' stroke-width='2' stroke-linecap='round'/></svg>",
-}
+@dataclass(frozen=True, slots=True)
+class StatusView:
+    kind: str            # ready | reauth_required | unavailable | none | managed  -> data-status
+    pill_variant: str    # success | warning | danger | info
+    pill_icon: str
+    pill_word: str
+    title: str
+    detail: Markup       # one sentence
+    calendar: str = ""   # the calendar in use, shown only while connected
 
 
-def _status_block(kind: str, headline: str, detail: str) -> str:
-    return f"<div class='status {kind}'>{_ICONS[kind]}<div><strong>{headline}</strong><p>{detail}</p></div></div>"
+@dataclass(frozen=True, slots=True)
+class Choice:
+    id: str
+    name: str
+    main: bool
+    in_use: bool
 
 
-def _calendar_page(state, session, *, error: str = "", notice: str = ""):
+# provider id -> (display name, short name in a sentence)
+PROVIDER_NAMES = {"google": ("Google Calendar", "Google"), "microsoft": ("Outlook (Microsoft 365)", "Outlook"),
+                  "icloud": ("iCloud Calendar", "iCloud")}
+SETUP_NOTE = "Connecting a calendar from this page is still being set up by FluxWorks."
+
+
+def status_view(view: dict, label: str) -> StatusView:
+    """The calendar status block for ``calendar_status()`` output; ``label`` names the calendar in use."""
+    provider = view["provider"]
+    if provider == "stub":
+        return StatusView("none", "info", "flask-conical", "Test mode", "No calendar connected",
+                          Markup("Bookings are not recorded on any calendar yet."))
+    if provider != "google":
+        name, short = PROVIDER_NAMES.get(provider, (provider.title(), provider.title()))
+        return StatusView("managed", "success", "user-check", "Connected", f"{name} connected",
+                          Markup("Your {} calendar is connected and managed by FluxWorks.").format(short))
+    if view["status"] == "ready":
+        return StatusView("ready", "success", "calendar-check", "Connected", "Connected to Google Calendar",
+                          Markup("Free times come from this calendar and every booking is added to it."),
+                          calendar=label)
+    if view["status"] == "reauth_required":
+        return StatusView("reauth_required", "warning", "triangle-alert", "Paused", "Reconnect needed",
+                          Markup("Google has disconnected the calendar, so bookings are paused until you reconnect."))
+    return StatusView("unavailable", "danger", "circle-x", "Error", "The calendar could not be read",
+                      Markup("Bookings are paused until the calendar is connected again."))
+
+
+def _calendar_page(request: Request, state, session, *, error: str = "", notice: str = "", picker_error: str = ""):
     view = calendar_status(state)
     choices = calendar_choices(state)
     names = {entry["id"]: entry.get("summary") or entry["id"] for entry in choices}
     current = view["calendar_id"]
-    current_label = names.get(current, current)
-    picker = connect = ""
-    if view["provider"] == "google":
-        if view["status"] == "ready":
-            status = _status_block("ok", "Connected to Google Calendar",
-                                   f"Google Calendar is connected. Appointments are checked against and booked on <strong>{html.escape(current_label)}</strong>.")
-        elif view["status"] == "reauth_required":
-            status = _status_block("warn", "Reconnect needed",
-                                   "Google has disconnected the calendar. Bookings are paused until you reconnect.")
-        else:
-            status = _status_block("err", "The calendar could not be read",
-                                   "The calendar connection could not be read. Reconnect to resume bookings.")
-        if view["can_connect"]:
-            verb = "Reconnect" if view["status"] == "ready" else "Connect"
-            connect = (
-                "<div class=card><h2>What Google will ask</h2>"
-                "<p>You will be sent to Google to pick the account that owns your business calendar. Google then asks you to allow this "
-                "assistant to see and edit your calendars. It uses that only to check free times and add appointments. "
-                "Nothing else in that account is read, and you can pick which calendar it uses afterwards.</p>"
-                "<form method=post action=/client/calendar>"
-                f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><input type=hidden name=action value=connect>"
-                f"<p><button type=submit class=primary>{verb} Google Calendar</button></p></form></div>"
-            )
-        else:
-            connect = "<p class=muted>Connecting a calendar from this page is still being set up by your operator.</p>"
+    status = status_view(view, names.get(current, current))
+    google = view["provider"] == "google"
+    connect = None
+    if google and view["can_connect"]:
+        # Connect/Reconnect sits inside the status block either way. Not connected: Connect is primary and
+        # "What Google will ask" starts open. Connected: Reconnect is secondary and the explanation starts closed.
+        ready = status.kind == "ready"
+        connect = {"verb": "Reconnect" if ready else "Connect", "primary": not ready}
+    picker = None
+    only_calendar = ""
+    if status.kind == "ready":  # the picker only makes sense while the calendar is connected
         if len(choices) > 1:
-            options = "".join(
-                f"<label class=choice><input type=radio name=calendar_id value=\"{html.escape(entry['id'], quote=True)}\"{' checked' if entry['id'] == current else ''}> "
-                f"{html.escape(entry.get('summary') or entry['id'])}{' (main calendar)' if entry.get('primary') else ''}</label>"
-                for entry in choices
-            )
-            picker = (
-                "<form method=post action=/client/calendar><div class=card><h2>Which calendar should the assistant use?</h2>"
-                "<p class=muted style='margin-top:0'>Free times are checked on this calendar and new appointments are added to it.</p>"
-                f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><fieldset class=plain><legend class=vh>Calendar</legend>{options}</fieldset>"
-                "<p><button type=submit class=primary>Use this calendar</button></p></div></form>"
-            )
-    elif view["provider"] == "stub":
-        status = _status_block("none", "Test mode: no calendar connected",
-                               "No real calendar is connected (test mode). Bookings are not recorded anywhere yet.")
-    else:
-        status = _status_block("ok", f"{html.escape(view['provider'].title())} calendar connected",
-                               f"Your {html.escape(view['provider'])} calendar is connected and managed by your operator.")
-    body = (
-        nav_html(state, session, "Your calendar", "calendar")
-        + "<p class=lead>The assistant only offers times that are free on this calendar, and every booking is added to it before the customer gets a confirmation.</p>"
-        + _flash(error, notice)
-        + status + connect + picker
+            picker = tuple(Choice(entry["id"], names[entry["id"]], bool(entry.get("primary")), entry["id"] == current)
+                           for entry in choices)
+        elif len(choices) == 1:
+            only_calendar = names[choices[0]["id"]]
+    return render(
+        request, "client/calendar.html.j2",
+        **_shell(state, session, title="Calendar", nav="calendar", notice=notice,
+                 page_error=error or (picker_error if picker is None else "")),
+        status=status, connect=connect, setup_note=SETUP_NOTE if not view["can_connect"] and view["provider"] in ("google", "stub") else "",
+        picker=picker,
+        only_calendar=only_calendar, picker_error=picker_error if picker is not None else "",
     )
-    return _page("Your calendar", body)
 
 
 def install_routes(app):
@@ -231,10 +243,10 @@ def install_routes(app):
     async def _redirect(request, exc):
         return RedirectResponse(exc.target, status_code=303)
 
-    async def _checked_form(request: Request, session):
+    async def _checked_form(request: Request, session, reload_url: str):
         form = await request.form()
         if not hmac.compare_digest(str(form.get("csrf", "")), session["csrf"]):
-            raise HTTPException(400, "Form expired; reload the page and try again")
+            raise FormExpired(reload_url)
         return form
 
     @app.get("/client/business", include_in_schema=False)
@@ -242,27 +254,27 @@ def install_routes(app):
         session = _require(request)
         pending = state.store.setting("owner_mobile_pending")
         if pending:
-            return _confirm_form(state, session, pending)
-        return _business_form(state, session)
+            return _confirm_form(request, state, session, pending)
+        return _business_form(request, state, session)
 
     @app.post("/client/business", include_in_schema=False)
     async def save_business(request: Request):
         session = _require(request)
-        form = await _checked_form(request, session)
+        form = await _checked_form(request, session, "/client/business")
         now = _now(state)
         submitted = {key: str(form.get(key, "")).strip() for key in ("business_name", "business_contact", "owner_mobile")}
         name = " ".join(submitted["business_name"].split())
         if not name or len(name) > NAME_MAX:
-            return _business_form(state, session, error=f"Enter a business name of 1 to {NAME_MAX} characters.", values=submitted)
+            return _business_form(request, state, session, error=NAME_ERROR, values=submitted)
         contact = ""
         if submitted["business_contact"]:
             normalized = normalize_mobile(submitted["business_contact"])
             if normalized is None:
-                return _business_form(state, session, error="Enter the customer phone number as digits, like 704 555 0123, or leave it blank.", values=submitted)
+                return _business_form(request, state, session, error=CONTACT_ERROR, values=submitted)
             contact = format_contact_number(normalized)
         mobile = normalize_mobile(submitted["owner_mobile"])
         if mobile is None:
-            return _business_form(state, session, error="Enter your mobile as digits, like 704 555 0123.", values=submitted)
+            return _business_form(request, state, session, error=MOBILE_ERROR, values=submitted)
         state.store.set_setting("business_name", name, now=now)
         state.store.set_setting("business_contact", contact, now=now)
         state.business_name = name
@@ -270,52 +282,52 @@ def install_routes(app):
         if mobile != state.owner_mobile:
             state.store.set_setting("owner_mobile_pending", mobile, now=now)
             send_code(state, mobile, now, purpose="new mobile")
-            return _confirm_form(state, session, mobile)
-        return _business_form(state, session, notice="Saved.")
+            return _confirm_form(request, state, session, mobile)
+        return _business_form(request, state, session, notice="Saved.")
 
     @app.post("/client/business/confirm", include_in_schema=False)
     async def confirm_mobile(request: Request):
         session = _require(request)
-        form = await _checked_form(request, session)
+        form = await _checked_form(request, session, "/client/business")
         now = _now(state)
         pending = state.store.setting("owner_mobile_pending")
         if not pending:
-            return _business_form(state, session)
+            return _business_form(request, state, session)
         if str(form.get("cancel", "")):
             state.store.set_setting("owner_mobile_pending", None)
-            return _business_form(state, session, notice="Kept your current mobile.")
+            return _business_form(request, state, session, notice="Kept your current mobile.")
         if not check_code(state, pending, str(form.get("code", "")), now):
-            return _confirm_form(state, session, pending, error=CODE_FAILURE)
+            return _confirm_form(request, state, session, pending, error=CODE_FAILURE)
         state.store.set_setting("owner_mobile", pending, now=now)
         state.store.set_setting("owner_mobile_pending", None)
         state.owner_mobile = pending
-        return _business_form(state, session, notice=f"Saved. Sign-in codes now go to {format_contact_number(pending)}.")
+        return _business_form(request, state, session, notice=f"Saved. Sign-in codes now go to {format_contact_number(pending)}.")
 
     @app.get("/client/business/keep", include_in_schema=False)
     def keep_mobile(request: Request):
         session = _require(request)
         state.store.set_setting("owner_mobile_pending", None)
-        return _business_form(state, session, notice="Kept your current mobile.")
+        return _business_form(request, state, session, notice="Kept your current mobile.")
 
     @app.get("/client/calendar", include_in_schema=False)
     def calendar_page(request: Request, error: str = ""):
         session = _require(request)
-        return _calendar_page(state, session, error=error[:200])
+        return _calendar_page(request, state, session, error=error[:200])
 
     @app.post("/client/calendar", include_in_schema=False)
     async def calendar_action(request: Request):
         session = _require(request)
-        form = await _checked_form(request, session)
+        form = await _checked_form(request, session, "/client/calendar")
         now = _now(state)
         if str(form.get("action", "")) == "connect":
             if not calendar_status(state)["can_connect"]:
-                return _calendar_page(state, session, error="Connecting a calendar is not set up for this account yet.")
+                return _calendar_page(request, state, session, error="Connecting a calendar is not set up for this account yet.")
             from text_back.reconnect import create_link
             return RedirectResponse(create_link(state, "client", CONNECT_LINK_TTL), status_code=303,
                                     headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
         chosen = str(form.get("calendar_id", ""))
         choices = {entry["id"]: entry for entry in calendar_choices(state)}
         if chosen not in choices:
-            return _calendar_page(state, session, error="Pick one of the calendars listed.")
+            return _calendar_page(request, state, session, picker_error="Pick one of the calendars listed.")
         use_calendar(state, chosen, now)
-        return _calendar_page(state, session, notice=f"The assistant now uses {choices[chosen].get('summary') or chosen}.")
+        return _calendar_page(request, state, session, notice=f"The assistant now uses {choices[chosen].get('summary') or chosen}.")

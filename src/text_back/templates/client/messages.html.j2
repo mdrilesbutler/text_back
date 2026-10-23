@@ -1,0 +1,37 @@
+{#- The Messages page: five moments on the conversation spine, the "Any time" replies, the save bar and the rail.
+    Contract: the form always posts all 21 textareas and both ask_* switches; the hidden name=save submit comes
+    first so Enter never triggers a reset button; never `disabled` on a field. A rejected save's summary sits at
+    the top of the card list column. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import page_head, notice as notice_box, csrf_input, savebar %}
+{% from "client/_message_card.html.j2" import moment, anytime as anytime_section, error_summary as error_box %}
+{% from "client/_rail.html.j2" import rail as rail_panel %}
+{% block page_class %}messages{% endblock %}
+{% block content %}
+{{ page_head("Your messages", "The texts customers get after a missed call, in order. Tap Edit wording to change one; changes start with the next missed call after you save.", meta="Green bubbles show what customers see. The job, address and time are made-up examples.", jump=jump) }}
+{% if page_error %}{{ notice_box("danger", page_error) }}{% endif %}
+{% if not editable %}{{ notice_box("info", "Message editing is not set up for this account yet. Ask FluxWorks to enable it.") }}{% endif %}
+<div class=msg-layout>
+{% if editable %}
+<form method=post action=/client/messages id=messages class=msg-list>
+  {{ csrf_input(csrf) }}
+  <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
+{% else %}
+<div class=msg-list>
+{% endif %}
+  {% if error_summary %}{{ error_box(error_summary) }}{% endif %}
+  <ol class=moments aria-label="The conversation, in order">
+  {% for m in moments %}
+  {{ moment(m, editable, max_chars) }}
+  {% endfor %}
+  </ol>
+  {{ anytime_section(anytime, editable, max_chars) }}
+{% if editable %}
+  {{ savebar(savebar_initial) }}
+</form>
+{% else %}
+</div>
+{% endif %}
+{{ rail_panel(rail, editable, asked) }}
+</div>
+{% endblock %}
