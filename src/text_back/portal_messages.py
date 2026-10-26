@@ -30,13 +30,11 @@ from text_back.portal_sample import LINK_SECRET, SCENARIOS as SAMPLE_SCENARIOS, 
 # --- words (copy deck, section 4; verbatim; quotes curly per round 2) -----------------------
 
 TITLE = "Messages"
-INTRO = ("The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. "
-         "Changes start with the next missed call after you save.")
+INTRO = "The texts customers get after a missed call, in order. Changes start with the next missed call."
 META = "Green bubbles are what customers see. The job, address, time and names are made-up examples."
 NOT_ENABLED = "Message editing isn't turned on for your account yet. FluxWorks sets this up for you."
 SUPPORT_BUTTON = "Text FluxWorks support"
-NETWORK_NOTICE = ("Until phone companies approve your business for texting, the network adds a short notice to the start "
-                  "of each text. Customers see it before your wording. The text counts here include it.")
+NETWORK_NOTICE = "Until texting is approved, the network adds a short notice to each text, and the counts here include it."
 JUMP_LABEL = "On this page"
 JUMP_LEAD, JUMP_NOJS = "Jump to:", "Jump to a step"
 OPTIONAL_EYEBROW = "Optional questions"
@@ -51,7 +49,7 @@ RULE_PARAGRAPH = f"Sent as one paragraph. Up to {MAX_TEMPLATE_CHARS} characters.
 NEXT_HEADING = "What happens next"
 NEXT_STEPS = ("TextBack stops texting this customer.", "Their name, number and message go to FluxWorks.",
               "FluxWorks passes them to you. You follow up; the text promised the customer someone would.")
-DESTINATION_CHAT = "the FluxWorks operator"
+DESTINATION_CHAT = "FluxWorks"  # never "the FluxWorks operator" (m30)
 DESTINATION_LOG = "a log FluxWorks can read. Nobody is alerted. Ask FluxWorks to set up where these should go."
 DESTINATION_LOG_SHORT = "a log FluxWorks can read"
 DESTINATION_LINE = "These go to {label}."
@@ -74,7 +72,7 @@ SPEAKER_CUSTOMER = "Customer"
 RAIL_TITLE = "Example conversation"
 RAIL_SHOW = "Show"
 RAIL_SUB = "Text message"
-RAIL_FOOT = "Example conversation · nothing is sent · names made up"
+RAIL_FOOT = "Nothing is sent · names made up"  # under the title "Example conversation": the word appears once
 RAIL_NOTICE_HINT = "Each text in this example also starts with the network notice."
 RAIL_BACK = "Back to editing"
 PILL_MISSED = "Missed call · just now"
@@ -88,6 +86,7 @@ PILL_DETAILS_SENT = "Customer's details sent to {label}"
 SAVEBAR_NOJS = "Saves every text at once"
 SAVEBAR_CLEAN = "No unsaved changes"
 CHANGED_ONE, CHANGED_MANY = "1 text changed", "{n} texts changed"
+SETTING_ONE, SETTING_MANY, CHANGES_MIXED = "1 setting changed", "{n} settings changed", "{n} changes"
 NOT_SAVED_COUNT = "Not saved · {count}"
 SAVE, SAVING, DISCARD = "Save", "Saving…", "Discard"
 DISCARDED = "Changes discarded."
@@ -129,7 +128,8 @@ MESSAGES: dict[str, tuple[str, str]] = {
                       "Sent if the appointment couldn't be added to your calendar. It tells the customer no booking was made."),
     "followup_1": ("First reminder", "Sent {delay} after the first text if there's no reply."),
     "followup_2": ("Last reminder", "Sent {delay} after the first reminder. After this the assistant stops texting."),
-    "handoff_ack": ("When the assistant steps back", "Sent when the customer asks for the owner or the assistant can't help."),
+    # The step is "When the assistant steps back"; its card has a title of its own (banned words rule out "hand-off").
+    "handoff_ack": ("Steps-back text", "Sent when the customer asks for the owner or the assistant can't help."),
     "handoff_ack_safety": ("When someone may be in danger", "Sent when a text mentions danger."),
     "opt_in": ("Reply to START", "Sent when a customer texts START."),
     "help": ("Reply to HELP", "Sent when a customer texts HELP. The number it shows is set on the Phone page."),
@@ -192,7 +192,7 @@ INSERT_LABELS: dict[str, str] = {
     "business_name": "Business name", "service": "Job", "when": "Day and time", "location": "Address",
     "calendar_links": "Calendar links", "invite_line": "Invite sentence", "invited_email": "Customer's email",
     "google_link": "Google Calendar link", "outlook_link": "Outlook link", "ical_link": "iCal link",
-    "links_page": "Calendar links page", "contact_line": "Contact number sentence",
+    "links_page": "Calendar links page", "contact_line": "Your HELP number",
 }
 # Placeholders that stay valid in a saved file but get no chip (the booking's internal id).
 HIDDEN_LABELS = {"event_id": "Booking reference"}
@@ -269,6 +269,9 @@ def _own_words(template: str) -> str:
     return re.sub(r"\{[^{}]*\}", "", template)
 
 
+BILL_LINKS = "Billed as {n} texts. The calendar links make this text long. Customers still see one message."
+
+
 def bill_info(key: str, templates: dict[str, str], values: dict[str, str], notice: bool) -> tuple[str, str]:
     """(billing line, fix label) for one card. The fix only ever changes the card's own wording: a symbol that
     comes from the business name or the opt-out line is named where it is, with no button."""
@@ -278,6 +281,12 @@ def bill_info(key: str, templates: dict[str, str], values: dict[str, str], notic
     _, parts, plain = sms_parts(billed)
     if parts < 2:
         return "", ""
+    if key == "booking_confirmation":
+        # Its length comes from the calendar links; the honest note, and never a fix button (m32).
+        own = _first_symbol(_own_words(templates[key]))
+        if own:
+            return f"Billed as {parts} texts. The “{own}” symbol makes each text hold only 70 characters.", ""
+        return BILL_LINKS.format(n=parts), ""
     if plain:
         return f"Billed as {parts} texts. Customers still see one message.", ""
     own = _first_symbol(_own_words(templates[key]))
@@ -299,15 +308,33 @@ def fix_label(text: str) -> str:
     return f"Replace {symbol} with {_PLAIN[symbol]}" if parts > 1 and not plain and symbol in _PLAIN else ""
 
 
+_DASHES = frozenset("—–")
+
+
 def apply_fix(text: str) -> str:
-    """The wording with its first billed symbol swapped for the plain one (what the fix button does)."""
+    """The wording with its first billed symbol swapped for the plain one (what the fix button does).
+    A dash with no space on a side gets one, so "call—this" becomes "call - this", never "call-this".
+    portal.js plainSwap() does the same."""
     symbol = _first_symbol(text)
-    return text.replace(symbol, _PLAIN[symbol]) if symbol in _PLAIN else text
+    if symbol not in _PLAIN:
+        return text
+    if symbol not in _DASHES:
+        return text.replace(symbol, _PLAIN[symbol])
+    out = []
+    for index, ch in enumerate(text):
+        if ch != symbol:
+            out.append(ch)
+            continue
+        before = text[index - 1] if index else " "
+        after = text[index + 1] if index + 1 < len(text) else " "
+        out.append(("" if before.isspace() else " ") + "-" + ("" if after.isspace() else " "))
+    return "".join(out)
 
 
 # --- previews ------------------------------------------------------------------------------
 
-SAMPLE_SERVICE, SAMPLE_LOCATION, SAMPLE_EMAIL = "Tree removal", "12 Oak St, Charlotte", "dana@example.com"
+# The approved mockup's values, the same as the example conversation's script (portal_sample, fix pass P5).
+SAMPLE_SERVICE, SAMPLE_LOCATION, SAMPLE_EMAIL = "Tree trimming", "412 Maple St, Charlotte", "dana@example.com"
 
 
 class _Keep(dict):
@@ -421,15 +448,29 @@ def _quoted(titles: list[str]) -> str:
     return ", ".join(f"“{t}”" for t in titles)
 
 
+def change_params(old: dict[str, str], new: dict[str, str], old_asked: set[str], new_asked: set[str]) -> dict:
+    """What one save changed, as keys only (the one-time notice carries these, never text)."""
+    switched = [field for field in ("phone", "email") if (field in old_asked) != (field in new_asked)]
+    return {"changed": [k for k in FIELD_KEYS if old[k] != new[k] and new[k] != DEFAULT_TEMPLATES[k]],
+            "back": [k for k in FIELD_KEYS if old[k] != new[k] and new[k] == DEFAULT_TEMPLATES[k]],
+            "on": [f for f in switched if f in new_asked], "off": [f for f in switched if f not in new_asked]}
+
+
+_QUESTION_TITLES = {field: MESSAGES[key][0] for key, (field, _) in OPTIONAL_QUESTIONS.items()}
+
+
+def saved_text(*, changed=(), back=(), on=(), off=()) -> str:
+    """The deck's toast_saved line: one "Saved." then what changed, a switch named as a setting (m29)."""
+    parts = ([f"You changed {_quoted([MESSAGES[k][0] for k in changed])}."] if changed else []) + \
+            ([f"Back to standard wording: {_quoted([MESSAGES[k][0] for k in back])}."] if back else []) + \
+            ([f"You turned on {_quoted([_QUESTION_TITLES[f] for f in on])}."] if on else []) + \
+            ([f"You turned off {_quoted([_QUESTION_TITLES[f] for f in off])}."] if off else [])
+    return "Saved. " + " ".join(parts) if parts else "Saved. No wording changed."
+
+
 def change_summary(old: dict[str, str], new: dict[str, str], old_asked: set[str], new_asked: set[str]) -> str:
     """The deck's toast_saved line for one save."""
-    changed = [MESSAGES[k][0] for k in FIELD_KEYS if old[k] != new[k] and new[k] != DEFAULT_TEMPLATES[k]]
-    changed += [f"{MESSAGES[k][0]} switched {'on' if field in new_asked else 'off'}"
-                for k, (field, _) in OPTIONAL_QUESTIONS.items() if (field in old_asked) != (field in new_asked)]
-    back = [MESSAGES[k][0] for k in FIELD_KEYS if old[k] != new[k] and new[k] == DEFAULT_TEMPLATES[k]]
-    parts = ([f"Saved. You changed {_quoted(changed)}."] if changed else []) + \
-            ([f"Saved. Back to standard wording: {_quoted(back)}."] if back else [])
-    return " ".join(parts) or "Saved. No wording changed."
+    return saved_text(**change_params(old, new, old_asked, new_asked))
 
 
 # --- config-driven lines ---------------------------------------------------------------------
@@ -575,12 +616,17 @@ def rail_scenarios(state, now: datetime) -> tuple[Scenario, ...]:
     return tuple(out)
 
 
-def changed_words(n: int) -> str:
+def changed_words(n: int, settings: int = 0) -> str:
+    """'1 text changed' / '2 texts changed'; a question switch is a setting ('1 setting changed'); both: '3 changes'."""
+    if n and settings:
+        return f"{n + settings} changes"
+    if settings:
+        return SETTING_ONE if settings == 1 else SETTING_MANY.format(n=settings)
     return CHANGED_ONE if n == 1 else CHANGED_MANY.format(n=n)
 
 
 def page_view(state, now: datetime, *, values: dict[str, str] | None = None, asked: set[str] | None = None,
-              error: str = "") -> dict:
+              error: str = "", unsaved: bool = False) -> dict:
     """Context for messages.html.j2. ``values`` are the owner's custom texts in display form
     ('' = standard); after a rejected save they are the texts as typed, so nothing is lost."""
     from text_back.portal_registry import network_notice_applies
@@ -641,14 +687,16 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
     keywords = step(*KEYWORDS)
     every = [c for st in (*steps, keywords) for c in (*st.cards, *st.optional)]
     dirty = [c for c in every if c.dirty]
+    texts = [c for c in every if c.text_dirty]
+    switches = [c for c in every if c.optional and c.asked != c.asked_saved]
     error_summary = None
     if error:
         error_summary = {"key": bad_key or "", "title": MESSAGES[bad_key][0] if bad_key else "", "reason": friendly,
                          "text": (ERROR_SUMMARY.format(title=MESSAGES[bad_key][0], reason=friendly) if bad_key
                                   else ERROR_UNPLACED.format(reason=friendly)),
                          "link": ERROR_LINK, "kept": ERROR_KEPT}
-    names = tuple((f"#card-{c.key}", c.title) for c in dirty)
-    count = NOT_SAVED_COUNT.format(count=changed_words(len(dirty))) if dirty else ""
+    names = tuple((f"#card-{c.key}", c.title) for c in (*texts, *switches))
+    count = NOT_SAVED_COUNT.format(count=changed_words(len(texts), len(switches))) if dirty else ""
     support = str(getattr(state, "support_contact", "") or "").strip()
     return {
         "editable": editable,
@@ -659,13 +707,14 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
         "error_summary": error_summary,
         "asked": tuple(sorted(asked)),
         "network_notice": NETWORK_NOTICE if notice else "",
+        "intro": INTRO, "meta": META, "rail_foot": RAIL_FOOT,
         "not_enabled": "" if editable else NOT_ENABLED,
         "support_href": f"sms:{support}" if support and not editable else "",
         "rail": rail_scenarios(state, now),
         # A rejected save answers with the typed texts: the header (phone) and the bar (desktop) say so.
         "dirty_count": count, "dirty_names": names,
         "topsave": ({"form": "messages-form", "changed": count, "save": SAVE, "names": names}
-                    if editable and dirty and error else None),
+                    if editable and dirty and (error or unsaved) else None),
         "tb_data": {"sample": sample, "invite": {"invite_line": INVITE_LINE, "invited_email": SAMPLE_EMAIL}, "labels": {label: name for label, name in _LABEL_NAMES.items()},
                     "gsm": GSM_BASIC, "ext": GSM_EXTENDED, "notice": notice} if editable else None,
     }
@@ -684,20 +733,20 @@ def unknown_insert(submitted: dict[str, str]) -> str:
     return ""
 
 
-def read_form(form) -> tuple[dict[str, str], dict[str, str], set[str]]:
+def read_form(form, *, apply_buttons: bool = True) -> tuple[dict[str, str], dict[str, str], set[str]]:
     """(values as typed in display form, overrides for the file, asked questions).
 
     An untouched or re-typed standard text is stored as standard. A Reset button posts the whole form with
     its own key named in ``reset``, and a "Replace — with -" button names its key in ``fix``, so both work
     without JavaScript and keep the other edits."""
     submitted = {key: str(form.get(key, "") or "").strip() for key in FIELD_KEYS}
-    fix = str(form.get("fix", "") or "")
+    fix = str(form.get("fix", "") or "") if apply_buttons else ""
     if fix in submitted:
         submitted[fix] = apply_fix(submitted[fix] or to_display(DEFAULT_TEMPLATES[fix]))
     for key, value in submitted.items():
         if _norm(to_template(value)) == _norm(DEFAULT_TEMPLATES[key]):
             submitted[key] = ""
-    reset = str(form.get("reset", "") or "")
+    reset = str(form.get("reset", "") or "") if apply_buttons else ""
     if reset in submitted:
         submitted[reset] = ""
     overrides = {key: to_template(value) for key, value in submitted.items() if value}

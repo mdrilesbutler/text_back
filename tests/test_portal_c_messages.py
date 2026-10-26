@@ -85,7 +85,7 @@ def test_jump_chips_are_the_five_step_headings_and_keywords_start_closed(tmp_pat
 def test_preview_fills_details_and_appends_the_opt_out_line_where_carriers_require_it():
     templates = dict(DEFAULT_TEMPLATES)
     intro = preview_text("intro", templates, SAMPLE)
-    assert intro.startswith("Hey, sorry we missed your call—this is Oak & Pine's scheduling assistant.")
+    assert intro.startswith("Hey, sorry we missed your call. This is the scheduling assistant for Oak & Pine.")
     assert intro.endswith("Reply STOP to opt out.")
     templates["intro"] = "Oak here. Txt STOP to end."
     assert preview_text("intro", templates, SAMPLE) == "Oak here. Txt STOP to end."
@@ -132,11 +132,12 @@ def test_page_shows_the_rendered_preview_and_cost_line_for_each_message(tmp_path
     sign_in(client, telecom)
     page = client.get("/client/messages").text
     intro = card(page, "intro")
-    assert "Oak &amp; Pine Tree Care&#39;s scheduling assistant" in intro
+    assert "This is the scheduling assistant for Oak &amp; Pine Tree Care." in intro
     assert "<span class=sms__suffix>Reply STOP to opt out.</span>" in intro
     assert "STOP line added for you" in intro and "data-optout-note hidden" not in intro
     assert re.search(r"data-count>[23] texts · \d+ characters( with the notice)?<", intro) and "data-bill hidden" not in intro
-    assert "The “—” symbol makes each text hold only 70 characters. Use “-” instead." in intro
+    # P1: the standard wording has no em dash, so a long text bills in the plain alphabet.
+    assert "Billed as 2 texts. Customers still see one message." in intro
     name = card(page, "prompt_name")
     assert re.search(r"data-count>1 text · \d+ characters( with the notice)?<", name) and "data-bill hidden" in name
     assert "STOP line added" not in name
@@ -149,7 +150,7 @@ def test_chips_use_plain_labels_in_the_decks_order_and_leave_out_the_booking_id(
     assert labels == ["Business name", "Job", "Day and time", "Address", "Calendar links", "Invite sentence",
                       "Customer's email", "Google Calendar link", "Outlook link", "iCal link", "Calendar links page"]
     assert all(text == f"[{label}]" for text, label in chips_for("booking_confirmation"))
-    assert [label for _, label in chips_for("help")] == ["Business name", "Contact number sentence"]
+    assert [label for _, label in chips_for("help")] == ["Business name", "Your HELP number"]  # m30
     assert chips_for("opt_out_suffix") == ()
     assert to_display("Booked {service} ref {event_id}") == "Booked [Job] ref [Booking reference]"
     assert to_template("Booked [Job] ref [Booking reference] [not a detail]") == "Booked {service} ref {event_id} [not a detail]"
@@ -193,7 +194,7 @@ def test_a_rejected_save_marks_the_message_and_keeps_what_was_typed(tmp_path, mo
     csrf = csrf_of(client.get("/client/messages").text)
     typed = "Call our business line any time"
     page = client.post("/client/messages", data={"csrf": csrf, "intro": typed, "prompt_name": "Your name?"}).text
-    assert "<title>Not saved · Messages · TextBack</title>" in page
+    assert "<title>Not saved · Messages · Oak &amp; Pine Tree Care · TextBack</title>" in page  # F9: page · business · TextBack
     assert ("Not saved. “First text after a missed call” needs a change: Take out “business line”. "
             "Customers stay in the text thread") in page
     assert "<a href=#w-intro data-error-link>Go to that text</a>" in page

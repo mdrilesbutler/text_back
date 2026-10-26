@@ -16,6 +16,7 @@ const COPY = {
   discarded: 'Changes discarded.', dismiss: 'Dismiss', unsaved: 'Unsaved changes',
   discard: 'Discard', save: 'Save', showChanged: 'Show what changed', textback: 'TextBack: ',
   restored: label => `Standard wording restored for ${label}.`,
+  ruleReset: label => `${label} is back to its default. Save to keep it.`,
   // = portal_messages.count_label / bill_label / fix_label (deck cost_line, cost_bill_*)
   count: (n, k, notice) => `${plural(k, 'text')} · ${n} characters${notice ? ' with the notice' : ''}`,
   bill: (k, symbol, plain) => `Billed as ${k} texts. ` + (symbol
@@ -24,7 +25,11 @@ const COPY = {
   fix: (symbol, plain) => `Replace ${symbol} with ${plain}`,
   whereName: 'Your business name', whereStop: 'Your opt-out line',
   billWhere: (k, where, symbol) => `Billed as ${k} texts. ${where} has a ${symbol}, which makes each text hold only 70 characters.`,
-  copied: 'Copied', copyCode: 'Copy',  // deck code_copy
+  billLinks: k => `Billed as ${k} texts. The calendar links make this text long. Customers still see one message.`,  // = BILL_LINKS
+  billOwn: (k, symbol) => `Billed as ${k} texts. The \u201c${symbol}\u201d symbol makes each text hold only 70 characters.`,
+  // = portal_messages.changed_words: a question switch is a setting.
+  settingOne: '1 setting changed', settingMany: n => `${n} settings changed`, mixed: n => `${n} changes`,
+  copied: 'Copied', copyCode: 'Copy', copyFailed: 'Select the code and copy it',  // deck code_copy
   mobileSame: 'This is the number that signs you in.', mobileChanged: n => `Save to text a code to ${n}.`,  // deck owner_mobile_status
 };
 
@@ -44,6 +49,19 @@ function el(tag, cls, text) {
   if (cls) node.className = cls;
   if (text != null) node.textContent = text;
   return node;
+}
+
+// = portal_messages.apply_fix: swap the symbol for the plain one; a dash with no space on a side gets one,
+// so "call—this" becomes "call - this", never "call-this" (m2).
+function plainSwap(text, symbol) {
+  const plain = PLAIN[symbol];
+  if (symbol !== '—' && symbol !== '–') return text.split(symbol).join(plain);
+  return [...text].map((ch, i, all) => {
+    if (ch !== symbol) return ch;
+    const before = i ? all[i - 1] : ' ';
+    const after = i + 1 < all.length ? all[i + 1] : ' ';
+    return `${/\s/.test(before) ? '' : ' '}-${/\s/.test(after) ? '' : ' '}`;
+  }).join('');
 }
 
 // Python's " ".join(text.split()).
@@ -119,20 +137,10 @@ function initMenu() {
 // ---------------------------------------------------------------- notices (in flow, never floating)
 // Every notice lives in the #notice slot between the header and the h1. The slot is role=status, so
 // writing into it is announced; a notice never carries a role of its own and never times out.
+// The Dismiss button sits beside the slot, outside the live region (F7), so it is never read as part of a notice.
 const slot = $('#notice');
-
-function dismissNotice(node) {
-  const hadFocus = node.contains(document.activeElement);
-  node.remove();
-  if (hadFocus) $('#main')?.focus();
-}
-
-function wireNotice(node) {
-  const close = $('[data-notice-dismiss]', node);
-  if (!close) return;
-  close.hidden = false;
-  close.addEventListener('click', () => dismissNotice(node));
-}
+const dismissButton = $('[data-notice-dismiss]');
+const syncDismiss = () => { if (dismissButton) dismissButton.hidden = !(slot && $('[data-notice]', slot)); };
 
 function notify(text, kind = 'success') {
   if (!slot) return;
@@ -140,23 +148,28 @@ function notify(text, kind = 'success') {
   node.dataset.notice = '';
   const body = el('div', 'notice__body');
   body.append(el('p', 'notice__text', text));
-  const close = el('button', 'icon-btn toast__action');
-  close.type = 'button';
-  close.dataset.noticeDismiss = '';
-  close.append(icon('x'), el('span', 'vh', COPY.dismiss));
-  node.append(icon(kind === 'success' ? 'circle-check' : 'info', 'notice__icon'), body, close);
+  node.append(icon(kind === 'success' ? 'circle-check' : 'info', 'notice__icon'), body);
   slot.replaceChildren(node);
-  wireNotice(node);
+  syncDismiss();
+}
+
+// Bring the notice slot into view (it sits under the header, above the h1), e.g. after Discard far down a page (m3).
+function showNotice() {
+  (slot?.parentElement || slot)?.scrollIntoView({ block: 'start', behavior: REDUCED.matches ? 'auto' : 'smooth' });
 }
 
 // A notice the server rendered is already in the live region when the page loads, so screen readers would
 // not announce it: take it out and put it back on the next frame.
 function initNotices() {
+  dismissButton?.addEventListener('click', () => {
+    slot?.replaceChildren();
+    syncDismiss();
+    $('#main')?.focus();
+  });
   for (const node of $$('[data-notice]', slot || document)) {
-    wireNotice(node);
     if (node.parentElement === slot) {
       node.remove();
-      requestAnimationFrame(() => slot.append(node));
+      requestAnimationFrame(() => { slot.append(node); syncDismiss(); });
     }
   }
 }
@@ -171,13 +184,37 @@ function initJump() {
   const links = $$('.jump__link, .jumpmenu__link');
   const steps = [...new Set(links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean))];
   menu?.addEventListener('click', e => { if (e.target.closest('.jumpmenu__link')) menu.open = false; });
-  if (!steps.length || !('IntersectionObserver' in window)) return;
-  const visible = {};
+  // Escape closes the open jump menu and gives focus back to its summary (F9).
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || !menu?.open) return;
+    menu.open = false;
+    $('summary', menu).focus();
+  });
+  // A jump moves focus to the step's heading (tabindex=-1), so the next Tab starts there (F5).
+  for (const a of links) a.addEventListener('click', () => {
+    const heading = $('h2', document.getElementById(a.getAttribute('href').slice(1)) || document.body);
+    if (heading) requestAnimationFrame(() => heading.focus({ preventScroll: true }));
+  });
+  if (!steps.length) return;
+  // The step on screen is the last one whose top has passed the line under the sticky chrome; at the very end of
+  // the page, the last step. Measured on scroll (one frame at a time) and again when scrolling ends (m23).
+  const topbar = $('[data-topbar]');
+  const current = () => {
+    const chrome = (topbar?.getBoundingClientRect().bottom || 0) + Math.max(
+      ...[menu, chipList?.parentElement].filter(Boolean).map(x => (getComputedStyle(x).position === 'sticky' ? x.offsetHeight : 0)), 0);
+    const line = chrome + 24;
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) {
+      return [...steps].reverse().find(s => s.getBoundingClientRect().top < innerHeight) || steps[0];
+    }
+    return [...steps].reverse().find(s => s.getBoundingClientRect().top <= line) || steps[0];
+  };
+  let frame = 0;
   const mark = () => {
-    const current = steps.find(s => visible[s.id]);
-    if (!current) return;
+    frame = 0;
+    const current_ = current();
+    if (!current_) return;
     for (const a of links) {
-      const on = a.getAttribute('href') === `#${current.id}`;
+      const on = a.getAttribute('href') === `#${current_.id}`;
       if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
       if (on && label && a.classList.contains('jumpmenu__link')) label.textContent = `${label.dataset.lead} ${a.textContent}`;
       if (on && chipList && a.classList.contains('jump__link')) {
@@ -186,11 +223,10 @@ function initJump() {
       }
     }
   };
-  const io = new IntersectionObserver(entries => {
-    for (const e of entries) visible[e.target.id] = e.isIntersecting;
-    mark();
-  }, { rootMargin: '-120px 0px -55% 0px' });
-  for (const s of steps) io.observe(s);
+  addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(mark); }, { passive: true });
+  addEventListener('scrollend', mark);
+  addEventListener('resize', () => { if (!frame) frame = requestAnimationFrame(mark); });
+  mark();
 }
 
 // ---------------------------------------------------------------- unsaved changes (one form at a time)
@@ -244,23 +280,39 @@ function initChangeTracking() {
       }
       update();
       notify(COPY.discarded);
-      $('#main')?.focus();
+      $('#main')?.focus({ preventScroll: true });
+      showNotice();  // the notice sits under the header: bring it into view wherever Discard was pressed (m3)
     }
     const discardButton = savebar && $('[data-savebar-discard]', savebar);
     discardButton?.addEventListener('click', e => { e.preventDefault(); discard(); });
 
+    // A control marked data-change-kind=setting (a Messages question switch) counts as a setting of its own,
+    // named by its own data-change-label; everything else groups under its [data-change-label] holder (m29).
+    let settingCount = 0;
     const changes = () => {
       const groups = new Map();
+      settingCount = 0;
       for (const el of controls()) {
         if (!baseline.has(el) || fieldValue(el) === baseline.get(el)) continue;
+        if (el.dataset.changeKind === 'setting') {
+          const card = el.closest('[id]');
+          groups.set(el, [card ? `#${card.id}` : '', el.dataset.changeLabel]);
+          settingCount += 1;
+          continue;
+        }
         const holder = el.closest('[data-change-label]');
         const key = holder || el.name;
         if (!groups.has(key)) groups.set(key, holder ? [holder.id ? `#${holder.id}` : '', holder.dataset.changeLabel] : null);
       }
       return [...groups.values()];
     };
-    const countText = n => (n === 1 && form.dataset.changedOne) ? form.dataset.changedOne
-      : (form.dataset.changedMany ? form.dataset.changedMany.replace('{n}', String(n)) : COPY.unsaved);
+    const countText = n => {
+      const texts = n - settingCount;
+      if (settingCount && texts) return COPY.mixed(n);
+      if (settingCount) return settingCount === 1 ? COPY.settingOne : COPY.settingMany(settingCount);
+      return (n === 1 && form.dataset.changedOne) ? form.dataset.changedOne
+        : (form.dataset.changedMany ? form.dataset.changedMany.replace('{n}', String(n)) : COPY.unsaved);
+    };
 
     function drawBar(list) {
       if (!bar) {
@@ -501,7 +553,7 @@ function initCards(form) {
   const byKey = Object.fromEntries(cards.map(card => [card.dataset.card, card]));
   const suffix = byKey.opt_out_suffix;
 
-  function render(card) {
+  function render(card, typed = false) {
     const key = card.dataset.card;
     const t = tpl(card);
     const body = norm(fill(t));
@@ -520,11 +572,14 @@ function initCards(form) {
       .map(([where, text]) => [where, firstSymbol(text)]).find(([, sym]) => sym);
     const bill = $('[data-bill]', card);
     bill.hidden = k < 2;
-    $('[data-bill-text]', bill).textContent = k < 2 ? '' : (elsewhere ? COPY.billWhere(k, ...elsewhere)
-      : COPY.bill(k, own || (plain ? '' : firstSymbol(preview)), PLAIN[own || firstSymbol(preview)]));
+    // = bill_info: the confirmation's length comes from its links, so it gets the honest note and never a fix (m32).
+    const confirmation = key === 'booking_confirmation';
+    $('[data-bill-text]', bill).textContent = k < 2 ? '' : confirmation ? (own ? COPY.billOwn(k, own) : COPY.billLinks(k))
+      : (elsewhere ? COPY.billWhere(k, ...elsewhere)
+        : COPY.bill(k, own || (plain ? '' : firstSymbol(preview)), PLAIN[own || firstSymbol(preview)]));
     const fix = $('[data-fix]', bill);
     if (fix) {
-      fix.hidden = k < 2 || !PLAIN[own];
+      fix.hidden = k < 2 || !PLAIN[own] || confirmation;
       $('[data-fix-label]', fix).textContent = PLAIN[own] ? COPY.fix(own, PLAIN[own]) : '';
       fix.dataset.symbol = PLAIN[own] ? own : '';
     }
@@ -544,15 +599,20 @@ function initCards(form) {
     limit.hidden = ta.value.length < 420;
     $('[data-limit-n]', limit).textContent = String(ta.value.length);
     grow(ta);
+    // Screen readers hear the cost only when the number of texts changes, a second after typing stops (F3).
+    if (typed && card.dataset.texts && card.dataset.texts !== String(k)) announce(COPY.count(n, k, notice), { channel: 'count', debounce: 1000 });
+    card.dataset.texts = String(k);
   }
-  const renderWithDependants = card => {
-    render(card);
+  const renderWithDependants = (card, typed = false) => {
+    render(card, typed);
     if (card === suffix) for (const other of cards) if (other.dataset.optout === '1') render(other);
   };
 
   for (const chips of $$('[data-chips]', form)) chips.hidden = false;
+  // Each card's number of texts as the server drew it, so the first keystroke is compared with something (F3).
+  for (const card of cards) card.dataset.texts = String(parseInt($('[data-count]', card)?.textContent || '', 10) || '');
   form.addEventListener('input', e => {
-    if (e.target.tagName === 'TEXTAREA') renderWithDependants(e.target.closest('article[data-card]'));
+    if (e.target.tagName === 'TEXTAREA') renderWithDependants(e.target.closest('article[data-card]'), true);
   });
   form.addEventListener('change', e => {
     const sw = e.target.closest('.switch');
@@ -571,7 +631,7 @@ function initCards(form) {
       const ta = area(card);
       const symbol = fix.dataset.symbol;
       if (!symbol || !PLAIN[symbol]) return;
-      ta.value = (ta.value || card.dataset.default).split(symbol).join(PLAIN[symbol]);
+      ta.value = plainSwap(ta.value || card.dataset.default, symbol);
       ta.dispatchEvent(new Event('input', { bubbles: true }));
       const details = ta.closest('details');
       if (details && !details.open) details.open = true;
@@ -594,8 +654,13 @@ function initCards(form) {
     if (chip) {
       const ta = area(chip.closest('article[data-card]'));
       ta.focus();
-      if (!document.execCommand('insertText', false, chip.dataset.insert)) {
-        ta.setRangeText(chip.dataset.insert, ta.selectionStart, ta.selectionEnd, 'end');
+      // A space goes in where the insert would touch a word, so "[Business name]What" can't happen (m1).
+      const before = ta.value.slice(0, ta.selectionStart).slice(-1);
+      const after = ta.value.slice(ta.selectionEnd, ta.selectionEnd + 1);
+      const text = (before && !/[\s(\[“"']/.test(before) ? ' ' : '') + chip.dataset.insert
+        + (after && !/[\s.,!?;:)\]”"']/.test(after) ? ' ' : '');
+      if (!document.execCommand('insertText', false, text)) {
+        ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, 'end');
         ta.dispatchEvent(new Event('input', { bubbles: true }));
       }
       return;
@@ -711,8 +776,48 @@ function initSchedule() {
       open.dispatchEvent(new Event('change', { bubbles: true }));
       close.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    $('#hours h2')?.focus();
+    $('#working-hours h2')?.focus();
   });
+}
+
+// ---------------------------------------------------------------- Schedule: Reset stays local until Save (m11)
+// Each Reset carries the control values it puts back (data-reset-values). With JavaScript it sets them in place,
+// like Messages, and the change waits for Save (Discard undoes it); a rule already at its default hides its Reset.
+function initScheduleReset() {
+  const form = $('#schedule-form');
+  if (!form) return;
+  const buttons = $$('[data-reset-values]', form);
+  const targets = new Map(buttons.map(b => { try { return [b, JSON.parse(b.dataset.resetValues)]; } catch { return [b, null]; } }));
+  const controlsFor = name => [...form.elements].filter(c => c.name === name);
+  const matches = (name, want) => controlsFor(name).every(c => {
+    if (c.type === 'radio') return c.checked === (c.value === String(want));
+    if (c.type === 'checkbox') return c.checked === Boolean(want);
+    return c.value === String(want);
+  });
+  const sync = () => {
+    for (const [button, values] of targets) if (values) button.hidden = Object.entries(values).every(([name, want]) => matches(name, want));
+  };
+  form.addEventListener('click', e => {
+    const button = e.target.closest('[data-reset-values]');
+    const values = button && targets.get(button);
+    if (!values) return;
+    e.preventDefault();
+    for (const [name, want] of Object.entries(values)) {
+      for (const c of controlsFor(name)) {
+        if (c.type === 'radio') c.checked = c.value === String(want);
+        else if (c.type === 'checkbox') c.checked = Boolean(want);
+        else c.value = String(want);
+        c.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+    sync();
+    announce(COPY.ruleReset($('.vh', button)?.textContent.trim() || ''));
+    const field = button.closest('.field, .card')?.querySelector('input:not([type=hidden]), select');
+    field?.focus({ preventScroll: true });
+  });
+  form.addEventListener('input', sync);
+  form.addEventListener('change', sync);
+  sync();
 }
 
 // ---------------------------------------------------------------- business name preview
@@ -731,15 +836,43 @@ function initNamePreview() {
 
 // ---------------------------------------------------------------- Phone: copy a code, the mobile status line
 const COPIED_MS = 2000;
+// Copy works on plain http and older browsers too (M3): the async clipboard when it is there, otherwise the code
+// text is selected and copied with execCommand; if both fail the code stays selected and the label says so.
+async function copyText(text, node) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch { /* fall through */ }
+  const range = document.createRange();
+  range.selectNodeContents(node);
+  const selection = getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { ok = false; }
+  if (ok) selection.removeAllRanges();
+  return ok;
+}
+
 function initPhone() {
   for (const button of $$('[data-copy]')) {
-    button.hidden = !navigator.clipboard;
+    button.hidden = false;
     button.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(button.dataset.copy); } catch { return; }
+      const code = button.closest('.code')?.querySelector('.code__val') || button;
+      const ok = await copyText(button.dataset.copy, code);
       const label = $('[data-copy-label]', button);
-      label.textContent = COPY.copied;
-      announce(COPY.copied);
+      label.textContent = ok ? COPY.copied : COPY.copyFailed;
+      announce(ok ? COPY.copied : COPY.copyFailed);
       setTimeout(() => { label.textContent = COPY.copyCode; }, COPIED_MS);
+    });
+  }
+  // The business name's billing line follows the name as it is typed (M7).
+  const nameInput = $('#business_name');
+  const nameLine = $('[data-name-symbol]');
+  if (nameInput && nameLine) {
+    nameInput.addEventListener('input', () => {
+      const symbol = [...nameInput.value].find(ch => !GSM.has(ch)) || '';
+      nameLine.hidden = !symbol;
+      $('[data-name-symbol-text]', nameLine).textContent = symbol ? nameLine.dataset.template.replace('{symbol}', symbol) : '';
     });
   }
   const mobile = $('#owner_mobile');
@@ -756,6 +889,49 @@ function initPhone() {
   });
 }
 
+// ---------------------------------------------------------------- Account: the sign-out-everywhere confirm (m6)
+// Opening it brings the question and its button fully into view, clear of the bottom bar (scroll-margin in CSS).
+function initConfirmInline() {
+  for (const details of $$('details.confirm-inline')) {
+    details.addEventListener('toggle', () => {
+      // Next frame: the page's extra bottom room for the open question (CSS :has) is laid out by then.
+      if (details.open) requestAnimationFrame(() => $('.confirm-inline__panel', details)?.scrollIntoView({ block: 'nearest', behavior: REDUCED.matches ? 'auto' : 'smooth' }));
+    });
+  }
+}
+
+// ---------------------------------------------------------------- on-screen keyboard (m25)
+// While a text field has focus and the visual viewport is short (the keyboard is up), the bottom bar hides so the
+// field and the header save bar keep the room.
+function initKeyboard() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const typing = () => document.activeElement?.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=submit]), textarea, select');
+  const sync = () => root.classList.toggle('kb-open', vv.height < 500 && Boolean(typing()));
+  vv.addEventListener('resize', sync);
+  document.addEventListener('focusin', sync);
+  document.addEventListener('focusout', () => requestAnimationFrame(sync));
+}
+
+// ---------------------------------------------------------------- header height (F2)
+// At large text sizes the header wraps to two lines; the sticky jump control and scroll-padding read
+// --header-h, so it follows the header's real height (the menu open on a phone adds its panel, as before).
+function initHeaderHeight() {
+  const bar = $('[data-topbar]');
+  if (!bar || !('ResizeObserver' in window)) return;
+  new ResizeObserver(() => {
+    if (bar.querySelector('.menu[open]')) return;  // the open menu pushes the page; the chrome under it stays put
+    root.style.setProperty('--header-h', `${bar.getBoundingClientRect().height}px`);
+  }).observe(bar);
+}
+
+// ---------------------------------------------------------------- Calendar: land on the free times (F6)
+function initAvailability() {
+  if (location.hash !== '#availability') return;
+  const heading = $('#avail-title');
+  if (heading) requestAnimationFrame(() => heading.focus({ preventScroll: false }));
+}
+
 // ---------------------------------------------------------------- calendar picker (enabled without JS)
 function initPicker(form = $('[data-picker]'), save = form && $('[data-picker-save]', form)) {  // waits for a change
   const sync = () => { const on = $('input:checked', form); save.setAttribute('aria-disabled', String(!on || on.defaultChecked)); };
@@ -765,7 +941,8 @@ function initPicker(form = $('[data-picker]'), save = form && $('[data-picker-sa
 // ---------------------------------------------------------------- start
 const messagesForm = $('#messages-form');
 initCards(messagesForm);  // before the tracker, so a restored draft is drawn before it is counted
-for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initSchedule, initChangeTracking, initForms, initTel, initOtp, initPicker]) init();
+for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initSchedule, initScheduleReset, initChangeTracking,
+  initForms, initTel, initOtp, initPicker, initConfirmInline, initKeyboard, initAvailability, initHeaderHeight]) init();
 initRail(messagesForm);
 initErrorFocus();
 initNamePreview();

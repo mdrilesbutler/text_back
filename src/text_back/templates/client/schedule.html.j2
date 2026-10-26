@@ -7,8 +7,10 @@
 {% extends "client/base.html.j2" %}
 {% from "client/_macros.html.j2" import icon, csrf_input, field_error, node %}
 {% from "client/_form_errors.html.j2" import field_summary %}
+{#- Reset: with JavaScript it puts the rule back in place and waits for Save (m11); without it the button posts
+    the whole form and saves, and says so. Hidden while the rule is at its default. -#}
 {% macro rule_foot(group, default) -%}
-<div class=rule-foot><p class=default>Default: {{ default }}</p><button type=submit class="btn btn--ghost" name=reset value={{ group }}>Reset<span class=vh> {{ labels[group] }}</span></button></div>
+<div class=rule-foot><p class=default>Default: {{ default|nw }}</p><button type=submit class="btn btn--ghost rule-foot__reset" name=reset value={{ group }} data-reset-values="{{ reset_values[group]|tojson|forceescape }}"{% if at_default[group] %} hidden{% endif %}><span class=msg__reset-js>Reset</span><span class=msg__reset-nojs>Reset and save</span><span class=vh> {{ labels[group] }}</span></button></div>
 {%- endmacro %}
 {% macro err(key) -%}{% if errors.get(key) %}{{ field_error(key ~ "-error", errors[key]) }}{% endif %}{%- endmacro %}
 {% macro opts(options, current) -%}{% for value, label in options %}<option value="{{ value }}"{% if value == current %} selected{% endif %}>{{ label }}</option>{% endfor %}{%- endmacro %}
@@ -24,7 +26,7 @@
   <p class=lead>The timing rules the assistant follows when it books. Reset puts a rule back to its default.</p>
 </div>
 {% if summary %}{{ field_summary(summary) }}{% endif %}
-<form method=post action=/client/schedule id=schedule-form data-track-changes data-topsave data-changed-one="1 rule changed" data-changed-many="{n} rules changed" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
+<form method=post action=/client/schedule id=schedule-form novalidate data-track-changes data-topsave data-changed-one="1 rule changed" data-changed-many="{n} rules changed" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
   {{ csrf_input(csrf) }}
   <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
   <input type=hidden name=quiet_switch value=1>
@@ -57,7 +59,7 @@
       {{ rule_foot("timezone", defaults.timezone) }}
     </div>
   {% endcall %}
-  {% call node("icon", "sun", attrs="id=hours") %}
+  {% call node("icon", "sun", attrs="id=working-hours") %}
     <div class=node__head><h2 tabindex=-1>Working hours</h2><p class=node__blurb>When the assistant may book a job.</p></div>
     <div class="card card--form hours-card" data-change-label="Working hours" id=rule-hours>
       {% if hours_warning %}<p class="notice notice--warning" data-hours-corrupt>{{ hours_warning }}</p>{% endif %}
@@ -75,8 +77,8 @@
         {{ icon("triangle-alert", "notice__icon") }}
         <div class=notice__body>
           <p class=notice__text>{{ any_time_warning_text }}</p>
-          <div class=actions><button type=submit class="btn btn--secondary" name=suggest_hours value=1 data-suggest-hours>{{ any_time_button }}</button></div>
-          <p class=field-help>{{ any_time_note }}</p>
+          <div class=actions><button type=submit class="btn btn--secondary" name=suggest_hours value=1 formaction="/client/schedule#working-hours" data-suggest-hours>{{ any_time_button|nw }}</button></div>
+          <p class=field-help>{{ any_time_note|nw }}</p>
         </div>
       </div>
       {{ err("hours") }}
@@ -102,8 +104,9 @@
     <div class=node__head><h2 tabindex=-1>Quiet hours</h2><p class=node__blurb>{{ consequences.quiet_hours }}</p></div>
     <div class="card card--form quiet-card" data-change-label="Quiet hours" id=rule-quiet>
       <label class=switch-row for=quiet_on><span class=switch-row__text>Quiet hours</span><input type=checkbox role=switch class=switch id=quiet_on name=quiet_on value=1{% if quiet_on %} checked{% endif %}></label>
-      {% set qs = values.quiet_hours_start if quiet_on else (raw_defaults.quiet_hours_start if raw_defaults.no_quiet_hours != "1" else "21:00") %}
-      {% set qe = values.quiet_hours_end if quiet_on else (raw_defaults.quiet_hours_end if raw_defaults.no_quiet_hours != "1" else "08:00") %}
+      {#- Switched off, the selects (hidden, still posted) hold the last custom times, so On brings them back. #}
+      {% set qs = values.quiet_hours_start if quiet_on else values.quiet_last_start %}
+      {% set qe = values.quiet_hours_end if quiet_on else values.quiet_last_end %}
       <fieldset class="field quiet-times">
         <legend class=field__label>Hold reminders between</legend>
         <div class=quiet>

@@ -22,12 +22,20 @@ SNIPPET_MAX = 160  # one plain text; Home shows the last text whole, wrapping, n
 
 # Caller status words, first match wins (copy deck home_caller_status).
 STATUS_STOPPED = "Asked us to stop"
-STATUS_STEPPED_BACK = "Assistant stepped back"
+STATUS_STEPPED_BACK = "Wants to talk to you"  # m30: plain words for the owner
 STATUS_BOOKED = "Booked"
 STATUS_BOOKED_TEST = "Booked on test calendar"
 STATUS_NO_REPLY = "No reply"
 STATUS_WAITING = "Waiting for a reply"
 STATUS_TEXTING = "Texting"
+
+# The Calendar card while connecting isn't set up for the account (P3): not a step left for the owner.
+WAITING_FLUXWORKS = "Waiting on FluxWorks"
+CALENDAR_BY_FLUXWORKS = "FluxWorks connects your calendar for you."
+SUPPORT_LABEL = "Text FluxWorks support"
+HEADLINE_WAITING_PHONE = "Set up on your side. Waiting on the phone companies to approve texting."
+HEADLINE_WAITING_FLUXWORKS = "Set up on your side. Waiting on FluxWorks to connect your calendar."
+HEADLINE_WAITING_BOTH = "Set up on your side. Waiting on FluxWorks and the phone companies."
 
 
 def week_start(tz_name: str, now: datetime) -> datetime:
@@ -65,6 +73,11 @@ def setup_items(state, now: datetime) -> list[dict]:
         items.append(dict(key="calendar", title="Calendar", state_word="Needs you",
                           detail="Google disconnected the calendar. Bookings are paused until you reconnect.",
                           action_label="Reconnect", action_href="/client/calendar"))
+    elif status == "none" and not view.get("can_connect"):
+        # Nothing the owner can do here: connecting isn't set up for the account, so it waits on FluxWorks (P3).
+        support = str(getattr(state, "support_contact", "") or "").strip()
+        items.append(dict(key="calendar", title="Calendar", state_word=WAITING_FLUXWORKS, detail=CALENDAR_BY_FLUXWORKS,
+                          action_label=SUPPORT_LABEL if support else None, action_href=f"sms:{support}" if support else None))
     else:
         items.append(dict(key="calendar", title="Calendar", state_word="Needs you",
                           detail=("No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see."
@@ -81,7 +94,7 @@ def setup_items(state, now: datetime) -> list[dict]:
     else:
         items.append(dict(key="forwarding", title="Call forwarding", state_word="Needs you",
                           detail=f"{checks['done_count']} of {checks['total']} checks done.",
-                          action_label="Finish forwarding", action_href="/client/phone"))
+                          action_label="Finish forwarding", action_href="/client/phone#checks"))  # m22: at the checks
     approval = approval_words(texting_approval(state, now))
     items.append(dict(key="approval", title="Texting approval", state_word=approval["state_word"],
                       detail=approval["detail"], action_label=None, action_href=None))
@@ -102,12 +115,11 @@ def node_kind(state_word: str) -> str:
     return {"Done": NODE_DONE, "Needs you": NODE_NEEDS}.get(state_word, NODE_WAITING)
 
 
-def headline_example(items: list[dict]) -> bool:
-    """True when the first line's count rests on a setup card the preview harness flagged as example data:
-    the "Needs you" cards when any, otherwise the cards that are not Done, otherwise all of them."""
-    needs = [i for i in items if i["state_word"] == "Needs you"]
-    counted = needs or [i for i in items if i["state_word"] != "Done"] or items
-    return any(i.get("example") for i in counted)
+def counted(items: list[dict]) -> list[dict]:
+    """The cards the first line reads: never the ones the preview harness flagged as example data (P2), so the
+    line needs no Example tag. All of them when every card is an example."""
+    real = [i for i in items if not i.get("example")]
+    return real or items
 
 
 def headline_kind(items: list[dict]) -> str:
@@ -128,8 +140,15 @@ def headline(items: list[dict]) -> str:
     if needs_you:
         n = len(needs_you)
         return f"Not working yet: {n} step{'s' if n != 1 else ''} left."
-    if any(i["state_word"] != "Done" for i in items):
-        return "Set up on your side. Waiting on the phone companies to approve texting."
+    waiting = [i for i in items if i["state_word"] != "Done"]
+    on_fluxworks = any(i["state_word"] == WAITING_FLUXWORKS for i in waiting)
+    on_phone = any(i["state_word"] != WAITING_FLUXWORKS for i in waiting)
+    if on_fluxworks and on_phone:
+        return HEADLINE_WAITING_BOTH
+    if on_fluxworks:
+        return HEADLINE_WAITING_FLUXWORKS
+    if on_phone:
+        return HEADLINE_WAITING_PHONE
     return "Working: missed calls get a text within a minute."
 
 
@@ -222,6 +241,7 @@ def this_week(state, now: datetime) -> dict:
             name_row = store.conn.execute("SELECT value FROM conversation_fields WHERE phone=? AND field='name'", (phone,)).fetchone()
         name = (name_row[0] if name_row else "").strip()
         rows.append({"phone": phone, "name": name, "display": name or format_contact_number(phone),
+                     "phone_display": format_contact_number(phone),
                      "status": caller_status(store, phone, test_calendar=test_calendar),
                      "example": phone in examples, "last_at": entry["last_at"],
                      "last_label": when(entry["last_at"], tz_name, now, relative=False), "snippet": entry["snippet"]})

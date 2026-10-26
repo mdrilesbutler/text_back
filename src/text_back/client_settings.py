@@ -26,9 +26,12 @@ from text_back.client_portal import (
     CODE_FAILURE,
     _now,
     check_csrf,
+    page_notice,
     require_session,
+    saved_redirect,
     shell,
 )
+from text_back.portal_flash import clear as clear_flash
 from text_back.portal_render import render
 
 CONNECT_LINK_TTL = timedelta(minutes=15)
@@ -197,10 +200,10 @@ def _home_page(request: Request, state, session):
     for item in items:
         item["node"] = portal_status.node_kind(item["state_word"])
         item.setdefault("example", False)
+    first_line = portal_status.counted(items)  # never the harness-flagged example cards (P2)
     return render(request, "client/home.html.j2", **shell(state, session, title="Home", nav="home"),
-                  headline=portal_status.headline(items), headline_node=portal_status.headline_kind(items),
-                  headline_example=portal_status.headline_example(items),
-                  setup=items, week=portal_status.this_week(state, now))
+                  headline=portal_status.headline(first_line), headline_node=portal_status.headline_kind(first_line),
+                  setup=items, week=portal_status.this_week(state, now), stepped_back=portal_status.STATUS_STEPPED_BACK)
 
 
 def portal_messages_discarded() -> str:
@@ -235,14 +238,21 @@ def _save_schedule(request: Request, state, session, form):
 
     if str(form.get("discard", "") or "") == "1":
         # Discard without JavaScript: back to what is saved; nothing is written.
-        return _schedule_page(request, state, session, notice=portal_messages_discarded())
-    # The length chips are radios beside a number field. Without JavaScript they can disagree: a number
-    # the owner changed (it differs from the one the page showed) wins; otherwise the chip does, and
-    # "Custom" (or no chip) means the number.
+        return saved_redirect(state, session, "/client/schedule", "discarded")
+    # The length chips are radios beside a number field. Without JavaScript they can disagree (m36): whichever
+    # the owner touched wins (a tapped chip over an untouched number, a typed number over an untouched chip);
+    # "Custom" means the number; both touched and saying different things is refused with "pick one".
     form = {key: form.get(key) for key in form.keys()}
+    duration_conflict = False
     typed, shown = str(form.get("appointment_duration_custom") or "").strip(), str(form.get("appointment_duration_shown") or "")
-    if shown and typed and typed != shown:
-        form["appointment_duration_minutes"] = "custom"
+    chip = str(form.get("appointment_duration_minutes") or "custom")
+    if shown:
+        chip_shown = shown if any(str(v) == shown for v in portal_scheduling.DURATION_PRESETS) else "custom"
+        chip_moved, number_moved = chip != chip_shown, bool(typed) and typed != shown
+        if number_moved and (not chip_moved or chip == "custom"):
+            form["appointment_duration_minutes"] = "custom"
+        elif number_moved and chip != typed:
+            duration_conflict = True
     # The quiet-hours switch (on = quiet hours apply) stands for the old "No quiet hours" box.
     if str(form.get("quiet_switch") or "") == "1":
         form["no_quiet_hours"] = "" if form.get("quiet_on") else "1"
@@ -262,14 +272,18 @@ def _save_schedule(request: Request, state, session, form):
         values.pop("_settings", None)
         return _schedule_page(request, state, session, values=values, unsaved=True)
     values, errors = portal_scheduling.parse_form(form, state)
+    if duration_conflict:
+        values["appointment_duration_minutes"] = typed
+        errors = {"appointment_duration_minutes": portal_scheduling.ERR_DURATION_BOTH, **errors}
     if errors:
+        values.pop("_settings", None)
         return _schedule_page(request, state, session, values=values, errors=errors)
     before = portal_scheduling.current_values(state)
     problem = portal_scheduling.save(state, values["_settings"], _now(state))
     if problem:
         return _schedule_page(request, state, session, values=values, errors={"followup_delay_1": problem})
-    return _schedule_page(request, state, session,
-                          notice=portal_scheduling.saved_notice(before, portal_scheduling.current_values(state)))
+    rules = portal_scheduling.changed_rule_keys(before, portal_scheduling.current_values(state))
+    return saved_redirect(state, session, "/client/schedule", "schedule_saved", {"rules": rules})
 
 
 def _calendar_page(request: Request, state, session, *, result=None, notice: str = "", error: str = "",
@@ -326,7 +340,10 @@ def _phone_page(request: Request, state, session, *, values=None, errors=None, n
         dirty = {"changed": f"Not saved · {count}", "names": names}
         page["topsave"] = {"form": "phone-form", "changed": dirty["changed"], "save": "Save", "names": names}
     body, suffix = portal_messages.preview_parts("intro", templates, sample)
-    return render(request, "client/phone.html.j2", **page,
+    # The plain text alphabet, for the live symbol line under the business name (M7); the same data as Messages.
+    page["tb_data"] = {"gsm": portal_messages.GSM_BASIC, "ext": portal_messages.GSM_EXTENDED}
+    return render(request, "client/phone.html.j2", **page, name_symbol=portal_phone.name_symbol_line(preview_name),
+                  name_symbol_template=portal_phone.NAME_SYMBOL,
                   **context, display=display, page_error=page_error, rename_offer=rename, dirty=dirty,
                   title_text=portal_phone.TITLE, values_saved_mobile=format_contact_number(getattr(state, "owner_mobile", "") or ""),
                   name_preview=body, name_suffix=suffix,
@@ -360,7 +377,7 @@ def _save_phone(request: Request, state, session, form):
     now = _now(state)
     if str(form.get("discard", "") or "") == "1":
         # Discard without JavaScript (after a rejected save): back to what is saved; nothing is written.
-        return _phone_page(request, state, session, notice=portal_messages.DISCARDED)
+        return saved_redirect(state, session, "/client/phone", "discarded")
     submitted = portal_phone.read_form(form)  # the texting number is not a field: a posted one is ignored
     values, errors = portal_phone.validate(submitted, state)
     # The manual checks post with the page's one Save (the form carries them as check_<key>).
@@ -380,9 +397,11 @@ def _save_phone(request: Request, state, session, form):
     after = dict(portal_phone.current_values(state), owner_mobile=values["owner_mobile"])
     ticks_after = {k: bool(v) for k, v in portal_forwarding.manual_ticks(state.store).items()}
     if pending:
-        return _confirm_page(request, state, session, notice=portal_phone.SAVED_CONFIRM_MOBILE)
-    notice = portal_phone.saved_notice(portal_phone.changed_labels(before, after, ticks_before, ticks_after))
-    return _phone_page(request, state, session, notice=notice)
+        # The confirm step answers GET /client/phone while a new mobile waits for its code (m34).
+        return saved_redirect(state, session, "/client/phone", "mobile_code_sent")
+    fields, checks = portal_phone.changed_keys(before, after, ticks_before, ticks_after)
+    reset = "business_line" in fields and bool(before.get("business_line"))
+    return saved_redirect(state, session, "/client/phone", "phone_saved", {"fields": fields, "checks": checks, "reset": reset})
 
 
 def _rename_texts(request: Request, state, session, form):
@@ -392,8 +411,11 @@ def _rename_texts(request: Request, state, session, form):
     now = _now(state)
     old_name = state.store.setting(RENAME_FROM_KEY) or ""
     if str(form.get("action", "") or "") != "update" or not old_name:
+        kept = len(portal_phone.texts_with_old_name(_saved_overrides(state), old_name)) if old_name else 0
         state.store.set_setting(RENAME_FROM_KEY, None, now=now)
-        return _phone_page(request, state, session)
+        if kept:  # "Leave them" says what it did (m17)
+            return saved_redirect(state, session, "/client/phone", "texts_kept", {"n": kept})
+        return RedirectResponse("/client/phone", status_code=303)
     with MESSAGE_FILE_LOCK:  # same lock as Messages saves: read, write, re-read as a unit
         overrides = _saved_overrides(state)
         keys = portal_phone.texts_with_old_name(overrides, old_name)
@@ -405,9 +427,9 @@ def _rename_texts(request: Request, state, session, form):
             state.messages.current()  # pick up the new file right away
     if not keys or state.messages.path is None:
         state.store.set_setting(RENAME_FROM_KEY, None, now=now)
-        return _phone_page(request, state, session)
+        return RedirectResponse("/client/phone", status_code=303)
     state.store.set_setting(RENAME_FROM_KEY, None, now=now)
-    return _phone_page(request, state, session, notice=portal_phone.rename_done_text(len(keys)))
+    return saved_redirect(state, session, "/client/phone", "renamed", {"n": len(keys)})
 
 
 def _confirm_mobile(request: Request, state, session, form):
@@ -415,29 +437,28 @@ def _confirm_mobile(request: Request, state, session, form):
 
     now = _now(state)
     if not portal_phone.pending_mobile(state):
-        return _phone_page(request, state, session)
+        return RedirectResponse("/client/phone", status_code=303)
     if str(form.get("action", "") or "") == "resend":
         portal_phone.resend_mobile_code(state, now)
-        return _confirm_page(request, state, session)
+        return RedirectResponse("/client/phone", status_code=303)  # a reload never texts another code
     confirmed = portal_phone.confirm_new_mobile(state, str(form.get("code", "") or ""), now)
     if not confirmed:
         return _confirm_page(request, state, session, error=CODE_FAILURE)
-    from text_back.policy import format_contact_number
-    return _phone_page(request, state, session, notice=portal_phone.NEW_MOBILE_SAVED.format(n=format_contact_number(confirmed)))
+    return saved_redirect(state, session, "/client/phone", "mobile_confirmed")
 
 
 def _keep_mobile(request: Request, state, session, form):
     from text_back import portal_phone
 
     portal_phone.keep_current_mobile(state, _now(state))
-    return _phone_page(request, state, session, notice=portal_phone.KEPT)
+    return saved_redirect(state, session, "/client/phone", "mobile_kept")
 
 
 def _save_checks(request: Request, state, session, form):
     from text_back import portal_phone
 
     portal_phone.save_checklist(state, form, _now(state))
-    return _phone_page(request, state, session, notice=portal_phone.CHECKS_SAVED)
+    return saved_redirect(state, session, "/client/phone", "checks_saved", anchor="checks")
 
 
 # --- routes --------------------------------------------------------------------
@@ -467,7 +488,8 @@ def install_routes(app):
     @app.get("/client/schedule", include_in_schema=False)
     def schedule_page(request: Request):
         session = require_session(state, request)
-        return _schedule_page(request, state, session)
+        return clear_flash(request, _schedule_page(request, state, session,
+                                                   notice=page_notice(state, request, session, "/client/schedule")))
 
     @app.post("/client/schedule", include_in_schema=False)
     async def schedule_save(request: Request):
@@ -477,7 +499,8 @@ def install_routes(app):
     @app.get("/client/calendar", include_in_schema=False)
     def calendar_page(request: Request, error: str = ""):
         session = require_session(state, request)
-        return _calendar_page(request, state, session, error=CALENDAR_ERRORS.get(error, ""))
+        return clear_flash(request, _calendar_page(request, state, session, error=CALENDAR_ERRORS.get(error, ""),
+                                                   notice=page_notice(state, request, session, "/client/calendar")))
 
     @app.post("/client/calendar", include_in_schema=False)
     def calendar_action(request: Request, csrf: str = Form(""), action: str = Form(""), calendar_id: str = Form("")):
@@ -499,8 +522,7 @@ def install_routes(app):
         if calendar_status(state)["status"] != "ready" or calendar_id not in choices:
             return _calendar_page(request, state, session, picker_error=portal_calendar.PICKER_ERROR)
         use_calendar(state, calendar_id, now)
-        name = choices[calendar_id].get("summary") or calendar_id
-        return _calendar_page(request, state, session, notice=portal_calendar.TOAST_PICKED.format(name=name))
+        return saved_redirect(state, session, "/client/calendar", "calendar_picked", {"id": calendar_id})
 
     # --- Phone ---------------------------------------------------------------------
 
@@ -509,9 +531,10 @@ def install_routes(app):
         from text_back import portal_phone
 
         session = require_session(state, request)
+        notice = page_notice(state, request, session, "/client/phone")
         if portal_phone.pending_mobile(state):
-            return _confirm_page(request, state, session)
-        return _phone_page(request, state, session)
+            return clear_flash(request, _confirm_page(request, state, session, notice=notice))
+        return clear_flash(request, _phone_page(request, state, session, notice=notice))
 
     @app.post("/client/phone", include_in_schema=False)
     async def phone_save(request: Request):

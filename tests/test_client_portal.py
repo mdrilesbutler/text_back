@@ -122,7 +122,7 @@ def test_logout_ends_the_session_and_sessions_expire(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     csrf = csrf_of(client.get("/client/messages").text)
-    assert client.post("/client/logout", data={"csrf": csrf}, follow_redirects=False).headers["location"] == "/client/login"
+    assert client.post("/client/logout", data={"csrf": csrf}, follow_redirects=False).headers["location"] == "/client/login?notice=signedout"
     assert client.get("/client/messages", follow_redirects=False).headers["location"] == "/client/login"
     sign_in(client, telecom)
     clock[0] += timedelta(hours=13)

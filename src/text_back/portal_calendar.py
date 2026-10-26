@@ -45,6 +45,10 @@ BTN_CONNECT = "Connect Google Calendar"
 BTN_CONNECT_BUSY = "Opening Google…"
 BODY_NO_CONNECT = "Connecting from this page isn't set up for your account yet. FluxWorks sets this up for you."
 BTN_SUPPORT = "Text FluxWorks support"
+# Not connected and connecting isn't set up for the account: it waits on FluxWorks, not the owner (P3).
+WORD_WAITING = "Waiting on FluxWorks"
+BODY_WAITING = "FluxWorks connects your calendar for you."
+WHY_WAITING = "Until then, bookings go on a test calendar you can't see."
 WORD_RECONNECT = "Reconnect needed"
 BODY_RECONNECT = ("Google disconnected the calendar, so bookings are paused until you reconnect. "
                   "Customers are told no booking was made.")
@@ -66,7 +70,9 @@ ERR_NO_ACCESS = "Google didn't give TextBack calendar access. Try connecting aga
 ERR_NOT_SET_UP = "Connecting a calendar isn't set up for this account yet."
 AVAIL_TITLE = "Next free times on {name}"
 AVAIL_TITLE_TEST = "Test calendar, not yours"
-AVAIL_INTRO = "The first three free {n}-minute times in the next 14 days, inside your working hours."
+AVAIL_INTRO = "The first three free start times for a {n}-minute appointment in the next 14 days, inside your working hours."
+# One row per day: the start times only, so rows never seem to overlap (the length is said once, above).
+AVAIL_ROW = "{day} · starts at {times}"
 AVAIL_INTRO_TEST = "Shows how the check works. These times are not from your calendar."
 AVAIL_BUTTON = "Check free times"
 AVAIL_BUTTON_BUSY = "Checking…"
@@ -166,7 +172,7 @@ def status_card(state) -> dict:
     name = calendar_name(state, view)
     card = {"provider": provider, "status": status, "can_connect": can_connect, "calendar_name": name,
             "connected": status in ("ready", "managed"), "state_word": "", "title": "", "body": "", "why": "", "buttons": [],
-            "kind": "ok"}
+            "kind": "ok", "node": "done" if status in ("ready", "managed") else "needs"}
 
     def not_connected_next_step(body: str, label: str, kind: str) -> None:
         """Connect/Reconnect when the Google web client is configured; otherwise who sets it up, and a text action if one exists."""
@@ -196,7 +202,8 @@ def status_card(state) -> dict:
         if can_connect:
             card.update(why=WHY_CONNECT, buttons=[_connect_button(BTN_CONNECT, "primary")])
         else:
-            card.update(why=BODY_NO_WEB, buttons=_support_button(state))
+            card.update(state_word=WORD_WAITING, body=BODY_WAITING, why=WHY_WAITING, buttons=_support_button(state),
+                        node="waiting", kind="wait")
     else:  # managed: a provider FluxWorks configured in the environment
         card.update(state_word=WORD_CONNECTED, title=PROVIDER_NAMES.get(provider, provider.title()),
                     body=f"{BODY_CONNECTED.format(name=name)} {BODY_MANAGED}")
@@ -233,6 +240,24 @@ def _within_hours(state, starts) -> list[datetime]:
     return kept
 
 
+def start_rows(starts: list[datetime], tz_name: str) -> list[str]:
+    """'Mon, Oct 19 · starts at 1:30, 2:00, 2:30 PM': one row per day, AM/PM said once when shared."""
+    from text_back.portal_dates import clock, day
+
+    rows: list[tuple[str, list[str]]] = []
+    for start in starts:
+        label = day(start, tz_name)
+        if not rows or rows[-1][0] != label:
+            rows.append((label, []))
+        rows[-1][1].append(clock(start, tz_name))
+    out = []
+    for label, clocks in rows:
+        suffixes = {c[-2:] for c in clocks}
+        shown = [c[:-3] for c in clocks[:-1]] + [clocks[-1]] if len(suffixes) == 1 else clocks
+        out.append(AVAIL_ROW.format(day=label, times=", ".join(shown)))
+    return out
+
+
 def availability_card(state, result: dict | None) -> dict:
     """What the free-times card shows: title, intro, the button or its replacement, and the result."""
     view = _settings().calendar_status(state)
@@ -255,6 +280,7 @@ def availability_card(state, result: dict | None) -> dict:
         "checked": checked, "duration": duration,
         "slots": [availability.format_slot(start, duration) for start in starts],
         "starts": starts,  # the datetimes behind ``slots``; templates format them with the `when` filter
+        "rows": start_rows(starts, str(getattr(state, "timezone_name", "UTC") or "UTC")),
         "empty": AVAIL_EMPTY.format(n=duration) if checked and not starts else "",
         "error": str(result.get("error") or ""),
         "caption": AVAIL_CAPTION.format(hours=wh.describe(hours)) if checked else "",

@@ -61,7 +61,9 @@ def test_not_connected_without_connect_offers_support_or_names_who_sets_it_up(tm
     monkeypatch.setattr("text_back.client_settings.calendar_status",
                         lambda s: {"provider": "google", "status": "none", "calendar_id": "", "can_connect": False})
     card = html.unescape(node(render(state), "connection"))
-    assert pc.BODY_NO_WEB in card and "Text FluxWorks support" not in card and "asks" not in card
+    # P3: it waits on FluxWorks (clock node), with the test-calendar fact, and no dead end.
+    assert pc.BODY_WAITING in card and pc.WHY_WAITING in card and pc.WORD_WAITING in card
+    assert "Text FluxWorks support" not in card and "asks" not in card and 'class="node node--waiting"' in card
     state.support_contact = "+19805550111"
     card = node(render(state), "connection")
     assert 'href="sms:+19805550111" data-support>Text FluxWorks support</a>' in card

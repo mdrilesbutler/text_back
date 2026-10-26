@@ -36,25 +36,37 @@ LABELS = {
     "carrier": "Your carrier",
 }
 ERR_NAME = f"Enter a business name of 1 to {NAME_MAX} characters."
+# Braces would read as an insert in every text; angle brackets as markup. Refused in plain words (M7).
+ERR_NAME_SYMBOLS = "A business name can't use curly or angle brackets. Take them out."
+NAME_REFUSED = frozenset("{}<>")
+# Under the name, live: a symbol outside the plain text alphabet (portal_messages._first_symbol) (M7).
+NAME_SYMBOL = "This name has a {symbol}, which makes each text hold only 70 characters."
 ERR_LINE = "Enter your business number as 10 digits, area code first, or leave it blank."
 ERR_SAME = "Your business number and the texting number can't be the same."
 ERR_MOBILE = "Enter your mobile as 10 digits, area code first."
-ERR_CONTACT = "Enter the phone number as 10 digits, area code first, or leave it blank."
+ERR_CONTACT = "Enter the phone number as 10 digits, area code first, or leave it blank."  # US numbers only (m20)
 ERR_CARRIER = "Pick a carrier from the list."
 CARRIER_PROMPT = "Pick your carrier to see the codes."
+# Check 5 when the carrier publishes no codes (m16).
+CHECK_5_OTHER = "Ask your carrier how to turn off forwarding, and write it down."
 NOTHING_TO_CHECK = "Enter a number to check."
 LINE_FORMAT_OK = "Format looks right: {n}. This checks the digits only, not that the number rings."
 MOBILE_UNCHANGED = "This is the number that signs you in."
 MOBILE_CHANGED = "Save to text a code to {n}."
 SAVED = "Saved."
 SAVED_CHANGED = "Saved. You changed “{labels}”."
+# A new business number: the forwarding checks only count calls forwarded from it (m15).
+CHECKS_RESET = "Checks start again because the business number changed."
 TITLE = "Phone & business"
 INTRO = "Your business name, the numbers TextBack uses, and call forwarding."
 CHANGED_ONE, CHANGED_MANY = "1 change", "{n} changes"
 MANUAL_LABEL = "I checked this"
 CHECKS_PROGRESS, CHECKS_COMPLETE = "{n} of 5 done", "All 5 done. Forwarding works."
 SAVED_CONFIRM_MOBILE = "Saved. Now confirm your new mobile."
-NEW_MOBILE_SAVED = "Saved. Sign-in codes now go to {n}."
+# The save that texts a code to a new mobile: nothing has moved yet (m34).
+CODE_SENT = "Code sent to {n}. Your mobile changes after you enter it."
+# Confirmed: sessions are not ended by a mobile change, so say so (m7).
+NEW_MOBILE_SAVED = "Saved. Sign-in codes now go to {n}. Other devices stay signed in."
 KEPT = "Kept your current mobile."
 CHECKS_SAVED = "Checks saved."
 TEXTING_READ_ONLY = "Set up by FluxWorks. It can't be changed here."
@@ -65,8 +77,8 @@ FORWARDING_INTRO = ("Forward the calls you don't answer to your texting number. 
                     "the same, and answered calls still reach you.")
 FORWARD_ALL_WARNING = ("Only forward busy and unanswered calls. Forwarding every call stops answered calls "
                        "from reaching you.")
-RENAME_ACCEPT = "Update them"
-RENAME_DECLINE = "Leave them"
+RENAME_ACCEPT, RENAME_ACCEPT_ONE = "Update them", "Update it"
+RENAME_DECLINE, RENAME_DECLINE_ONE = "Leave them", "Leave it"
 CONFIRM_INTRO = ("We texted a six-digit code to {n}. Enter it to move sign-in to that number. It expires in "
                  "ten minutes; until then codes still go to your current mobile.")
 CONFIRM_KEEP = "Keep my current mobile"
@@ -151,6 +163,8 @@ def validate(submitted: dict, state) -> tuple[dict, dict]:
     name = " ".join(str(submitted.get("business_name", "")).split())
     if not name or len(name) > NAME_MAX:
         errors["business_name"] = ERR_NAME
+    elif NAME_REFUSED & set(name):
+        errors["business_name"] = ERR_NAME_SYMBOLS
     values["business_name"] = name
 
     line = str(submitted.get("business_line", "") or "")
@@ -171,10 +185,10 @@ def validate(submitted: dict, state) -> tuple[dict, dict]:
 
     contact = str(submitted.get("business_contact", "") or "")
     if contact:
-        normalized = normalize_mobile(contact)
-        if normalized is None:
+        digits = national_digits(contact)  # 10 digits, or 11 with a leading 1: US numbers only
+        if not digits:
             errors["business_contact"] = ERR_CONTACT
-        contact = format_contact_number(normalized) if normalized else ""
+        contact = format_contact_number("+1" + digits) if digits else ""
     values["business_contact"] = contact
 
     carrier = str(submitted.get("carrier", "") or "")
@@ -298,6 +312,11 @@ def rename_done_text(count: int) -> str:
     return "Updated 1 text." if count == 1 else f"Updated {count} texts."
 
 
+def rename_kept_text(count: int) -> str:
+    """After "Leave them" / "Leave it" (m17)."""
+    return "Kept the text as it is." if count == 1 else "Kept the texts as they are."
+
+
 def rename_offer(templates: dict[str, str], old_name: str, new_name: str) -> dict | None:
     """What to offer after a rename, or None when no customized text still says the old name."""
     if not old_name or old_name == new_name:
@@ -308,7 +327,8 @@ def rename_offer(templates: dict[str, str], old_name: str, new_name: str) -> dic
     return {
         "count": len(keys), "keys": keys, "old_name": old_name, "new_name": new_name,
         "text": rename_offer_text(len(keys), old_name),
-        "accept": RENAME_ACCEPT, "decline": RENAME_DECLINE, "done": rename_done_text(len(keys)),
+        "accept": RENAME_ACCEPT_ONE if len(keys) == 1 else RENAME_ACCEPT,
+        "decline": RENAME_DECLINE_ONE if len(keys) == 1 else RENAME_DECLINE, "done": rename_done_text(len(keys)),
     }
 
 
@@ -367,7 +387,8 @@ def checklist_context(state, now: datetime, carrier: str = "") -> dict:
         step["name"] = f"check_{key}" if key else ""
         step["code"] = code if step["n"] == 5 else ""
         if step["n"] == 5:
-            step["evidence"] = portal_forwarding.CHECK_5_HINT.format(code=code) if code else CARRIER_PROMPT
+            step["evidence"] = (portal_forwarding.CHECK_5_HINT.format(code=code) if code
+                                else CHECK_5_OTHER if carrier == "other" else CARRIER_PROMPT)
     return result
 
 
@@ -382,17 +403,49 @@ def save_checklist(state, form, now: datetime) -> None:
     portal_forwarding.save_manual_ticks(state.store, changes, now)
 
 
+CHANGE_ORDER = ("business_name", "business_contact", "business_line", "owner_mobile", "carrier")
+
+
+def _comparable(key: str, value) -> str:
+    """One form for a value as saved (E.164, formatted) and as typed ("704.555.0123"): a phone number compares
+    by its digits, a name by its words, so a rejected save never lists a field that did not change."""
+    text = str(value or "")
+    if key in ("business_line", "owner_mobile", "business_contact"):
+        return normalize_mobile(text) or text.strip()
+    if key == "business_name":
+        return " ".join(text.split())
+    return text
+
+
+def changed_keys(before: dict, after: dict, ticks_before: dict, ticks_after: dict) -> tuple[list[str], list[int]]:
+    """(field keys, manual check numbers) whose value differs, in page order."""
+    fields = [key for key in CHANGE_ORDER if _comparable(key, before.get(key)) != _comparable(key, after.get(key))]
+    checks = [n for n, key in MANUAL_CHECKS.items() if bool(ticks_before.get(key)) != bool(ticks_after.get(key))]
+    return fields, checks
+
+
 def changed_labels(before: dict, after: dict, ticks_before: dict, ticks_after: dict) -> list[str]:
-    """The field labels (and manual check names) whose saved value differs, in page order."""
-    labels = [LABELS[key] for key in ("business_name", "business_contact", "business_line", "owner_mobile", "carrier")
-              if (before.get(key) or "") != (after.get(key) or "")]
-    labels += [portal_forwarding.LABELS[n] for n, key in MANUAL_CHECKS.items()
-               if bool(ticks_before.get(key)) != bool(ticks_after.get(key))]
-    return labels
+    """The field labels (and manual check names) whose value differs, in page order."""
+    fields, checks = changed_keys(before, after, ticks_before, ticks_after)
+    return [LABELS[key] for key in fields] + [portal_forwarding.LABELS[n] for n in checks]
 
 
 def saved_notice(labels: list[str]) -> str:
     return SAVED_CHANGED.format(labels="”, “".join(labels)) if labels else SAVED
+
+
+def saved_text(fields: list[str], checks: list[int], *, checks_reset: bool = False) -> str:
+    """The Phone save notice from keys (portal_flash); a new business number says the checks start again."""
+    notice = saved_notice([LABELS[key] for key in fields] + [portal_forwarding.LABELS[n] for n in checks])
+    return f"{notice} {CHECKS_RESET}" if checks_reset else notice
+
+
+def name_symbol_line(name: str) -> str:
+    """The line under the business name when it holds a symbol that bills texts as 70-character parts."""
+    from text_back.portal_messages import _first_symbol
+
+    symbol = _first_symbol(name or "")
+    return NAME_SYMBOL.format(symbol=symbol) if symbol else ""
 
 
 def forwarding_example(state) -> bool:

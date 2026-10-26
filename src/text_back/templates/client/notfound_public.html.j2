@@ -1,0 +1,14 @@
+{#- A /client page that doesn't exist (status 404), signed out: the brand bar, one line, a link Home
+    (which signs in first). Renders no number, csrf or per-request value. -#}
+{% extends "client/_document.html.j2" %}
+{% from "client/_macros.html.j2" import icon %}
+{% block body %}
+<header class="topbar topbar--auth"><span class=brand>{{ icon("phone", "brand__icon") }}TextBack</span></header>
+<main class="page auth" id=main tabindex=-1>
+<div class=auth__card>
+  <div class=auth__head><h1>{{ heading }}</h1></div>
+  <a class="btn btn--primary btn--block" href=/client/home>{{ icon("house") }}Home</a>
+  <p class=auth__foot>TextBack by FluxWorks</p>
+</div>
+</main>
+{% endblock %}

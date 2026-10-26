@@ -16,6 +16,8 @@
   {% for c in st.optional %}{{ message_card(c, editable, max_chars) }}{% endfor %}
   {% endif %}
   {% if st.id == "no_reply" %}<p class=cards__end><span class=tpill>Texts stop here</span></p>{% endif %}
+  {#- M8: without JavaScript each step ends with the form's Save (the same form, every text at once). #}
+  {% if editable %}<p class=step-save><button type=submit class="btn btn--secondary" name=save value=1>Save every text</button></p>{% endif %}
 </div>
 {%- endmacro %}
 
@@ -44,8 +46,8 @@
 <div class=msg-list>
   <div class=page-head>
     <h1>Messages</h1>
-    <p class=lead>The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.</p>
-    <p class=page-head__meta>{{ icon("info") }}<span>Green bubbles are what customers see. The job, address, time and names are made-up examples. <a class="tap page-head__ex" href=#example>Example conversation</a></span></p>
+    <p class=lead>{{ intro }}</p>
+    <p class=page-head__meta>{{ icon("info") }}<span>{{ meta }} <a class="tap page-head__ex" href=#example>Example conversation</a></span></p>
     {% if network_notice %}<p class="page-head__meta page-head__meta--notice" data-network-notice>{{ icon("clock") }}<span>{{ network_notice }}</span></p>{% endif %}
   </div>
   {% if not editable %}
@@ -78,6 +80,6 @@
   {{ spine() }}
   {% endif %}
 </div>
-{{ rail_panel(rail, business_name, scenario, network_notice) }}
+{{ rail_panel(rail, business_name, scenario, network_notice, rail_foot) }}
 </div>
 {% endblock %}

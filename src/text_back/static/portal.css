@@ -1850,3 +1850,158 @@
   /* Replace is local with JavaScript (like Reset); without it the button saves and says so. */
   :where(.js) .msg__fix-nojs, :where(.no-js) .msg__fix-js { display: none; }
 }
+@layer app {
+  /* ======================================================================== fix pass (verification list) */
+
+  /* F7: the live region holds the words; Dismiss sits beside it, drawn inside the notice's top-right corner. */
+  .notice-area { position: relative; max-width: var(--measure); }
+  .notice-area:has(> .status-slot:empty) { display: none; }
+  .notice-area > .status-slot:not(:empty) .notice { padding-right: calc(var(--tap) + var(--space-2)); }
+  .notice-area__dismiss { position: absolute; top: var(--space-1); right: var(--space-1); }
+  .auth .notice-area:not(:has(> .status-slot:empty)) { margin-bottom: var(--space-5); }
+  .notice__actions { margin-top: var(--space-2); }
+  .notice-area .notice { align-items: start; }  /* the icon stays by the first line of a long notice */
+  .notice-area .notice__icon { margin-top: 2px; }
+  .notice__actions .btn { min-width: 8rem; }  /* "Update them" and "Leave them" line up, equal widths */
+
+  /* M3: below 480px a forwarding code sits on its own line with Copy under it, never cut at 320px. */
+  @media (max-width: 479.98px) {
+    .code { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-3); }
+    .code .btn { grid-column: 1; grid-row: auto; justify-self: start; }
+    .code__val { white-space: normal; overflow-wrap: anywhere; }
+  }
+
+  /* M7 and F2: an owner's business name wraps between words and breaks a long unbroken one only when it must,
+     wherever it shows; the page never scrolls sideways. */
+  .menu__biz { overflow-wrap: break-word; word-break: normal; }
+  :is(.sms__who, .phone__name, .auth__head h1, .auth__head .eyebrow, .notice__text, .lead, .caller__name, .ro__value) { overflow-wrap: anywhere; }
+  .field-warn { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: var(--space-2); color: var(--warning-fg); font-weight: 600; }
+  .field-warn .icon { font-size: 16px; margin-top: 2px; }
+  .field-warn[hidden] { display: none; }
+
+  /* F2: the header wraps instead of squeezing the business name to a letter a line: TextBack stays on the first
+     line and the name takes the next one when there is no room (flex-basis decides the break). */
+  /* --header-h follows the header's real height (portal.js); the header's own floor is fixed here so it can shrink back. */
+  :root { --header-min: 3.5rem; }
+  @media (min-width: 1024px) { :root { --header-min: 4rem; } }
+  .topbar { flex-wrap: wrap; height: auto; min-height: var(--header-min); row-gap: 0; }
+  .topbar .menu { flex: 1 1 10em; }
+  .topbar .menu__trigger { min-height: var(--tap); }
+  @media (max-width: 1023.98px) {
+    /* The bottom bar's labels stop growing at 14px (or wrap to two lines) so five fit in a 320px row. */
+    .nav__item { font-size: min(0.75rem, 14px); line-height: 1.1; padding-inline: 2px; text-align: center; overflow-wrap: anywhere; }
+    .nav__icon { height: min(1.625rem, 28px); font-size: min(1.375rem, 24px); }
+    .nav { height: auto; min-height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+    /* m25: with the on-screen keyboard up, the bottom bar steps aside. */
+    .kb-open .nav { display: none; }
+  }
+  .topsave { flex-wrap: wrap; row-gap: 0; }
+  .topsave__changes { flex: 1 1 8rem; }
+  .topsave__summary { overflow-wrap: anywhere; }
+  .msg__receipt, .msg__title, .qset .msg__head { flex-wrap: wrap; }
+  .msg__receipt { row-gap: 2px; }
+  .msg__added::after { content: none; }  /* the separator is a real " · " now, read by screen readers too (F9) */
+  @media (max-width: 639.98px) { .msg__sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+  /* Reset sits on the card's right content edge and drops under "Edit wording" when the two can't share a row. */
+  .msg__foot { container: foot / inline-size; }
+  .msg__aside { right: calc(var(--card-pad) - var(--space-3)); }
+  .msg__aside [data-reset] { padding-inline-end: var(--space-3); }
+  .msg__std { padding-right: var(--space-3); }
+  @container foot (width < 16em) {
+    .msg__aside { position: static; justify-content: flex-end; height: auto; min-height: var(--tap); padding-inline: var(--card-pad); }
+  }
+  .rule-foot { flex-wrap: wrap; }
+  .rule-foot__reset { margin-inline: auto calc(-1 * var(--space-3)); }  /* on the right content edge, wrapped or not */
+
+  /* F1: Messages on a desktop at 150–200 % text: the list keeps at least 22rem, the rail up to 26rem; when both
+     can't fit, the rail drops under the list (in flow, never sticky over a field). */
+  @media (min-width: 1024px) {
+    .msg-layout { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: var(--space-8); container: msglayout / inline-size; }
+    .msg-list { flex: 1 1 22rem; min-width: min(22rem, 100%); max-width: var(--measure); }
+    .rail { flex: 0 1 26rem; min-width: min(17rem, 100%); }
+  }
+  @container msglayout (width < 50rem) {
+    .rail { position: static; flex-basis: 100%; max-height: none; overflow: visible; max-width: var(--measure); margin-top: var(--space-8); }
+    .rail .phone__log { overflow: visible; -webkit-mask-image: none; mask-image: none; padding-bottom: 0; }
+    .rail .rail__back { display: inline-flex; }
+  }
+  /* Finish: the rail's last bubble scrolls fully clear of the faded edge. */
+  @media (min-width: 1024px) { .phone__log { padding-bottom: 4.5rem; scroll-padding-bottom: 4.5rem; } }
+
+  /* M8: without JavaScript every step ends with the form's Save; with it the header / bottom bar saves. */
+  .step-save { display: flex; justify-content: flex-start; margin-top: var(--space-1); }
+  :where(.js) .step-save { display: none; }
+
+  /* Finish: the count shows once while the editor is open (the editor's own line). */
+  .msg:has(.editor[open]) .msg__receipt :is(.msg__meter, .msg__sep) { display: none; }
+  /* Finish: every fallback card puts its arrow on the line above the title, short titles included. */
+  .qset--branch .msg__title { display: block; }
+  .qset--branch .msg__title > .msg__branch { display: block; margin: 0 0 var(--space-1); }
+  .qset--branch .msg__title > .msg__label { display: inline; margin-right: var(--space-2); }
+  .qset--branch .msg__title > .msg__badges { vertical-align: 2px; }
+  .msg__was { text-align: start; }
+
+  /* m21: a ticked box shows a tick, not a solid square. */
+  .checkbox:checked {
+    background: var(--accent-fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 18px no-repeat;
+  }
+
+  /* m6: the sign-out-everywhere question opens fully in view, at least 72px clear of the bottom bar. */
+  .confirm-inline__panel { scroll-margin-bottom: 4.5rem; }
+  @media (max-width: 1023.98px) {
+    .confirm-inline__panel { scroll-margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 4.5rem); }
+    .page:has(.confirm-inline[open]) { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 7rem); }
+  }
+
+  /* P4: Call and Text for a customer who asked for a person, 44px each. */
+  .caller__reach { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+  .caller__num { font-weight: 600; }
+  .caller__act { min-height: var(--tap); }
+
+  /* F4: the code field shows a 2px ring on the active cell, and on the whole field. */
+  :where(.js) .otp:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  /* F8: error summary links are whole rows, with no negative margins. */
+  .error-summary__list a { display: block; padding-block: var(--space-2); margin-block: 0; }
+
+  /* F9: in Windows high contrast the save bar and the message cards keep their edges. */
+  @media (forced-colors: active) {
+    .savebar, .msg, .qset { border: 1px solid CanvasText; }
+    .checkbox:checked { forced-color-adjust: none; background-color: Highlight; border-color: Highlight; }
+  }
+
+  /* Finish: free times are a plain list, not buttons. */
+  .slot { min-height: 0; padding: var(--space-1) 0; border: 0; background: none; font-weight: 600; }
+
+  /* Finish: confirm new mobile: room between the code boxes and the button, and equal buttons. */
+  .confirm form + form, .confirm .field + .btn { margin-top: var(--space-4); }
+  .confirm .field { margin-bottom: var(--space-4); }
+  @media (min-width: 640px) { .confirm .btn--block-phone { min-width: 16rem; } }
+
+  /* Finish: Account device groups. */
+  .devices-group { display: grid; gap: var(--space-2); }
+  .devices-group__title { font-size: var(--fs-label); line-height: var(--lh-label); }
+}
+@layer app {
+  /* F2 at 150–200 % text on a phone: the page measures itself in em, so when the column holds fewer than 16em the
+     no-wrap runs (numbers, dates, times) may wrap, the counts stack and the day rows put their times under the day.
+     Nothing then scrolls sideways. At 100 % text this never applies, even at 320px. */
+  .page { container: page / inline-size; }
+  @container page (width < 16em) {
+    .nw, .code__val, .msg__meter { white-space: normal; }
+    .counts { grid-template-columns: minmax(0, 1fr); }
+    .counts__item:nth-child(even) { padding-left: 0; border-left: 0; }
+    .counts__item:nth-child(n+2) { border-top: 1px solid var(--line); }
+    .counts dt, .setup__title, .node__head h2, .check__title { overflow-wrap: anywhere; }
+    .hrow__day { flex-wrap: wrap; }
+    .hrow__name { min-width: 0; }
+    .hrow__times { grid-template-columns: minmax(0, 1fr); }
+    .hrow__dash { display: none; }
+    .quiet { grid-template-columns: minmax(0, 1fr); }
+    .field--rem .select, .select, .select__input { max-width: 100%; min-width: 0; }
+    .switch-row { flex-wrap: wrap; }
+    .btn, .pill, .extag { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  }
+  .setup, .node__body > .card { min-width: 0; }
+  @media (max-width: 1023.98px) { .nav__icon { width: min(2.75rem, 44px); } }
+}

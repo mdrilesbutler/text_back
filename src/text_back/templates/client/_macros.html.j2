@@ -42,6 +42,12 @@
 </div>
 {%- endmacro %}
 
+{#- The notice's close button, beside the role=status slot (never inside the live words). portal.js shows it
+    while the slot holds a notice; without JavaScript it could do nothing, so it stays hidden. -#}
+{% macro dismiss_button() -%}
+<button type=button class="icon-btn toast__action notice-area__dismiss" data-notice-dismiss hidden>{{ icon("x") }}<span class=vh>Dismiss</span></button>
+{%- endmacro %}
+
 {% macro csrf_input(token) -%}
 <input type=hidden name=csrf value='{{ token }}'>
 {%- endmacro %}

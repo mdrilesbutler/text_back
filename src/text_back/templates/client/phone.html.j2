@@ -14,7 +14,7 @@
 <div class=page-head><h1>{{ title_text }}</h1><p class=lead>{{ intro }}</p></div>
 {% if summary %}{{ field_summary(summary) }}{% endif %}
 {% if page_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ page_error }}</p></div></div>{% endif %}
-<form method=post action=/client/phone id=phone-form data-track-changes data-topsave data-changed-one="1 change" data-changed-many="{n} changes" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
+<form method=post action=/client/phone id=phone-form novalidate data-track-changes data-topsave data-changed-one="1 change" data-changed-many="{n} changes" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
   {{ csrf_input(csrf) }}
   <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
   <input type=hidden name=checks_in_form value=1>
@@ -26,6 +26,8 @@
         <label class=field__label for=business_name>Business name</label>
         <input class=input id=business_name name=business_name type=text required maxlength=60 autocomplete=organization autocorrect=off value="{{ display.business_name }}" {{ described("business_name") }}>
         <p class=field-help id=business_name-help>{{ hints.business_name }}</p>
+        {#- M7: a symbol outside the plain text alphabet; portal.js keeps the line live while typing. #}
+        <p class="field-help field-warn" data-name-symbol data-template="{{ name_symbol_template }}"{% if not name_symbol %} hidden{% endif %}>{{ icon("triangle-alert") }}<span data-name-symbol-text>{{ name_symbol }}</span></p>
         {{ err("business_name") }}
       </div>
       <div class=field-preview>
@@ -41,7 +43,7 @@
     </div>
   {% endcall %}
   {% call node("icon", "phone", attrs="id=numbers") %}
-    <div class=node__head><h2 tabindex=-1>Numbers</h2><p class=node__blurb>Your business number never changes. Customers keep calling it.</p></div>
+    <div class=node__head><h2 tabindex=-1>Numbers</h2><p class=node__blurb>This is the number customers call. TextBack never changes it.</p></div>
     <div class="card card--form">
       <div class=field data-change-label="Your business number" id=rule-business_line>
         <label class=field__label for=business_line>Your business number</label>

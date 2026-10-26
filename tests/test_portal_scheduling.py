@@ -96,7 +96,7 @@ def test_every_user_facing_string_is_in_the_copy_deck():
         assert text in deck, text
     # The save notice names what changed (deck schedule_toast); "reminders already scheduled keep their time"
     # now sits on the Reminders card (reminder_consequence), pinned below like every other claim.
-    assert ps.SAVED == "Saved. You changed “{rules}”. It applies now, including customers mid-conversation."
+    assert ps.SAVED == "Saved. You changed “{rules}”."  # then each changed rule's own note (m10)
     assert re.sub(r"\{rules\}", "{}", ps.SAVED) in bracketed and ps.SAVED_NOTHING == "Saved."
     for banned in ("nudge", "Nudge", "give-up", "Give-up", "Close the lead"):
         for text in (ps.ERR_REMINDERS, ps.ERR_EXPIRY, *ps.LABELS.values(), *ps.CONSEQUENCES.values()):
@@ -112,8 +112,9 @@ def test_save_notice_names_only_the_rules_that_changed(tmp_path, monkeypatch):
     assert ps.saved_notice(before, ps.current_values(state)) == "Saved."
     saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00"))
     assert ps.saved_notice(before, ps.current_values(state)) == (
-        "Saved. You changed “Appointment length”, “Time zone”, “Quiet hours”. It applies now, including customers "
-        "mid-conversation.")  # valid_form() also moves the zone from the UTC default to New York
+        "Saved. You changed “Appointment length”, “Time zone”, “Quiet hours”. Appointment length: applies right away, "
+        "including customers mid-conversation. Time zone: applies right away to the times in texts. Quiet hours: "
+        "applies right away to reminders not yet sent.")  # valid_form() also moves the zone from the UTC default to New York
     again = ps.current_values(state)
     saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00",
                             hours_mode="set"))
@@ -124,8 +125,8 @@ def test_save_notice_names_only_the_rules_that_changed(tmp_path, monkeypatch):
     saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00",
                             hours_mode="set", followup_delay_1="240"))
     assert ps.saved_notice(before, ps.current_values(state)) == (
-        "Saved. You changed “If there's no reply, send a reminder after”. It applies now, including customers "
-        "mid-conversation; reminders already scheduled keep their time.")
+        "Saved. You changed “If there's no reply, send a reminder after”. A reminder that is already scheduled keeps "
+        "its time. Later reminders use the new delays.")  # m10: no "applies now" beside "keeps its time"
 
 
 # --- defaults and the page context --------------------------------------------------

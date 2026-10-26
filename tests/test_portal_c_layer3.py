@@ -38,13 +38,17 @@ def slot(page):
 def test_schedule_is_one_form_on_the_spine_with_applies_lines_and_a_reset_per_rule(tmp_path, monkeypatch):
     client, csrf = signed_in(tmp_path, monkeypatch)
     page = client.get("/client/schedule").text
-    heads = re.findall(r'<li class="node node--icon" id=(\w+)>.*?<h2 tabindex=-1>([^<]+)</h2>', page, re.S)
-    assert heads == [("appointments", "Appointments"), ("hours", "Working hours"), ("quiet_hours", "Quiet hours"),
+    heads = re.findall(r'<li class="node node--icon" id=([\w-]+)>.*?<h2 tabindex=-1>([^<]+)</h2>', page, re.S)
+    # m14: the one-tap hours land at #working-hours.
+    assert heads == [("appointments", "Appointments"), ("working-hours", "Working hours"), ("quiet_hours", "Quiet hours"),
                      ("reminders", "Reminders")]
     shown = html.unescape(page)
     for line in ps.APPLIES.values():
         assert f"<p class=applies>{line}</p>" in shown, line  # before saving, under its field
-    resets = re.findall(r'<button type=submit class="btn btn--ghost" name=reset value=(\w+)>Reset<span class=vh> ([^<]+)</span>', shown)
+    # m11: "Reset" with JavaScript, "Reset and save" without; hidden while the rule is at its default.
+    resets = re.findall(r'<button type=submit class="btn btn--ghost rule-foot__reset" name=reset value=(\w+) '
+                        r'data-reset-values="[^"]*" hidden><span class=msg__reset-js>Reset</span>'
+                        r'<span class=msg__reset-nojs>Reset and save</span><span class=vh> ([^<]+)</span>', page)
     assert [g for g, _ in resets] == ["appointment_duration_minutes", "timezone", "working_hours", "quiet_hours",
                                       "followup_delay_1", "followup_delay_2", "followup_expiry_minutes"]
     assert "<p class=default>Default: 60 minutes</p>" in shown and "<p class=default>Default: Any day, any time</p>" in shown
@@ -93,7 +97,7 @@ def test_unsaved_answers_raise_the_save_bar_in_the_header_and_at_the_bottom(tmp_
     client, csrf = signed_in(tmp_path, monkeypatch)
     filled = client.post("/client/schedule", data=form(csrf, suggest_hours="1")).text
     header = re.search(r'<header class="topbar topbar--dirty" data-topbar>.*?</header>', filled, re.S).group(0)
-    assert "<span class=topsave__count>1 rule changed</span>" in header and '<a href="#hours">Working hours</a>' in header
+    assert "<span class=topsave__count>1 rule changed</span>" in header and '<a href="#working-hours">Working hours</a>' in header
     assert "data-dirty-initial" in filled and '<div class="savebar savebar--on" data-state=dirty' in filled
     bad = client.post("/client/schedule", data=form(csrf, appointment_duration_minutes="custom",
                                                    appointment_duration_custom="7", appointment_duration_shown="60")).text
@@ -104,8 +108,10 @@ def test_unsaved_answers_raise_the_save_bar_in_the_header_and_at_the_bottom(tmp_
 def test_the_save_notice_names_the_rules_and_the_reminder_clause(tmp_path, monkeypatch):
     client, csrf = signed_in(tmp_path, monkeypatch)
     page = client.post("/client/schedule", data=form(csrf, followup_delay_1="240", timezone="America/Chicago")).text
-    assert slot(page) == ("Saved. You changed “Time zone”, “If there's no reply, send a reminder after”. It applies now, "
-                          "including customers mid-conversation; reminders already scheduled keep their time.")
+    # m10: each rule's own note, never "mid-conversation" beside "reminders keep their time".
+    assert slot(page) == ("Saved. You changed “Time zone”, “If there's no reply, send a reminder after”. Time zone: applies "
+                          "right away to the times in texts. Reminders: a reminder that is already scheduled keeps its "
+                          "time. Later reminders use the new delays.")
     page = client.post("/client/schedule", data=form(csrf, followup_delay_1="240", timezone="America/Chicago")).text
     assert slot(page) == "Saved."
 
@@ -114,7 +120,7 @@ def test_the_save_notice_names_the_rules_and_the_reminder_clause(tmp_path, monke
 
 def test_server_notices_are_re_announced_and_no_floating_toast_is_left(tmp_path):
     js = (STATIC / "portal.js").read_text()
-    assert "requestAnimationFrame(() => slot.append(node))" in js
+    assert "requestAnimationFrame(() => { slot.append(node); syncDismiss(); })" in js  # F7: Dismiss follows, outside the slot
     assert "if (!e.defaultPrevented) submitting = true" in js
     css = (STATIC / "portal.css").read_text()
     for gone in (".toast-region", ".toast--floating", "tb-toast-in"):
@@ -130,13 +136,14 @@ def test_account_and_sign_in_say_this_device_and_take_the_notes_from_the_view(tm
     assert "On. This device" not in (TEMPLATES / "account.html.j2").read_text()
 
 
-def test_home_headline_carries_the_example_tag_when_it_counts_example_cards(tmp_path, monkeypatch):
+def test_home_headline_never_counts_example_cards_and_carries_no_tag(tmp_path, monkeypatch):
+    # P2 (product call): the first line counts only the cards that are not harness-flagged examples.
     client, csrf = signed_in(tmp_path, monkeypatch)
     state = client.app.state
     line = lambda: re.search(r"<p class=status-line data-status-line>.*?</p>", client.get("/client/home").text).group(0)
-    assert "extag" not in line()
-    state.preview_example_setup = {"forwarding"}  # a "Needs you" card the line counts
-    assert line().endswith(" <span class=extag>Example</span></p>")
-    items = [dict(key="calendar", state_word="Done", example=False), dict(key="forwarding", state_word="Done", example=True),
+    assert line() == "<p class=status-line data-status-line>Not working yet: 1 step left.</p>"  # forwarding
+    state.preview_example_setup = {"forwarding"}  # that "Needs you" card is example data now
+    assert "extag" not in line() and "Not working yet" not in line()
+    items = [dict(key="calendar", state_word="Needs you", example=True), dict(key="forwarding", state_word="Done", example=False),
              dict(key="approval", state_word="Waiting on phone companies", example=False)]
-    assert portal_status.headline_example(items) is False  # the waiting line rests on approval only
+    assert portal_status.headline(portal_status.counted(items)) == portal_status.HEADLINE_WAITING_PHONE

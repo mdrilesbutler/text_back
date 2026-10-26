@@ -219,7 +219,8 @@ def render_scenario(
 # Customer lines are made up. The preferred time is relative ("Thursday at 10")
 # so it parses as a future slot for any ``now``; "10" with no am/pm is morning
 # by the product's own rule.
-_BOOKING_LINES = ("Tree removal", "12 Oak St, Charlotte", "Thursday at 10", "Dana Lee", "YES", "dana@example.com")
+# The approved mockup's values (fix pass P5).
+_BOOKING_LINES = ("Tree trimming", "412 Maple St, Charlotte", "Thursday at 10", "Dana Whitfield", "YES", "dana@example.com")
 _BOOKING_NEEDS = (None, None, None, None, "phone", "email")
 
 SCENARIOS: dict[str, Scenario] = {
@@ -228,7 +229,7 @@ SCENARIOS: dict[str, Scenario] = {
     ),
     "unclear": Scenario(
         name="unclear", label="A reply the assistant cannot use",
-        script=("Tree removal", "12 Oak St, Charlotte", "Sometime next week", "Thursday at 10", "Dana Lee",
+        script=("Tree trimming", "412 Maple St, Charlotte", "Sometime next week", "Thursday at 10", "Dana Whitfield",
                 "Use my work phone", "YES", "alex at example", "dana@example.com"),
         needs=(None, None, None, None, None, "phone", "phone", "email", "email"),
     ),
@@ -239,7 +240,7 @@ SCENARIOS: dict[str, Scenario] = {
     ),
     "steps_back": Scenario(
         name="steps_back", label="The customer asks for a call back",
-        script=("Tree removal", "Can you have someone call me instead?"),
+        script=("Tree trimming", "Can you have someone call me instead?"),
     ),
     "safety": Scenario(
         name="safety", label="Something dangerous",

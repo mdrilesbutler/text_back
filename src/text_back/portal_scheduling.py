@@ -61,18 +61,24 @@ SUGGESTED_HOURS: dict[str, dict | None] = {day: (dict(window) if window else Non
 
 # --- words (copy deck, section 5; verbatim) ---------------------------------------
 ERR_DURATION = "Appointment length must be 15 to 480 minutes, in steps of 5."
+# Without JavaScript, a tapped chip and a typed number that disagree (m36).
+ERR_DURATION_BOTH = "You tapped one length and typed another. Pick one: tap a length, or tap Custom and type the minutes."
 ERR_TIMEZONE = "Pick a time zone from the list."
 ERR_MODE = "Choose Any day, any time or Set hours."
 ERR_NO_DAYS = "Set at least one open day, or choose Any day, any time."
 ERR_TIMES = "Pick times from the list."
 ERR_QUIET = "Pick quiet hours from the list."
+# Equal times would silently mean "no quiet hours"; the switch is the one way to turn them off (M2).
+ERR_QUIET_SAME = "Start and end can't be the same time. To turn quiet hours off, use the switch."
+# The times shown under a switched-off quiet hours: the last custom pair, so Off then On brings them back (M2).
+QUIET_LAST_KEY = "quiet_hours_last"
 ERR_REMINDERS = "Reminder delays must be between 5 minutes and 14 days."
 ERR_EXPIRY = "The waiting time must be between 1 hour and 30 days."
-# The save notice names only the rules that changed (deck schedule_toast); "Saved." when none did.
-SAVED = "Saved. You changed “{rules}”. It applies now, including customers mid-conversation."
+# The save notice names only the rules that changed (deck schedule_toast); "Saved." when none did. Then each
+# changed rule's own note (APPLIES, or the reminders' consequence), word for word, so the notice never claims
+# more than the card under the rule does (m10).
+SAVED = "Saved. You changed “{rules}”."
 SAVED_NOTHING = "Saved."
-# Added when a reminder delay is among the changed rules (pinned by test_saved_reminder_delays_*).
-SAVED_REMINDERS = "; reminders already scheduled keep their time."
 CORRUPT_HOURS = "Your saved working hours couldn't be read, so every time counts as open until you save again."
 ANY_TIME_WARNING = "Customers can be offered times like 1 AM. Set your hours."
 ANY_TIME_BUTTON = "Use Mon–Fri, 8 AM–5 PM"
@@ -115,7 +121,7 @@ CONSEQUENCES = {
 }
 
 # Rule -> the element id its changed-item link points at (the header save bar and the desktop bar).
-ANCHORS = {"appointment_duration_minutes": "rule-duration", "timezone": "rule-timezone", "working_hours": "hours",
+ANCHORS = {"appointment_duration_minutes": "rule-duration", "timezone": "rule-timezone", "working_hours": "working-hours",
            "quiet_hours": "quiet_hours", "followup_delay_1": "rule-followup_delay_1",
            "followup_delay_2": "rule-followup_delay_2", "followup_expiry_minutes": "rule-followup_expiry_minutes"}
 
@@ -222,6 +228,9 @@ def current_values(state) -> dict:
                      "open": (window or {"open": "08:00"})["open"], "close": (window or {"close": "17:00"})["close"]}
     qs, qe = get("quiet_hours_start"), get("quiet_hours_end")
     dqs, dqe = str(defaults["quiet_hours_start"]), str(defaults["quiet_hours_end"])
+    last = str(store.setting(QUIET_LAST_KEY) or "").split("-")
+    if len(last) != 2 or last[0] == last[1] or not set(last) <= set(QUIET_OPTIONS):
+        last = [dqs, dqe] if dqs != dqe else ["21:00", "08:00"]
     return {
         "appointment_duration_minutes": get("appointment_duration_minutes"),
         "timezone": get("timezone"),
@@ -229,6 +238,7 @@ def current_values(state) -> dict:
         "hours": rows,
         "hours_corrupt": wh.is_corrupt(raw_hours),
         "quiet_hours_start": qs, "quiet_hours_end": qe, "no_quiet_hours": qs == qe,
+        "quiet_last_start": last[0], "quiet_last_end": last[1],
         "followup_delay_1": d1, "followup_delay_2": d2,
         "reminder_count": max(1, len(policy_delays)),
         "extra_delays": policy_delays[2:],
@@ -328,10 +338,15 @@ def parse_form(form, state) -> tuple[dict, dict]:
     qs, qe = text("quiet_hours_start"), text("quiet_hours_end")
     values.update(no_quiet_hours=no_quiet, quiet_hours_start=qs or values["quiet_hours_start"],
                   quiet_hours_end=qe or values["quiet_hours_end"])
+    last_pair = None
     if no_quiet:
+        if qs in QUIET_OPTIONS and qe in QUIET_OPTIONS and qs != qe:
+            last_pair = f"{qs}-{qe}"  # the times under the switch, kept for the next time it goes on
         qs = qe = "00:00"
     elif qs not in QUIET_OPTIONS or qe not in QUIET_OPTIONS:
         errors["quiet_hours"] = ERR_QUIET
+    elif qs == qe:
+        errors["quiet_hours"] = ERR_QUIET_SAME
 
     # Reminders and the waiting time
     delays = []
@@ -365,6 +380,8 @@ def parse_form(form, state) -> tuple[dict, dict]:
             "followup_delays_minutes": ",".join(str(d) for d in [*delays, *values["extra_delays"]]),
             "followup_expiry_minutes": str(expiry),
         }
+        if last_pair:
+            values["_settings"][QUIET_LAST_KEY] = last_pair
     return values, errors
 
 
@@ -411,14 +428,36 @@ def changed_rules(before: dict, after: dict) -> list[str]:
     return [LABELS[rule] for rule, keys in _RULE_KEYS if any(before.get(k) != after.get(k) for k in keys)]
 
 
-def saved_notice(before: dict, after: dict) -> str:
-    rules = changed_rules(before, after)
+def changed_rule_keys(before: dict, after: dict) -> list[str]:
+    """The rule keys (LABELS) whose saved value differs, in page order."""
+    labels = set(changed_rules(before, after))
+    return [rule for rule, _ in _RULE_KEYS if LABELS[rule] in labels]
+
+
+def _applies_note(rule: str) -> str:
+    if rule in ("followup_delay_1", "followup_delay_2"):
+        return CONSEQUENCES["followup_delay_1"]
+    return APPLIES.get(rule, "")
+
+
+def saved_text(rules: list[str]) -> str:
+    """The save notice for these rule keys: what changed, then each rule's own note once."""
     if not rules:
         return SAVED_NOTHING
-    notice = SAVED.format(rules="”, “".join(rules))
-    if {LABELS["followup_delay_1"], LABELS["followup_delay_2"]} & set(rules):
-        notice = notice[:-1] + SAVED_REMINDERS
-    return notice
+    notice = SAVED.format(rules="”, “".join(LABELS[rule] for rule in rules))
+    notes: list[tuple[str, str]] = []
+    for rule in rules:
+        note = _applies_note(rule)
+        if note and note not in {n for _, n in notes}:
+            notes.append((rule, note))
+    if len(notes) == 1:
+        return f"{notice} {notes[0][1]}"
+    named = {"followup_delay_1": "Reminders", "followup_delay_2": "Reminders"}
+    return " ".join([notice] + [f"{named.get(rule, LABELS[rule])}: {note[0].lower()}{note[1:]}" for rule, note in notes])
+
+
+def saved_notice(before: dict, after: dict) -> str:
+    return saved_text(changed_rule_keys(before, after))
 
 
 def reset_form(form, group: str, state) -> dict | None:
@@ -444,10 +483,41 @@ def reset_form(form, group: str, state) -> dict | None:
     return merged
 
 
+def reset_targets(values: dict) -> tuple[dict, dict]:
+    """(control values each Reset puts back, whether each rule already is at its default). portal.js resets a rule
+    in place from the first (it stays local until Save, m11); a rule at its default shows no Reset."""
+    raw = values["raw_defaults"]
+    quiet_default_on = raw["no_quiet_hours"] != "1"
+    targets = {
+        "appointment_duration_minutes": {"appointment_duration_custom": raw["appointment_duration_minutes"],
+                                         "appointment_duration_minutes": raw["appointment_duration_minutes"]
+                                         if int(raw["appointment_duration_minutes"]) in DURATION_PRESETS else "custom"},
+        "timezone": {"timezone": raw["timezone"]},
+        "working_hours": {"hours_mode": "any"},
+        "quiet_hours": {"quiet_on": quiet_default_on,
+                        **({"quiet_hours_start": raw["quiet_hours_start"], "quiet_hours_end": raw["quiet_hours_end"]}
+                           if quiet_default_on else {})},
+        "followup_delay_1": {"followup_delay_1": raw["followup_delay_1"]},
+        "followup_delay_2": {"followup_delay_2": raw["followup_delay_2"]},
+        "followup_expiry_minutes": {"followup_expiry_minutes": raw["followup_expiry_minutes"]},
+    }
+    quiet_on = not values["no_quiet_hours"]
+    at_default = {
+        "appointment_duration_minutes": str(values["appointment_duration_minutes"]) == raw["appointment_duration_minutes"],
+        "timezone": values["timezone"] == raw["timezone"],
+        "working_hours": values["hours_mode"] == "any",
+        "quiet_hours": quiet_on == quiet_default_on and (not quiet_on or (
+            values["quiet_hours_start"], values["quiet_hours_end"]) == (raw["quiet_hours_start"], raw["quiet_hours_end"])),
+        **{key: str(values[key]) == raw[key] for key in ("followup_delay_1", "followup_delay_2", "followup_expiry_minutes")},
+    }
+    return targets, at_default
+
+
 def page_context(state, values: dict, errors: dict | None = None) -> dict:
     """Everything schedule.html.j2 needs beyond the layout contract."""
     errors = errors or {}
     raw = values["raw_defaults"]
+    targets, at_default = reset_targets(values)
     day_rows = []
     for day in wh.WEEKDAYS:
         row = values["hours"][day]
@@ -484,6 +554,7 @@ def page_context(state, values: dict, errors: dict | None = None) -> dict:
         "hours_hints": HOURS_HINTS,
         "applies": APPLIES,
         "any_time_note": ANY_TIME_NOTE,
+        "reset_values": targets, "at_default": at_default,
     }
 
 

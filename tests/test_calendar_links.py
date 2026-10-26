@@ -98,4 +98,4 @@ def test_confirmation_without_an_app_has_no_dangling_links_line(tmp_path):
                      start=datetime(2026, 10, 22, 16, 0, tzinfo=ZoneInfo("America/New_York")), duration_minutes=60,
                      conversation_id="+15551112222", now=NOW)
     body = [m for m in telecom.outbound if m.kind == "booking_confirmation"][-1].body
-    assert body.endswith("This is Acme's scheduling assistant.")
+    assert body.endswith("This is the scheduling assistant for Acme.")

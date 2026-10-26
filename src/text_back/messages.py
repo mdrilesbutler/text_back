@@ -32,19 +32,20 @@ log = logging.getLogger(__name__)
 MAX_TEMPLATE_CHARS = 480
 
 DEFAULT_TEMPLATES: dict[str, str] = {
+    # No possessive ("Arborists's") and no em dash (it bills every text as 70-character parts).
     "intro": (
-        "Hey, sorry we missed your call—this is {business_name}'s scheduling assistant. "
+        "Hey, sorry we missed your call. This is the scheduling assistant for {business_name}. "
         "What were you calling about?"
     ),
     "followup_1": (
-        "Hi again from {business_name}'s scheduling assistant—still happy "
+        "Hi again from the scheduling assistant for {business_name}. Still happy "
         "to get you on the calendar. What job do you need done?"
     ),
     "followup_2": (
-        "Last check-in from {business_name}'s scheduling assistant. Reply with "
+        "Last check-in from the scheduling assistant for {business_name}. Reply with "
         "the job you need and we'll set a time."
     ),
-    "prompt_service": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?",
+    "prompt_service": "What's the job you need done? For example: tree removal, trimming or stump grinding.",
     "prompt_location": "What's the address or location for the job?",
     "prompt_preferred_time": (
         "What day and time works best? "
@@ -70,7 +71,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     ),
     "booking_confirmation": (
         "Booked: {service} on {when} at {location}. "
-        "This is {business_name}'s scheduling assistant. {invite_line} {calendar_links}"
+        "This is the scheduling assistant for {business_name}. {invite_line} {calendar_links}"
     ),
     "handoff_ack": (
         "Got it. Automated scheduling is paused, and we'll follow up with you directly."
@@ -80,11 +81,11 @@ DEFAULT_TEMPLATES: dict[str, str] = {
         "If anyone is in immediate danger, call 911 now."
     ),
     "opt_in": (
-        "You're subscribed to {business_name}'s scheduling texts. "
+        "You're subscribed to scheduling texts from {business_name}. "
         "Msg & data rates may apply. Reply HELP for help or STOP to opt out."
     ),
     "help": (
-        "{business_name}'s scheduling assistant. Reply with the job type, location, "
+        "This is the scheduling assistant for {business_name}. Reply with the job type, location, "
         "and a time that works. Anything we can't handle by text, the owner "
         "follows up on.{contact_line} Msg & data rates may apply."
     ),

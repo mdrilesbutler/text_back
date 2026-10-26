@@ -97,7 +97,9 @@ def test_every_page_sends_headers_csp_and_own_assets_only(tmp_path, monkeypatch)
                 "/client/phone/keep", "/client/phone/confirm", "/client/phone/rename-texts", "/client/account/remember",
                 "/client/account/signout-everywhere"):
         response = client.post(url, data={"csrf": "forged", "business_name": "Evil", "owner_mobile": "980 555 0100"})
-        assert "This page expired" in assert_portal_page(response, status=400), url
+        # m28: Messages answers with the typed wording and a fresh token instead of the bare expired page.
+        expected = "This page was open a long time." if url == "/client/messages" else "This page expired"
+        assert expected in html.unescape(assert_portal_page(response, status=400)), url
     assert client.app.state.business_name == "Oak"
 
 
@@ -114,7 +116,7 @@ def test_every_post_form_carries_the_csrf_token(tmp_path, monkeypatch):
         assert forms
         for form in forms:
             assert f"name=csrf value='{csrf}'" in form, form[:160]
-            actions.add(re.search(r"action=(\S+?)[\s>]", form).group(1))
+            actions.add(re.search(r'action="?([^\s>"#]+)', form).group(1))  # F6: the check posts to …#availability
         # The only GET form picks which example conversation is drawn; it changes nothing.
         assert re.findall(r"<form method=get action=(\S+)", page) in ([], ["/client/messages#example"])
         assert not re.search(r"<form(?! method=(?:post|get) )", page)
@@ -149,7 +151,7 @@ def test_notice_slot_sits_between_the_header_and_the_h1_on_every_page(tmp_path, 
     csrf = csrf_of(page)
     saved = client.post("/client/account/remember", data={"csrf": csrf, "remember": "1"}).text
     assert re.search(r"<div class=status-slot id=notice role=status><div class=\"notice notice--success toast\" data-notice>"
-                     r".*?<p class=notice__text>Saved\.</p>", saved, re.S)
+                     r".*?<p class=notice__text>Saved\. This device now stays signed in for 30 days\.</p>", saved, re.S)
 
 
 def test_account_page_has_sign_out_everywhere_and_remember(tmp_path, monkeypatch):
@@ -167,9 +169,11 @@ def test_remember_toggles_expiry(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     csrf = csrf_of(client.get("/client/account").text)
-    on = client.post("/client/account/remember", data={"csrf": csrf, "remember": "1"})
-    assert "On. This device stays signed in for 30 days." in html.unescape(on.text)
+    on = client.post("/client/account/remember", data={"csrf": csrf, "remember": "1"}, follow_redirects=False)
+    assert on.status_code == 303 and on.headers["location"] == "/client/account"  # M1: post, redirect, get
     assert "max-age=2592000" in on.headers["set-cookie"].lower()
+    on = client.get("/client/account")
+    assert "On. This device stays signed in for 30 days." in html.unescape(on.text)
     row = client.app.state.store.conn.execute("SELECT remember, expires_at FROM client_sessions WHERE pending=0").fetchone()
     assert row["remember"] == 1 and datetime.fromisoformat(row["expires_at"]) == clock[0] + timedelta(days=30)
     clock[0] += timedelta(hours=13)
@@ -221,8 +225,9 @@ def test_sign_in_requests_are_limited_and_the_notice_is_the_same_for_unknown_num
             assert client.post("/client/login", data={"mobile": mobile}, follow_redirects=False).status_code == 303
         fourth = client.post("/client/login", data={"mobile": mobile}, follow_redirects=False)
         assert fourth.status_code == 200
-        pages[mobile] = fourth.content
-    assert pages[OWNER] == pages["+19805559999"]
+        assert f'value="{mobile}"'.encode() in fourth.content  # m9: the typed number stays in the field
+        pages[mobile] = fourth.content.replace(f'value="{mobile}"'.encode(), b"")
+    assert pages[OWNER] == pages["+19805559999"]  # apart from what was typed, nothing says which number is on file
     assert b"We&#39;ve sent three codes in the last 15 minutes. Wait a few minutes, then try again." in pages[OWNER]
     assert len([m for m in telecom.outbound if m.kind == "login_code"]) == 3
     clock[0] += timedelta(minutes=16)

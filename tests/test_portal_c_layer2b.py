@@ -37,6 +37,8 @@ def card(page, key):
 def test_a_symbol_in_the_business_name_is_named_there_and_offers_no_button(tmp_path, monkeypatch):
     client, path, csrf = signed_in(tmp_path, monkeypatch)
     client.app.state.business_name = "Dana’s Trees"
+    # P1: the standard reminder has no em dash any more; a saved wording brings one in.
+    path.write_text(json.dumps({"followup_1": "Hi again from {business_name}—still happy to book you. What job do you need done?"}))
     page = client.get("/client/messages").text
     for key in ("help", "followup_1"):
         c = html.unescape(card(page, key))
@@ -63,6 +65,7 @@ def test_a_symbol_in_the_stop_line_is_named_there(tmp_path, monkeypatch):
 
 def test_replace_is_local_with_javascript_and_says_and_save_without_it(tmp_path, monkeypatch):
     client, path, csrf = signed_in(tmp_path, monkeypatch)
+    path.write_text(json.dumps({"intro": "Sorry we missed your call—this is {business_name}. What do you need done?"}))
     intro = card(client.get("/client/messages").text, "intro")
     assert ("<span class=msg__fix-js data-fix-label>Replace — with -</span><span class=msg__fix-nojs>Replace — with - and save</span>"
             in intro)
@@ -78,7 +81,7 @@ def test_replace_is_local_with_javascript_and_says_and_save_without_it(tmp_path,
 def test_an_unknown_insert_is_refused_and_nothing_is_written(tmp_path, monkeypatch):
     client, path, csrf = signed_in(tmp_path, monkeypatch)
     page = html.unescape(client.post("/client/messages", data={"csrf": csrf, "handoff_ack": "Thanks [Customer name]! We'll follow up."}).text)
-    assert pm.REASON_BAD_INSERT in page and "“When the assistant steps back” needs a change" in page
+    assert pm.REASON_BAD_INSERT in page and "“Steps-back text” needs a change" in page
     assert not path.exists()
     # A known label for this text still works, in any case or spacing.
     client.post("/client/messages", data={"csrf": csrf, "prompt_name": "Name for [business  NAME]?"})

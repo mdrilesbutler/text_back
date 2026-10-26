@@ -34,9 +34,11 @@ def test_headline_says_working_only_when_nothing_needs_the_owner(tmp_path):
     state = _app(tmp_path).state
     state.store.set_setting("texting_approval_state", "waiting")
     items = setup_items(state, NOW)
-    assert [i["state_word"] for i in items] == ["Needs you", "Needs you", "Waiting on phone companies"]
-    assert headline(items) == "Not working yet: 2 steps left."
-    assert items[0]["action_href"] == "/client/calendar" and items[1]["action_label"] == "Finish forwarding"
+    # P3: with no way to connect from the portal the calendar waits on FluxWorks and is not a step left.
+    assert [i["state_word"] for i in items] == ["Waiting on FluxWorks", "Needs you", "Waiting on phone companies"]
+    assert headline(items) == "Not working yet: 1 step left."
+    assert items[0]["detail"] == "FluxWorks connects your calendar for you." and items[0]["action_href"] is None
+    assert items[1]["action_label"] == "Finish forwarding"
     assert items[1]["detail"] == "0 of 5 checks done."
     assert items[2]["action_label"] is None
 

@@ -39,6 +39,8 @@ os.environ.update({
     "TEXT_BACK_MESSAGES_FILE": str(messages),
     "TEXT_BACK_TIMEZONE": TZ,
     "TEXT_BACK_HANDOFF_DESTINATION": "operator",
+    # A fictional 555-01xx support number, so "Text FluxWorks support" shows where the product offers it (P3).
+    "TEXT_BACK_SUPPORT_CONTACT": "+17045550199",
 })
 for key in list(os.environ):
     if key.endswith("_API_KEY"):

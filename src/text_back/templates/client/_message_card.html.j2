@@ -45,7 +45,7 @@
       {% endif %}
     </div>
     {% if c.optional and editable %}
-    <label class="switch-row msg__switch" for=ask_{{ c.optional }}><span class=switch-row__text>{{ c.switch_label }}</span><input type=checkbox role=switch class=switch id=ask_{{ c.optional }} name=ask_{{ c.optional }} value=1{% if c.asked %} checked{% endif %}></label>
+    <label class="switch-row msg__switch" for=ask_{{ c.optional }}><span class=switch-row__text>{{ c.switch_label }}</span><input type=checkbox role=switch class=switch id=ask_{{ c.optional }} name=ask_{{ c.optional }} value=1{% if c.asked %} checked{% endif %} data-change-kind=setting data-change-label="{{ c.title }}"></label>
     <p class=msg__offq>{{ c.body }}</p>
     <p class=msg__off>Off. Customers skip this question.</p>
     {% endif %}
@@ -53,7 +53,7 @@
       {% if c.trigger %}<p class=msg__trigger>When the customer sends something like</p>{{ customer(c.trigger) }}{% endif %}
       {{ bubble(c.body, c.links, c.suffix, c.who, c.key) }}
       <p class=msg__linknote data-link-note{% if not c.links %} hidden{% endif %}>Each label is a link. The text count includes the full links.</p>
-      <p class=msg__receipt>{% if c.optout_required %}<span class=msg__added data-optout-note{% if not c.suffix %} hidden{% endif %}>STOP line added for you</span>{% endif %}<span class=msg__meter data-count>{{ c.count }}</span></p>
+      <p class=msg__receipt>{% if c.optout_required %}<span class=msg__added data-optout-note{% if not c.suffix %} hidden{% endif %}>STOP line added for you<span class=msg__sep> · </span></span>{% endif %}<span class=msg__meter data-count>{{ c.count }}</span></p>
       <p class=msg__was data-was{% if not c.text_dirty %} hidden{% endif %}><span class=msg__was-k>Was:</span> <span data-was-text>{{ c.was }}</span></p>
       <div class=msg__bill data-bill{% if not c.bill %} hidden{% endif %}>{{ icon("triangle-alert") }}<p data-bill-text>{{ c.bill }}</p>
         {%- if editable %}<button type=submit class="btn btn--ghost msg__fix" name=fix value={{ c.key }} data-fix data-symbol="{{ c.fix.split(' ')[1] if c.fix else '' }}"{% if not c.fix %} hidden{% endif %}><span class=msg__fix-js data-fix-label>{{ c.fix }}</span><span class=msg__fix-nojs>{{ c.fix }} and save</span><span class=vh> {{ c.title }}</span></button>{% endif -%}
@@ -62,14 +62,14 @@
     {% if editable %}
     <div class=msg__foot>
       <details class=editor{% if c.error %} open{% endif %}>
-        <summary class=editor__summary>Edit wording<span class=vh>: {{ c.title }}</span>{{ icon("chevron-down", "editor__chev") }}</summary>
+        <summary class=editor__summary aria-label="Edit wording: {{ c.title }}">Edit wording{{ icon("chevron-down", "editor__chev") }}</summary>
         <div class=editor__body>
           {% if c.error %}{{ field_error("e-" ~ c.key, c.error) }}{% endif %}
           {% if not (c.next_steps or c.destination) %}{{ rule_lines(c.rules) }}{% endif %}
           <label class=vh for=w-{{ c.key }}>Wording: {{ c.title }}</label>
           <textarea class=textarea id=w-{{ c.key }} name={{ c.key }} maxlength={{ max_chars }} rows=3 spellcheck=true autocapitalize=sentences enterkeyhint=done aria-describedby="h-{{ c.key }}{{ ' e-' ~ c.key if c.error else '' }}"{% if c.error %} aria-invalid=true{% endif %}>{{ c.value }}</textarea>
           {% if c.chips %}
-          <div class=chips role=group aria-label="Insert a detail" data-chips hidden>{% for text, label in c.chips %}<button type=button class=chip data-insert="{{ text }}" aria-controls=w-{{ c.key }}>{{ icon("plus") }}{{ label }}</button>{% endfor %}</div>
+          <div class=chips role=group aria-label="Insert a detail" data-chips hidden>{% for text, label in c.chips %}<button type=button class=chip data-insert="{{ text }}" aria-controls=w-{{ c.key }} aria-label="Insert {{ label }}">{{ icon("plus") }}{{ label }}</button>{% endfor %}</div>
           <p class=chips-fallback>Insert a detail: {% for text, label in c.chips %}{{ text }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
           {% else %}
           <p class="field-help chips-none">This text fills in no details.</p>

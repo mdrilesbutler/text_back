@@ -50,16 +50,26 @@ LOGIN = "/client/login"
 
 # --- words (copy deck sections 1, 2, 8, 9; verbatim) ---------------------------------------
 MOBILE_ERROR = "Enter your mobile as 10 digits, area code first."
-RATE_LIMITED = "We've sent three codes in the last 15 minutes. Wait a few minutes, then try again."
+# A typo in the number looks exactly like a slow text, so both pages say how to tell (m8/m9).
+TYPO_HINT = "If you don't get a text within a minute, check the number and send a new code."
+RATE_LIMITED = f"We've sent three codes in the last 15 minutes. Wait a few minutes, then try again. {TYPO_HINT}"
 CODE_FAILURE = "That code isn't right, or it has expired. Check the text or send a new code."
 SESSION_ENDED = "You were signed out. Sign in again to continue."
 SIGNED_OUT_EVERYWHERE = "Signed out everywhere."
-LOGIN_NOTICES = {"ended": SESSION_ENDED, "everywhere": SIGNED_OUT_EVERYWHERE}
+SIGNED_OUT = "You signed out."
+# ?notice= on the sign-in page is an id from this table, never text.
+LOGIN_NOTICES = {"ended": SESSION_ENDED, "everywhere": SIGNED_OUT_EVERYWHERE, "signedout": SIGNED_OUT}
 # The notice style on the sign-in page: a finished action reads as success, the rest as information.
-NOTICE_KINDS = {SIGNED_OUT_EVERYWHERE: "success"}
+NOTICE_KINDS = {SIGNED_OUT_EVERYWHERE: "success", SIGNED_OUT: "success"}
 REMEMBER_ON = "On. This device stays signed in for 30 days."
 REMEMBER_OFF = "Off. This device signs out after 12 hours."
+# The Account save notice names the change (m4).
+REMEMBER_SAVED_ON = "Saved. This device now stays signed in for 30 days."
+REMEMBER_SAVED_OFF = "Saved. This device now signs out after 12 hours."
 SAVED = "Saved."
+# A Messages save whose form token no longer matches: the typed wording comes back with a fresh token (m28).
+EXPIRED_KEPT = "This page was open a long time. Check your changes and press Save again."
+NOT_FOUND_TITLE = "That page doesn't exist."
 
 NAV: tuple[tuple[str, str], ...] = (("home", "Home"), ("messages", "Messages"), ("schedule", "Schedule"),
                                     ("calendar", "Calendar"), ("phone", "Phone"))
@@ -141,8 +151,34 @@ def require_session(state, request: Request) -> dict:
 
 
 def check_csrf(form, session, reload_url: str) -> None:
-    if not hmac.compare_digest(str(form.get("csrf", "") or ""), session["csrf"]):
+    if not csrf_ok(form, session):
         raise FormExpired(reload_url)
+
+
+def csrf_ok(form, session) -> bool:
+    return hmac.compare_digest(str(form.get("csrf", "") or ""), session["csrf"])
+
+
+def owner_display(state, session) -> str:
+    """The mobile that signs the owner in now (it can change after this session began), formatted."""
+    return format_contact_number(getattr(state, "owner_mobile", "") or session["phone"])
+
+
+def saved_redirect(state, session, url: str, notice_id: str, params: dict | None = None, *, anchor: str = ""):
+    """A successful POST: 303 to the page's GET with a one-time notice (portal_flash). Back and reload
+    then show the saved page and never post the form again."""
+    from text_back.portal_flash import set_flash
+
+    response = RedirectResponse(url + (f"#{anchor}" if anchor else ""), status_code=303)
+    set_flash(response, state, session, url, notice_id, params, secure=_secure(state))
+    return response
+
+
+def page_notice(state, request, session, url: str) -> str:
+    """The one-time notice the last POST left for ``url`` (portal_flash), or ''."""
+    from text_back.portal_flash import take
+
+    return take(state, request, session, url)
 
 
 def shell(state, session, *, title: str, nav: str | None, notice: str = "") -> dict:
@@ -153,7 +189,7 @@ def shell(state, session, *, title: str, nav: str | None, notice: str = "") -> d
         "nav": NAV,
         "nav_active": nav,
         "csrf": session["csrf"],
-        "signed_in_with": format_contact_number(session["phone"]),
+        "signed_in_with": owner_display(state, session),
         "notice": notice,
         "tz": getattr(state, "timezone_name", "UTC") or "UTC",
         "now": _now(state),
@@ -172,10 +208,12 @@ def _set_session_cookie(response, state, token: str, remember: bool) -> None:
 
 # --- sign in -------------------------------------------------------------------
 
-def _login_form(request: Request, state, *, error: str = "", notice: str = "", typed: str = "") -> HTMLResponse:
-    # typed: what the owner entered, kept in the field only beside its error (never on any other answer).
+def _login_form(request: Request, state, *, error: str = "", notice: str = "", typed: str = "",
+                verify_link: bool = False) -> HTMLResponse:
+    # typed: what the owner entered, kept in the field beside its error or the rate-limit notice (never otherwise).
+    # verify_link: a code was already asked for on this device, so the page links back to Enter code (m8).
     return render(request, "client/login.html.j2", title="Sign in", business_name=state.business_name, error=error,
-                  notice=notice, notice_kind=NOTICE_KINDS.get(notice, "info"), typed=typed[:24])
+                  notice=notice, notice_kind=NOTICE_KINDS.get(notice, "info"), typed=typed[:24], verify_link=verify_link)
 
 
 def _verify_form(request: Request, state, *, error: str = "") -> HTMLResponse:
@@ -271,22 +309,25 @@ def account_view(state, session, *, confirm_everywhere: bool = False) -> dict:
     now = _now(state)
     with state.store.lock:
         rows = state.store.conn.execute(
-            "SELECT token_hash, created_at, last_used_at FROM client_sessions WHERE pending=0 AND expires_at>? "
+            "SELECT token_hash, created_at, last_used_at, remember FROM client_sessions WHERE pending=0 AND expires_at>? "
             "ORDER BY coalesce(last_used_at, created_at) DESC", (now.isoformat(),)).fetchall()
     # Preview harnesses flag the device rows they seeded; production never sets this.
     examples = set(getattr(state, "preview_example_sessions", ()) or ())
     others = [{"signed_in": datetime.fromisoformat(row["created_at"]),
                "last_used": datetime.fromisoformat(row["last_used_at"] or row["created_at"]),
-               "example": row["token_hash"] in examples}
+               "example": row["token_hash"] in examples, "remembered": bool(row["remember"])}
               for row in rows if row["token_hash"] != session["token_hash"]]
     remember = bool(session.get("remember"))
     return {
-        "signed_in_as": format_contact_number(session["phone"]),
+        "signed_in_as": owner_display(state, session),
         "this_device": {"signed_in": datetime.fromisoformat(session["created_at"]),
                         "until": datetime.fromisoformat(session["expires_at"]),
                         # A 12-hour session ends today or tomorrow: then the time matters, not only the day.
                         "until_today": datetime.fromisoformat(session["expires_at"]) - now < timedelta(days=1)},
         "other_devices": others,
+        # Under "Remembered devices" only the sessions that were remembered; the rest under "Other signed-in devices".
+        "remembered_devices": [d for d in others if d["remembered"]],
+        "unremembered_devices": [d for d in others if not d["remembered"]],
         "remember": remember,
         "remember_status": REMEMBER_ON if remember else REMEMBER_OFF,
         "remember_on": REMEMBER_ON, "remember_off": REMEMBER_OFF,
@@ -303,19 +344,19 @@ def _account_page(request: Request, state, session, *, notice: str = "", confirm
 # --- Messages -------------------------------------------------------------------
 
 def _messages_page(request: Request, state, session, *, notice: str = "", values=None, asked=None, error: str = "",
-                   scenario: str = ""):
+                   scenario: str = "", notice_kind: str = "success", unsaved: bool = False, status_code: int = 200):
     from text_back import portal_messages
 
-    view = portal_messages.page_view(state, _now(state), values=values, asked=asked, error=error)
+    view = portal_messages.page_view(state, _now(state), values=values, asked=asked, error=error, unsaved=unsaved)
     ids = [s.id for s in view["rail"]]
     view["scenario"] = scenario if scenario in ids else ids[0]
     tb_data = view.pop("tb_data")
     topsave = view.pop("topsave")
     title = "Not saved · Messages" if view["error_summary"] else "Messages"
     context = shell(state, session, title=title, nav="messages", notice=notice)
-    context.update(tb_data=tb_data, topsave=topsave)
+    context.update(tb_data=tb_data, topsave=topsave, notice_kind=notice_kind)
     # has_jump: the sticky jump control sits under the header, so scroll-padding-top counts it (d1 CSS).
-    return render(request, "client/messages.html.j2", **context, **view, has_jump=True)
+    return render(request, "client/messages.html.j2", status_code=status_code, **context, **view, has_jump=True)
 
 
 def _save_messages(request: Request, state, session, form):
@@ -325,7 +366,7 @@ def _save_messages(request: Request, state, session, form):
         return _messages_page(request, state, session)
     if str(form.get("discard", "") or "") == "1":
         # Discard without JavaScript (after a rejected save): back to what is saved; nothing is written.
-        return _messages_page(request, state, session, notice=portal_messages.DISCARDED)
+        return saved_redirect(state, session, "/client/messages", "discarded")
     submitted, overrides, asked = portal_messages.read_form(form)
     unknown = portal_messages.unknown_insert(submitted)
     if unknown:  # a [ … ] that is no insert: refused like any rejected save, nothing is written
@@ -341,8 +382,8 @@ def _save_messages(request: Request, state, session, form):
             after = state.messages.current()  # pick up the new file right away
     if error:
         return _messages_page(request, state, session, error=error, values=submitted, asked=asked)
-    notice = portal_messages.change_summary(before.templates, after.templates, set(before.fields), set(after.fields))
-    return _messages_page(request, state, session, notice=notice)
+    params = portal_messages.change_params(before.templates, after.templates, set(before.fields), set(after.fields))
+    return saved_redirect(state, session, "/client/messages", "messages_saved", params)
 
 
 # --- routes --------------------------------------------------------------------
@@ -367,6 +408,25 @@ def install_routes(app):
     async def _form_expired(request: Request, exc: FormExpired):
         return await run_in_threadpool(_expired, request, exc)
 
+    def _not_found(request: Request):
+        session = _session(state, request)
+        if session:
+            return render(request, "client/notfound.html.j2", status_code=404,
+                          **shell(state, session, title=NOT_FOUND_TITLE, nav=None), heading=NOT_FOUND_TITLE)
+        return render(request, "client/notfound_public.html.j2", status_code=404, title=NOT_FOUND_TITLE,
+                      heading=NOT_FOUND_TITLE, business_name=state.business_name)
+
+    from fastapi.exception_handlers import http_exception_handler
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_error(request: Request, exc: StarletteHTTPException):
+        # A /client page that doesn't exist answers a plain portal page, never JSON (m27).
+        path = request.url.path
+        if exc.status_code == 404 and path.startswith("/client/") and not path.startswith("/client/static/"):
+            return await run_in_threadpool(_not_found, request)
+        return await http_exception_handler(request, exc)
+
     @app.get("/client", include_in_schema=False)
     @app.get("/client/", include_in_schema=False)
     def client_root(request: Request):
@@ -390,7 +450,8 @@ def install_routes(app):
             return _login_form(request, state, error=MOBILE_ERROR, typed=typed.strip())
         pending = await run_in_threadpool(_request_login, state, mobile, _now(state))
         if pending is None:
-            return _login_form(request, state, notice=RATE_LIMITED)
+            return _login_form(request, state, notice=RATE_LIMITED, typed=typed.strip(),
+                               verify_link=bool(await run_in_threadpool(_pending, request)))
         # Same answer either way so the page never confirms which number is on file.
         response = RedirectResponse("/client/verify", status_code=303)
         response.set_cookie(PENDING_COOKIE, pending, secure=_secure(state), httponly=True, samesite="lax",
@@ -455,7 +516,7 @@ def install_routes(app):
         if session and hmac.compare_digest(str(form.get("csrf", "") or ""), session["csrf"]):
             with state.store.transaction():
                 state.store.conn.execute("DELETE FROM client_sessions WHERE token_hash=?", (session["token_hash"],))
-        response = RedirectResponse(LOGIN, status_code=303)
+        response = RedirectResponse(LOGIN + "?notice=signedout", status_code=303)
         response.delete_cookie(SESSION_COOKIE, path="/client")
         return response
 
@@ -468,8 +529,11 @@ def install_routes(app):
 
     @app.get("/client/account", include_in_schema=False)
     def account_page(request: Request):
+        from text_back.portal_flash import clear
+
         session = require_session(state, request)
-        return _account_page(request, state, session)
+        return clear(request, _account_page(request, state, session,
+                                            notice=page_notice(state, request, session, "/client/account")))
 
     def _remember(request: Request, form):
         session = require_session(state, request)
@@ -483,8 +547,7 @@ def install_routes(app):
         with state.store.transaction():
             state.store.conn.execute("UPDATE client_sessions SET remember=?, expires_at=? WHERE token_hash=?",
                                      (int(remember), expires.isoformat(), session["token_hash"]))
-        session = dict(session, remember=int(remember), expires_at=expires.isoformat())
-        response = _account_page(request, state, session, notice=SAVED)
+        response = saved_redirect(state, session, "/client/account", "remember", {"on": remember})
         token = request.cookies.get(SESSION_COOKIE, "")
         if token:
             response.set_cookie(SESSION_COOKIE, token, secure=_secure(state), httponly=True, samesite="lax",
@@ -519,11 +582,22 @@ def install_routes(app):
 
     @app.get("/client/messages", include_in_schema=False)
     def messages_page(request: Request, scenario: str = ""):
+        from text_back.portal_flash import clear
+
         session = require_session(state, request)
-        return _messages_page(request, state, session, scenario=scenario)
+        return clear(request, _messages_page(request, state, session, scenario=scenario,
+                                             notice=page_notice(state, request, session, "/client/messages")))
 
     def _save(request: Request, form):
+        from text_back import portal_messages
+
         session = require_session(state, request)
+        if not csrf_ok(form, session) and state.messages.path is not None and str(form.get("discard", "") or "") != "1":
+            # The page sat open past its token (another sign-in or sign-out everywhere): the wording typed
+            # comes back with a fresh token and nothing is saved, instead of a bare "This page expired".
+            submitted, _, asked = portal_messages.read_form(form, apply_buttons=False)
+            return _messages_page(request, state, session, values=submitted, asked=asked, notice=EXPIRED_KEPT,
+                                  notice_kind="warning", unsaved=True, status_code=400)
         check_csrf(form, session, "/client/messages")
         return _save_messages(request, state, session, form)
 

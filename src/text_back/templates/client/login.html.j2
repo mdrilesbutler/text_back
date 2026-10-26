@@ -2,10 +2,10 @@
     placeholder is neutral and nothing is prefilled. One inline error under the field (no summary on a
     one-field form), with focus on the field, which keeps what was typed so it can be fixed. -#}
 {% extends "client/auth.html.j2" %}
-{% from "client/_macros.html.j2" import field_error, button %}
+{% from "client/_macros.html.j2" import field_error, button, dismiss_button %}
 {% set step = 1 %}
 {% block content %}
-<div class=status-slot id=notice role=status>{% if notice %}{% include "client/_notice.html.j2" %}{% endif %}</div>
+<div class=notice-area><div class=status-slot id=notice role=status>{% if notice %}{% include "client/_notice.html.j2" %}{% endif %}</div>{{ dismiss_button() }}</div>
 <div class=auth__head>
   <h1>{{ business_name }}</h1>
   <p class=auth__sub>Sign in to TextBack</p>
@@ -14,9 +14,10 @@
 <form method=post action=/client/login class=auth__form>
   <div class=field>
     <label class=field__label for=mobile>Your mobile number</label>
-    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="10 digits"{% if error and typed %} value="{{ typed }}"{% endif %} aria-describedby="mobile-help{{ ' mobile-error' if error else '' }}"{% if error %} aria-invalid=true autofocus{% endif %}>
+    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="10 digits"{% if typed %} value="{{ typed }}"{% endif %} aria-describedby="mobile-help{{ ' mobile-error' if error else '' }}"{% if error %} aria-invalid=true autofocus{% endif %}>
     {% if error %}{{ field_error("mobile-error", error) }}{% endif %}
   </div>
   {{ button("Text me a code", size="lg", block="block", loading="Sending…") }}
 </form>
+{% if verify_link %}<a class=auth__link href=/client/verify>Enter the code you got</a>{% endif %}
 {% endblock %}

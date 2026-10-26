@@ -88,7 +88,7 @@ def test_cost_line_counts_the_network_notice_only_while_it_applies(tmp_path, mon
     chars, parts, _ = sms_parts(NOTICE_MODEL + name)
     assert chars == len(name) + 24
     assert f"<span class=msg__meter data-count>{parts} text · {chars} characters with the notice</span>" in card(page, "prompt_name")
-    assert "the network adds a short notice to the start of each text" in html.unescape(page)
+    assert "the network adds a short notice to each text, and the counts here include it" in html.unescape(page)  # one line
     assert "Each text in this example also starts with the network notice." in page
     # The opt-out line is added to other texts, never sent alone: it never carries the notice.
     assert "with the notice" not in re.search(r"data-count>([^<]+)<", card(page, "opt_out_suffix")).group(1)
@@ -139,20 +139,27 @@ def test_invite_sentence_only_while_the_email_question_is_asked(tmp_path, monkey
     assert "A calendar invite is on its way to dana@example.com." in html.unescape(on)
 
 
+DASHED = "Sorry we missed your call—this is {business_name}. What do you need done?"
+DASHED_SHOWN = DASHED.replace("{business_name}", "[Business name]")
+
+
 def test_replace_the_dash_is_one_tap_and_saves_without_javascript(tmp_path, monkeypatch):
     client, path, csrf = signed_in(tmp_path, monkeypatch)
+    assert "—" not in DEFAULT_TEMPLATES["intro"]  # P1: the standard wording has no em dash
+    path.write_text(json.dumps({"intro": DASHED}))
     page = client.get("/client/messages").text
     intro = card(page, "intro")
-    assert "—" in DEFAULT_TEMPLATES["intro"]
     assert "The “—” symbol makes each text hold only 70 characters. Use “-” instead." in html.unescape(intro)
     assert re.search(r'<button type=submit class="btn btn--ghost msg__fix" name=fix value=intro data-fix data-symbol="—">'
                      r"<span class=msg__fix-js data-fix-label>Replace — with -</span><span class=msg__fix-nojs>Replace — with - and save</span>"
                      r"<span class=vh> First text after a missed call</span>",
                      intro)
     assert "data-symbol=\"\" hidden" in card(page, "prompt_name")
-    saved = client.post("/client/messages", data={"csrf": csrf, "fix": "intro", "prompt_name": "Your name?"}).text
+    saved = client.post("/client/messages", data={"csrf": csrf, "fix": "intro", "intro": DASHED_SHOWN,
+                                                  "prompt_name": "Your name?"}).text
     written = json.loads(path.read_text())
-    assert written["intro"] == DEFAULT_TEMPLATES["intro"].replace("—", "-") and written["prompt_name"] == "Your name?"
+    # m2: a dash with no spaces around it becomes " - ", never "call-this".
+    assert written["intro"] == DASHED.replace("—", " - ") and written["prompt_name"] == "Your name?"
     intro = card(saved, "intro")
     assert "—" not in re.search(r"<p data-preview=intro>.*?</p>", intro).group(0)
     assert "—" not in re.search(r"<textarea .*?</textarea>", intro, re.S).group(0)
@@ -170,11 +177,12 @@ def test_switched_off_questions_show_the_question_and_the_off_line(tmp_path, mon
         assert 'class="qset qset--off"' in c and "msg--isoff" in c
         assert f"<p class=msg__offq>{html.escape(DEFAULT_TEMPLATES[key], quote=True).replace('&#x27;', '&#39;')}</p>" in c
         assert "<p class=msg__off>Off. Customers skip this question.</p>" in c
-        assert f"id=ask_{field} name=ask_{field} value=1>" in c and "<span class=pill data-not-asked>Not asked</span>" in c
+        assert f"id=ask_{field} name=ask_{field} value=1 data-change-kind=setting" in c  # m29: a switch is a setting
+        assert "<span class=pill data-not-asked>Not asked</span>" in c
         assert f"name={key} " in c  # still posted
     assert "data-branch-off" in card(page, "phone_reprompt") and "name=phone_reprompt" in card(page, "phone_reprompt")
     on = client.post("/client/messages", data={"csrf": csrf, "ask_phone": "1"}).text
-    assert "qset--off" not in card(on, "prompt_phone") and "id=ask_phone name=ask_phone value=1 checked>" in on
+    assert "qset--off" not in card(on, "prompt_phone") and "id=ask_phone name=ask_phone value=1 checked data-change-kind=setting" in on
     assert "data-branch-off" not in card(on, "phone_reprompt")
 
 
@@ -247,8 +255,7 @@ def test_example_conversation_caption_sits_under_its_heading(tmp_path, monkeypat
     page = client.get("/client/messages").text
     rail = re.search(r"<section class=rail id=example .*?</section>", page, re.S).group(0)
     assert re.search(r"<h2 class=rail__title id=rail-title tabindex=-1>Example conversation</h2>\s*"
-                     r"<p class=rail__caption><span class=extag>Example</span> Example conversation · nothing is sent · "
-                     r"names made up</p>", rail)
+                     r"<p class=rail__caption>Nothing is sent · names made up</p>", rail)  # "Example" once, in the title
     assert "<a class=rail__back href=#main>" in rail and "Back to editing" in rail
     booked = re.search(r"<ol class=thread data-scenario=booked .*?</ol>", rail, re.S).group(0)
     assert "<span class=sms__who>Customer</span>" in booked and "<span class=sms__who>Oak &amp; Pine Tree Care</span>" in booked

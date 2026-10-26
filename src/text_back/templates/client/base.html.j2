@@ -6,7 +6,7 @@
     (role=status) sits between the header and the page's h1; every save notice renders there (never a
     floating toast) and an error never does. -#}
 {% extends "client/_document.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, topsave_bar %}
+{% from "client/_macros.html.j2" import icon, csrf_input, topsave_bar, dismiss_button %}
 {% set nav_icons = {"home": "house", "messages": "message-square", "schedule": "clock", "calendar": "calendar", "phone": "phone"} %}
 {% set on_account = nav_active == "account" %}
 {% block body_attrs %} data-page={{ nav_active or "expired" }}{% endblock %}
@@ -24,6 +24,15 @@
     </details>
     {% if topsave %}{{ topsave_bar(topsave) }}{% endif %}
   </header>
+  <main class=page id=main tabindex=-1>
+    {#- The live region holds the notice's words only; its Dismiss button sits beside it, outside (F7). #}
+    <div class=notice-area>
+    <div class=status-slot id=notice role=status>{% if notice or (notice_offer is defined and notice_offer) %}{% include "client/_notice.html.j2" %}{% endif %}</div>
+    {{ dismiss_button() }}
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+  {#- After main in the DOM (skip link, header, main, then the pages), placed by CSS: bottom bar or sidebar (m26). #}
   <nav class=nav aria-label=Pages>
   {% for id, label in nav %}
     <a class=nav__item href=/client/{{ id }}{% if nav_active == id %} aria-current=page{% endif %}><span class=nav__icon>{{ icon(nav_icons[id]) }}</span><span>{{ label }}</span></a>
@@ -32,10 +41,6 @@
     <a class="nav__item nav__item--wide" href=/client/account{% if on_account %} aria-current=page{% endif %}><span class=nav__icon>{{ icon("user-round") }}</span><span>Account</span></a>
     <p class=nav__foot>TextBack by FluxWorks</p>
   </nav>
-  <main class=page id=main tabindex=-1>
-    <div class=status-slot id=notice role=status>{% if notice or (notice_offer is defined and notice_offer) %}{% include "client/_notice.html.j2" %}{% endif %}</div>
-    {% block content %}{% endblock %}
-  </main>
 </div>
 {% endblock %}
 {% block data %}{% if tb_data %}<script type=application/json id=tb-data>{{ tb_data|tojson }}</script>{% endif %}{% endblock %}

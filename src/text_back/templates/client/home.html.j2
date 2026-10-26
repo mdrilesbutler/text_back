@@ -9,7 +9,7 @@
 <div class=page-head><h1>Home</h1></div>
 <ol class=spine>
   {% call node(headline_node, cls="node--status") %}
-    <p class=status-line data-status-line>{{ headline }}{% if headline_example %} <span class=extag>Example</span>{% endif %}</p>
+    <p class=status-line data-status-line>{{ headline }}</p>
   {% endcall %}
   {% call node("icon", "sliders-horizontal", attrs="data-setup-head") %}
     <div class=node__head><h2>Setup</h2></div>
@@ -19,7 +19,7 @@
     <div class="setup setup--{{ item.node }}">
       <div class=setup__head><h3 class=setup__title>{{ item.title }}</h3>{{ state_pill(item.node, item.state_word) }}{% if item.example %}<span class=extag>Example</span>{% endif %}</div>
       <p class=setup__detail>{{ item.detail|nw }}</p>
-      {% if item.action_href %}<a class="btn btn--secondary setup__btn" href={{ item.action_href }}>{{ item.action_label }}</a>{% endif %}
+      {% if item.action_href %}<a class="btn btn--secondary setup__btn" href="{{ item.action_href }}">{{ item.action_label }}</a>{% endif %}
     </div>
   {% endcall %}
   {% endfor %}
@@ -32,7 +32,7 @@
       <div class=counts__item data-count=missed_calls><dt>Missed calls</dt><dd class=tnum>{{ week.counts.missed_calls }}</dd></div>
       <div class=counts__item data-count=customers_texted><dt>Customers texted</dt><dd class=tnum>{{ week.counts.customers_texted }}</dd></div>
       <div class=counts__item data-count=booked><dt>Booked</dt><dd class=tnum>{{ week.counts.booked }}</dd></div>
-      <div class=counts__item data-count=stepped_back><dt>Stepped back</dt><dd class=tnum>{{ week.counts.stepped_back }}</dd></div>
+      <div class=counts__item data-count=stepped_back><dt>{{ stepped_back }}</dt><dd class=tnum>{{ week.counts.stepped_back }}</dd></div>
     </dl>
   {% endcall %}
   {% call node("icon", "user-round", attrs="data-callers") %}
@@ -43,6 +43,10 @@
       <li class=caller>
         <p class=caller__who><span class=caller__name>{{ row.display|nw }}</span>{% if row.example %} <span class=extag>Example</span>{% endif %}</p>
         <p class=caller__status>{{ row.status }}</p>
+        {% if row.status == stepped_back %}
+        {#- The customer is waiting for someone to follow up: the number, with Call and Text right there (P4). #}
+        <p class=caller__reach><span class="caller__num tnum">{{ row.phone_display|nw }}</span><a class="btn btn--secondary caller__act" href="tel:{{ row.phone }}">{{ icon("phone") }}Call<span class=vh> {{ row.display }}</span></a><a class="btn btn--secondary caller__act" href="sms:{{ row.phone }}">{{ icon("message-square") }}Text<span class=vh> {{ row.display }}</span></a></p>
+        {% endif %}
         <p class=caller__when><span class=caller__k>Last activity</span> <span class=tnum>{{ row.last_at|when(tz, now, relative=False)|nw }}</span></p>
         <p class=caller__text><span class=caller__k>Last text</span> {{ row.snippet }}</p>
       </li>

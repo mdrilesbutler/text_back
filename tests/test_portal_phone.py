@@ -163,7 +163,8 @@ def test_owner_mobile_change_sends_code_to_new_number_and_keep_escape_works(tmp_
     assert portal_phone.confirm_new_mobile(state, code, NOW) == NEW_MOBILE
     assert state.owner_mobile == NEW_MOBILE and state.store.setting("owner_mobile") == NEW_MOBILE
     assert portal_phone.pending_mobile(state) is None
-    assert portal_phone.NEW_MOBILE_SAVED.format(n="(980) 555-0199") == "Saved. Sign-in codes now go to (980) 555-0199."
+    assert portal_phone.NEW_MOBILE_SAVED.format(n="(980) 555-0199") == (
+        "Saved. Sign-in codes now go to (980) 555-0199. Other devices stay signed in.")  # m7
     assert portal_phone.SAVED_CONFIRM_MOBILE == "Saved. Now confirm your new mobile."
     # Keep my current mobile: a second change is cancelled without a code.
     values, _ = portal_phone.validate(portal_phone.read_form({**FORM, "owner_mobile": "980 555 0123"}), state)

@@ -72,10 +72,13 @@ def test_notice_slot_is_role_status_and_sits_between_the_header_and_the_h1(tmp_p
         main = page.split("<main", 1)[1].split("</main>", 1)[0]
         assert "data-toast" not in main and "toast-region" not in page, url
     saved = client.post("/client/account/remember", data={"csrf": csrf_of(page), "remember": "1"}).text
-    slot = re.search(r"<div class=status-slot id=notice role=status>(.*?)</div>\s*<div class=page-head>", saved, re.S).group(1)
-    assert "<p class=notice__text>Saved.</p>" in slot and 'class="notice notice--success' in slot
+    slot = re.search(r"<div class=status-slot id=notice role=status>(.*?)</div>\s*<button type=button", saved, re.S).group(1)
+    assert "<p class=notice__text>Saved. This device now stays signed in for 30 days.</p>" in slot  # m4: names the change
+    assert 'class="notice notice--success' in slot
     assert "role=" not in slot  # the slot is the live region; the notice inside carries no role of its own
-    assert re.search(r"<button type=button class=\"icon-btn toast__action\" data-notice-dismiss hidden>", slot)
+    # F7: Dismiss sits beside the live region, never inside the words it announces.
+    assert "data-notice-dismiss" not in slot
+    assert re.search(r"</div>\s*<button type=button class=\"icon-btn toast__action notice-area__dismiss\" data-notice-dismiss hidden>", saved)
 
 
 def test_page_frame_carries_the_skip_link_and_one_stylesheet_with_the_d1_layer_last(tmp_path, monkeypatch):
@@ -93,7 +96,8 @@ def test_portal_js_has_no_floating_toast_and_marks_the_jump_chip(tmp_path):
     js = (STATIC / "portal.js").read_text()
     for gone in ("toast-region", "floatToast", "toast--floating", "COPY.undo", "'Undo'"):
         assert gone not in js, gone
-    assert "IntersectionObserver" in js and "'location'" in js  # the jump chip of the step on screen
+    # m23: the step on screen is measured on scroll and when scrolling ends (was an IntersectionObserver).
+    assert "addEventListener('scrollend', mark)" in js and "'location'" in js
     assert "data-notice-dismiss" in js and "#notice" in js          # notices stay in flow
 
 
@@ -209,8 +213,12 @@ def test_home_test_calendar_wording_matches_calendar(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     node = html.unescape(node_of(client.get("/client/home").text, "calendar"))
-    assert "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see." in node
-    assert re.search(r'<a class="btn btn--secondary setup__btn" href=/client/calendar>', node)
+    # P3: with no way to connect from the portal, Home says FluxWorks connects it (the Calendar page adds the test calendar).
+    assert "FluxWorks connects your calendar for you." in node and "Waiting on FluxWorks" in node
+    assert "setup__btn" not in node  # no support contact configured: no button
+    client.app.state.support_contact = "+19805550111"
+    node = html.unescape(node_of(client.get("/client/home").text, "calendar"))
+    assert '<a class="btn btn--secondary setup__btn" href="sms:+19805550111">Text FluxWorks support</a>' in node
 
 
 # --- Account ------------------------------------------------------------------------------------
@@ -225,14 +233,16 @@ def test_account_lists_this_phone_and_other_devices_with_their_last_use(tmp_path
     assert "<h2>Signed in as <span class=nw>(980) 555-0123</span></h2>" in page
     devices = re.search(r"<ul class=devices>.*?</ul>", page, re.S).group(0)
     assert "<li class=\"device device--current\" data-device=this>" in devices
-    devices = re.sub(r"<[^>]+>", "", devices)
+    # Finish item: the other session was not remembered, so it is listed under "Other signed-in devices".
+    groups = re.findall(r"<h3 class=devices-group__title>([^<]+)</h3>", page)
+    assert groups == ["Other signed-in devices"] and "Remembered devices" not in page
+    devices = re.sub(r"<[^>]+>", "", re.search(r"<ol class=spine>.*</ol>", page, re.S).group(0))
     # A 12-hour session ends within a day, so its end carries the time as well as the day.
     assert "This device · signed in Mon, Oct 19, 3:20 PM · stays signed in until Tue, Oct 20, 3:20 AM" in devices
     assert "Another device · last used Mon, Oct 19, 3:00 PM" in devices
     clock[0] += timedelta(hours=2)
     assert other.get("/client/home").status_code == 200  # the other device is used again
-    devices = re.search(r"<ul class=devices>.*?</ul>", html.unescape(client.get("/client/account").text), re.S).group(0)
-    devices = re.sub(r"<[^>]+>", "", devices)
+    devices = re.sub(r"<[^>]+>", "", html.unescape(client.get("/client/account").text))
     assert "Another device · last used Mon, Oct 19, 5:20 PM" in devices
 
 
@@ -343,6 +353,6 @@ def test_other_device_rows_carry_the_example_tag_only_when_flagged(tmp_path, mon
     with state.store.lock:
         hashes = [r[0] for r in state.store.conn.execute("SELECT token_hash FROM client_sessions WHERE pending=0")]
     state.preview_example_sessions = set(hashes)  # the harness flags its seeded rows; this phone is never tagged
-    devices = re.search(r"<ul class=devices>.*?</ul>", client.get("/client/account").text, re.S).group(0)
+    devices = "".join(re.findall(r"<ul class=devices>.*?</ul>", client.get("/client/account").text, re.S))
     rows = re.findall(r"<li class=\"?device[^>]*>.*?</li>", devices, re.S)
     assert len(rows) == 2 and "extag" not in rows[0] and "<span class=extag>Example</span>" in rows[1]

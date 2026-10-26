@@ -13,11 +13,11 @@
 {%- endif -%}
 {%- endmacro %}
 
-{% macro rail(scenarios, business_name, chosen, notice) -%}
+{% macro rail(scenarios, business_name, chosen, notice, foot) -%}
 <section class=rail id=example aria-labelledby=rail-title data-rail>
   <div class=rail__head>
     <h2 class=rail__title id=rail-title tabindex=-1>Example conversation</h2>
-    <p class=rail__caption><span class=extag>Example</span> Example conversation · nothing is sent · names made up</p>
+    <p class=rail__caption>{{ foot }}</p>
     <form method=get action=/client/messages#example class=rail__pick>
       <label class=rail__show for=scenario>Show</label>
       <span class=select><select class=select__input id=scenario name=scenario data-scenario-select>

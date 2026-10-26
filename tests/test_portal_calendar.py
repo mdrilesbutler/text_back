@@ -141,10 +141,10 @@ def test_not_connected_has_connect_or_a_contact_action_never_a_dead_end(tmp_path
     state = build(tmp_path, monkeypatch, support=SUPPORT)
     assert state.support_contact == SUPPORT
     card = pc.status_card(state)
-    assert card["state_word"] == "Not connected" and card["title"] == "No calendar yet"
-    assert card["why"].startswith("To book onto your own calendar, it has to be connected.")
-    assert "Connecting from this page isn't set up for your account yet." in card["why"]
-    assert "FluxWorks sets this up for you." in card["why"]
+    # P3: nothing the owner can do here, so it waits on FluxWorks and says the test calendar is in use until then.
+    assert card["state_word"] == "Waiting on FluxWorks" and card["title"] == "No calendar yet" and card["node"] == "waiting"
+    assert card["body"] == "FluxWorks connects your calendar for you."
+    assert card["why"] == "Until then, bookings go on a test calendar you can't see."
     assert card["buttons"] == [{"label": "Text FluxWorks support", "href": f"sms:{SUPPORT}", "kind": "secondary"}]
 
     # (3) Neither: no button, but the body still names the next step.
@@ -152,7 +152,7 @@ def test_not_connected_has_connect_or_a_contact_action_never_a_dead_end(tmp_path
     assert state.support_contact == ""
     card = pc.status_card(state)
     assert card["buttons"] == []
-    assert card["why"].endswith("FluxWorks sets this up for you.")
+    assert card["body"] == "FluxWorks connects your calendar for you."  # P3: names who does the next step
     assert "sms:" not in json.dumps(card)
 
 
@@ -346,7 +346,8 @@ def test_ready_google_check_reads_busy_intervals_and_fails_closed(tmp_path, monk
     assert body["timeMin"] == "2026-10-19T15:00:00Z" and body["timeMax"] == "2026-11-02T15:00:00Z"
     card = pc.availability_card(state, result)
     assert card["title"] == "Next free times on Tree jobs"
-    assert card["intro"] == "The first three free 60-minute times in the next 14 days, inside your working hours."
+    assert card["intro"] == ("The first three free start times for a 60-minute appointment in the next 14 days, "
+                             "inside your working hours.")
     assert card["caption"] == "Checked just now · next 14 days · working hours Mon–Fri 8:00 AM–5:00 PM"
 
     failed = pc.check_availability(state, NOW)
@@ -361,7 +362,7 @@ def test_page_context_combines_the_cards_the_picker_and_the_consent_note(tmp_pat
     state = build(tmp_path, monkeypatch)
     context = pc.page_context(state)
     assert set(context) == {"card", "availability", "picker", "consent_note", "consent_heading", "consent_steps"}
-    assert context["card"]["state_word"] == "Not connected"
+    assert context["card"]["state_word"] == "Waiting on FluxWorks"  # P3: no web client in this build
     assert context["availability"]["title"] == "Test calendar, not yours"
     assert context["picker"] is None
     assert context["consent_note"] == pc.CONSENT_NOTE

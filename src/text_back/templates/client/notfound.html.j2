@@ -1,0 +1,9 @@
+{#- A /client page that doesn't exist (status 404), signed in: the page frame, one line, a link Home. Never JSON. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, page_head %}
+{% block content %}
+<div class=page__body>
+  {{ page_head(heading, "") }}
+  <div class=actions><a class="btn btn--primary btn--block-phone" href=/client/home>{{ icon("house") }}Home</a></div>
+</div>
+{% endblock %}

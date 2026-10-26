@@ -6,7 +6,7 @@
 {% extends "client/base.html.j2" %}
 {% from "client/_macros.html.j2" import icon, csrf_input, field_error, button, node, state_pill %}
 {% set ok = card.connected %}
-{% set kind = "done" if ok else "needs" %}
+{% set kind = card.node %}
 {% block content %}
 <div class=page-head>
   <h1>Calendar</h1>
@@ -61,14 +61,14 @@
     <div class=node__head><h2 tabindex=-1 id=avail-title>{{ availability.title }}</h2><p class=node__blurb>{{ availability.intro }}</p></div>
     <section class=card aria-labelledby=avail-title data-availability>
       {% if availability.starts %}
-      <ol class=slots data-slots>{% for slot in availability.slots %}<li class="slot tnum">{{ icon("calendar") }}<span>{{ slot|nw }}</span></li>{% endfor %}</ol>
+      <ul class=slots data-slots>{% for row in availability.rows %}<li class="slot tnum">{{ icon("calendar") }}<span>{{ row|nw }}</span></li>{% endfor %}</ul>
       {% endif %}
       {% if availability.empty %}<p class=empty__body>{{ availability.empty }}</p>{% endif %}
       {% if availability.error %}<p class=field-error>{{ icon("circle-alert") }}<span>{{ availability.error }}</span></p>{% endif %}
-      {% if availability.caption %}<p class=field-help>{{ availability.caption }}</p>{% endif %}
+      {% if availability.caption %}<p class=field-help>{{ availability.caption|nw }}</p>{% endif %}
       {% if availability.note %}<p class=field-help data-any-time-note>{{ availability.note }}</p>{% endif %}
       {% if availability.button %}
-      <form method=post action=/client/calendar class=actions>{{ csrf_input(csrf) }}<input type=hidden name=action value=check>{{ button(availability.button, variant="secondary", loading=availability.busy_label) }}</form>
+      <form method=post action="/client/calendar#availability" class=actions data-check-form>{{ csrf_input(csrf) }}<input type=hidden name=action value=check>{{ button(availability.button, variant="secondary", loading=availability.busy_label) }}</form>
       {% elif availability.replaced %}<p class=field-help data-check-replaced>{{ availability.replaced }}</p>{% endif %}
     </section>
   {% endcall %}
