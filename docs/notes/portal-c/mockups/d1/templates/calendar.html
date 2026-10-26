@@ -6,15 +6,16 @@
 {% set connected = cal_state == 'connected' %}
 <div class="page-head"><h1>{{ c.title }}</h1><p class="lead">{{ c.intro }}</p></div>
 <ol class="spine">
-  {% call ui.node('done' if connected else 'todo', focus=(focus == 'connection')) %}
+  {% call ui.node('done' if connected else 'needs', focus=(focus == 'connection')) %}
     <div class="node__head"><h2>{{ st.card_title }}</h2></div>
     <div class="card status">
-      {{ ui.state('done' if connected else 'todo', st.state_word) }}
+      {{ ui.state('done' if connected else 'needs', st.state_word) }}
       {% if connected %}
-      <p class="status__detail">{{ st.body_no_account }}</p>
+      <p class="status__detail">{{ st.body }}</p>
       <p class="status__detail"><a class="tap" href="/client/calendar/connect">{{ st.buttons[1] }}</a></p>
       {% elif cal_state == 'not_connected_with_connect' %}
       <p class="status__detail">{{ st.body }}</p>
+      <p class="status__detail">{{ st.why }}</p>
       <form method="post" action="/client/calendar/connect"><button class="btn btn--primary" type="submit">{{ st.button }}</button></form>
       <details class="asks"{% if st.asks_open %} open{% endif %}>
         <summary class="asks__summary"><span class="field__label">{{ st.asks_heading }}</span>{{ ui.icon('chevron', 'icon asks__chev') }}</summary>
@@ -22,7 +23,7 @@
       </details>
       {% else %}
       <p class="status__detail">{{ st.lead }}</p>
-      <p class="status__detail">{{ st.no_connect_body }}</p>
+      <p class="status__detail">{{ st.why }} {{ st.no_connect_body }}</p>
       <a class="btn btn--primary" href="{{ st.button_href }}">{{ st.button }}</a>
       {% endif %}
     </div>

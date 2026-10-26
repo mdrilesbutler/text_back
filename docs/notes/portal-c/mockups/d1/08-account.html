@@ -44,10 +44,10 @@
   <header class="topbar">
     <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>TextBack</a>
     <details class="menu">
-      <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
+      <summary class="menu__trigger menu__trigger--current"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account, current page</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as 980 555 0123</p>
-        <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
+        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
+        <a class="menu__item" href="/client/account" aria-current="page"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
     </details>
@@ -68,7 +68,7 @@
 <li class="node node--icon">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg></span>
   <div class="node__body">
-        <div class="node__head"><h2>Signed in as 980 555 0123</h2><p class="node__blurb">To change the mobile that signs you in, open <a class="tap" href="/client/phone">Phone</a>.</p></div>
+        <div class="node__head"><h2>Signed in as <span class="num">(980) 555-0123</span></h2><p class="node__blurb">To change the mobile that signs you in, open <a class="tap" href="/client/phone">Phone</a>.</p></div>
 
   </div>
 </li>

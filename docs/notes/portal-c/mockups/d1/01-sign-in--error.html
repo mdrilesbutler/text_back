@@ -46,23 +46,16 @@
       <li class="stepper__step stepper__step--current"><span class="stepper__dot">1</span><span class="stepper__label">Sign in</span></li>
       <li class="stepper__step"><span class="stepper__dot">2</span><span class="stepper__label">Check your phone</span></li>
     </ol>
-<div class="notice notice--danger error-summary" role="alert" tabindex="-1" id="focus" aria-labelledby="error-summary-title">
-  <svg class="icon notice__icon" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg>
-  <div class="notice__body">
-    <p class="notice__text notice__title" id="error-summary-title">1 thing needs a change:</p>
-    <ul class="error-summary__list"><li><a href="#mobile">Enter your mobile as 10 digits, like 704 555 0123.</a></li></ul>
-  </div>
-</div>
 <div class="auth__head">
-  <p class="eyebrow">Owner settings</p>
-  <h1>Sign in</h1>
+  <h1>Oak &amp; Pine Tree Care</h1>
+  <p class="auth__sub">Sign in to TextBack</p>
   <p class="lead">Enter your mobile number. We text a six-digit code to the mobile on file for this business. No password.</p>
 </div>
 <form class="auth__form" method="post" action="/client/login">
-  <div class="field">
+  <div class="field" id="focus">
     <label class="field__label" for="mobile">Your mobile number</label>
     <input class="input input--tel" id="mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10 digits" value="" aria-invalid="true" aria-describedby="mobile-error">
-<p class="field-error" id="mobile-error"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg><span>Enter your mobile as 10 digits, like 704 555 0123.</span></p>  </div>
+<p class="field-error" id="mobile-error"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg><span>Enter your mobile as 10 digits, area code first.</span></p>  </div>
   <button class="btn btn--primary btn--lg btn--block" type="submit">Text me a code</button>
 </form>
     <p class="auth__foot">TextBack by FluxWorks</p>

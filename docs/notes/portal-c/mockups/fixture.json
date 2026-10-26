@@ -1,2150 +1,2228 @@
 {
-  "meta": {
-    "purpose": "One fixture for both candidate C mockup directions (d1, d2). Content must be identical; only the design differs.",
-    "source_strings": "docs/notes/portal-c/copy-deck.md (verbatim); customer-text defaults from the message defaults module",
-    "product": "TextBack",
-    "company": "FluxWorks",
-    "today": "2026-10-26",
-    "today_label": "Monday, Oct 26, 2026",
-    "now": "2026-10-26T14:40:00-04:00",
-    "now_label": "Mon, Oct 26, 2:40 PM",
-    "timezone": "America/New_York",
-    "timezone_label": "Eastern (New York)",
-    "date_format": "Every date comes from a datetime and is formatted by one helper: 'Mon, Oct 26, 9:12 AM'. Never hand-write a weekday.",
-    "public_base_url": "https://hermes-cloud.tailefb1a4.ts.net:8443",
-    "text_count_rule": "160 plain characters per text (153 each when split); 70 per text when any non-plain symbol such as an em dash is present (67 when split). Counts cover the text as sent: business name filled in, STOP line added where required, example values in the confirmation.",
-    "business_name": "Oak & Pine Tree Care",
-    "owner_mobile": "980 555 0123",
-    "business_line": "(704) 555-0123",
-    "texting_number": "(704) 555-0100",
-    "help_number": "(704) 555-0123"
+ "meta": {
+  "purpose": "One fixture for both candidate C mockup directions (d1, d2). Content must be identical; only the design differs.",
+  "source_strings": "docs/notes/portal-c/copy-deck.md (verbatim); customer-text defaults from the message defaults module",
+  "product": "TextBack",
+  "company": "FluxWorks",
+  "today": "2026-10-26",
+  "today_label": "Monday, Oct 26, 2026",
+  "now": "2026-10-26T14:40:00-04:00",
+  "now_label": "Mon, Oct 26, 2:40 PM",
+  "timezone": "America/New_York",
+  "timezone_label": "Eastern (New York)",
+  "date_format": "Every date comes from a datetime and is formatted by one helper: 'Mon, Oct 26, 9:12 AM'. Never hand-write a weekday.",
+  "public_base_url": "https://hermes-cloud.tailefb1a4.ts.net:8443",
+  "text_count_rule": "160 plain characters per text (153 each when split); 70 per text when any non-plain symbol such as an em dash is present (67 when split). Counts cover the text as sent: business name filled in, STOP line added where required, example values in the confirmation. While texting approval is pending the counts also include the network notice (24 characters) the network adds to the start of each text.",
+  "business_name": "Oak & Pine Tree Care",
+  "owner_mobile": "(980) 555-0123",
+  "business_line": "(704) 555-0123",
+  "texting_number": "(704) 555-0100",
+  "help_number": "(704) 555-0123",
+  "preview": true,
+  "network_notice_chars": 24
+ },
+ "sign_in": {
+  "product": "TextBack",
+  "eyebrow": "Owner settings",
+  "title": "Sign in",
+  "intro": "Enter your mobile number. We text a six-digit code to the mobile on file for this business. No password.",
+  "mobile_label": "Your mobile number",
+  "mobile_placeholder": "10 digits",
+  "mobile_value": "",
+  "submit": "Text me a code",
+  "submit_posting": "Sending…",
+  "mobile_error": "Enter your mobile as 10 digits, area code first.",
+  "rate_limited": "We've sent three codes in the last 15 minutes. Wait a few minutes, then try again.",
+  "session_ended": "You were signed out. Sign in again to continue.",
+  "toast_signed_out_everywhere": "Signed out everywhere.",
+  "foot": "TextBack by FluxWorks",
+  "subtitle": "Sign in to TextBack",
+  "step_label": "Sign in"
+ },
+ "enter_code": {
+  "eyebrow": "Oak & Pine Tree Care",
+  "title": "Check your phone",
+  "intro": "Enter the six-digit code we just texted. It expires in ten minutes.",
+  "code_label": "Sign-in code",
+  "code_placeholder": "",
+  "remember_switch": "Remember this phone for 30 days",
+  "remember_note": "Otherwise this phone signs out after 12 hours.",
+  "submit": "Sign in",
+  "submit_posting": "Signing in…",
+  "code_error": "That code isn't right, or it has expired. Check the text or send a new code.",
+  "resend": "Didn't get it? Send a new code",
+  "foot": "TextBack by FluxWorks"
+ },
+ "shell": {
+  "skip_link": "Skip to content",
+  "header": {
+   "product": "TextBack",
+   "business_name": "Oak & Pine Tree Care",
+   "menu_trigger": "Account",
+   "wrap_rule": "The business name wraps to two lines, never cut short.",
+   "current_page": "current page"
   },
-  "sign_in": {
-    "product": "TextBack",
-    "eyebrow": "Owner settings",
-    "title": "Sign in",
-    "intro": "Enter your mobile number. We text a six-digit code to the mobile on file for this business. No password.",
-    "mobile_label": "Your mobile number",
-    "mobile_placeholder": "10 digits",
-    "mobile_value": "",
-    "submit": "Text me a code",
-    "submit_posting": "Sending…",
-    "mobile_error": "Enter your mobile as 10 digits, like 704 555 0123.",
-    "rate_limited": "We've sent three codes in the last 15 minutes. Wait a few minutes, then try again.",
-    "session_ended": "You were signed out. Sign in again to continue.",
-    "toast_signed_out_everywhere": "Signed out everywhere.",
-    "foot": "TextBack by FluxWorks"
+  "nav": {
+   "accessible_name": "Pages",
+   "items": [
+    {
+     "label": "Home",
+     "href": "/client"
+    },
+    {
+     "label": "Messages",
+     "href": "/client/messages"
+    },
+    {
+     "label": "Schedule",
+     "href": "/client/schedule"
+    },
+    {
+     "label": "Calendar",
+     "href": "/client/calendar"
+    },
+    {
+     "label": "Phone",
+     "href": "/client/phone"
+    }
+   ],
+   "phone": "bottom bar",
+   "desktop": "fixed sidebar"
   },
-  "enter_code": {
-    "eyebrow": "Oak & Pine Tree Care",
-    "title": "Check your phone",
-    "intro": "Enter the six-digit code we just texted. It expires in ten minutes.",
-    "code_label": "Sign-in code",
-    "code_placeholder": "",
-    "remember_switch": "Remember this phone for 30 days",
-    "remember_note": "Otherwise this phone signs out after 12 hours.",
-    "submit": "Sign in",
-    "submit_posting": "Signing in…",
-    "code_error": "That code isn't right, or it has expired. Check the text or send a new code.",
-    "resend": "Didn't get it? Send a new code",
-    "foot": "TextBack by FluxWorks"
+  "account_menu": {
+   "signed_in": "Signed in as (980) 555-0123",
+   "items": [
+    "Account",
+    "Sign out"
+   ]
   },
-  "shell": {
-    "skip_link": "Skip to content",
-    "header": {
-      "product": "TextBack",
-      "business_name": "Oak & Pine Tree Care",
-      "menu_trigger": "Account",
-      "wrap_rule": "The business name wraps to two lines, never cut short."
-    },
-    "nav": {
-      "accessible_name": "Settings",
-      "items": [
-        {
-          "label": "Home",
-          "href": "/client"
-        },
-        {
-          "label": "Messages",
-          "href": "/client/messages"
-        },
-        {
-          "label": "Schedule",
-          "href": "/client/schedule"
-        },
-        {
-          "label": "Calendar",
-          "href": "/client/calendar"
-        },
-        {
-          "label": "Phone",
-          "href": "/client/phone"
-        }
-      ],
-      "phone": "bottom bar",
-      "desktop": "fixed sidebar"
-    },
-    "account_menu": {
-      "signed_in": "Signed in with 980 555 0123",
-      "items": [
-        "Account",
-        "Sign out"
-      ]
-    },
-    "foot": "TextBack by FluxWorks",
-    "sticky_budget": "All sticky chrome together is at most 170 px of an 844 px screen."
+  "foot": "TextBack by FluxWorks",
+  "sticky_budget": "All sticky chrome together is at most 170 px of an 844 px screen."
+ },
+ "home": {
+  "title": "Home",
+  "status": "Not working yet: 2 steps left.",
+  "status_variants": {
+   "working": "Working: missed calls get a text within a minute.",
+   "not_yet": "Not working yet: 2 steps left.",
+   "waiting": "Set up on your side. Waiting on the phone companies to approve texting."
   },
-  "home": {
-    "title": "Home",
-    "status": "Not working yet: 2 steps left.",
-    "status_variants": {
-      "working": "Working: missed calls get a text within a minute.",
-      "not_yet": "Not working yet: 2 steps left.",
-      "waiting": "Set up on your side. Waiting on the phone companies to approve texting."
-    },
-    "setup_heading": "Setup",
-    "setup": [
-      {
-        "title": "Calendar",
-        "state": "Needs you",
-        "detail": "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see.",
-        "button": {
-          "label": "Connect calendar",
-          "href": "/client/calendar"
-        }
-      },
-      {
-        "title": "Call forwarding",
-        "state": "Needs you",
-        "detail": "3 of 5 checks done.",
-        "button": {
-          "label": "Finish forwarding",
-          "href": "/client/phone#forwarding"
-        }
-      },
-      {
-        "title": "Texting approval",
-        "state": "Waiting on phone companies",
-        "detail": "FluxWorks has filed your business for texting approval. Until it clears, each text starts with a short network notice. Nothing for you to do.",
-        "button": null
-      }
-    ],
-    "week_heading": "This week",
-    "week_caption": "Since Mon, Oct 26. The counts and the list below cover the same days.",
-    "week_window": {
-      "from": "2026-10-26T00:00:00-04:00",
-      "to": "2026-10-26T14:40:00-04:00"
-    },
-    "week_counts": [
-      {
-        "label": "Missed calls",
-        "value": 3
-      },
-      {
-        "label": "Customers texted",
-        "value": 3
-      },
-      {
-        "label": "Booked",
-        "value": 1
-      },
-      {
-        "label": "Assistant stepped back",
-        "value": 1
-      }
-    ],
-    "callers_heading": "This week's callers",
-    "callers_columns": [
-      "Customer",
-      "Status",
-      "Last activity",
-      "Last text"
-    ],
-    "callers": [
-      {
-        "name": "Dana Whitfield",
-        "example": "Example",
-        "status": "Booked on test calendar",
-        "last_activity": "Mon, Oct 26, 9:12 AM",
-        "last_text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte.",
-        "number_ending": "0141"
-      },
-      {
-        "name": "Marcus Lee",
-        "example": "Example",
-        "status": "Assistant stepped back",
-        "last_activity": "Mon, Oct 26, 11:48 AM",
-        "last_text": "Got it. Automated scheduling is paused, and we'll follow up with you directly.",
-        "number_ending": "0177"
-      },
-      {
-        "name": "Priya Natarajan",
-        "example": "Example",
-        "status": "Waiting for a reply",
-        "last_activity": "Mon, Oct 26, 1:55 PM",
-        "last_text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
-        "number_ending": "0192"
-      }
-    ],
-    "callers_empty": "No callers this week. They appear here after the next missed call.",
-    "status_order": [
-      "Booked on test calendar",
-      "Texting",
-      "Waiting for a reply",
-      "Assistant stepped back",
-      "No reply",
-      "Asked us to stop",
-      "Booked"
-    ],
-    "example_tag": "Example",
-    "week_counts_example": "Example numbers"
-  },
-  "messages": {
-    "title": "Your messages",
-    "intro": "The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.",
-    "meta": "Green bubbles are what customers see. The job, address, time and names are made-up examples.",
-    "network_notice": "Until phone companies approve your business for texting, each text starts with a short network notice.",
-    "network_notice_shown": true,
-    "jump_label": "Jump to:",
-    "jump_chips": [
-      {
-        "label": "Missed call",
-        "anchor": "missed_call"
-      },
-      {
-        "label": "Questions",
-        "anchor": "questions"
-      },
-      {
-        "label": "Booking",
-        "anchor": "booking"
-      },
-      {
-        "label": "No reply",
-        "anchor": "no_reply"
-      },
-      {
-        "label": "Steps back",
-        "anchor": "steps_back"
-      },
-      {
-        "label": "START, HELP, STOP",
-        "anchor": "any_time"
-      },
-      {
-        "label": "Example conversation",
-        "anchor": "example"
-      }
-    ],
-    "steps": [
-      {
-        "id": "missed_call",
-        "heading": "Missed call",
-        "blurb": "A call goes unanswered. Within a minute the caller gets this text.",
-        "keys": [
-          "intro"
-        ]
-      },
-      {
-        "id": "questions",
-        "heading": "Questions",
-        "blurb": "Asked one at a time, in this order. The assistant moves on only once it has an answer.",
-        "optional_eyebrow": "Optional questions",
-        "optional_keys": [
-          "prompt_phone",
-          "prompt_email"
-        ],
-        "keys": [
-          "prompt_service",
-          "prompt_location",
-          "prompt_preferred_time",
-          "prompt_name",
-          "prompt_phone",
-          "prompt_email",
-          "preferred_time_reprompt",
-          "phone_reprompt",
-          "email_reprompt"
-        ]
-      },
-      {
-        "id": "booking",
-        "heading": "Booking",
-        "blurb": "Once it has the answers, the assistant checks your calendar and books a free time.",
-        "keys": [
-          "slot_unavailable",
-          "booking_confirmation",
-          "booking_error"
-        ]
-      },
-      {
-        "id": "no_reply",
-        "heading": "No reply",
-        "blurb": "If the customer goes quiet, the assistant sends two reminders. Then the texting stops.",
-        "keys": [
-          "followup_1",
-          "followup_2"
-        ]
-      },
-      {
-        "id": "steps_back",
-        "heading": "When the assistant steps back",
-        "blurb": "When a text needs a person, the assistant stops scheduling and passes the customer's details on.",
-        "keys": [
-          "handoff_ack",
-          "handoff_ack_safety"
-        ]
-      },
-      {
-        "id": "any_time",
-        "heading": "START, HELP and STOP",
-        "blurb": "Required by phone companies. Most businesses never change these.",
-        "collapsed": true,
-        "keys": [
-          "opt_in",
-          "help",
-          "opt_out_ack",
-          "opt_out_suffix"
-        ]
-      }
-    ],
-    "cards": {
-      "intro": {
-        "key": "intro",
-        "step": "missed_call",
-        "title": "First text after a missed call",
-        "when": "Sent the moment a call goes unanswered.",
-        "state": "customized",
-        "badge": "Customized",
-        "wording": [
-          {
-            "text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done?"
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Hey, sorry we missed your call—this is "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. What were you calling about?"
-          }
-        ],
-        "preview": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
-        "optout_added": "STOP line added for you",
-        "cost": {
-          "line": "1 text · 107 characters",
-          "texts": 1,
-          "characters": 107,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Phone companies require \"Reply STOP to opt out.\" If your wording leaves out STOP, we add that line for you."
-        ],
-        "reset": "Reset"
-      },
-      "prompt_service": {
-        "key": "prompt_service",
-        "step": "questions",
-        "title": "Question 1: the job",
-        "when": "Asked as soon as the customer replies.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?"
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?"
-          }
-        ],
-        "preview": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 75 characters",
-          "texts": 1,
-          "characters": 75,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "prompt_location": {
-        "key": "prompt_location",
-        "step": "questions",
-        "title": "Question 2: the address",
-        "when": "Asked once the job is known.",
-        "state": "customized",
-        "badge": "Customized",
-        "wording": [
-          {
-            "text": "What's the address for the job?"
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "What's the address or location for the job?"
-          }
-        ],
-        "preview": "What's the address for the job?",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 31 characters",
-          "texts": 1,
-          "characters": 31,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": "Reset"
-      },
-      "prompt_preferred_time": {
-        "key": "prompt_preferred_time",
-        "step": "questions",
-        "title": "Question 3: day and time",
-        "when": "Asked once the address is known. Examples in everyday words help: Wednesday at 2, tomorrow at 10am.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
-          }
-        ],
-        "preview": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 94 characters",
-          "texts": 1,
-          "characters": 94,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "prompt_name": {
-        "key": "prompt_name",
-        "step": "questions",
-        "title": "Question 4: the name",
-        "when": "Asked once the time is known.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "What name should we put the appointment under?"
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "What name should we put the appointment under?"
-          }
-        ],
-        "preview": "What name should we put the appointment under?",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 46 characters",
-          "texts": 1,
-          "characters": 46,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "prompt_phone": {
-        "key": "prompt_phone",
-        "step": "questions",
-        "title": "Best phone number",
-        "when": "Asked only when switched on. YES keeps the number they're texting from.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Is this the best number to reach you? Reply YES, or send a different number."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Is this the best number to reach you? Reply YES, or send a different number."
-          }
-        ],
-        "preview": "Is this the best number to reach you? Reply YES, or send a different number.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 76 characters",
-          "texts": 1,
-          "characters": 76,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null,
-        "switch": {
-          "label": "Also ask for the best phone number",
-          "state": "off",
-          "note": "Off. Customers skip this question."
-        },
-        "badge_asked": "Not asked"
-      },
-      "prompt_email": {
-        "key": "prompt_email",
-        "step": "questions",
-        "title": "Email address",
-        "when": "Asked only when switched on. SKIP is allowed.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not."
-          }
-        ],
-        "preview": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 80 characters",
-          "texts": 1,
-          "characters": 80,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null,
-        "switch": {
-          "label": "Also ask for an email address",
-          "state": "off",
-          "note": "Off. Customers skip this question."
-        },
-        "badge_asked": "Not asked"
-      },
-      "preferred_time_reprompt": {
-        "key": "preferred_time_reprompt",
-        "step": "questions",
-        "title": "If the time couldn't be understood",
-        "when": "Sent instead of moving on when the reply isn't a day and time.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
-          }
-        ],
-        "preview": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 86 characters",
-          "texts": 1,
-          "characters": 86,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "phone_reprompt": {
-        "key": "phone_reprompt",
-        "step": "questions",
-        "title": "If the phone number couldn't be read",
-        "when": "Sent when the reply isn't a phone number or YES.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Please send a phone number with area code, like 704 555 0123, or reply YES to use this one."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Please send a phone number with area code, like 704 555 0123, or reply YES to use this one."
-          }
-        ],
-        "preview": "Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 91 characters",
-          "texts": 1,
-          "characters": 91,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "email_reprompt": {
-        "key": "email_reprompt",
-        "step": "questions",
-        "title": "If the email couldn't be read",
-        "when": "Sent when the reply isn't an email address or SKIP.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP."
-          }
-        ],
-        "preview": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 93 characters",
-          "texts": 1,
-          "characters": 93,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "slot_unavailable": {
-        "key": "slot_unavailable",
-        "step": "booking",
-        "title": "When the time is already taken",
-        "when": "Sent when your calendar shows that time busy.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "That time is unavailable. Please send another day and time, like Thursday at 4."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "That time is unavailable. Please send another day and time, like Thursday at 4."
-          }
-        ],
-        "preview": "That time is unavailable. Please send another day and time, like Thursday at 4.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 79 characters",
-          "texts": 1,
-          "characters": 79,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "booking_confirmation": {
-        "key": "booking_confirmation",
-        "step": "booking",
-        "title": "Booking confirmation",
-        "when": "Sent only after the appointment is on your calendar.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Booked: "
-          },
-          {
-            "insert": "Job"
-          },
-          {
-            "text": " on "
-          },
-          {
-            "insert": "Day and time"
-          },
-          {
-            "text": " at "
-          },
-          {
-            "insert": "Address"
-          },
-          {
-            "text": ". This is "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. "
-          },
-          {
-            "insert": "Invite sentence"
-          },
-          {
-            "text": " "
-          },
-          {
-            "insert": "Calendar links"
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Booked: "
-          },
-          {
-            "insert": "Job"
-          },
-          {
-            "text": " on "
-          },
-          {
-            "insert": "Day and time"
-          },
-          {
-            "text": " at "
-          },
-          {
-            "insert": "Address"
-          },
-          {
-            "text": ". This is "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. "
-          },
-          {
-            "insert": "Invite sentence"
-          },
-          {
-            "text": " "
-          },
-          {
-            "insert": "Calendar links"
-          }
-        ],
-        "preview": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant. A calendar invite is on its way to dana@example.com.",
-        "optout_added": null,
-        "cost": {
-          "line": "3 texts · 399 characters",
-          "texts": 3,
-          "characters": 399,
-          "amber": "Billed as 3 texts. Customers still see one message.",
-          "limit_note": null
-        },
-        "chips": [
-          "Business name",
-          "Job",
-          "Day and time",
-          "Address",
-          "Calendar links",
-          "Invite sentence",
-          "Customer's email",
-          "Google Calendar link",
-          "Outlook link",
-          "iCal link",
-          "Calendar links page"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null,
-        "preview_links": [
-          {
-            "label": "Add to Google Calendar ›",
-            "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/g"
-          },
-          {
-            "label": "Add to Outlook ›",
-            "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/o"
-          },
-          {
-            "label": "Add to iCal ›",
-            "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
-          }
-        ],
-        "preview_sent": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant. A calendar invite is on its way to dana@example.com. Add to calendar: Google https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/g Outlook https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/o iCal https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
-      },
-      "booking_error": {
-        "key": "booking_error",
-        "step": "booking",
-        "title": "When the calendar failed",
-        "when": "Sent if the appointment couldn't be added to your calendar. It tells the customer no booking was made.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "We couldn't confirm that appointment. No booking was made. Please send another date and time and we'll try again."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "We couldn't confirm that appointment. No booking was made. Please send another date and time and we'll try again."
-          }
-        ],
-        "preview": "We couldn't confirm that appointment. No booking was made. Please send another date and time and we'll try again.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 113 characters",
-          "texts": 1,
-          "characters": 113,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Must say \"No booking was made\" and can't use the word \"call\". The customer stays in the text thread."
-        ],
-        "reset": null
-      },
-      "followup_1": {
-        "key": "followup_1",
-        "step": "no_reply",
-        "title": "First reminder",
-        "when": "Sent 2 hours after the first text if there's no reply.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Hi again from "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant—still happy to get you on the calendar. What job do you need done?"
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Hi again from "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant—still happy to get you on the calendar. What job do you need done?"
-          }
-        ],
-        "preview": "Hi again from Oak & Pine Tree Care's scheduling assistant—still happy to get you on the calendar. What job do you need done? Reply STOP to opt out.",
-        "optout_added": "STOP line added for you",
-        "cost": {
-          "line": "3 texts · 147 characters",
-          "texts": 3,
-          "characters": 147,
-          "amber": "Billed as 3 texts. The \"—\" symbol makes each text hold only 70 characters. Use \"-\" instead.",
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Phone companies require \"Reply STOP to opt out.\" If your wording leaves out STOP, we add that line for you."
-        ],
-        "reset": null
-      },
-      "followup_2": {
-        "key": "followup_2",
-        "step": "no_reply",
-        "title": "Last reminder",
-        "when": "Sent 1 day after the first reminder. After this the assistant stops texting.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Last check-in from "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. Reply with the job you need and we'll set a time."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Last check-in from "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. Reply with the job you need and we'll set a time."
-          }
-        ],
-        "preview": "Last check-in from Oak & Pine Tree Care's scheduling assistant. Reply with the job you need and we'll set a time. Reply STOP to opt out.",
-        "optout_added": "STOP line added for you",
-        "cost": {
-          "line": "1 text · 136 characters",
-          "texts": 1,
-          "characters": 136,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Phone companies require \"Reply STOP to opt out.\" If your wording leaves out STOP, we add that line for you."
-        ],
-        "reset": null
-      },
-      "handoff_ack": {
-        "key": "handoff_ack",
-        "step": "steps_back",
-        "title": "When the assistant steps back",
-        "when": "Sent when the customer asks for the owner or the assistant can't help.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Got it. Automated scheduling is paused, and we'll follow up with you directly."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Got it. Automated scheduling is paused, and we'll follow up with you directly."
-          }
-        ],
-        "preview": "Got it. Automated scheduling is paused, and we'll follow up with you directly.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 78 characters",
-          "texts": 1,
-          "characters": 78,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "This text must tell the customer someone will follow up. Don't ask them to call, and don't say they'll be put through to someone."
-        ],
-        "reset": null,
-        "destination_line": "These go to the FluxWorks operator."
-      },
-      "handoff_ack_safety": {
-        "key": "handoff_ack_safety",
-        "step": "steps_back",
-        "title": "When someone may be in danger",
-        "when": "Sent when a text mentions danger.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
-          }
-        ],
-        "preview": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 125 characters",
-          "texts": 1,
-          "characters": 125,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Must tell people to call 911 if anyone is in danger, and must say someone will follow up."
-        ],
-        "reset": null,
-        "destination_line": "These go to the FluxWorks operator."
-      },
-      "opt_in": {
-        "key": "opt_in",
-        "step": "any_time",
-        "title": "Reply to START",
-        "when": "Sent when a customer texts START.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "You're subscribed to "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling texts. Msg & data rates may apply. Reply HELP for help or STOP to opt out."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "You're subscribed to "
-          },
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling texts. Msg & data rates may apply. Reply HELP for help or STOP to opt out."
-          }
-        ],
-        "preview": "You're subscribed to Oak & Pine Tree Care's scheduling texts. Msg & data rates may apply. Reply HELP for help or STOP to opt out.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 129 characters",
-          "texts": 1,
-          "characters": 129,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Phone companies require \"Reply STOP to opt out.\" If your wording leaves out STOP, we add that line for you."
-        ],
-        "reset": null
-      },
-      "help": {
-        "key": "help",
-        "step": "any_time",
-        "title": "Reply to HELP",
-        "when": "Sent when a customer texts HELP. The number it shows is set on the Phone page.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can't handle by text, the owner follows up on."
-          },
-          {
-            "insert": "Contact number sentence"
-          },
-          {
-            "text": " Msg & data rates may apply."
-          }
-        ],
-        "default_wording": [
-          {
-            "insert": "Business name"
-          },
-          {
-            "text": "'s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can't handle by text, the owner follows up on."
-          },
-          {
-            "insert": "Contact number sentence"
-          },
-          {
-            "text": " Msg & data rates may apply."
-          }
-        ],
-        "preview": "Oak & Pine Tree Care's scheduling assistant. Reply with the job type, location, and a time that works. Anything we can't handle by text, the owner follows up on. Contact: (704) 555-0123. Msg & data rates may apply. Reply STOP to opt out.",
-        "optout_added": "STOP line added for you",
-        "cost": {
-          "line": "2 texts · 237 characters",
-          "texts": 2,
-          "characters": 237,
-          "amber": "Billed as 2 texts. Customers still see one message.",
-          "limit_note": null
-        },
-        "chips": [
-          "Business name",
-          "Contact number sentence"
-        ],
-        "chips_note": null,
-        "rules": [
-          "Phone companies require \"Reply STOP to opt out.\" If your wording leaves out STOP, we add that line for you."
-        ],
-        "reset": null
-      },
-      "opt_out_ack": {
-        "key": "opt_out_ack",
-        "step": "any_time",
-        "title": "Reply to STOP",
-        "when": "Sent once when a customer texts STOP. Nothing follows it.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded."
-          }
-        ],
-        "preview": "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 143 characters",
-          "texts": 1,
-          "characters": 143,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [
-          "Business name"
-        ],
-        "chips_note": null,
-        "rules": [],
-        "reset": null
-      },
-      "opt_out_suffix": {
-        "key": "opt_out_suffix",
-        "step": "any_time",
-        "title": "Opt-out line",
-        "when": "Added to the first text, both reminders and the START and HELP replies when they leave out the word STOP.",
-        "state": "standard",
-        "badge": "Standard wording",
-        "wording": [
-          {
-            "text": "Reply STOP to opt out."
-          }
-        ],
-        "default_wording": [
-          {
-            "text": "Reply STOP to opt out."
-          }
-        ],
-        "preview": "Reply STOP to opt out.",
-        "optout_added": null,
-        "cost": {
-          "line": "1 text · 22 characters",
-          "texts": 1,
-          "characters": 22,
-          "amber": null,
-          "limit_note": null
-        },
-        "chips": [],
-        "chips_note": "This text fills in no details.",
-        "rules": [
-          "The word STOP stays. Phone companies check for it."
-        ],
-        "reset": null
-      }
-    },
-    "editor": {
-      "open": "Edit wording",
-      "reset": "Reset",
-      "reset_nojs": "Reset and save",
-      "paragraph_rule": "Sent as one paragraph. Up to 480 characters.",
-      "chips_label": "Insert a detail",
-      "badge_states": {
-        "customized": "Customized",
-        "standard": "Standard wording",
-        "unsaved": "Unsaved",
-        "rejected": "Not saved"
-      },
-      "open_on": "prompt_location"
-    },
-    "destination": {
-      "line": "These go to the FluxWorks operator.",
-      "short": "the FluxWorks operator",
-      "deck_variants": {
-        "chat": "FluxWorks' private alert channel. FluxWorks sees them there; ask FluxWorks how they'll reach you.",
-        "log": "a log FluxWorks can read. Nobody is alerted. Ask FluxWorks to set up where these should go.",
-        "off": "nowhere yet. The customer's details are kept, but nobody is alerted. Ask FluxWorks to set up where these should go."
-      }
-    },
-    "example": {
-      "title": "Example conversation",
-      "show_label": "Show",
-      "scenario": "Books a job",
-      "scenarios": [
-        "Books a job",
-        "Unclear answers",
-        "No reply",
-        "Booking failed",
-        "Asks for the owner",
-        "Mentions danger",
-        "START, HELP and STOP"
-      ],
-      "phone_sub": "Text message",
-      "badges": {
-        "customer": "Customer",
-        "textback": "TextBack"
-      },
-      "pills": {
-        "missed_call": "Missed call · just now",
-        "no_reply": "No reply",
-        "still_no_reply": "Still no reply",
-        "stops": "Texting stops here",
-        "no_booking": "No booking was made",
-        "booked_connected": "Booked · on your calendar",
-        "booked_test": "Booked · on the test calendar",
-        "steps_back_divider": "The assistant steps back here",
-        "details_sent": "Customer's details sent to the FluxWorks operator"
-      },
-      "bubbles": [
-        {
-          "side": "event",
-          "text": "Missed call · just now"
-        },
-        {
-          "side": "textback",
-          "key": "intro",
-          "text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
-          "network_notice": true
-        },
-        {
-          "side": "customer",
-          "text": "Tree trimming"
-        },
-        {
-          "side": "textback",
-          "key": "prompt_location",
-          "text": "What's the address for the job?",
-          "network_notice": true
-        },
-        {
-          "side": "customer",
-          "text": "412 Maple St, Charlotte"
-        },
-        {
-          "side": "textback",
-          "key": "prompt_preferred_time",
-          "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
-          "network_notice": true
-        },
-        {
-          "side": "customer",
-          "text": "Thursday at 10"
-        },
-        {
-          "side": "textback",
-          "key": "prompt_name",
-          "text": "What name should we put the appointment under?",
-          "network_notice": true
-        },
-        {
-          "side": "customer",
-          "text": "Dana"
-        },
-        {
-          "side": "event",
-          "text": "Booked · on the test calendar"
-        },
-        {
-          "side": "textback",
-          "key": "booking_confirmation",
-          "text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant.",
-          "links": [
-            {
-              "label": "Add to Google Calendar ›",
-              "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/g"
-            },
-            {
-              "label": "Add to Outlook ›",
-              "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/o"
-            },
-            {
-              "label": "Add to iCal ›",
-              "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
-            }
-          ],
-          "network_notice": true
-        }
-      ],
-      "foot": "Example conversation · nothing is sent · names made up",
-      "back": "Back to editing",
-      "network_notice_marker": "Network notice",
-      "network_notice_hint": "While texting approval is pending, each text also starts with a short network notice. The text counts include it."
-    },
-    "save_bar": {
-      "changed": "2 texts changed",
-      "changed_one": "1 text changed",
-      "save": "Save",
-      "saving": "Saving…",
-      "discard": "Discard",
-      "not_saved": "Not saved · 2 texts changed",
-      "nojs": "Saves every text at once",
-      "rule": "Appears only with unsaved changes and never covers the field being edited."
-    },
-    "toasts": {
-      "saved": "Saved. You changed “Question 2: the address”.",
-      "saved_reset": "Saved. Back to standard wording: Question 2: the address.",
-      "saved_none": "Saved. No wording changed.",
-      "switched_on": "Best phone number switched on",
-      "discarded": "Changes discarded.",
-      "discarded_action": "Undo"
-    },
-    "errors": {
-      "summary": "Not saved. \"When the assistant steps back\" needs a change: Add the words \"follow up\", like \"We'll follow up with you by text.\" Go to that text",
-      "summary_link_words": "Go to that text",
-      "summary_kept": "Your other edits are still here. Nothing was saved yet.",
-      "reasons": {
-        "unanswered_number": "Take out \"call us back\". Customers stay in the text thread, so say you'll follow up by text, like \"We'll follow up with you by text.\"",
-        "follow_up": "Add the words \"follow up\", like \"We'll follow up with you by text.\"",
-        "911": "Tell people to call 911 if anyone is in danger.",
-        "no_booking": "Say \"No booking was made\" and leave out the word \"call\".",
-        "stop": "Include the word STOP. Phone companies require it.",
-        "bad_insert": "Something typed by hand isn't a detail we can fill in. Use the Insert buttons under the box, or remove it.",
-        "wrong_insert": "This text can't fill in Calendar links. It can use: Business name.",
-        "wrong_insert_none": "It fills in no details.",
-        "too_long": "Shorten it to 480 characters or fewer."
-      }
-    },
-    "not_enabled": "Message editing isn't turned on for this account yet. Text FluxWorks support."
-  },
-  "schedule": {
-    "title": "Schedule",
-    "intro": "The timing rules the assistant follows when it books. Reset puts a rule back to its default.",
-    "appointments": {
-      "title": "Appointments",
-      "subtitle": "How long each booking blocks on your calendar, and which time zone it uses.",
-      "duration": {
-        "label": "Appointment length",
-        "unit": "minutes",
-        "value": 60,
-        "chips": [
-          {
-            "label": "30 min",
-            "value": 30
-          },
-          {
-            "label": "45 min",
-            "value": 45
-          },
-          {
-            "label": "60 min",
-            "value": 60
-          },
-          {
-            "label": "90 min",
-            "value": 90
-          },
-          {
-            "label": "120 min",
-            "value": 120
-          },
-          {
-            "label": "Custom",
-            "value": null
-          }
-        ],
-        "selected_chip": "60 min",
-        "hint": "Used for new bookings. 15 to 480 minutes, in steps of 5.",
-        "default_line": "Default: 60 minutes",
-        "error": "Appointment length must be 15 to 480 minutes, in steps of 5.",
-        "variant_custom": {
-          "value": 50,
-          "selected_chip": "Custom"
-        }
-      },
-      "timezone": {
-        "label": "Time zone",
-        "value": "America/New_York",
-        "value_label": "Eastern (New York)",
-        "hint": "Used for working hours, quiet hours and the times in texts.",
-        "default_line": "Default: Eastern (New York)",
-        "error": "Pick a time zone from the list."
-      }
-    },
-    "hours": {
-      "title": "Working hours",
-      "subtitle": "When the assistant may book a job.",
-      "mode_options": [
-        "Any day, any time",
-        "Set hours"
-      ],
-      "mode": "Set hours",
-      "hint_any": "The assistant accepts any time a customer asks for if your calendar is free, including the middle of the night.",
-      "hint_set": "The assistant turns down times outside these hours and asks the customer for another time.",
-      "summary": "Mon–Fri, 8 AM–5 PM",
-      "grid": [
-        {
-          "day": "Monday",
-          "open": true,
-          "opens": "8:00 AM",
-          "closes": "5:00 PM",
-          "accessible": {
-            "switch": "Open on Monday",
-            "opens": "Monday opening time",
-            "closes": "Monday closing time"
-          }
-        },
-        {
-          "day": "Tuesday",
-          "open": true,
-          "opens": "8:00 AM",
-          "closes": "5:00 PM",
-          "accessible": {
-            "switch": "Open on Tuesday",
-            "opens": "Tuesday opening time",
-            "closes": "Tuesday closing time"
-          }
-        },
-        {
-          "day": "Wednesday",
-          "open": true,
-          "opens": "8:00 AM",
-          "closes": "5:00 PM",
-          "accessible": {
-            "switch": "Open on Wednesday",
-            "opens": "Wednesday opening time",
-            "closes": "Wednesday closing time"
-          }
-        },
-        {
-          "day": "Thursday",
-          "open": true,
-          "opens": "8:00 AM",
-          "closes": "5:00 PM",
-          "accessible": {
-            "switch": "Open on Thursday",
-            "opens": "Thursday opening time",
-            "closes": "Thursday closing time"
-          }
-        },
-        {
-          "day": "Friday",
-          "open": true,
-          "opens": "8:00 AM",
-          "closes": "5:00 PM",
-          "accessible": {
-            "switch": "Open on Friday",
-            "opens": "Friday opening time",
-            "closes": "Friday closing time"
-          }
-        },
-        {
-          "day": "Saturday",
-          "open": false,
-          "opens": null,
-          "closes": null,
-          "accessible": {
-            "switch": "Open on Saturday",
-            "opens": "Saturday opening time",
-            "closes": "Saturday closing time"
-          }
-        },
-        {
-          "day": "Sunday",
-          "open": false,
-          "opens": null,
-          "closes": null,
-          "accessible": {
-            "switch": "Open on Sunday",
-            "opens": "Sunday opening time",
-            "closes": "Sunday closing time"
-          }
-        }
-      ],
-      "default_line": "Default: Any day, any time",
-      "variant_any_time": {
-        "mode": "Any day, any time",
-        "warning": "Customers can be offered times like 1 AM. Set your hours.",
-        "button": "Use Mon–Fri, 8 AM–5 PM",
-        "button_note": "Fills the grid; still needs Save."
-      },
-      "errors": [
-        "Choose Any day, any time or Set hours.",
-        "Set at least one open day, or choose Any day, any time.",
-        "Pick times from the list.",
-        "Monday: opening time must be before closing time.",
-        "Monday: the hours are shorter than one appointment (60 minutes)."
-      ],
-      "corrupt": "Your saved working hours couldn't be read, so every time counts as open until you save again."
-    },
-    "quiet": {
-      "title": "Quiet hours",
-      "subtitle": "Reminders and retried texts wait until quiet hours end. Still sent right away: the first text after a missed call, replies to a customer who is texting, and the START, HELP and STOP replies.",
-      "legend": "No texts between",
-      "between": "and",
-      "from": "9:00 PM",
-      "to": "8:00 AM",
-      "switch": "No quiet hours",
-      "switch_state": "off",
-      "switch_note": "Texts may go out at any hour.",
-      "default_line": "Default: 9:00 PM–8:00 AM",
-      "error": "Pick quiet hours from the list."
-    },
-    "reminders": {
-      "title": "Reminders",
-      "subtitle": "Two reminders when a customer never replies to the first text. After that the assistant stops texting.",
-      "first": {
-        "label": "If there's no reply, send a reminder after",
-        "value": "2 hours",
-        "default_line": "Default: 2 hours"
-      },
-      "last": {
-        "label": "Send the last reminder after another",
-        "value": "1 day",
-        "default_line": "Default: 1 day"
-      },
-      "stop": {
-        "label": "Stop waiting for a reply after",
-        "value": "2 days",
-        "hint": "Counted from the last reminder. The customer is marked \"No reply\" on Home.",
-        "default_line": "Default: 2 days"
-      },
-      "errors": [
-        "Reminder delays must be between 5 minutes and 14 days.",
-        "The waiting time must be between 1 hour and 30 days."
-      ],
-      "consequence": "A reminder that is already scheduled keeps its time. Later reminders use the new delays."
-    },
-    "reset": "Reset",
-    "reset_accessible": "Reset Appointment length",
-    "save": "Save",
-    "toast": "Saved. Applies now, including customers mid-conversation; reminders already scheduled keep their time.",
-    "unsaved_bar": "Unsaved changes"
-  },
-  "calendar": {
+  "setup_heading": "Setup",
+  "setup": [
+   {
     "title": "Calendar",
-    "intro": "The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation.",
-    "state": "not_connected_with_connect",
-    "connected": {
-      "state_word": "Connected",
-      "card_title": "Google Calendar",
-      "body": "Bookings go here: Oak & Pine jobs. Connected as owner@example.com.",
-      "calendar_name": "Oak & Pine jobs",
-      "account": "owner@example.com",
-      "buttons": [
-        "Use a different calendar",
-        "Reconnect Google Calendar"
-      ],
-      "picker": {
-        "legend": "Which calendar should the assistant use?",
-        "hint": "Free times are checked on this calendar and new appointments are added to it.",
-        "options": [
-          {
-            "name": "Oak & Pine jobs",
-            "in_use": true
-          },
-          {
-            "name": "owner@example.com",
-            "main": "(main calendar)",
-            "in_use": false
-          }
-        ],
-        "in_use_pill": "In use",
-        "button": "Use this calendar",
-        "error": "Pick one of the calendars listed.",
-        "only_one": "This is the only calendar this account can add appointments to."
-      },
-      "toast_picked": "Saved. The assistant now books on Oak & Pine jobs.",
-      "availability": {
-        "title": "Next free times on Oak & Pine jobs",
-        "intro": "The first three free 60-minute times in the next 14 days, inside your working hours.",
-        "button": "Check free times",
-        "button_posting": "Checking…",
-        "caption": "Checked just now · next 14 days · working hours Mon–Fri, 8 AM–5 PM",
-        "empty": "No free 60-minute time in the next 14 days inside your working hours.",
-        "unreachable": "Couldn't reach Google Calendar. Try again in a minute."
-      }
-    },
-    "not_connected_with_connect": {
-      "state_word": "Not connected",
-      "card_title": "No calendar yet",
-      "body": "Without a calendar the assistant can't check free times or book jobs. Connect the Google account that owns your business calendar.",
-      "button": "Connect Google Calendar",
-      "button_posting": "Opening Google…",
-      "asks_heading": "What Google will ask:",
-      "asks": [
-        "You pick the Google account that owns your business calendar.",
-        "Google asks you to let TextBack see and edit your calendars.",
-        "TextBack only checks free times and adds appointments. TextBack sees your calendars only.",
-        "Afterwards you choose which calendar it uses."
-      ],
-      "asks_open": true,
-      "availability": {
-        "title": "Test calendar, not yours",
-        "intro": "Shows how the check works. These times are not from your calendar.",
-        "button": "Check free times",
-        "button_posting": "Checking…",
-        "results": [
-          {
-            "label": "Tue, Oct 27 · 8:00–9:00 AM",
-            "start": "2026-10-27T08:00:00-04:00"
-          },
-          {
-            "label": "Tue, Oct 27 · 9:00–10:00 AM",
-            "start": "2026-10-27T09:00:00-04:00"
-          },
-          {
-            "label": "Tue, Oct 27 · 10:00–11:00 AM",
-            "start": "2026-10-27T10:00:00-04:00"
-          }
-        ],
-        "caption": "Checked just now · next 14 days · working hours Mon–Fri, 8 AM–5 PM"
-      }
-    },
-    "not_connected_without_connect": {
-      "state_word": "Not connected",
-      "card_title": "No calendar yet",
-      "body": "Without a calendar the assistant can't check free times or book jobs. Connect the Google account that owns your business calendar.",
-      "no_connect_body": "Connecting from this page isn't set up for your account yet.",
-      "button": "Text FluxWorks support",
-      "button_href": "sms:",
-      "under_button": null,
-      "under_button_note": "Deck row is '[support number] · [reply time]'; both are open items with no value yet, so nothing renders under the button."
-    },
-    "other_states": {
-      "reconnect": {
-        "state_word": "Reconnect needed",
-        "body": "Google disconnected the calendar, so bookings are paused until you reconnect. Customers are told no booking was made.",
-        "availability_replacement": "Reconnect the calendar first."
-      },
-      "unreadable": {
-        "state_word": "Couldn't be read",
-        "body": "TextBack couldn't read the calendar connection. Bookings are paused until you reconnect."
-      },
-      "errors": [
-        "Google didn't give TextBack calendar access. Try connecting again.",
-        "Connecting a calendar isn't set up for this account yet."
-      ]
+    "state": "Needs you",
+    "detail": "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see.",
+    "button": {
+     "label": "Connect calendar",
+     "href": "/client/calendar"
     }
+   },
+   {
+    "title": "Call forwarding",
+    "state": "Needs you",
+    "detail": "3 of 5 checks done.",
+    "button": {
+     "label": "Finish forwarding",
+     "href": "/client/phone#forwarding"
+    },
+    "example": true
+   },
+   {
+    "title": "Texting approval",
+    "state": "Waiting on phone companies",
+    "detail": "FluxWorks has filed your business for texting approval. Until it clears, each text starts with a short network notice. Nothing for you to do.",
+    "button": null,
+    "example": true
+   }
+  ],
+  "week_heading": "This week",
+  "week_caption": "Since Mon, Oct 26. The counts and the list below cover the same days.",
+  "week_window": {
+   "from": "2026-10-26T00:00:00-04:00",
+   "to": "2026-10-26T14:40:00-04:00"
   },
-  "phone": {
-    "title": "Phone",
-    "intro": "Your business name, the numbers TextBack uses, and call forwarding.",
-    "business": {
-      "title": "Business",
-      "name": {
-        "label": "Business name",
-        "value": "Oak & Pine Tree Care",
-        "hint": "Used in every text, for example \"Hey, sorry we missed your call—this is Oak & Pine Tree Care's scheduling assistant.\"",
-        "preview_eyebrow": "In the first text",
-        "preview": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
-        "error": "Enter a business name of 1 to 60 characters."
-      },
-      "rename_offer": {
-        "offer": "Update 2 texts that still say \"Oak & Pine Tree Care\"",
-        "update": "Update them",
-        "leave": "Leave them",
-        "toast": "Updated 2 texts.",
-        "new_name": "Oak & Pine Tree Service",
-        "old_name": "Oak & Pine Tree Care"
-      }
-    },
-    "numbers": {
-      "title": "Numbers",
-      "subtitle": "Your business number never changes. Customers keep calling it.",
-      "business_line": {
-        "label": "Your business number",
-        "value": "(704) 555-0123",
-        "hint": "The number customers call. Calls you don't answer forward from here to the texting number.",
-        "errors": [
-          "Enter your business number as 10 digits, like 704 555 0123, or leave it blank.",
-          "Your business number and the texting number can't be the same."
-        ]
-      },
-      "texting_number": {
-        "label": "Texting number",
-        "value": "(704) 555-0100",
-        "read_only": true,
-        "note": "Set up by FluxWorks. It can't be changed here.",
-        "unassigned": "Not assigned yet. FluxWorks sets this up for you."
-      },
-      "owner_mobile": {
-        "label": "Your mobile",
-        "value": "980 555 0123",
-        "hint": "Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it.",
-        "status_unchanged": "This is the number that signs you in.",
-        "status_changed": "Save to text a code to 980 555 0199.",
-        "error": "Enter your mobile as 10 digits, like 704 555 0123.",
-        "invalid_entry": "980 555 01"
-      },
-      "help_number": {
-        "label": "Number in the HELP reply",
-        "tag": "Optional",
-        "value": "(704) 555-0123",
-        "hint": "Shown when a customer texts HELP. Leave blank to show (704) 555-0100. Customers are never transferred to it; the assistant handles the texting.",
-        "error": "Enter the phone number as 10 digits, like 704 555 0123, or leave it blank."
-      },
-      "save": "Save",
-      "toast": "Saved.",
-      "toast_confirm_next": "Saved. Now confirm your new mobile."
-    },
-    "confirm_mobile": {
-      "title": "Confirm your new mobile",
-      "steps": [
-        {
-          "label": "Details saved",
-          "state": "done"
-        },
-        {
-          "label": "Confirm number",
-          "state": "current"
-        }
-      ],
-      "new_number": "980 555 0199",
-      "intro": "We texted a six-digit code to 980 555 0199. Enter it to move sign-in to that number. It expires in ten minutes; until then codes still go to your current mobile.",
-      "code_label": "Code from the text",
-      "submit": "Confirm new mobile",
-      "submit_posting": "Confirming…",
-      "keep": "Keep my current mobile",
-      "resend_text": "Didn't get it?",
-      "resend": "Send the code again",
-      "toast_confirmed": "Saved. Sign-in codes now go to 980 555 0199.",
-      "toast_kept": "Kept your current mobile."
-    },
-    "forwarding": {
-      "heading": "Call forwarding",
-      "intro": "Forward the calls you don't answer to your texting number. Your business number stays the same, and answered calls still reach you.",
-      "warning": "Only forward busy and unanswered calls. Forwarding every call stops answered calls from reaching you.",
-      "carrier_legend": "Your carrier",
-      "carrier_selected": "Verizon",
-      "carrier_error": "Pick a carrier from the list.",
-      "carrier_note_before_pick": "Pick your carrier to see the codes.",
-      "codes_headings": {
-        "on": "Turn forwarding on",
-        "off": "Turn it off"
-      },
-      "copy": "Copy",
-      "copied": "Copied",
-      "copy_accessible": "Copy Busy and no answer code",
-      "codes_need_number": "The codes fill in once FluxWorks assigns your texting number.",
-      "carriers": [
-        {
-          "name": "Verizon",
-          "verified": true,
-          "selected": true,
-          "note": "Covers busy and no answer. Dial from your phone while on Verizon's network, then press Call.",
-          "turn_on": [
-            {
-              "label": "Busy and no answer",
-              "code": "*717045550100"
-            }
-          ],
-          "turn_off": [
-            {
-              "label": "Busy and no answer",
-              "code": "*73"
-            }
-          ]
-        },
-        {
-          "name": "T-Mobile",
-          "verified": true,
-          "note": "Dial each code, then press Call.",
-          "turn_on": [
-            {
-              "label": "No answer",
-              "code": "**61*17045550100#"
-            },
-            {
-              "label": "No answer, ring 20 seconds first",
-              "code": "**61*17045550100**20#"
-            },
-            {
-              "label": "Busy",
-              "code": "**67*17045550100#"
-            },
-            {
-              "label": "Unreachable",
-              "code": "**62*17045550100#"
-            }
-          ],
-          "turn_off": [
-            {
-              "label": "No answer",
-              "code": "##61#"
-            },
-            {
-              "label": "Busy",
-              "code": "##67#"
-            },
-            {
-              "label": "Unreachable",
-              "code": "##62#"
-            },
-            {
-              "label": "Reset all forwarding",
-              "code": "##004#"
-            }
-          ]
-        },
-        {
-          "name": "AT&T",
-          "verified": false,
-          "steps": "Android: open the Phone app, then Settings, then Call forwarding. Set \"When busy\" and \"When unanswered\" to (704) 555-0100.",
-          "note": "On iPhone, skip the Settings toggle: it forwards every call. Dial the codes instead.",
-          "unverified": "We haven't confirmed these codes on AT&T. Make a test call afterwards to check.",
-          "turn_on": [
-            {
-              "label": "No answer",
-              "code": "**61*17045550100#"
-            },
-            {
-              "label": "Busy",
-              "code": "**67*17045550100#"
-            }
-          ],
-          "turn_off": [
-            {
-              "label": "No answer",
-              "code": "##61#"
-            },
-            {
-              "label": "Busy",
-              "code": "##67#"
-            },
-            {
-              "label": "Reset all forwarding",
-              "code": "##004#"
-            }
-          ]
-        },
-        {
-          "name": "Cricket",
-          "verified": false,
-          "note": "Cricket doesn't publish codes. Check with *#61# and *#67#. If forwarding won't turn off, call 611.",
-          "unverified": "We haven't confirmed these codes on Cricket. Make a test call afterwards to check.",
-          "turn_on": [
-            {
-              "label": "No answer",
-              "code": "**61*17045550100#"
-            },
-            {
-              "label": "Busy",
-              "code": "**67*17045550100#"
-            }
-          ],
-          "turn_off": [
-            {
-              "label": "No answer",
-              "code": "##61#"
-            },
-            {
-              "label": "Busy",
-              "code": "##67#"
-            },
-            {
-              "label": "Reset all forwarding",
-              "code": "##004#"
-            }
-          ]
-        },
-        {
-          "name": "Other",
-          "verified": null,
-          "steps": "Ask your carrier to forward only busy and unanswered calls to (704) 555-0100. They call it conditional call forwarding. Never forward all calls.",
-          "turn_on": [],
-          "turn_off": []
-        }
-      ]
-    },
-    "checks": {
-      "heading": "Is forwarding working?",
-      "progress": "3 of 5 done",
-      "complete": "All 5 done. Forwarding works.",
-      "state_words": [
-        "Done",
-        "Not yet",
-        "You checked this"
-      ],
-      "items": [
-        {
-          "n": 1,
-          "step": "A call to your business number reached TextBack",
-          "state": "Done",
-          "evidence": "Mon, Oct 26, 9:12 AM from a number ending 0141",
-          "not_yet": "No forwarded call recorded yet. From another phone, call your business number and let it ring out. Calls made straight to the texting number don't count."
-        },
-        {
-          "n": 2,
-          "step": "Exactly one text went out",
-          "state": "Done",
-          "evidence": "Sent Mon, Oct 26, 9:12 AM",
-          "not_yet": "Waits for check 1."
-        },
-        {
-          "n": 3,
-          "step": "An answered call sent no text",
-          "state": "Not yet",
-          "manual": true,
-          "manual_state": "You checked this",
-          "hint": "Answer a call to your business number, then confirm no text arrived. TextBack can't see answered calls, so this one is yours to tick."
-        },
-        {
-          "n": 4,
-          "step": "The caller's own number came through",
-          "state": "Done",
-          "evidence": "The text went to the caller's number, not your business number.",
-          "not_yet": "Waits for check 1.",
-          "no_business_number": "Enter your business number first."
-        },
-        {
-          "n": 5,
-          "step": "You saved the turn-off code",
-          "state": "Not yet",
-          "manual": true,
-          "manual_state": "You checked this",
-          "hint": "Keep it where you'll find it: *73."
-        }
-      ],
-      "evidence_note": "Checks 1, 2 and 4 tick themselves from real calls TextBack recorded. Checks 3 and 5 are yours.",
-      "save": "Save checks",
-      "toast": "Checks saved."
-    },
-    "unsaved_bar": "Unsaved changes"
-  },
-  "account": {
-    "title": "Account",
-    "signed_in": "Signed in as 980 555 0123",
-    "change_mobile": "To change the mobile that signs you in, open Phone.",
-    "change_mobile_link": {
-      "text": "Phone",
-      "href": "/client/phone"
-    },
-    "devices_title": "Remembered devices",
-    "devices": [
-      {
-        "label": "This phone",
-        "line": "This phone · signed in Mon, Oct 26, 8:02 AM · stays signed in until Wed, Nov 25",
-        "current": true
-      },
-      {
-        "label": "Another device",
-        "line": "Another device · last used Fri, Oct 23, 5:30 PM",
-        "current": false
-      }
+  "week_counts": [
+   {
+    "label": "Missed calls",
+    "value": 3
+   },
+   {
+    "label": "Customers texted",
+    "value": 3
+   },
+   {
+    "label": "Booked",
+    "value": 1
+   },
+   {
+    "label": "Stepped back",
+    "value": 1
+   }
+  ],
+  "callers_heading": "This week's callers",
+  "callers_columns": [
+   "Customer",
+   "Status",
+   "Last activity",
+   "Last text"
+  ],
+  "callers": [
+   {
+    "name": "Dana Whitfield",
+    "example": "Example",
+    "status": "Booked on test calendar",
+    "last_activity": "Mon, Oct 26, 9:12 AM",
+    "last_text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte.",
+    "number_ending": "0141"
+   },
+   {
+    "name": "Marcus Lee",
+    "example": "Example",
+    "status": "Assistant stepped back",
+    "last_activity": "Mon, Oct 26, 11:48 AM",
+    "last_text": "Got it. Automated scheduling is paused, and we'll follow up with you directly.",
+    "number_ending": "0177"
+   },
+   {
+    "name": "Priya Natarajan",
+    "example": "Example",
+    "status": "Waiting for a reply",
+    "last_activity": "Mon, Oct 26, 1:55 PM",
+    "last_text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
+    "number_ending": "0192"
+   }
+  ],
+  "callers_empty": "No callers this week. They appear here after the next missed call.",
+  "status_order": [
+   "Booked on test calendar",
+   "Texting",
+   "Waiting for a reply",
+   "Assistant stepped back",
+   "No reply",
+   "Asked us to stop",
+   "Booked"
+  ],
+  "example_tag": "Example",
+  "week_counts_example": "Example numbers"
+ },
+ "messages": {
+  "title": "Messages",
+  "intro": "The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.",
+  "meta": "Green bubbles are what customers see. The job, address, time and names are made-up examples.",
+  "network_notice": "Until phone companies approve your business for texting, the network adds a short notice to the start of each text. Customers see it before your wording. The text counts here include it.",
+  "network_notice_shown": true,
+  "jump_label": "On this page",
+  "jump_chips": [
+   {
+    "label": "Missed call",
+    "anchor": "missed_call"
+   },
+   {
+    "label": "Questions",
+    "anchor": "questions"
+   },
+   {
+    "label": "Booking",
+    "anchor": "booking"
+   },
+   {
+    "label": "No reply",
+    "anchor": "no_reply"
+   },
+   {
+    "label": "Steps back",
+    "anchor": "steps_back"
+   },
+   {
+    "label": "START, HELP, STOP",
+    "anchor": "any_time"
+   },
+   {
+    "label": "Example conversation",
+    "anchor": "example"
+   }
+  ],
+  "steps": [
+   {
+    "id": "missed_call",
+    "heading": "Missed call",
+    "blurb": "A call goes unanswered. Within a minute the caller gets this text.",
+    "keys": [
+     "intro"
+    ]
+   },
+   {
+    "id": "questions",
+    "heading": "Questions",
+    "blurb": "Asked one at a time, in this order. The assistant moves on only once it has an answer.",
+    "optional_eyebrow": "Optional questions",
+    "optional_keys": [
+     "prompt_phone",
+     "prompt_email"
     ],
-    "devices_empty": "Only this phone is signed in.",
-    "remember": {
-      "switch": "Remember this phone for 30 days",
-      "state": "on",
-      "note_on": "On. This phone stays signed in for 30 days.",
-      "note_off": "Off. This phone signs out after 12 hours."
+    "keys": [
+     "prompt_service",
+     "prompt_location",
+     "prompt_preferred_time",
+     "prompt_name",
+     "prompt_phone",
+     "prompt_email",
+     "preferred_time_reprompt",
+     "phone_reprompt",
+     "email_reprompt"
+    ]
+   },
+   {
+    "id": "booking",
+    "heading": "Booking",
+    "blurb": "Once it has the answers, the assistant checks your calendar and books a free time.",
+    "keys": [
+     "slot_unavailable",
+     "booking_confirmation",
+     "booking_error"
+    ]
+   },
+   {
+    "id": "no_reply",
+    "heading": "No reply",
+    "blurb": "If the customer goes quiet, the assistant sends two reminders. Then the texting stops.",
+    "keys": [
+     "followup_1",
+     "followup_2"
+    ]
+   },
+   {
+    "id": "steps_back",
+    "heading": "When the assistant steps back",
+    "blurb": "When a text needs a person, the assistant stops scheduling and passes the customer's details on.",
+    "keys": [
+     "handoff_ack",
+     "handoff_ack_safety"
+    ]
+   },
+   {
+    "id": "any_time",
+    "heading": "START, HELP and STOP",
+    "blurb": "Required by phone companies. Most businesses never change these.",
+    "collapsed": true,
+    "keys": [
+     "opt_in",
+     "help",
+     "opt_out_ack",
+     "opt_out_suffix"
+    ]
+   }
+  ],
+  "cards": {
+   "intro": {
+    "key": "intro",
+    "step": "missed_call",
+    "title": "First text after a missed call",
+    "when": null,
+    "state": "customized",
+    "badge": "Customized",
+    "wording": [
+     {
+      "text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done?"
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Hey, sorry we missed your call—this is "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. What were you calling about?"
+     }
+    ],
+    "preview": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
+    "optout_added": "STOP line added for you",
+    "cost": {
+     "line": "1 text · 131 characters with the notice",
+     "texts": 1,
+     "characters": 131,
+     "amber": null,
+     "limit_note": null
     },
-    "signout_everywhere": {
-      "button": "Sign out everywhere",
-      "dialog": "Sign out of every device? You'll need a new code on each one.",
-      "confirm": "Sign out everywhere",
-      "cancel": "Stay signed in"
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Phone companies require “Reply STOP to opt out.” If your wording leaves out STOP, we add that line for you."
+    ],
+    "reset": "Reset"
+   },
+   "prompt_service": {
+    "key": "prompt_service",
+    "step": "questions",
+    "title": "Question 1: the job",
+    "when": "Asked as soon as the customer replies.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?"
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?"
+     }
+    ],
+    "preview": "What's the job you need done (e.g. tree removal, trimming, stump grinding)?",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 99 characters with the notice",
+     "texts": 1,
+     "characters": 99,
+     "amber": null,
+     "limit_note": null
     },
-    "signout": "Sign out",
-    "toast_everywhere": "Signed out everywhere."
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null
+   },
+   "prompt_location": {
+    "key": "prompt_location",
+    "step": "questions",
+    "title": "Question 2: the address",
+    "when": "Asked once the job is known.",
+    "state": "customized",
+    "badge": "Customized",
+    "wording": [
+     {
+      "text": "What's the address for the job?"
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "What's the address or location for the job?"
+     }
+    ],
+    "preview": "What's the address for the job?",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 55 characters with the notice",
+     "texts": 1,
+     "characters": 55,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": "Reset"
+   },
+   "prompt_preferred_time": {
+    "key": "prompt_preferred_time",
+    "step": "questions",
+    "title": "Question 3: day and time",
+    "when": "Asked once the address is known. Examples in everyday words help: Wednesday at 2, tomorrow at 10am.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
+     }
+    ],
+    "preview": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 118 characters with the notice",
+     "texts": 1,
+     "characters": 118,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null
+   },
+   "prompt_name": {
+    "key": "prompt_name",
+    "step": "questions",
+    "title": "Question 4: the name",
+    "when": "Asked once the time is known.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "What name should we put the appointment under?"
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "What name should we put the appointment under?"
+     }
+    ],
+    "preview": "What name should we put the appointment under?",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 70 characters with the notice",
+     "texts": 1,
+     "characters": 70,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null
+   },
+   "prompt_phone": {
+    "key": "prompt_phone",
+    "step": "questions",
+    "title": "Best phone number",
+    "when": "Asked only when switched on. YES keeps the number they're texting from.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Is this the best number to reach you? Reply YES, or send a different number."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Is this the best number to reach you? Reply YES, or send a different number."
+     }
+    ],
+    "preview": "Is this the best number to reach you? Reply YES, or send a different number.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 100 characters with the notice",
+     "texts": 1,
+     "characters": 100,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "switch": {
+     "label": "Also ask for the best phone number",
+     "state": "off",
+     "note": "Off. Customers skip this question."
+    },
+    "badge_asked": "Not asked"
+   },
+   "prompt_email": {
+    "key": "prompt_email",
+    "step": "questions",
+    "title": "Email address",
+    "when": "Asked only when switched on. SKIP is allowed.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not."
+     }
+    ],
+    "preview": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 104 characters with the notice",
+     "texts": 1,
+     "characters": 104,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "switch": {
+     "label": "Also ask for an email address",
+     "state": "off",
+     "note": "Off. Customers skip this question."
+    },
+    "badge_asked": "Not asked"
+   },
+   "preferred_time_reprompt": {
+    "key": "preferred_time_reprompt",
+    "step": "questions",
+    "title": "If the time couldn't be understood",
+    "when": "Sent instead of moving on when the reply isn't a day and time.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
+     }
+    ],
+    "preview": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 110 characters with the notice",
+     "texts": 1,
+     "characters": 110,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "trigger": "Sometime next week"
+   },
+   "phone_reprompt": {
+    "key": "phone_reprompt",
+    "step": "questions",
+    "title": "If the phone number couldn't be read",
+    "when": "Sent when the reply isn't a phone number or YES.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Please send a phone number with area code, like (704) 555-0123, or reply YES to use this one."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Please send a phone number with area code, like (704) 555-0123, or reply YES to use this one."
+     }
+    ],
+    "preview": "Please send a phone number with area code, like (704) 555-0123, or reply YES to use this one.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 117 characters with the notice",
+     "texts": 1,
+     "characters": 117,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "trigger": "my cell"
+   },
+   "email_reprompt": {
+    "key": "email_reprompt",
+    "step": "questions",
+    "title": "If the email couldn't be read",
+    "when": "Sent when the reply isn't an email address or SKIP.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP."
+     }
+    ],
+    "preview": "That doesn't look like an email address. Please send it like name@example.com, or reply SKIP.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 117 characters with the notice",
+     "texts": 1,
+     "characters": 117,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "trigger": "dana at gmail"
+   },
+   "slot_unavailable": {
+    "key": "slot_unavailable",
+    "step": "booking",
+    "title": "When the time is already taken",
+    "when": "Sent when your calendar shows that time busy.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "That time is unavailable. Please send another day and time, like Thursday at 4."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "That time is unavailable. Please send another day and time, like Thursday at 4."
+     }
+    ],
+    "preview": "That time is unavailable. Please send another day and time, like Thursday at 4.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 103 characters with the notice",
+     "texts": 1,
+     "characters": 103,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "trigger": "Wednesday at 10"
+   },
+   "booking_confirmation": {
+    "key": "booking_confirmation",
+    "step": "booking",
+    "title": "Booking confirmation",
+    "when": "Sent only after the appointment is on your calendar.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Booked: "
+     },
+     {
+      "insert": "Job"
+     },
+     {
+      "text": " on "
+     },
+     {
+      "insert": "Day and time"
+     },
+     {
+      "text": " at "
+     },
+     {
+      "insert": "Address"
+     },
+     {
+      "text": ". This is "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. "
+     },
+     {
+      "insert": "Invite sentence"
+     },
+     {
+      "text": " "
+     },
+     {
+      "insert": "Calendar links"
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Booked: "
+     },
+     {
+      "insert": "Job"
+     },
+     {
+      "text": " on "
+     },
+     {
+      "insert": "Day and time"
+     },
+     {
+      "text": " at "
+     },
+     {
+      "insert": "Address"
+     },
+     {
+      "text": ". This is "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. "
+     },
+     {
+      "insert": "Invite sentence"
+     },
+     {
+      "text": " "
+     },
+     {
+      "insert": "Calendar links"
+     }
+    ],
+    "preview": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant.",
+    "optout_added": null,
+    "cost": {
+     "line": "3 texts · 370 characters with the notice",
+     "texts": 3,
+     "characters": 370,
+     "amber": "Billed as 3 texts. Customers still see one message.",
+     "limit_note": null
+    },
+    "chips": [
+     "Business name",
+     "Job",
+     "Day and time",
+     "Address",
+     "Calendar links",
+     "Invite sentence",
+     "Customer's email",
+     "Google Calendar link",
+     "Outlook link",
+     "iCal link",
+     "Calendar links page"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "preview_links": [
+     {
+      "label": "Add to Google Calendar ›",
+      "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/g"
+     },
+     {
+      "label": "Add to Outlook ›",
+      "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/o"
+     },
+     {
+      "label": "Add to iCal ›",
+      "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
+     }
+    ],
+    "preview_sent": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant. Add to calendar: Google https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/g Outlook https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/o iCal https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
+   },
+   "booking_error": {
+    "key": "booking_error",
+    "step": "booking",
+    "title": "When the calendar failed",
+    "when": "Sent if the appointment couldn't be added to your calendar. It tells the customer no booking was made.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "We couldn't confirm that appointment. No booking was made. Please send another date and time and we'll try again."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "We couldn't confirm that appointment. No booking was made. Please send another date and time and we'll try again."
+     }
+    ],
+    "preview": "We couldn't confirm that appointment. No booking was made. Please send another date and time and we'll try again.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 137 characters with the notice",
+     "texts": 1,
+     "characters": 137,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Must say “No booking was made” and can't use the word “call”. The customer stays in the text thread."
+    ],
+    "reset": null,
+    "trigger": "Thursday at 10"
+   },
+   "followup_1": {
+    "key": "followup_1",
+    "step": "no_reply",
+    "title": "First reminder",
+    "when": "Sent 2 hours after the first text if there's no reply.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Hi again from "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant—still happy to get you on the calendar. What job do you need done?"
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Hi again from "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant—still happy to get you on the calendar. What job do you need done?"
+     }
+    ],
+    "preview": "Hi again from Oak & Pine Tree Care's scheduling assistant—still happy to get you on the calendar. What job do you need done? Reply STOP to opt out.",
+    "optout_added": "STOP line added for you",
+    "cost": {
+     "line": "3 texts · 171 characters with the notice",
+     "texts": 3,
+     "characters": 171,
+     "amber": "Billed as 3 texts. The “—” symbol makes each text hold only 70 characters. Use “-” instead.",
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Phone companies require “Reply STOP to opt out.” If your wording leaves out STOP, we add that line for you."
+    ],
+    "reset": null
+   },
+   "followup_2": {
+    "key": "followup_2",
+    "step": "no_reply",
+    "title": "Last reminder",
+    "when": "Sent 1 day after the first reminder. After this the assistant stops texting.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Last check-in from "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. Reply with the job you need and we'll set a time."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Last check-in from "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. Reply with the job you need and we'll set a time."
+     }
+    ],
+    "preview": "Last check-in from Oak & Pine Tree Care's scheduling assistant. Reply with the job you need and we'll set a time. Reply STOP to opt out.",
+    "optout_added": "STOP line added for you",
+    "cost": {
+     "line": "1 text · 160 characters with the notice",
+     "texts": 1,
+     "characters": 160,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Phone companies require “Reply STOP to opt out.” If your wording leaves out STOP, we add that line for you."
+    ],
+    "reset": null
+   },
+   "handoff_ack": {
+    "key": "handoff_ack",
+    "step": "steps_back",
+    "title": "When the assistant steps back",
+    "when": "Sent when the customer asks for the owner or the assistant can't help.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Got it. Automated scheduling is paused, and we'll follow up with you directly."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Got it. Automated scheduling is paused, and we'll follow up with you directly."
+     }
+    ],
+    "preview": "Got it. Automated scheduling is paused, and we'll follow up with you directly.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 102 characters with the notice",
+     "texts": 1,
+     "characters": 102,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "This text must tell the customer someone will follow up. Don't ask them to call, and don't say they'll be put through to someone."
+    ],
+    "reset": null,
+    "next": true,
+    "trigger": "Can I just talk to the owner?"
+   },
+   "handoff_ack_safety": {
+    "key": "handoff_ack_safety",
+    "step": "steps_back",
+    "title": "When someone may be in danger",
+    "when": "Sent when a text mentions danger.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
+     }
+    ],
+    "preview": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 149 characters with the notice",
+     "texts": 1,
+     "characters": 149,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Must tell people to call 911 if anyone is in danger, and must say someone will follow up."
+    ],
+    "reset": null,
+    "next": true,
+    "trigger": "A big limb just came down on the power line by our house"
+   },
+   "opt_in": {
+    "key": "opt_in",
+    "step": "any_time",
+    "title": "Reply to START",
+    "when": "Sent when a customer texts START.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "You're subscribed to "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling texts. Msg & data rates may apply. Reply HELP for help or STOP to opt out."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "You're subscribed to "
+     },
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling texts. Msg & data rates may apply. Reply HELP for help or STOP to opt out."
+     }
+    ],
+    "preview": "You're subscribed to Oak & Pine Tree Care's scheduling texts. Msg & data rates may apply. Reply HELP for help or STOP to opt out.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 153 characters with the notice",
+     "texts": 1,
+     "characters": 153,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Phone companies require “Reply STOP to opt out.” If your wording leaves out STOP, we add that line for you."
+    ],
+    "reset": null,
+    "trigger": "START"
+   },
+   "help": {
+    "key": "help",
+    "step": "any_time",
+    "title": "Reply to HELP",
+    "when": "Sent when a customer texts HELP. The number it shows is set on the Phone page.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can't handle by text, the owner follows up on."
+     },
+     {
+      "insert": "Contact number sentence"
+     },
+     {
+      "text": " Msg & data rates may apply."
+     }
+    ],
+    "default_wording": [
+     {
+      "insert": "Business name"
+     },
+     {
+      "text": "'s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can't handle by text, the owner follows up on."
+     },
+     {
+      "insert": "Contact number sentence"
+     },
+     {
+      "text": " Msg & data rates may apply."
+     }
+    ],
+    "preview": "Oak & Pine Tree Care's scheduling assistant. Reply with the job type, location, and a time that works. Anything we can't handle by text, the owner follows up on. Contact: (704) 555-0123. Msg & data rates may apply. Reply STOP to opt out.",
+    "optout_added": "STOP line added for you",
+    "cost": {
+     "line": "2 texts · 261 characters with the notice",
+     "texts": 2,
+     "characters": 261,
+     "amber": "Billed as 2 texts. Customers still see one message.",
+     "limit_note": null
+    },
+    "chips": [
+     "Business name",
+     "Contact number sentence"
+    ],
+    "chips_note": null,
+    "rules": [
+     "Phone companies require “Reply STOP to opt out.” If your wording leaves out STOP, we add that line for you."
+    ],
+    "reset": null,
+    "trigger": "HELP"
+   },
+   "opt_out_ack": {
+    "key": "opt_out_ack",
+    "step": "any_time",
+    "title": "Reply to STOP",
+    "when": "Sent once when a customer texts STOP. Nothing follows it.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded."
+     }
+    ],
+    "preview": "You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.",
+    "optout_added": null,
+    "cost": {
+     "line": "2 texts · 167 characters with the notice",
+     "texts": 2,
+     "characters": 167,
+     "amber": "Billed as 2 texts. Customers still see one message.",
+     "limit_note": null
+    },
+    "chips": [
+     "Business name"
+    ],
+    "chips_note": null,
+    "rules": [],
+    "reset": null,
+    "trigger": "STOP"
+   },
+   "opt_out_suffix": {
+    "key": "opt_out_suffix",
+    "step": "any_time",
+    "title": "Opt-out line",
+    "when": "Added to the first text, both reminders and the START and HELP replies when they leave out the word STOP.",
+    "state": "standard",
+    "badge": "Standard wording",
+    "wording": [
+     {
+      "text": "Reply STOP to opt out."
+     }
+    ],
+    "default_wording": [
+     {
+      "text": "Reply STOP to opt out."
+     }
+    ],
+    "preview": "Reply STOP to opt out.",
+    "optout_added": null,
+    "cost": {
+     "line": "1 text · 22 characters",
+     "texts": 1,
+     "characters": 22,
+     "amber": null,
+     "limit_note": null
+    },
+    "chips": [],
+    "chips_note": "This text fills in no details.",
+    "rules": [
+     "The word STOP stays. Phone companies check for it."
+    ],
+    "reset": null
+   }
   },
-  "shared": {
-    "toast_dismiss": "Dismiss",
-    "toast_position": "Under the header, never over the page title or intro.",
-    "toasts": {
-      "messages": "Saved. You changed “Question 2: the address”.",
-      "schedule": "Saved. Applies now, including customers mid-conversation; reminders already scheduled keep their time.",
-      "phone": "Saved.",
-      "keep_mobile": "Kept your current mobile.",
-      "checks": "Checks saved.",
-      "calendar_picked": "Saved. The assistant now books on Oak & Pine jobs.",
-      "discarded": "Changes discarded."
-    },
-    "unsaved_bar": {
-      "messages": "2 texts changed",
-      "messages_one": "1 text changed",
-      "other_pages": "Unsaved changes"
-    },
-    "unsaved_leave": "Leave this page? Your changes aren't saved.",
-    "errors": {
-      "invalid_phone": "Enter your mobile as 10 digits, like 704 555 0123.",
-      "generic": "Something went wrong on our side. Nothing was saved. Try again.",
-      "offline": "You're offline. Nothing was saved. Try again when you're back online."
-    },
-    "expired": {
-      "title": "This page expired",
-      "intro": "Reload the page and try again. Nothing was saved.",
-      "button": "Reload"
-    },
-    "session_ended": "You were signed out. Sign in again to continue.",
-    "empty_generic": "Nothing here yet."
+  "editor": {
+   "open": "Edit wording",
+   "reset": "Reset",
+   "reset_nojs": "Reset and save",
+   "paragraph_rule": "Sent as one paragraph. Up to 480 characters.",
+   "chips_label": "Insert a detail",
+   "badge_states": {
+    "customized": "Customized",
+    "standard": "Standard wording",
+    "unsaved": "Unsaved",
+    "rejected": "Not saved"
+   },
+   "open_on": "prompt_location",
+   "open_for": "Edit wording: ",
+   "field_label": "Wording: ",
+   "insert_open": "[",
+   "insert_close": "]"
   },
-  "states": [
+  "destination": {
+   "line": "These go to the FluxWorks operator.",
+   "short": "the FluxWorks operator",
+   "deck_variants": {
+    "chat": "FluxWorks' private alert channel. FluxWorks sees them there; ask FluxWorks how they'll reach you.",
+    "log": "a log FluxWorks can read. Nobody is alerted. Ask FluxWorks to set up where these should go.",
+    "off": "nowhere yet. The customer's details are kept, but nobody is alerted. Ask FluxWorks to set up where these should go."
+   },
+   "next_heading": "What happens next",
+   "next_steps": [
+    "TextBack stops texting this customer.",
+    "Their details go to FluxWorks.",
+    "FluxWorks passes them to you, and you follow up. The text promises the customer someone will."
+   ]
+  },
+  "example": {
+   "title": "Example conversation",
+   "show_label": "Show",
+   "scenario": "Books a job",
+   "scenarios": [
+    "Books a job",
+    "Unclear answers",
+    "No reply",
+    "Booking failed",
+    "Asks for the owner",
+    "Mentions danger",
+    "START, HELP and STOP"
+   ],
+   "phone_sub": "Text message",
+   "badges": {
+    "customer": "Customer",
+    "textback": "TextBack"
+   },
+   "pills": {
+    "missed_call": "Missed call · just now",
+    "no_reply": "No reply",
+    "still_no_reply": "Still no reply",
+    "stops": "Texts stop here",
+    "no_booking": "No booking was made",
+    "booked_connected": "Booked · on your calendar",
+    "booked_test": "Booked · on the test calendar",
+    "steps_back_divider": "The assistant steps back here",
+    "details_sent": "Customer's details sent to the FluxWorks operator"
+   },
+   "bubbles": [
     {
-      "id": "sign_in",
-      "page": "sign_in",
-      "note": "Empty field, neutral placeholder; no number prefilled."
+     "side": "event",
+     "text": "Missed call · just now"
     },
     {
-      "id": "sign_in_error",
-      "page": "sign_in",
-      "note": "mobile_error under the field."
+     "side": "textback",
+     "key": "intro",
+     "text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out."
     },
     {
-      "id": "enter_code",
-      "page": "enter_code",
-      "note": "Remember switch on."
+     "side": "customer",
+     "text": "Tree trimming"
     },
     {
-      "id": "enter_code_error",
-      "page": "enter_code",
-      "note": "code_error under the field."
+     "side": "textback",
+     "key": "prompt_location",
+     "text": "What's the address for the job?"
     },
     {
-      "id": "home",
-      "page": "home",
-      "note": "Status line, three setup cards, counts and callers over the same window."
+     "side": "customer",
+     "text": "412 Maple St, Charlotte"
     },
     {
-      "id": "account_menu_open",
-      "page": "shell",
-      "note": "Menu behind the business name: signed-in line, Account, Sign out."
+     "side": "textback",
+     "key": "prompt_preferred_time",
+     "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
     },
     {
-      "id": "messages",
-      "page": "messages",
-      "note": "Network notice shown; jump chips sticky with the title; START/HELP/STOP collapsed."
+     "side": "customer",
+     "text": "Thursday at 10"
     },
     {
-      "id": "messages_edit_open_prompt_location",
-      "page": "messages",
-      "note": "Edit wording panel open on prompt_location: textarea, insert chip Business name, paragraph rule, cost line, Reset."
+     "side": "textback",
+     "key": "prompt_name",
+     "text": "What name should we put the appointment under?"
     },
     {
-      "id": "messages_unsaved_bar",
-      "page": "messages",
-      "note": "Sticky bar '2 texts changed' with Save and Discard; two cards badged Unsaved."
+     "side": "customer",
+     "text": "Dana"
     },
     {
-      "id": "messages_toast_saved",
-      "page": "messages",
-      "note": "Toast under the header at 390 px."
+     "side": "event",
+     "text": "Booked · on the test calendar"
     },
     {
-      "id": "messages_example_booked",
-      "page": "messages",
-      "note": "Example conversation, Books a job, with the three link labels in the confirmation bubble."
-    },
-    {
-      "id": "schedule",
-      "page": "schedule",
-      "note": "60 min chip selected; hours grid Mon–Fri 8:00 AM–5:00 PM; quiet 9:00 PM–8:00 AM; reminders 2 hours / 1 day / 2 days."
-    },
-    {
-      "id": "schedule_hours_grid",
-      "page": "schedule",
-      "note": "The seven-day grid open, Set hours mode."
-    },
-    {
-      "id": "schedule_any_time_warning",
-      "page": "schedule",
-      "note": "Any day, any time saved: warning plus the one-tap Use Mon–Fri, 8 AM–5 PM button."
-    },
-    {
-      "id": "schedule_custom_length",
-      "page": "schedule",
-      "note": "Field reads 50; no numeric chip selected; Custom chip selected."
-    },
-    {
-      "id": "schedule_toast_saved",
-      "page": "schedule",
-      "note": "Schedule toast at 390 px."
-    },
-    {
-      "id": "calendar_connected",
-      "page": "calendar",
-      "note": "Connected card, Oak & Pine jobs, two buttons, availability on the real calendar."
-    },
-    {
-      "id": "calendar_not_connected_connect",
-      "page": "calendar",
-      "note": "Connect Google Calendar button, What Google will ask open, Test calendar, not yours."
-    },
-    {
-      "id": "calendar_not_connected_no_connect",
-      "page": "calendar",
-      "note": "No web client: Text FluxWorks support button; nothing under it (open item)."
-    },
-    {
-      "id": "phone",
-      "page": "phone",
-      "note": "Business, Numbers (texting number read-only), forwarding with Verizon codes, checklist 3 of 5 done."
-    },
-    {
-      "id": "phone_carrier_verizon",
-      "page": "phone",
-      "note": "Verizon chip selected: *717045550100 on, *73 off, Copy buttons."
-    },
-    {
-      "id": "phone_invalid_mobile_error",
-      "page": "phone",
-      "note": "Your mobile holds 980 555 01; owner_mobile error under the field."
-    },
-    {
-      "id": "phone_toast_saved",
-      "page": "phone",
-      "note": "'Saved.' toast at 390 px."
-    },
-    {
-      "id": "phone_confirm_mobile",
-      "page": "phone",
-      "note": "Step two: code to 980 555 0199, Keep my current mobile."
-    },
-    {
-      "id": "phone_toast_keep_mobile",
-      "page": "phone",
-      "note": "'Kept your current mobile.' toast at 390 px."
-    },
-    {
-      "id": "account",
-      "page": "account",
-      "note": "Signed in as, two devices, remember switch on, Sign out everywhere, Sign out."
-    },
-    {
-      "id": "account_signout_everywhere_dialog",
-      "page": "account",
-      "note": "Confirm dialog with Sign out everywhere / Stay signed in."
+     "side": "textback",
+     "key": "booking_confirmation",
+     "text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant.",
+     "links": [
+      {
+       "label": "Add to Google Calendar ›",
+       "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/g"
+      },
+      {
+       "label": "Add to Outlook ›",
+       "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/o"
+      },
+      {
+       "label": "Add to iCal ›",
+       "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
+      }
+     ]
     }
-  ]
+   ],
+   "foot": "Example conversation · nothing is sent · names made up",
+   "back": "Back to editing",
+   "network_notice_hint": "Each text in this example also starts with the network notice."
+  },
+  "save_bar": {
+   "changed": "2 texts changed",
+   "changed_one": "1 text changed",
+   "save": "Save",
+   "saving": "Saving…",
+   "discard": "Discard",
+   "not_saved": "Not saved · 2 texts changed",
+   "nojs": "Saves every text at once",
+   "rule": "Appears only with unsaved changes and never covers the field being edited.",
+   "clean": "No unsaved changes"
+  },
+  "toasts": {
+   "saved": "Saved. You changed “Question 2: the address”.",
+   "saved_reset": "Saved. Back to standard wording: Question 2: the address.",
+   "saved_none": "Saved. No wording changed.",
+   "switched_on": "Best phone number switched on",
+   "discarded": "Changes discarded.",
+   "discarded_action": "Undo"
+  },
+  "errors": {
+   "summary": "Not saved. “When the assistant steps back” needs a change: Add the words “follow up”, like “We'll follow up with you by text.” Go to that text",
+   "summary_link_words": "Go to that text",
+   "summary_kept": "Your other edits are still here. Nothing was saved yet.",
+   "reasons": {
+    "unanswered_number": "Take out “call us back”. Customers stay in the text thread, so say you'll follow up by text, like “We'll follow up with you by text.”",
+    "follow_up": "Add the words “follow up”, like “We'll follow up with you by text.”",
+    "911": "Tell people to call 911 if anyone is in danger.",
+    "no_booking": "Say “No booking was made” and leave out the word “call”.",
+    "stop": "Include the word STOP. Phone companies require it.",
+    "bad_insert": "Something typed by hand isn't a detail we can fill in. Use the Insert buttons under the box, or remove it.",
+    "wrong_insert": "This text can't fill in Calendar links. It can use: Business name.",
+    "wrong_insert_none": "It fills in no details.",
+    "too_long": "Shorten it to 480 characters or fewer."
+   }
+  },
+  "not_enabled": "Message editing isn't turned on for this account yet. Text FluxWorks support.",
+  "bill_fix": {
+   "followup_1": "Replace — with -"
+  },
+  "trigger_label": "When the customer sends something like",
+  "unsaved": {
+   "keys": [
+    "intro",
+    "prompt_location"
+   ],
+   "was": "Was:",
+   "drafts": {
+    "intro": {
+     "wording": "Hi, this is Oak & Pine Tree Care. Sorry we missed your call. What can we help with?",
+     "preview": "Hi, this is Oak & Pine Tree Care. Sorry we missed your call. What can we help with? Reply STOP to opt out.",
+     "cost": {
+      "line": "1 text · 130 characters with the notice",
+      "texts": 1,
+      "characters": 130,
+      "amber": null,
+      "limit_note": null
+     }
+    },
+    "prompt_location": {
+     "wording": "What's the address where you need the work done?",
+     "preview": "What's the address where you need the work done?",
+     "cost": {
+      "line": "1 text · 72 characters with the notice",
+      "texts": 1,
+      "characters": 72,
+      "amber": null,
+      "limit_note": null
+     }
+    }
+   }
+  }
+ },
+ "schedule": {
+  "title": "Schedule",
+  "intro": "The timing rules the assistant follows when it books. Reset puts a rule back to its default.",
+  "appointments": {
+   "title": "Appointments",
+   "subtitle": "How long each booking blocks on your calendar, and which time zone it uses.",
+   "duration": {
+    "label": "Appointment length",
+    "unit": "minutes",
+    "value": 60,
+    "chips": [
+     {
+      "label": "30 min",
+      "value": 30
+     },
+     {
+      "label": "45 min",
+      "value": 45
+     },
+     {
+      "label": "60 min",
+      "value": 60
+     },
+     {
+      "label": "90 min",
+      "value": 90
+     },
+     {
+      "label": "120 min",
+      "value": 120
+     },
+     {
+      "label": "Custom",
+      "value": null
+     }
+    ],
+    "selected_chip": "60 min",
+    "hint": "Used for new bookings. 15 to 480 minutes, in steps of 5.",
+    "default_line": "Default: 60 minutes",
+    "error": "Appointment length must be 15 to 480 minutes, in steps of 5.",
+    "variant_custom": {
+     "value": 50,
+     "selected_chip": "Custom"
+    }
+   },
+   "timezone": {
+    "label": "Time zone",
+    "value": "America/New_York",
+    "value_label": "Eastern (New York)",
+    "hint": "Used for working hours, quiet hours and the times in texts.",
+    "default_line": "Default: Eastern (New York)",
+    "error": "Pick a time zone from the list."
+   }
+  },
+  "hours": {
+   "title": "Working hours",
+   "subtitle": "When the assistant may book a job.",
+   "mode_options": [
+    "Any day, any time",
+    "Set hours"
+   ],
+   "mode": "Set hours",
+   "hint_any": "The assistant accepts any time a customer asks for if your calendar is free, including the middle of the night.",
+   "hint_set": "The assistant turns down times outside these hours and asks the customer for another time.",
+   "summary": "Mon–Fri, 8 AM–5 PM",
+   "grid": [
+    {
+     "day": "Monday",
+     "open": true,
+     "opens": "8:00 AM",
+     "closes": "5:00 PM",
+     "accessible": {
+      "switch": "Open on Monday",
+      "opens": "Monday opening time",
+      "closes": "Monday closing time"
+     }
+    },
+    {
+     "day": "Tuesday",
+     "open": true,
+     "opens": "8:00 AM",
+     "closes": "5:00 PM",
+     "accessible": {
+      "switch": "Open on Tuesday",
+      "opens": "Tuesday opening time",
+      "closes": "Tuesday closing time"
+     }
+    },
+    {
+     "day": "Wednesday",
+     "open": true,
+     "opens": "8:00 AM",
+     "closes": "5:00 PM",
+     "accessible": {
+      "switch": "Open on Wednesday",
+      "opens": "Wednesday opening time",
+      "closes": "Wednesday closing time"
+     }
+    },
+    {
+     "day": "Thursday",
+     "open": true,
+     "opens": "8:00 AM",
+     "closes": "5:00 PM",
+     "accessible": {
+      "switch": "Open on Thursday",
+      "opens": "Thursday opening time",
+      "closes": "Thursday closing time"
+     }
+    },
+    {
+     "day": "Friday",
+     "open": true,
+     "opens": "8:00 AM",
+     "closes": "5:00 PM",
+     "accessible": {
+      "switch": "Open on Friday",
+      "opens": "Friday opening time",
+      "closes": "Friday closing time"
+     }
+    },
+    {
+     "day": "Saturday",
+     "open": false,
+     "opens": null,
+     "closes": null,
+     "accessible": {
+      "switch": "Open on Saturday",
+      "opens": "Saturday opening time",
+      "closes": "Saturday closing time"
+     }
+    },
+    {
+     "day": "Sunday",
+     "open": false,
+     "opens": null,
+     "closes": null,
+     "accessible": {
+      "switch": "Open on Sunday",
+      "opens": "Sunday opening time",
+      "closes": "Sunday closing time"
+     }
+    }
+   ],
+   "default_line": "Default: Any day, any time",
+   "variant_any_time": {
+    "mode": "Any day, any time",
+    "warning": "Customers can be offered times like 1 AM. Set your hours.",
+    "button": "Use Mon–Fri, 8 AM–5 PM",
+    "button_note": "Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it."
+   },
+   "errors": [
+    "Choose Any day, any time or Set hours.",
+    "Set at least one open day, or choose Any day, any time.",
+    "Pick times from the list.",
+    "Monday: opening time must be before closing time.",
+    "Monday: the hours are shorter than one appointment (60 minutes)."
+   ],
+   "corrupt": "Your saved working hours couldn't be read, so every time counts as open until you save again.",
+   "day_on": "Open",
+   "day_off": "Closed"
+  },
+  "quiet": {
+   "title": "Quiet hours",
+   "subtitle": "Reminders and retried texts wait until quiet hours end. Still sent right away: the first text after a missed call, replies to a customer who is texting, and the START, HELP and STOP replies.",
+   "legend": "Hold reminders between",
+   "between": "and",
+   "from": "9:00 PM",
+   "to": "8:00 AM",
+   "switch": "Quiet hours",
+   "switch_state": "on",
+   "switch_note": "Texts may go out at any hour.",
+   "default_line": "Default: 9:00 PM–8:00 AM",
+   "error": "Pick quiet hours from the list.",
+   "switch_note_off": "Off. Texts may go out at any hour."
+  },
+  "reminders": {
+   "title": "Reminders",
+   "subtitle": "Two reminders when a customer never replies to the first text. After that the assistant stops texting.",
+   "first": {
+    "label": "If there's no reply, send a reminder after",
+    "value": "2 hours",
+    "default_line": "Default: 2 hours"
+   },
+   "last": {
+    "label": "Send the last reminder after another",
+    "value": "1 day",
+    "default_line": "Default: 1 day"
+   },
+   "stop": {
+    "label": "Stop waiting for a reply after",
+    "value": "2 days",
+    "hint": "Counted from the last reminder. The customer is marked “No reply” on Home.",
+    "default_line": "Default: 2 days"
+   },
+   "errors": [
+    "Reminder delays must be between 5 minutes and 14 days.",
+    "The waiting time must be between 1 hour and 30 days."
+   ],
+   "consequence": "A reminder that is already scheduled keeps its time. Later reminders use the new delays."
+  },
+  "reset": "Reset",
+  "reset_accessible": "Reset Appointment length",
+  "save": "Save",
+  "toast": "Saved. You changed “Appointment length”. It applies now, including customers mid-conversation.",
+  "unsaved_bar": "Unsaved changes",
+  "unsaved_one": "1 rule changed",
+  "dirty_field": "duration",
+  "dirty_value": 90,
+  "saved_value": 90
+ },
+ "calendar": {
+  "title": "Calendar",
+  "intro": "The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation.",
+  "state": "not_connected_with_connect",
+  "connected": {
+   "state_word": "Connected",
+   "card_title": "Google Calendar",
+   "body": "Bookings go here: Oak & Pine jobs.",
+   "calendar_name": "Oak & Pine jobs",
+   "account": "owner@example.com",
+   "buttons": [
+    "Use a different calendar",
+    "Reconnect Google Calendar"
+   ],
+   "picker": {
+    "legend": "Which calendar should the assistant use?",
+    "hint": "Free times are checked on this calendar and new appointments are added to it.",
+    "options": [
+     {
+      "name": "Oak & Pine jobs",
+      "in_use": true
+     },
+     {
+      "name": "owner@example.com",
+      "main": "(main calendar)",
+      "in_use": false
+     }
+    ],
+    "in_use_pill": "In use",
+    "button": "Use this calendar",
+    "error": "Pick one of the calendars listed.",
+    "only_one": "This is the only calendar this account can add appointments to."
+   },
+   "toast_picked": "Saved. The assistant now books on Oak & Pine jobs.",
+   "availability": {
+    "title": "Next free times on Oak & Pine jobs",
+    "intro": "The first three free 60-minute times in the next 14 days, inside your working hours.",
+    "button": "Check free times",
+    "button_posting": "Checking…",
+    "caption": "Checked just now · next 14 days · working hours Mon–Fri, 8 AM–5 PM",
+    "empty": "No free 60-minute time in the next 14 days inside your working hours.",
+    "unreachable": "Couldn't reach Google Calendar. Try again in a minute."
+   }
+  },
+  "not_connected_with_connect": {
+   "state_word": "Not connected",
+   "card_title": "No calendar yet",
+   "body": "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see.",
+   "button": "Connect Google Calendar",
+   "button_posting": "Opening Google…",
+   "asks_heading": "What Google will ask:",
+   "asks": [
+    "You pick the Google account that owns your business calendar.",
+    "Google asks you to let TextBack see and edit your calendars.",
+    "TextBack only checks free times and adds appointments. TextBack sees your calendars only.",
+    "Afterwards you choose which calendar it uses."
+   ],
+   "asks_open": true,
+   "availability": {
+    "title": "Test calendar, not yours",
+    "intro": "Shows how the check works. These times are not from your calendar.",
+    "button": "Check free times",
+    "button_posting": "Checking…",
+    "results": [
+     {
+      "label": "Tue, Oct 27 · 8:00–9:00 AM",
+      "start": "2026-10-27T08:00:00-04:00"
+     },
+     {
+      "label": "Tue, Oct 27 · 9:00–10:00 AM",
+      "start": "2026-10-27T09:00:00-04:00"
+     },
+     {
+      "label": "Tue, Oct 27 · 10:00–11:00 AM",
+      "start": "2026-10-27T10:00:00-04:00"
+     }
+    ],
+    "caption": "Checked just now · next 14 days · working hours Mon–Fri, 8 AM–5 PM"
+   },
+   "why": "Connect the Google account that owns your business calendar, so the assistant offers your real free times and books onto your calendar."
+  },
+  "not_connected_without_connect": {
+   "state_word": "Not connected",
+   "card_title": "No calendar yet",
+   "body": "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see.",
+   "no_connect_body": "Connecting from this page isn't set up for your account yet. FluxWorks sets this up for you.",
+   "button": "Text FluxWorks support",
+   "button_href": "sms:",
+   "under_button": null,
+   "under_button_note": "Deck row is '[support number] · [reply time]'; both are open items with no value yet, so nothing renders under the button.",
+   "lead": "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see.",
+   "why": "To book onto your own calendar, it has to be connected."
+  },
+  "other_states": {
+   "reconnect": {
+    "state_word": "Reconnect needed",
+    "body": "Google disconnected the calendar, so bookings are paused until you reconnect. Customers are told no booking was made.",
+    "availability_replacement": "Reconnect the calendar first."
+   },
+   "unreadable": {
+    "state_word": "Couldn't be read",
+    "body": "TextBack couldn't read the calendar connection. Bookings are paused until you reconnect."
+   },
+   "errors": [
+    "Google didn't give TextBack calendar access. Try connecting again.",
+    "Connecting a calendar isn't set up for this account yet."
+   ]
+  }
+ },
+ "phone": {
+  "title": "Phone",
+  "intro": "Your business name, the numbers TextBack uses, and call forwarding.",
+  "business": {
+   "title": "Business",
+   "name": {
+    "label": "Business name",
+    "value": "Oak & Pine Tree Care",
+    "hint": "Used in every text. The first text is shown below.",
+    "preview_eyebrow": "In the first text",
+    "preview": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
+    "error": "Enter a business name of 1 to 60 characters."
+   },
+   "rename_offer": {
+    "offer": "2 texts still say “Oak & Pine Tree Care”. Update them to the new name?",
+    "update": "Update them",
+    "leave": "Leave them",
+    "toast": "Updated 2 texts.",
+    "new_name": "Oak & Pine Tree Service",
+    "old_name": "Oak & Pine Tree Care"
+   }
+  },
+  "numbers": {
+   "title": "Numbers",
+   "subtitle": "Your business number never changes. Customers keep calling it.",
+   "business_line": {
+    "label": "Your business number",
+    "value": "(704) 555-0123",
+    "hint": "The number customers call. Calls you don't answer forward from here to the texting number.",
+    "errors": [
+     "Enter your business number as 10 digits, area code first, or leave it blank.",
+     "Your business number and the texting number can't be the same."
+    ]
+   },
+   "texting_number": {
+    "label": "Texting number",
+    "value": "(704) 555-0100",
+    "read_only": true,
+    "note": "Set up by FluxWorks. It can't be changed here.",
+    "unassigned": "Not assigned yet. FluxWorks sets this up for you."
+   },
+   "owner_mobile": {
+    "label": "Your mobile",
+    "value": "(980) 555-0123",
+    "hint": "Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it.",
+    "status_unchanged": "This is the number that signs you in.",
+    "status_changed": "Save to text a code to (980) 555-0199.",
+    "error": "Enter your mobile as 10 digits, area code first.",
+    "invalid_entry": "980 555 01"
+   },
+   "help_number": {
+    "label": "Number in the HELP reply",
+    "tag": "Optional",
+    "value": "(704) 555-0123",
+    "hint": "Shown when a customer texts HELP. Leave blank to show (704) 555-0100. Customers are never transferred to it; the assistant handles the texting.",
+    "error": "Enter the phone number as 10 digits, area code first, or leave it blank."
+   },
+   "save": "Save",
+   "toast": "Saved.",
+   "toast_confirm_next": "Saved. Now confirm your new mobile."
+  },
+  "confirm_mobile": {
+   "title": "Confirm your new mobile",
+   "steps": [
+    {
+     "label": "Details saved",
+     "state": "done"
+    },
+    {
+     "label": "Confirm number",
+     "state": "current"
+    }
+   ],
+   "new_number": "(980) 555-0199",
+   "intro": "We texted a six-digit code to (980) 555-0199. Enter it to move sign-in to that number. It expires in ten minutes; until then codes still go to your current mobile.",
+   "code_label": "Code from the text",
+   "submit": "Confirm new mobile",
+   "submit_posting": "Confirming…",
+   "keep": "Keep my current mobile",
+   "resend_text": "Didn't get it?",
+   "resend": "Send the code again",
+   "toast_confirmed": "Saved. Sign-in codes now go to (980) 555-0199.",
+   "toast_kept": "Kept your current mobile."
+  },
+  "forwarding": {
+   "heading": "Call forwarding",
+   "intro": "Forward the calls you don't answer to your texting number. Your business number stays the same, and answered calls still reach you.",
+   "warning": "Only forward busy and unanswered calls. Forwarding every call stops answered calls from reaching you.",
+   "carrier_legend": "Your carrier",
+   "carrier_selected": "Verizon",
+   "carrier_error": "Pick a carrier from the list.",
+   "carrier_note_before_pick": "Pick your carrier to see the codes.",
+   "codes_headings": {
+    "on": "Turn forwarding on",
+    "off": "Turn it off"
+   },
+   "copy": "Copy",
+   "copied": "Copied",
+   "copy_accessible": "Copy Busy and no answer code",
+   "codes_need_number": "The codes fill in once FluxWorks assigns your texting number.",
+   "carriers": [
+    {
+     "name": "Verizon",
+     "verified": true,
+     "selected": true,
+     "note": "Covers busy and no answer. Dial from your phone while on Verizon's network, then press Call.",
+     "turn_on": [
+      {
+       "label": "Busy and no answer",
+       "code": "*717045550100"
+      }
+     ],
+     "turn_off": [
+      {
+       "label": "Busy and no answer",
+       "code": "*73"
+      }
+     ]
+    },
+    {
+     "name": "T-Mobile",
+     "verified": true,
+     "note": "Dial each code, then press Call.",
+     "turn_on": [
+      {
+       "label": "No answer",
+       "code": "**61*17045550100#"
+      },
+      {
+       "label": "No answer, ring 20 seconds first",
+       "code": "**61*17045550100**20#"
+      },
+      {
+       "label": "Busy",
+       "code": "**67*17045550100#"
+      },
+      {
+       "label": "Unreachable",
+       "code": "**62*17045550100#"
+      }
+     ],
+     "turn_off": [
+      {
+       "label": "No answer",
+       "code": "##61#"
+      },
+      {
+       "label": "Busy",
+       "code": "##67#"
+      },
+      {
+       "label": "Unreachable",
+       "code": "##62#"
+      },
+      {
+       "label": "Reset all forwarding",
+       "code": "##004#"
+      }
+     ]
+    },
+    {
+     "name": "AT&T",
+     "verified": false,
+     "steps": "Android: open the Phone app, then Settings, then Call forwarding. Set “When busy” and “When unanswered” to (704) 555-0100.",
+     "note": "On iPhone, skip the Settings toggle: it forwards every call. Dial the codes instead.",
+     "unverified": "We haven't confirmed these codes on AT&T. Make a test call afterwards to check.",
+     "turn_on": [
+      {
+       "label": "No answer",
+       "code": "**61*17045550100#"
+      },
+      {
+       "label": "Busy",
+       "code": "**67*17045550100#"
+      }
+     ],
+     "turn_off": [
+      {
+       "label": "No answer",
+       "code": "##61#"
+      },
+      {
+       "label": "Busy",
+       "code": "##67#"
+      },
+      {
+       "label": "Reset all forwarding",
+       "code": "##004#"
+      }
+     ]
+    },
+    {
+     "name": "Cricket",
+     "verified": false,
+     "note": "Cricket doesn't publish codes. Check with *#61# and *#67#. If forwarding won't turn off, call 611.",
+     "unverified": "We haven't confirmed these codes on Cricket. Make a test call afterwards to check.",
+     "turn_on": [
+      {
+       "label": "No answer",
+       "code": "**61*17045550100#"
+      },
+      {
+       "label": "Busy",
+       "code": "**67*17045550100#"
+      }
+     ],
+     "turn_off": [
+      {
+       "label": "No answer",
+       "code": "##61#"
+      },
+      {
+       "label": "Busy",
+       "code": "##67#"
+      },
+      {
+       "label": "Reset all forwarding",
+       "code": "##004#"
+      }
+     ]
+    },
+    {
+     "name": "Other",
+     "verified": null,
+     "steps": "Ask your carrier to forward only busy and unanswered calls to (704) 555-0100. They call it conditional call forwarding. Never forward all calls.",
+     "turn_on": [],
+     "turn_off": []
+    }
+   ]
+  },
+  "checks": {
+   "heading": "Is forwarding working?",
+   "progress": "3 of 5 done",
+   "complete": "All 5 done. Forwarding works.",
+   "state_words": [
+    "Done",
+    "Not yet",
+    "You checked this"
+   ],
+   "items": [
+    {
+     "n": 1,
+     "step": "A call to your business number reached TextBack",
+     "state": "Done",
+     "evidence": "Mon, Oct 26, 9:12 AM from a number ending 0141",
+     "not_yet": "No forwarded call recorded yet. From another phone, call your business number and let it ring out. Calls made straight to the texting number don't count.",
+     "example": true
+    },
+    {
+     "n": 2,
+     "step": "Exactly one text went out",
+     "state": "Done",
+     "evidence": "Sent Mon, Oct 26, 9:12 AM",
+     "not_yet": "Waits for check 1.",
+     "example": true
+    },
+    {
+     "n": 3,
+     "step": "An answered call sent no text",
+     "state": "Not yet",
+     "manual": true,
+     "manual_state": "You checked this",
+     "hint": "Answer a call to your business number, then confirm no text arrived. TextBack can't see answered calls, so this one is yours to tick."
+    },
+    {
+     "n": 4,
+     "step": "The caller's own number came through",
+     "state": "Done",
+     "evidence": "The text went to the caller's number, not your business number.",
+     "not_yet": "Waits for check 1.",
+     "no_business_number": "Enter your business number first.",
+     "example": true
+    },
+    {
+     "n": 5,
+     "step": "You saved the turn-off code",
+     "state": "Not yet",
+     "manual": true,
+     "manual_state": "You checked this",
+     "hint": "Keep it where you'll find it: *73."
+    }
+   ],
+   "evidence_note": "Checks 1, 2 and 4 tick from calls TextBack recorded.",
+   "save": "Save checks",
+   "toast": "Checks saved.",
+   "manual_label": "I checked this",
+   "preview": true,
+   "evidence_note_preview": "In this preview, checks 1, 2 and 4 come from example calls."
+  },
+  "unsaved_bar": "Unsaved changes",
+  "unsaved_one": "1 change",
+  "toast": "Saved. You changed “Business name”.",
+  "error_summary": "Not saved. 1 thing needs a change:",
+  "new_business_name": "Oak & Pine Tree Service"
+ },
+ "account": {
+  "title": "Account",
+  "signed_in": "Signed in as (980) 555-0123",
+  "change_mobile": "To change the mobile that signs you in, open Phone.",
+  "change_mobile_link": {
+   "text": "Phone",
+   "href": "/client/phone"
+  },
+  "devices_title": "Remembered devices",
+  "devices": [
+   {
+    "label": "This phone",
+    "line": "This phone · signed in Mon, Oct 26, 8:02 AM · stays signed in until Wed, Nov 25",
+    "current": true
+   },
+   {
+    "label": "Another device",
+    "line": "Another device · last used Fri, Oct 23, 5:30 PM",
+    "current": false
+   }
+  ],
+  "devices_empty": "Only this phone is signed in.",
+  "remember": {
+   "switch": "Remember this phone for 30 days",
+   "state": "on",
+   "note_on": "On. This phone stays signed in for 30 days.",
+   "note_off": "Off. This phone signs out after 12 hours."
+  },
+  "signout_everywhere": {
+   "button": "Sign out everywhere",
+   "dialog": "Sign out of every device? You'll need a new code on each one.",
+   "confirm": "Sign out everywhere",
+   "cancel": "Stay signed in"
+  },
+  "signout": "Sign out",
+  "toast_everywhere": "Signed out everywhere.",
+  "remember_save": "Save"
+ },
+ "shared": {
+  "toast_dismiss": "Dismiss",
+  "toast_position": "Under the header, never over the page title or intro.",
+  "toasts": {
+   "messages": "Saved. You changed “Question 2: the address”.",
+   "schedule": "Saved. You changed “Appointment length”. It applies now, including customers mid-conversation.",
+   "phone": "Saved.",
+   "keep_mobile": "Kept your current mobile.",
+   "checks": "Checks saved.",
+   "calendar_picked": "Saved. The assistant now books on Oak & Pine jobs.",
+   "discarded": "Changes discarded."
+  },
+  "unsaved_bar": {
+   "messages": "2 texts changed",
+   "messages_one": "1 text changed",
+   "other_pages": "Unsaved changes"
+  },
+  "unsaved_leave": "Leave this page? Your changes aren't saved.",
+  "errors": {
+   "invalid_phone": "Enter your mobile as 10 digits, area code first.",
+   "generic": "Something went wrong on our side. Nothing was saved. Try again.",
+   "offline": "You're offline. Nothing was saved. Try again when you're back online."
+  },
+  "expired": {
+   "title": "This page expired",
+   "intro": "Reload the page and try again. Nothing was saved.",
+   "button": "Reload"
+  },
+  "session_ended": "You were signed out. Sign in again to continue.",
+  "empty_generic": "Nothing here yet."
+ },
+ "states": [
+  {
+   "id": "sign_in",
+   "page": "sign_in",
+   "note": "Empty field, neutral placeholder; no number prefilled."
+  },
+  {
+   "id": "sign_in_error",
+   "page": "sign_in",
+   "note": "mobile_error under the field."
+  },
+  {
+   "id": "enter_code",
+   "page": "enter_code",
+   "note": "Remember switch on."
+  },
+  {
+   "id": "enter_code_error",
+   "page": "enter_code",
+   "note": "code_error under the field."
+  },
+  {
+   "id": "home",
+   "page": "home",
+   "note": "Status line, three setup cards, counts and callers over the same window."
+  },
+  {
+   "id": "account_menu_open",
+   "page": "shell",
+   "note": "Menu behind the business name: signed-in line, Account, Sign out."
+  },
+  {
+   "id": "messages",
+   "page": "messages",
+   "note": "Network notice shown; jump chips sticky with the title; START/HELP/STOP collapsed."
+  },
+  {
+   "id": "messages_edit_open_prompt_location",
+   "page": "messages",
+   "note": "Edit wording panel open on prompt_location: textarea, insert chip Business name, paragraph rule, cost line, Reset."
+  },
+  {
+   "id": "messages_unsaved_bar",
+   "page": "messages",
+   "note": "Sticky bar '2 texts changed' with Save and Discard; two cards badged Unsaved."
+  },
+  {
+   "id": "messages_toast_saved",
+   "page": "messages",
+   "note": "Toast under the header at 390 px."
+  },
+  {
+   "id": "messages_example_booked",
+   "page": "messages",
+   "note": "Example conversation, Books a job, with the three link labels in the confirmation bubble."
+  },
+  {
+   "id": "schedule",
+   "page": "schedule",
+   "note": "60 min chip selected; hours grid Mon–Fri 8:00 AM–5:00 PM; quiet 9:00 PM–8:00 AM; reminders 2 hours / 1 day / 2 days."
+  },
+  {
+   "id": "schedule_hours_grid",
+   "page": "schedule",
+   "note": "The seven-day grid open, Set hours mode."
+  },
+  {
+   "id": "schedule_any_time_warning",
+   "page": "schedule",
+   "note": "Any day, any time saved: warning plus the one-tap Use Mon–Fri, 8 AM–5 PM button."
+  },
+  {
+   "id": "schedule_custom_length",
+   "page": "schedule",
+   "note": "Field reads 50; no numeric chip selected; Custom chip selected."
+  },
+  {
+   "id": "schedule_toast_saved",
+   "page": "schedule",
+   "note": "Schedule toast at 390 px."
+  },
+  {
+   "id": "calendar_connected",
+   "page": "calendar",
+   "note": "Connected card, Oak & Pine jobs, two buttons, availability on the real calendar."
+  },
+  {
+   "id": "calendar_not_connected_connect",
+   "page": "calendar",
+   "note": "Connect Google Calendar button, What Google will ask open, Test calendar, not yours."
+  },
+  {
+   "id": "calendar_not_connected_no_connect",
+   "page": "calendar",
+   "note": "No web client: Text FluxWorks support button; nothing under it (open item)."
+  },
+  {
+   "id": "phone",
+   "page": "phone",
+   "note": "Business, Numbers (texting number read-only), forwarding with Verizon codes, checklist 3 of 5 done."
+  },
+  {
+   "id": "phone_carrier_verizon",
+   "page": "phone",
+   "note": "Verizon chip selected: *717045550100 on, *73 off, Copy buttons."
+  },
+  {
+   "id": "phone_invalid_mobile_error",
+   "page": "phone",
+   "note": "Your mobile holds 980 555 01; owner_mobile error under the field."
+  },
+  {
+   "id": "phone_toast_saved",
+   "page": "phone",
+   "note": "'Saved.' toast at 390 px."
+  },
+  {
+   "id": "phone_confirm_mobile",
+   "page": "phone",
+   "note": "Step two: code to 980 555 0199, Keep my current mobile."
+  },
+  {
+   "id": "phone_toast_keep_mobile",
+   "page": "phone",
+   "note": "'Kept your current mobile.' toast at 390 px."
+  },
+  {
+   "id": "account",
+   "page": "account",
+   "note": "Signed in as, two devices, remember switch on, Sign out everywhere, Sign out."
+  },
+  {
+   "id": "account_signout_everywhere_dialog",
+   "page": "account",
+   "note": "Confirm dialog with Sign out everywhere / Stay signed in."
+  }
+ ]
 }

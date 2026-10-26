@@ -2,14 +2,13 @@
 {% set page_id = 'enter-code' %}{% set title = fx.enter_code.title %}{% set step = 2 %}
 {% block content %}
 {% set s = fx.enter_code %}
-{% if error %}{{ ui.error_summary(s.error_summary, [('#code', s.code_error)]) }}{% endif %}
 <div class="auth__head">
   <p class="eyebrow">{{ s.eyebrow }}</p>
   <h1>{{ s.title }}</h1>
   <p class="lead">{{ s.intro }}</p>
 </div>
 <form class="auth__form" method="post" action="/client/verify">
-  <div class="field">
+  <div class="field"{% if error %} id="focus"{% endif %}>
     <label class="field__label" for="code">{{ s.code_label }}</label>
     <div class="otp" data-filled="0">
       <div class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>

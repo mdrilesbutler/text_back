@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Saved. You changed “Appointment length”. It applies now, including to customers mid-conversation. Reminders already scheduled keep their time. · Schedule · Oak &amp; Pine Tree Care · TextBack</title>
+<title>Saved. You changed “Appointment length”. It applies now, including customers mid-conversation. · Schedule · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
 <script src="d1.js" defer></script>
@@ -46,7 +46,7 @@
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as 980 555 0123</p>
+        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -64,7 +64,7 @@
   <main class="page" id="main" tabindex="-1">
     <div class="status-slot" role="status" id="status"><div class="notice notice--success toast" id="focus">
   <svg class="icon notice__icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
-  <div class="notice__body"><p class="notice__text">Saved. You changed “Appointment length”. It applies now, including to customers mid-conversation. Reminders already scheduled keep their time.</p></div>
+  <div class="notice__body"><p class="notice__text">Saved. You changed “Appointment length”. It applies now, including customers mid-conversation.</p></div>
 <button class="icon-btn toast__action" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-x"/></svg><span class="vh">Dismiss</span></button></div>
 </div>
 <div class="page-head"><h1>Schedule</h1><p class="lead">The timing rules the assistant follows when it books. Reset puts a rule back to its default.</p></div>
@@ -77,14 +77,14 @@
     <div class="card card--form">
       <div class="field">
         <label class="field__label" for="duration">Appointment length</label>
-        <div class="inline-field"><input class="input input--num tnum" id="duration" name="duration" type="number" inputmode="numeric" min="15" max="480" step="5" value="60"><span class="unit">minutes</span></div>
+        <div class="inline-field"><input class="input input--num tnum" id="duration" name="duration" type="number" inputmode="numeric" min="15" max="480" step="5" value="90"><span class="unit">minutes</span></div>
         <fieldset class="pill-group">
           <legend class="vh">Appointment length</legend>
           <div class="pill-radios">
             <input class="vh-input" type="radio" name="duration_pick" value="30" id="pick-1"><label class="pill-radio" for="pick-1">30 min</label>
             <input class="vh-input" type="radio" name="duration_pick" value="45" id="pick-2"><label class="pill-radio" for="pick-2">45 min</label>
-            <input class="vh-input" type="radio" name="duration_pick" value="60" id="pick-3" checked><label class="pill-radio" for="pick-3">60 min</label>
-            <input class="vh-input" type="radio" name="duration_pick" value="90" id="pick-4"><label class="pill-radio" for="pick-4">90 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="60" id="pick-3"><label class="pill-radio" for="pick-3">60 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="90" id="pick-4" checked><label class="pill-radio" for="pick-4">90 min</label>
             <input class="vh-input" type="radio" name="duration_pick" value="120" id="pick-5"><label class="pill-radio" for="pick-5">120 min</label>
             <input class="vh-input" type="radio" name="duration_pick" value="custom" id="pick-6"><label class="pill-radio" for="pick-6">Custom</label>
           </div>
@@ -175,9 +175,9 @@
     <div class="card card--form">
       <label class="switch-row"><span class="switch-row__text">Quiet hours</span><input class="switch" type="checkbox" role="switch" name="quiet_on" value="on" checked></label>
       <fieldset class="field">
-        <legend class="field__label">No texts between</legend>
+        <legend class="field__label">Hold reminders between</legend>
         <div class="quiet">
-          <label class="vh" for="quiet_from">No texts between</label><span class="select"><select class="select__input" id="quiet_from" name="quiet_from"><option value="9:00 PM" selected>9:00 PM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+          <label class="vh" for="quiet_from">Hold reminders between</label><span class="select"><select class="select__input" id="quiet_from" name="quiet_from"><option value="9:00 PM" selected>9:00 PM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
           <span class="quiet__and">and</span>
           <label class="vh" for="quiet_to">and</label><span class="select"><select class="select__input" id="quiet_to" name="quiet_to"><option value="8:00 AM" selected>8:00 AM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
         </div>
@@ -202,7 +202,7 @@
       </div>
       <div class="field field--rem">
         <label class="field__label" for="reminder_stop">Stop waiting for a reply after</label><span class="select"><select class="select__input" id="reminder_stop" name="reminder_stop"><option value="2 days" selected>2 days</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
-<p class="field-help">Counted from the last reminder. The customer is marked &#34;No reply&#34; on Home.</p>        <div class="rule-foot"><p class="default">Default: 2 days</p><button class="btn btn--ghost" type="submit" name="reset" value="reminder_stop">Reset<span class="vh"> Stop waiting for a reply after</span></button></div>
+<p class="field-help">Counted from the last reminder. The customer is marked “No reply” on Home.</p>        <div class="rule-foot"><p class="default">Default: 2 days</p><button class="btn btn--ghost" type="submit" name="reset" value="reminder_stop">Reset<span class="vh"> Stop waiting for a reply after</span></button></div>
       </div>
       <p class="msg__rule"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg><span>A reminder that is already scheduled keeps its time. Later reminders use the new delays.</span></p>
     </div>
@@ -212,7 +212,7 @@
 </ol>
 </form>
 <div class="savebar" data-state="clean">
-  <p class="savebar__status" role="status"></p>
+  <p class="savebar__status" role="status">No unsaved changes</p>
   <div class="savebar__actions">
     <button class="btn btn--primary" type="submit" form="schedule-form">Save</button>
   </div>

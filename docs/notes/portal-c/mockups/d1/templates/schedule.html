@@ -10,8 +10,8 @@
     <div class="node__head"><h2>{{ a.title }}</h2><p class="node__blurb">{{ a.subtitle }}</p></div>
     <div class="card card--form">
       {% set d = a.duration %}
-      {% set dval = d.variant_custom.value if custom else (s.dirty_value if dirty else d.value) %}
-      {% set dchip = d.variant_custom.selected_chip if custom else ((d.chips | selectattr('value', 'equalto', s.dirty_value) | map(attribute='label') | first) if dirty else d.selected_chip) %}
+      {% set dval = d.variant_custom.value if custom else (s.dirty_value if dirty else (s.saved_value if saved else d.value)) %}
+      {% set dchip = d.variant_custom.selected_chip if custom else ((d.chips | selectattr('value', 'equalto', s.dirty_value) | map(attribute='label') | first) if dirty else ((d.chips | selectattr('value', 'equalto', s.saved_value) | map(attribute='label') | first) if saved else d.selected_chip)) %}
       <div class="field">
         <label class="field__label" for="duration">{{ d.label }}</label>
         <div class="inline-field"><input class="input input--num tnum" id="duration" name="duration" type="number" inputmode="numeric" min="15" max="480" step="5" value="{{ dval }}"><span class="unit">{{ d.unit }}</span></div>
@@ -108,5 +108,5 @@
   {% endcall %}
 </ol>
 </form>
-{{ ui.savebar(dirty, s.unsaved_one, s.save, fx.messages.save_bar.discard, 'schedule-form') }}
+{{ ui.savebar(dirty, s.unsaved_one, s.save, fx.messages.save_bar.discard, 'schedule-form', fx.messages.save_bar.clean, [('#duration', s.appointments.duration.label)] if dirty else []) }}
 {% endblock %}

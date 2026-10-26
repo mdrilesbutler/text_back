@@ -4,16 +4,16 @@
 {%- endmacro %}
 
 {# One status glyph per fact: the spine node draws it, the word sits in a pill with no second glyph.
-   kind: done | needs | waiting | todo | manual #}
+   kind: done (filled tick) | needs (amber ring, !) | waiting (clock) | todo (plain ring) | manual (dashed ring, tick) #}
 {% macro state(kind, word) -%}
 <span class="pill state state--{{ kind }}{% if kind == 'done' %} pill--success{% elif kind == 'needs' %} pill--warning{% endif %}">{{ word }}</span>
 {%- endmacro %}
 
-{# A node on the spine. kind: missed | icon | done | todo | manual (state nodes) ; label: icon name. #}
+{# A node on the spine. State nodes: done | needs | waiting | todo | manual. Section nodes: icon | missed (label = icon name). #}
 {% macro node(kind, label="", id=None, focus=False, cls="", sr=None) %}
 <li class="node node--{{ kind }}{% if cls %} {{ cls }}{% endif %}"{% if id %} id="{{ id }}"{% endif %}>
   <span class="node__dot" aria-hidden="true">
-    {%- if kind in ('icon', 'missed') %}{{ icon(label) }}{% elif kind in ('done', 'manual') %}{{ icon('check') }}{% endif -%}
+    {%- if kind in ('icon', 'missed') %}{{ icon(label) }}{% elif kind in ('done', 'manual') %}{{ icon('check') }}{% elif kind == 'waiting' %}{{ icon('clock') }}{% elif kind == 'needs' %}<b class="node__bang">!</b>{% endif -%}
   </span>
   <div class="node__body"{% if focus %} id="focus"{% endif %}>
     {{ caller() }}
@@ -31,8 +31,8 @@
 {% endmacro %}
 
 {# Error summary at the top of a form: one link per field that needs a change. #}
-{% macro error_summary(heading, items) %}
-<div class="notice notice--danger error-summary" role="alert" tabindex="-1" id="focus" aria-labelledby="error-summary-title">
+{% macro error_summary(heading, items, focus=True) %}
+<div class="notice notice--danger error-summary" role="alert" tabindex="-1"{% if focus %} id="focus"{% endif %} aria-labelledby="error-summary-title">
   {{ icon('alert', 'icon notice__icon') }}
   <div class="notice__body">
     <p class="notice__text notice__title" id="error-summary-title">{{ heading }}</p>
@@ -58,11 +58,12 @@
 <span class="select"><select class="select__input" id="{{ id }}" name="{{ name or id }}"{% if form %} form="{{ form }}"{% endif %}>{% for o in options %}<option value="{{ o }}"{% if o == value %} selected{% endif %}>{{ o }}</option>{% endfor %}</select>{{ icon('chevron', 'icon select__icon') }}</span>
 {%- endmacro %}
 
-{# The Save bar: in flow at the end of its form while nothing changed; while there are unsaved changes
-   it takes the bottom nav's slot on a phone (body[data-dirty] hides the nav) and sticks on desktop. #}
-{% macro savebar(dirty, changed, save, discard, form_id) %}
+{# The Save bar: in flow at the end of its form while nothing changed ("No unsaved changes"); while there
+   are unsaved changes it sits fixed just above the bottom nav on a phone and sticks on desktop.
+   names: (href, title) pairs for the changed items, shown as links where there is room. #}
+{% macro savebar(dirty, changed, save, discard, form_id, clean, names=[]) %}
 <div class="savebar{% if dirty %} savebar--on{% endif %}" data-state="{{ 'dirty' if dirty else 'clean' }}"{% if dirty %} id="focus"{% endif %}>
-  <p class="savebar__status" role="status">{% if dirty %}{{ changed }}{% endif %}</p>
+  <p class="savebar__status" role="status">{% if dirty %}<span class="savebar__count">{{ changed }}</span>{% if names %}<span class="savebar__names">: {% for href, t in names %}<a href="{{ href }}">{{ t }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}{% else %}{{ clean }}{% endif %}</p>
   <div class="savebar__actions">
     {% if dirty %}<button class="btn btn--ghost" type="submit" name="discard" value="1" form="{{ form_id }}" formnovalidate>{{ discard }}</button>{% endif %}
     <button class="btn btn--primary" type="submit" form="{{ form_id }}">{{ save }}</button>
@@ -70,23 +71,27 @@
 </div>
 {% endmacro %}
 
-{# A TextBack bubble as the customer sees it. The network notice marker leads while approval is pending. #}
-{% macro bubble(text, ex, notice=False, links=None, extra_cls="") %}
+{# A TextBack bubble shows only the text the customer gets; the network notice is explained once, outside. #}
+{% macro bubble(text, ex, links=None, extra_cls="") %}
 <div class="sms sms--textback{% if extra_cls %} {{ extra_cls }}{% endif %}">
-  <div class="sms__bubble"><span class="vh">{{ ex.badges.textback }}: </span>
-    {%- if notice %}<span class="sms__notice">{{ ex.network_notice_marker }}</span>{% endif -%}
-    <p>{{ text }}</p>
+  <div class="sms__bubble"><span class="vh">{{ ex.badges.textback }}: </span><p>{{ text }}</p>
     {% if links %}<ul class="sms__links">{% for l in links %}<li><button class="sms__linkbtn" type="button" aria-expanded="false">{{ l.label }}</button></li>{% endfor %}</ul>{% endif %}
   </div>
 </div>
 {% endmacro %}
+{% macro customer(text, ex) %}
+<div class="sms sms--customer"><div class="sms__bubble"><span class="vh">{{ ex.badges.customer }}: </span><p>{{ text }}</p></div></div>
+{% endmacro %}
 
-{# One customer-text card, candidate A's anatomy: head → bubble → receipt → foot with the editor.
-   The rules for the wording live inside the editor, where they matter; the destination stays in view. #}
+{# One customer-text card, candidate A's anatomy: head → (customer reply that triggers it) → bubble →
+   receipt → foot with the editor. Wording rules live inside the editor, except on the cards where the
+   assistant steps back: there the rules and "What happens next" stay in view. #}
 {% macro msg_card(card, m, open=False, dirty=False, branch=False, focus=False) %}
 {% set off = card.switch is defined and card.switch.state == 'off' %}
 {% set ed = m.editor %}
-<article class="qset{% if branch %} qset--branch{% endif %}" id="{{ 'focus' if focus else 'card-' ~ card.key }}">
+{% set draft = m.unsaved.drafts[card.key] if dirty and card.key in m.unsaved.drafts else None %}
+{% set cost = draft.cost if draft else card.cost %}
+<article class="qset{% if branch %} qset--branch{% endif %}{% if off %} qset--off{% endif %}" id="{{ 'focus' if focus else 'card-' ~ card.key }}">
   <div class="msg{% if off %} msg--isoff{% endif %}">
     <div class="msg__head">
       <div class="msg__title">
@@ -98,8 +103,14 @@
           {% if off %}<span class="pill">{{ card.badge_asked }}</span>{% endif %}
         </span>
       </div>
-      <p class="msg__when">{{ card.when }}</p>
-      {% if card.destination_line is defined %}<p class="msg__rule msg__rule--dest">{{ icon('forward') }}<span>{{ card.destination_line }}</span></p>{% endif %}
+      {% if card.when and not off %}<p class="msg__when">{{ card.when }}</p>{% endif %}
+      {% if card.next is defined %}
+      {% for r in card.rules %}<p class="msg__rule">{{ icon('info') }}<span>{{ r }}</span></p>{% endfor %}
+      <div class="next">
+        <p class="next__title">{{ m.destination.next_heading }}</p>
+        <ol class="next__steps">{% for st in m.destination.next_steps %}<li>{{ st }}</li>{% endfor %}</ol>
+      </div>
+      {% endif %}
     </div>
     {% if card.switch is defined %}
     <label class="switch-row msg__switch"><span class="switch-row__text">{{ card.switch.label }}</span><input class="switch" type="checkbox" role="switch" name="{{ card.key }}_on" value="on"{% if card.switch.state == 'on' %} checked{% endif %}></label>
@@ -107,10 +118,15 @@
     {% endif %}
     {% if not off %}
     <div class="msg__preview">
-      {{ bubble(card.preview, m.example, notice=m.network_notice_shown, links=card.preview_links if card.preview_links is defined else None) }}
-      <p class="msg__receipt">{% if card.optout_added %}<span class="msg__added">{{ card.optout_added }}</span>{% endif %}<span class="msg__meter">{{ card.cost.line }}</span></p>
-      {% if card.cost.amber %}
-      <div class="msg__bill">{{ icon('alert') }}<p>{{ card.cost.amber }}</p>
+      {% if card.trigger is defined %}
+      <p class="msg__trigger">{{ m.trigger_label }}</p>
+      {{ customer(card.trigger, m.example) }}
+      {% endif %}
+      {{ bubble(draft.preview if draft else card.preview, m.example, links=card.preview_links if card.preview_links is defined else None) }}
+      <p class="msg__receipt">{% if card.optout_added %}<span class="msg__added">{{ card.optout_added }}</span>{% endif %}<span class="msg__meter">{{ cost.line }}</span></p>
+      {% if draft %}<p class="msg__was"><span class="msg__was-k">{{ m.unsaved.was }}</span> {{ card.preview }}</p>{% endif %}
+      {% if cost.amber %}
+      <div class="msg__bill">{{ icon('alert') }}<p>{{ cost.amber }}</p>
         {% if m.bill_fix[card.key] is defined %}<button class="btn btn--ghost msg__fix" type="submit" name="fix_dash" value="{{ card.key }}">{{ m.bill_fix[card.key] }}<span class="vh"> {{ card.title }}</span></button>{% endif %}
       </div>
       {% endif %}
@@ -119,17 +135,17 @@
       <details class="editor"{% if open %} open{% endif %}>
         <summary class="editor__summary">{{ ed.open }}<span class="vh">: {{ card.title }}</span>{{ icon('chevron', 'icon editor__chev') }}</summary>
         <div class="editor__body">
-          {% for r in card.rules %}<p class="msg__rule">{{ icon('info') }}<span>{{ r }}</span></p>{% endfor %}
+          {% if card.next is not defined %}{% for r in card.rules %}<p class="msg__rule">{{ icon('info') }}<span>{{ r }}</span></p>{% endfor %}{% endif %}
           <label class="vh" for="w-{{ card.key }}">{{ ed.field_label }}{{ card.title }}</label>
           <textarea class="textarea" id="w-{{ card.key }}" name="{{ card.key }}" maxlength="480" rows="3" aria-describedby="h-{{ card.key }}">
-            {%- for part in card.wording %}{% if part.insert is defined %}{{ ed.insert_open }}{{ part.insert }}{{ ed.insert_close }}{% else %}{{ part.text }}{% endif %}{% endfor -%}
+            {%- if draft %}{{ draft.wording }}{% else %}{% for part in card.wording %}{% if part.insert is defined %}{{ ed.insert_open }}{{ part.insert }}{{ ed.insert_close }}{% else %}{{ part.text }}{% endif %}{% endfor %}{% endif -%}
           </textarea>
           {% if card.chips %}
           <div class="chips" role="group" aria-label="{{ ed.chips_label }}">
             {% for c in card.chips %}<button class="chip" type="button" data-insert="{{ ed.insert_open }}{{ c }}{{ ed.insert_close }}" aria-controls="w-{{ card.key }}">{{ icon('plus') }}{{ c }}</button>{% endfor %}
           </div>
           {% else %}<p class="chips-fallback">{{ card.chips_note }}</p>{% endif %}
-          <div class="editor__meta" id="h-{{ card.key }}"><p class="field-help">{{ ed.paragraph_rule }}</p><p class="limit">{{ card.cost.line }}</p></div>
+          <div class="editor__meta" id="h-{{ card.key }}"><p class="field-help">{{ ed.paragraph_rule }}</p><p class="limit">{{ cost.line }}</p></div>
         </div>
       </details>
       <div class="msg__aside">

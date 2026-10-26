@@ -46,7 +46,7 @@
     <details class="menu" open>
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel" id="focus">
-        <p class="menu__who">Signed in as 980 555 0123</p>
+        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -65,16 +65,16 @@
     <div class="status-slot" role="status" id="status"></div>
 <div class="page-head"><h1>Home</h1></div>
 <ol class="spine">
-<li class="node node--todo node--status">
-  <span class="node__dot" aria-hidden="true"></span>
+<li class="node node--needs node--status">
+  <span class="node__dot" aria-hidden="true"><b class="node__bang">!</b></span>
   <div class="node__body">
         <p class="status-line">Not working yet: 2 steps left.</p>
 
   </div>
 </li>
   <li class="spine__label"><h2>Setup</h2></li>
-<li class="node node--todo">
-  <span class="node__dot" aria-hidden="true"></span>
+<li class="node node--needs">
+  <span class="node__dot" aria-hidden="true"><b class="node__bang">!</b></span>
   <div class="node__body">
         <div class="setup setup--needs">
       <div class="setup__head"><h3 class="setup__title">Calendar</h3><span class="pill state state--needs pill--warning">Needs you</span></div>
@@ -83,21 +83,21 @@
 
   </div>
 </li>
-<li class="node node--todo">
-  <span class="node__dot" aria-hidden="true"></span>
+<li class="node node--needs">
+  <span class="node__dot" aria-hidden="true"><b class="node__bang">!</b></span>
   <div class="node__body">
         <div class="setup setup--needs">
-      <div class="setup__head"><h3 class="setup__title">Call forwarding</h3><span class="pill state state--needs pill--warning">Needs you</span></div>
+      <div class="setup__head"><h3 class="setup__title">Call forwarding</h3><span class="pill state state--needs pill--warning">Needs you</span><span class="extag">Example</span></div>
       <p class="setup__detail">3 of 5 checks done.</p>
 <a class="btn btn--secondary setup__btn" href="/client/phone#forwarding">Finish forwarding</a>    </div>
 
   </div>
 </li>
-<li class="node node--todo">
-  <span class="node__dot" aria-hidden="true"></span>
+<li class="node node--waiting">
+  <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg></span>
   <div class="node__body">
         <div class="setup setup--waiting">
-      <div class="setup__head"><h3 class="setup__title">Texting approval</h3><span class="pill state state--waiting">Waiting on phone companies</span></div>
+      <div class="setup__head"><h3 class="setup__title">Texting approval</h3><span class="pill state state--waiting">Waiting on phone companies</span><span class="extag">Example</span></div>
       <p class="setup__detail">FluxWorks has filed your business for texting approval. Until it clears, each text starts with a short network notice. Nothing for you to do.</p>
     </div>
 
@@ -111,7 +111,7 @@
       <p class="node__blurb">Since Mon, Oct 26. The counts and the list below cover the same days.</p>
     </div>
     <dl class="counts">
-<div class="counts__item"><dt>Missed calls</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Customers texted</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Booked</dt><dd class="tnum">1</dd></div><div class="counts__item"><dt>Assistant stepped back</dt><dd class="tnum">1</dd></div>    </dl>
+<div class="counts__item"><dt>Missed calls</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Customers texted</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Booked</dt><dd class="tnum">1</dd></div><div class="counts__item"><dt>Stepped back</dt><dd class="tnum">1</dd></div>    </dl>
 
   </div>
 </li>

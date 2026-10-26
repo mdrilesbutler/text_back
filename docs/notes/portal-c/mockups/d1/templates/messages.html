@@ -3,7 +3,7 @@
 {% block content %}
 {% set m = fx.messages %}
 {% set ex = m.example %}
-{% set dirty_keys = ['intro', 'prompt_location'] if dirty else [] %}
+{% set dirty_keys = m.unsaved['keys'] if dirty else [] %}
 {% set here = m.cards[edit_open].step if edit_open else ('' if focus == 'example' else 'missed_call') %}
 <div class="msg-layout">
 <div class="msg-list">
@@ -11,7 +11,7 @@
     <h1>{{ m.title }}</h1>
     <p class="lead">{{ m.intro }}</p>
     <p class="page-head__meta">{{ ui.icon('info') }}<span>{{ m.meta }} <a class="tap page-head__ex" href="#example">{{ ex.title }}</a></span></p>
-    {% if m.network_notice_shown %}<p class="page-head__meta page-head__meta--notice">{{ ui.icon('clock') }}<span>{{ ex.network_notice_hint }}</span></p>{% endif %}
+    {% if m.network_notice_shown %}<p class="page-head__meta page-head__meta--notice">{{ ui.icon('clock') }}<span>{{ m.network_notice }}</span></p>{% endif %}
   </div>
   <nav class="jump" aria-label="{{ m.jump_label }}">
     <ul class="jump__list">
@@ -37,6 +37,7 @@
         {% endif %}
         {% endfor %}
         {% endif %}
+        {% if step.id == 'no_reply' %}<p class="cards__end"><span class="tpill">{{ ex.pills.stops }}</span></p>{% endif %}
       </div>
     {% endcall %}
     {% endfor %}
@@ -56,7 +57,8 @@
   </ol>
   </form>
   {% set sb = m.save_bar %}
-  {{ ui.savebar(dirty, sb.changed, sb.save, sb.discard, 'messages-form') }}
+  {% set names = [] %}{% for k in dirty_keys %}{% set _ = names.append(('#card-' ~ k, m.cards[k].title)) %}{% endfor %}
+  {{ ui.savebar(dirty, sb.changed, sb.save, sb.discard, 'messages-form', sb.clean, names) }}
 </div>
 <section class="rail" id="example" aria-labelledby="rail-title">
   <div class="rail__head">
@@ -69,7 +71,6 @@
   <div class="phone"{% if focus == 'example' %} id="focus"{% endif %}>
     <div class="phone__screen">
       <div class="phone__head">
-        <span class="phone__avatar" aria-hidden="true">{{ meta.business_name[0] }}</span>
         <div class="phone__who"><p class="phone__name">{{ meta.business_name }}</p><p class="phone__sub">{{ ex.phone_sub }}</p></div>
       </div>
       <p class="phone__tag"><span class="extag">{{ fx.home.example_tag }}</span>{{ ex.foot }}</p>
@@ -78,9 +79,10 @@
         {% if b.side == 'event' %}
         <span class="tpill{% if loop.first %} tpill--missed{% elif b.text.startswith('Booked') %} tpill--booked{% endif %}">{{ b.text }}</span>
         {% elif b.side == 'textback' %}
-        {{ ui.bubble(b.text, ex, notice=b.network_notice is defined and b.network_notice, links=b.links if b.links is defined else None) }}
+        {% set dr = m.unsaved.drafts[b.key] if dirty and b.key is defined and b.key in m.unsaved.drafts else None %}
+        {{ ui.bubble(dr.preview if dr else b.text, ex, links=b.links if b.links is defined else None) }}
         {% else %}
-        <div class="sms sms--{{ b.side }}"><div class="sms__bubble"><span class="vh">{{ ex.badges[b.side] }}: </span><p>{{ b.text }}</p></div></div>
+        {{ ui.customer(b.text, ex) }}
         {% endif %}
         {% endfor %}
       </div>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Saved. You changed “Business name”. · Phone · Oak &amp; Pine Tree Care · TextBack</title>
+<title>Phone · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
 <script src="d1.js" defer></script>
@@ -44,9 +44,9 @@
   <header class="topbar">
     <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>TextBack</a>
     <details class="menu">
-      <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
+      <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Service</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as 980 555 0123</p>
+        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -62,14 +62,11 @@
     <p class="nav__foot">TextBack by FluxWorks</p>
   </nav>
   <main class="page" id="main" tabindex="-1">
-    <div class="status-slot" role="status" id="status"><div class="notice notice--success toast">
+    <div class="status-slot" role="status" id="status"></div>
+<div class="notice notice--success page-offer" id="focus">
   <svg class="icon notice__icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
-  <div class="notice__body"><p class="notice__text">Saved. You changed “Business name”.</p></div>
-<button class="icon-btn toast__action" type="button"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-x"/></svg><span class="vh">Dismiss</span></button></div>
-</div>
-<div class="notice notice--info page-offer" id="focus">
-  <svg class="icon notice__icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg>
-  <div class="notice__body"><p class="notice__text">Update 2 texts that still say &#34;Oak &amp; Pine Tree Care&#34;</p>  <div class="actions"><button class="btn btn--secondary" type="submit" form="phone-form" name="rename" value="update">Update them</button><button class="btn btn--ghost" type="submit" form="phone-form" name="rename" value="leave">Leave them</button></div>
+  <div class="notice__body"><p class="notice__text">Saved. You changed “Business name”.</p>  <p class="notice__text">2 texts still say “Oak &amp; Pine Tree Care”. Update them to the new name?</p>
+  <div class="actions"><button class="btn btn--secondary" type="submit" form="phone-form" name="rename" value="update">Update them</button><button class="btn btn--ghost" type="submit" form="phone-form" name="rename" value="leave">Leave them</button></div>
 </div>
 </div>
 <div class="page-head"><h1>Phone</h1><p class="lead">Your business name, the numbers TextBack uses, and call forwarding.</p></div>
@@ -88,7 +85,7 @@
       <div class="field-preview">
         <p class="eyebrow">In the first text</p>
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><span class="sms__notice">Network notice</span><p>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
+  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
   </div>
 </div>
 
@@ -109,18 +106,18 @@
       </div>
       <div class="ro">
         <p class="field__label">Texting number</p>
-        <p class="ro__value tnum">(704) 555-0100</p>
+        <p class="ro__value tnum"><span class="num">(704) 555-0100</span></p>
         <p class="field-help">Set up by FluxWorks. It can&#39;t be changed here.</p>
       </div>
       <div class="field">
         <label class="field__label" for="omobile">Your mobile</label>
-        <input class="input input--tel" id="omobile" name="owner_mobile" type="tel" inputmode="numeric" autocomplete="tel" value="980 555 0123" aria-describedby="omobile-help">
+        <input class="input input--tel" id="omobile" name="owner_mobile" type="tel" inputmode="numeric" autocomplete="tel" value="(980) 555-0123" aria-describedby="omobile-help">
         <p class="field-help" id="omobile-help">Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it. This is the number that signs you in.</p>
       </div>
       <div class="field">
         <label class="field__label" for="hnum">Number in the HELP reply <span class="tag">Optional</span></label>
         <input class="input input--tel" id="hnum" name="help_number" type="tel" inputmode="numeric" value="(704) 555-0123" aria-describedby="hnum-help">
-        <p class="field-help" id="hnum-help">Shown when a customer texts HELP. Leave blank to show (704) 555-0100. Customers are never transferred to it; the assistant handles the texting.</p>
+        <p class="field-help" id="hnum-help">Shown when a customer texts HELP. Leave blank to show <span class="num">(704) 555-0100</span>. Customers are never transferred to it; the assistant handles the texting.</p>
       </div>
     </div>
 
@@ -166,7 +163,7 @@
   <div class="node__body">
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">1</span>A call to your business number reached TextBack</h3>
-      <span class="pill state state--done pill--success">Done</span>
+      <p class="check__state"><span class="pill state state--done pill--success">Done</span><span class="extag">Example</span></p>
 <p class="check__ev tnum">Mon, Oct 26, 9:12 AM from a number ending 0141</p>
     </div>
 
@@ -177,7 +174,7 @@
   <div class="node__body">
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">2</span>Exactly one text went out</h3>
-      <span class="pill state state--done pill--success">Done</span>
+      <p class="check__state"><span class="pill state state--done pill--success">Done</span><span class="extag">Example</span></p>
 <p class="check__ev tnum">Sent Mon, Oct 26, 9:12 AM</p>
     </div>
 
@@ -188,7 +185,7 @@
   <div class="node__body">
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">3</span>An answered call sent no text</h3>
-      <span class="pill state state--todo">Not yet</span>
+      <p class="check__state"><span class="pill state state--todo">Not yet</span></p>
       <p class="field-help">Answer a call to your business number, then confirm no text arrived. TextBack can&#39;t see answered calls, so this one is yours to tick.</p>
       <label class="switch-row"><span class="switch-row__text">I checked this</span><input class="checkbox" type="checkbox" name="check_3" value="done"></label>
     </div>
@@ -200,7 +197,7 @@
   <div class="node__body">
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">4</span>The caller&#39;s own number came through</h3>
-      <span class="pill state state--done pill--success">Done</span>
+      <p class="check__state"><span class="pill state state--done pill--success">Done</span><span class="extag">Example</span></p>
 <p class="check__ev tnum">The text went to the caller&#39;s number, not your business number.</p>
     </div>
 
@@ -211,18 +208,18 @@
   <div class="node__body">
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">5</span>You saved the turn-off code</h3>
-      <span class="pill state state--todo">Not yet</span>
+      <p class="check__state"><span class="pill state state--todo">Not yet</span></p>
       <p class="field-help">Keep it where you&#39;ll find it: *73.</p>
       <label class="switch-row"><span class="switch-row__text">I checked this</span><input class="checkbox" type="checkbox" name="check_5" value="done"></label>
     </div>
 
   </div>
 </li>
-  <li class="spine__label spine__label--foot"><p class="field-help">Checks 1, 2 and 4 tick themselves from real calls TextBack recorded. Checks 3 and 5 are yours.</p></li>
+  <li class="spine__label spine__label--foot"><p class="field-help">In this preview, checks 1, 2 and 4 come from example calls.</p></li>
 </ol>
 </form>
 <div class="savebar" data-state="clean">
-  <p class="savebar__status" role="status"></p>
+  <p class="savebar__status" role="status">No unsaved changes</p>
   <div class="savebar__actions">
     <button class="btn btn--primary" type="submit" form="phone-form">Save</button>
   </div>

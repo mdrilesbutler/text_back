@@ -3,10 +3,12 @@
 {% set p = fx.phone %}
 {% set n = p.numbers %}
 {% block summary %}
-{% if invalid_mobile %}{{ ui.error_summary(p.error_summary, [('#omobile', n.owner_mobile.error)]) }}{% endif %}
+{% if invalid_mobile %}{{ ui.error_summary(p.error_summary, [('#omobile', n.owner_mobile.error)], focus=False) }}{% endif %}
 {% if rename_offer %}
+{# One notice: the save and the offer it leads to. #}
 {% set ro = p.business.rename_offer %}
-{% call ui.notice('info', ro.offer, 'info', cls='page-offer', id='focus') %}
+{% call ui.notice('success', p.toast, 'check', cls='page-offer', id='focus') %}
+  <p class="notice__text">{{ ro.offer }}</p>
   <div class="actions"><button class="btn btn--secondary" type="submit" form="phone-form" name="rename" value="update">{{ ro['update'] }}</button><button class="btn btn--ghost" type="submit" form="phone-form" name="rename" value="leave">{{ ro.leave }}</button></div>
 {% endcall %}
 {% endif %}
@@ -21,12 +23,12 @@
     <div class="card card--form">
       <div class="field">
         <label class="field__label" for="bname">{{ b.name.label }}</label>
-        <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" maxlength="60" value="{{ p.dirty_value if (dirty or rename_offer) else b.name.value }}" aria-describedby="bname-help">
+        <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" maxlength="60" value="{{ p.new_business_name if (dirty or rename_offer) else b.name.value }}" aria-describedby="bname-help">
         <p class="field-help" id="bname-help">{{ b.name.hint }}</p>
       </div>
       <div class="field-preview">
         <p class="eyebrow">{{ b.name.preview_eyebrow }}</p>
-        {{ ui.bubble(b.name.preview, fx.messages.example, notice=fx.messages.network_notice_shown) }}
+        {{ ui.bubble(b.name.preview, fx.messages.example) }}
       </div>
     </div>
   {% endcall %}
@@ -43,7 +45,7 @@
         <p class="ro__value tnum">{{ n.texting_number.value }}</p>
         <p class="field-help">{{ n.texting_number.note }}</p>
       </div>
-      <div class="field"{% if focus == 'mobile' %} id="focus-field"{% endif %}>
+      <div class="field"{% if focus == 'mobile' %} id="focus"{% endif %}>
         <label class="field__label" for="omobile">{{ n.owner_mobile.label }}</label>
         <input class="input input--tel" id="omobile" name="owner_mobile" type="tel" inputmode="numeric" autocomplete="tel" value="{{ n.owner_mobile.invalid_entry if invalid_mobile else n.owner_mobile.value }}"{% if invalid_mobile %} aria-invalid="true" aria-describedby="omobile-error omobile-help"{% else %} aria-describedby="omobile-help"{% endif %}>
         {% if invalid_mobile %}{{ ui.field_error(n.owner_mobile.error, 'omobile-error') }}{% endif %}
@@ -93,7 +95,7 @@
   {% call ui.node(kind) %}
     <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">{{ item.n }}</span>{{ item.step }}</h3>
-      {{ ui.state(kind, item.state) }}
+      <p class="check__state">{{ ui.state(kind, item.state) }}{% if item.example is defined and k.preview %}<span class="extag">{{ fx.home.example_tag }}</span>{% endif %}</p>
       {% if item.state == 'Done' %}<p class="check__ev tnum">{{ item.evidence }}</p>
       {% elif item.manual is defined %}
       <p class="field-help">{{ item.hint }}</p>
@@ -102,8 +104,8 @@
     </div>
   {% endcall %}
   {% endfor %}
-  <li class="spine__label spine__label--foot"><p class="field-help">{{ k.evidence_note }}</p></li>
+  <li class="spine__label spine__label--foot"><p class="field-help">{{ k.evidence_note_preview if k.preview else k.evidence_note }}</p></li>
 </ol>
 </form>
-{{ ui.savebar(dirty, p.unsaved_one, n.save, fx.messages.save_bar.discard, 'phone-form') }}
+{{ ui.savebar(dirty, p.unsaved_one, n.save, fx.messages.save_bar.discard, 'phone-form', fx.messages.save_bar.clean, [('#bname', b.name.label)] if dirty else []) }}
 {% endblock %}

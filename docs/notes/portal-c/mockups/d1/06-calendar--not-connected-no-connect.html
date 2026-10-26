@@ -46,7 +46,7 @@
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as 980 555 0123</p>
+        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -65,14 +65,14 @@
     <div class="status-slot" role="status" id="status"></div>
 <div class="page-head"><h1>Calendar</h1><p class="lead">The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation.</p></div>
 <ol class="spine">
-<li class="node node--todo">
-  <span class="node__dot" aria-hidden="true"></span>
+<li class="node node--needs">
+  <span class="node__dot" aria-hidden="true"><b class="node__bang">!</b></span>
   <div class="node__body" id="focus">
         <div class="node__head"><h2>No calendar yet</h2></div>
     <div class="card status">
-      <span class="pill state state--todo">Not connected</span>
-      <p class="status__detail">Without a calendar the assistant can&#39;t check free times or book jobs.</p>
-      <p class="status__detail">Connecting from this page isn&#39;t set up for your account yet. FluxWorks sets this up for you.</p>
+      <span class="pill state state--needs pill--warning">Not connected</span>
+      <p class="status__detail">No calendar of yours yet. Until you connect one, bookings go on a test calendar you can&#39;t see.</p>
+      <p class="status__detail">To book onto your own calendar, it has to be connected. Connecting from this page isn&#39;t set up for your account yet. FluxWorks sets this up for you.</p>
       <a class="btn btn--primary" href="sms:">Text FluxWorks support</a>
     </div>
 

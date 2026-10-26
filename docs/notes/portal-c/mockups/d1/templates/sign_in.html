@@ -2,14 +2,13 @@
 {% set page_id = 'sign-in' %}{% set title = fx.sign_in.title %}{% set step = 1 %}
 {% block content %}
 {% set s = fx.sign_in %}
-{% if error %}{{ ui.error_summary(s.error_summary, [('#mobile', s.mobile_error)]) }}{% endif %}
 <div class="auth__head">
-  <p class="eyebrow">{{ s.eyebrow }}</p>
-  <h1>{{ s.title }}</h1>
+  <h1>{{ meta.business_name }}</h1>
+  <p class="auth__sub">{{ s.subtitle }}</p>
   <p class="lead">{{ s.intro }}</p>
 </div>
 <form class="auth__form" method="post" action="/client/login">
-  <div class="field">
+  <div class="field"{% if error %} id="focus"{% endif %}>
     <label class="field__label" for="mobile">{{ s.mobile_label }}</label>
     <input class="input input--tel" id="mobile" name="mobile" type="tel" inputmode="numeric" autocomplete="tel" placeholder="{{ s.mobile_placeholder }}" value="{{ s.mobile_value }}"{% if error %} aria-invalid="true" aria-describedby="mobile-error"{% endif %}>
     {% if error %}{{ ui.field_error(s.mobile_error, 'mobile-error') }}{% endif %}
