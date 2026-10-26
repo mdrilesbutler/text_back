@@ -183,7 +183,56 @@ def code_page() -> bytes:
     return PAGE.format(body=body).encode()
 
 
+# --- Preview only: no sign-in. Every /client page opens already signed in as the demo owner. ---------------
+# A fixed session row is (re)written on each request, so Sign out and Sign out everywhere just land back on Home.
+import secrets as _secrets
+from text_back import client_portal as _cp
+
+_TOKEN = _secrets.token_urlsafe(32)
+
+
+def _ensure_session() -> None:
+    now = datetime.now(timezone.utc)
+    with store.transaction():
+        store.conn.execute("DELETE FROM client_sessions WHERE token_hash=?", (_cp._mac(state, _TOKEN),))
+        store.conn.execute(
+            "INSERT INTO client_sessions(token_hash,csrf,phone,expires_at,created_at,pending,remember) VALUES(?,?,?,?,?,0,1)",
+            (_cp._mac(state, _TOKEN), "preview-csrf-" + _TOKEN[:16], OWNER, (now + timedelta(days=30)).isoformat(), now.isoformat()))
+
+
+def _has_cookie(scope) -> bool:
+    for name, value in scope.get("headers", []):
+        if name == b"cookie" and f"{_cp.SESSION_COOKIE}={_TOKEN}".encode() in value:
+            return True
+    return False
+
+
+async def _redirect(send, location: str, set_cookie: bool) -> None:
+    headers = [(b"location", location.encode()), (b"cache-control", b"no-store")]
+    if set_cookie:
+        headers.append((b"set-cookie", f"{_cp.SESSION_COOKIE}={_TOKEN}; Path=/client; HttpOnly; SameSite=Lax; Max-Age=2592000".encode()))
+    await send({"type": "http.response.start", "status": 303, "headers": headers})
+    await send({"type": "http.response.body", "body": b""})
+
+
+OPEN = os.environ.get("TEXT_BACK_PREVIEW_OPEN") == "1"  # set for the shared tailnet preview; capture tools leave it off
+
+
 async def wrapper(scope, receive, send):
+    if scope["type"] == "http" and OPEN:
+        path = scope["path"]
+        if path in ("/", "/client", "/client/", "/client/login", "/client/verify", "/preview/code"):
+            _ensure_session()
+            await _redirect(send, "/client/home", set_cookie=True); return
+        if path.startswith("/client") and not path.startswith("/client/static"):
+            _ensure_session()
+            if not _has_cookie(scope):
+                qs = scope.get("query_string", b"").decode()
+                await _redirect(send, path + ("?" + qs if qs else ""), set_cookie=True); return
+    await _wrapped(scope, receive, send)
+
+
+async def _wrapped(scope, receive, send):
     if scope["type"] == "http" and scope["path"] == "/":
         await send({"type": "http.response.start", "status": 303, "headers": [(b"location", b"/client/login")]})
         await send({"type": "http.response.body", "body": b""}); return
