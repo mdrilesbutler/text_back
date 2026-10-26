@@ -167,6 +167,7 @@ Michael leaned B on 2026-10-21. If coverage matters more to him than the rubric'
 
 - **In `ui-bakeoff-2026-10-26/`:**
   - `judge-prompt.md`: the identical rubric given to every judge.
+  - `design-prompt-100.md`: where every point went, and a paste-ready prompt for the portal that would score 5 on all ten criteria.
   - `judges/{claude,grok,codex}.md`: the raw scorecards, as written, under their blind labels.
   - `judges/label-key.json`: the per-judge X/Y mapping.
   - `screens/{A,B}/`: the first screen of every page at both widths.
