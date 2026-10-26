@@ -10,6 +10,7 @@ session can never move the account to a stranger's phone.
 """
 from __future__ import annotations
 
+import dataclasses
 import hmac
 import html
 import json
@@ -53,6 +54,69 @@ def apply_settings(state) -> None:
     calendar_id = store.setting("google_calendar_id")
     if calendar_id and getattr(state.calendar, "provider_name", "") == "google":
         state.calendar.calendar_id = calendar_id
+    apply_scheduling(state)
+
+
+SCHEDULING_KEYS = ("timezone", "appointment_duration_minutes", "followup_delays_minutes",
+                   "followup_expiry_minutes", "quiet_hours_start", "quiet_hours_end")
+
+
+def scheduling_defaults(state) -> dict:
+    """The env/kwarg values at boot (app.state.defaults), with a fallback for bare states."""
+    defaults = dict(getattr(state, "defaults", None) or {})
+    policy = state.followup_policy
+    defaults.setdefault("timezone", getattr(state, "timezone_name", policy.timezone_name))
+    defaults.setdefault("appointment_duration_minutes", getattr(state, "appointment_duration_minutes", 60))
+    defaults.setdefault("followup_delays_minutes", ",".join(str(d) for d in policy.delays_minutes))
+    defaults.setdefault("followup_expiry_minutes", policy.expiry_minutes)
+    defaults.setdefault("quiet_hours_start", policy.quiet_start.strftime("%H:%M"))
+    defaults.setdefault("quiet_hours_end", policy.quiet_end.strftime("%H:%M"))
+    return defaults
+
+
+def build_scheduling(state, overrides: dict | None = None):
+    """(policy, timezone_name, duration) from saved settings over the defaults.
+
+    ``overrides`` (setting key -> value or None) lets a save handler validate a
+    candidate before anything is written; a bad combination raises ValueError
+    from ``FollowupPolicy.__post_init__`` and nothing changes.
+    """
+    from text_back.followup import _parse_hhmm
+
+    store = state.store
+    defaults = scheduling_defaults(state)
+    overrides = overrides or {}
+
+    def value(key):
+        if key in overrides:
+            raw = overrides[key]
+        else:
+            raw = store.setting(key)
+        return raw if raw not in (None, "") else defaults[key]
+
+    tz = str(value("timezone"))
+    duration = int(value("appointment_duration_minutes"))
+    delays = tuple(int(p) for p in str(value("followup_delays_minutes")).split(",") if p.strip())
+    expiry = int(value("followup_expiry_minutes"))
+    quiet_start = _parse_hhmm(str(value("quiet_hours_start")), "quiet_hours_start")
+    quiet_end = _parse_hhmm(str(value("quiet_hours_end")), "quiet_hours_end")
+    policy = dataclasses.replace(state.followup_policy, delays_minutes=delays, expiry_minutes=expiry,
+                                 quiet_start=quiet_start, quiet_end=quiet_end, timezone_name=tz)
+    return policy, tz, duration
+
+
+def apply_scheduling(state) -> None:
+    """Rebuild the follow-up policy, timezone and appointment length from the saved settings.
+
+    Both ``state.followup_policy`` and ``state.store.sms_policy`` are replaced:
+    the worker lanes read the former, ``sms.atomic_sms_handler`` the latter.
+    Called at boot (after the settings overlay) and after every Schedule save.
+    """
+    policy, tz, duration = build_scheduling(state)
+    state.followup_policy = policy
+    state.store.sms_policy = policy
+    state.timezone_name = tz
+    state.appointment_duration_minutes = duration
 
 
 def remember_calendars(state, calendars: list[dict], now: datetime) -> None:

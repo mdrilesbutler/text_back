@@ -191,7 +191,22 @@ def create_app(
     app.state.store.calendar_links = CalendarLinks(app.state.public_base_url, webhook_secret)
     app.state.delivery_policy = delivery_policy
     app.state.delivery_transport = selected_delivery_transport
-    # The owner's saved business details and calendar choice override the env defaults.
+    # Env/kwarg values at boot, kept so the portal can show "Default: ..." and
+    # offer Reset after the owner's saved settings are applied on top.
+    app.state.defaults = {
+        "business_name": app.state.business_name,
+        "business_contact": config.business_contact,
+        "owner_mobile": config.owner_mobile,
+        "timezone": timezone_name,
+        "appointment_duration_minutes": appointment_duration_minutes,
+        "followup_delays_minutes": config.followup_delays_minutes,
+        "followup_expiry_minutes": config.followup_expiry_minutes,
+        "quiet_hours_start": config.quiet_hours_start,
+        "quiet_hours_end": config.quiet_hours_end,
+        "text_back_number": config.signalwire_from_number,
+        "google_calendar_id": config.google_calendar_id,
+    }
+    # The owner's saved business details, calendar choice and schedule override the env defaults.
     from text_back.client_settings import apply_settings
     apply_settings(app.state)
 
