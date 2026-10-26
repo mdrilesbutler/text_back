@@ -5,12 +5,16 @@
 <header class=auth__head>
   <p class="eyebrow eyebrow--accent">{{ business_name }}</p>
   <h1>Check your phone</h1>
-  <p class=lead id=code-help>Enter the 6-digit code we just texted. It expires in ten minutes.</p>
+  <p class=lead id=code-help>Enter the six-digit code we just texted. It expires in ten minutes.</p>
 </header>
 <form method=post action=/client/verify class=auth__form>
   <div class=field>
     <label class=field__label for=code>Sign-in code</label>
     {{ otp(help_id="code-help", error=error) }}
+  </div>
+  <div class=field>
+    <label class=switch-row for=remember><span class=switch-row__text>Remember this phone for 30 days</span><input type=checkbox role=switch class=switch id=remember name=remember value=1 aria-describedby=remember-help></label>
+    <p class=field-help id=remember-help>Otherwise this phone signs out after 12 hours.</p>
   </div>
   {{ button("Sign in", size="lg", block="block", loading="Signing in…") }}
 </form>

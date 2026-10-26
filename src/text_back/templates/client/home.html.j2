@@ -1,0 +1,52 @@
+{#- Home: the computed status sentence, the three setup cards, then this week. The counts and the caller
+    rows come from one window (portal_status.this_week), so a zero never sits above rows. Every date goes
+    through the `when` / `day` filters. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon %}
+{% block page_class %}home{% endblock %}
+{% block content %}
+<header class=page-head>
+  <h1>Home</h1>
+  <p class=home__status data-status-line>{{ headline }}</p>
+</header>
+<div class=page__body>
+  <section class=setup aria-labelledby=setup-title>
+    <h2 id=setup-title>Setup</h2>
+    <ul class=setup__list>
+    {% for item in setup %}
+      <li class=setup-card data-setup={{ item.key }} data-state="{{ item.state_word }}">
+        <h3 class=setup-card__title>{{ item.title }}</h3>
+        <p class=setup-card__state>{{ item.state_word }}</p>
+        <p class=setup-card__detail>{{ item.detail }}</p>
+        {% if item.action_href %}<a class="btn {{ 'btn--primary' if item.state_word == 'Needs you' else 'btn--secondary' }}" href={{ item.action_href }}>{{ item.action_label }}</a>{% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+  <section class=week aria-labelledby=week-title>
+    <h2 id=week-title>This week</h2>
+    <p class=week__caption>Since {{ week.start|day(tz) }}. The counts and the list below cover the same days.</p>
+    <dl class=week__counts>
+      <div class=count data-count=missed_calls><dt>Missed calls</dt><dd class=tnum>{{ week.counts.missed_calls }}</dd></div>
+      <div class=count data-count=customers_texted><dt>Customers texted</dt><dd class=tnum>{{ week.counts.customers_texted }}</dd></div>
+      <div class=count data-count=booked><dt>Booked</dt><dd class=tnum>{{ week.counts.booked }}</dd></div>
+      <div class=count data-count=stepped_back><dt>Assistant stepped back</dt><dd class=tnum>{{ week.counts.stepped_back }}</dd></div>
+    </dl>
+  </section>
+  <section class=callers aria-labelledby=callers-title>
+    <h2 id=callers-title>This week's callers</h2>
+    {% if week.rows %}
+    <table class=callers__table>
+      <thead><tr><th scope=col>Customer</th><th scope=col>Status</th><th scope=col>Last activity</th><th scope=col>Last text</th></tr></thead>
+      <tbody>
+      {% for row in week.rows %}
+        <tr data-caller><td>{{ row.display }}</td><td><span class=status-pill>{{ row.status }}</span></td><td class=tnum>{{ row.last_at|when(tz, now) }}</td><td>{{ row.snippet }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class=empty__body data-empty>No callers this week. They appear here after the next missed call.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

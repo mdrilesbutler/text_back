@@ -1,4 +1,5 @@
-"""Client settings pages: business details, owner mobile change, calendar connection."""
+"""Client settings pages: business details (now on Phone), owner mobile change, calendar connection."""
+import html
 import json
 import re
 from datetime import datetime, timezone
@@ -21,11 +22,11 @@ NOW = datetime(2026, 10, 19, 15, 0, tzinfo=timezone.utc)
 def test_business_details_are_saved_applied_and_survive_restart(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    page = client.get("/client/business")
+    page = client.get("/client/phone")
     assert page.status_code == 200 and 'value="Oak &amp; Pine Tree Care"' in page.text
     assert "/client/calendar" in page.text and "/client/messages" in page.text  # tabs
     csrf = csrf_of(page.text)
-    saved = client.post("/client/business", data={"csrf": csrf, "business_name": "  Oak &  Pine  ", "business_contact": "980-555-0100",
+    saved = client.post("/client/phone", data={"csrf": csrf, "business_name": "  Oak &  Pine  ", "business_contact": "980-555-0100",
                                                   "owner_mobile": "(980) 555-0123"})
     assert "Saved." in saved.text
     assert client.app.state.business_name == "Oak & Pine"
@@ -35,27 +36,27 @@ def test_business_details_are_saved_applied_and_survive_restart(tmp_path, monkey
                        business_name="Oak & Pine Tree Care", now_provider=lambda: clock[0])
     assert again.state.business_name == "Oak & Pine" and again.state.business_contact == "(980) 555-0100"
     # Bad input is refused with the typed values kept.
-    bad = client.post("/client/business", data={"csrf": csrf, "business_name": "", "business_contact": "", "owner_mobile": OWNER})
+    bad = client.post("/client/phone", data={"csrf": csrf, "business_name": "", "business_contact": "", "owner_mobile": OWNER})
     assert "Enter a business name" in bad.text and client.app.state.business_name == "Oak & Pine"
-    bad = client.post("/client/business", data={"csrf": csrf, "business_name": "Oak", "business_contact": "call me", "owner_mobile": OWNER})
-    assert "customer phone number" in bad.text and client.app.state.business_contact == "(980) 555-0100"
-    assert client.post("/client/business", data={"csrf": "forged", "business_name": "x", "owner_mobile": OWNER}).status_code == 400
+    bad = client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "business_contact": "call me", "owner_mobile": OWNER})
+    assert "Enter the phone number as 10 digits" in bad.text and client.app.state.business_contact == "(980) 555-0100"
+    assert client.post("/client/phone", data={"csrf": "forged", "business_name": "x", "owner_mobile": OWNER}).status_code == 400
 
 
 def test_changing_the_owner_mobile_requires_a_code_texted_to_the_new_number(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    csrf = csrf_of(client.get("/client/business").text)
-    page = client.post("/client/business", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care", "business_contact": "",
+    csrf = csrf_of(client.get("/client/phone").text)
+    page = client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care", "business_contact": "",
                                                  "owner_mobile": "980 555 0199"})
     assert "Confirm your new mobile" in page.text and "(980) 555-0199" in page.text
     code, text = code_from(telecom)
     assert text.to == "+19805550199" and "new mobile code" in text.body
     assert client.app.state.owner_mobile == OWNER  # nothing changed yet
-    assert "/client/business/confirm" in client.get("/client/business").text  # still pending on reload
-    wrong = client.post("/client/business/confirm", data={"csrf": csrf, "code": "000000"})
-    assert "not right or has expired" in wrong.text and client.app.state.owner_mobile == OWNER
-    done = client.post("/client/business/confirm", data={"csrf": csrf, "code": code})
+    assert "/client/phone/confirm" in client.get("/client/phone").text  # still pending on reload
+    wrong = client.post("/client/phone/confirm", data={"csrf": csrf, "code": "000000"})
+    assert "isn't right, or it has expired" in html.unescape(wrong.text) and client.app.state.owner_mobile == OWNER
+    done = client.post("/client/phone/confirm", data={"csrf": csrf, "code": code})
     assert "Sign-in codes now go to (980) 555-0199" in done.text
     assert client.app.state.owner_mobile == "+19805550199"
     # Only the new number can request a sign-in code from now on.
@@ -69,10 +70,10 @@ def test_changing_the_owner_mobile_requires_a_code_texted_to_the_new_number(tmp_
 def test_keeping_the_current_mobile_cancels_the_pending_change(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    csrf = csrf_of(client.get("/client/business").text)
-    client.post("/client/business", data={"csrf": csrf, "business_name": "Oak", "business_contact": "", "owner_mobile": "980 555 0199"})
-    assert "Kept your current mobile" in client.get("/client/business/keep").text
-    assert "Confirm your new mobile" not in client.get("/client/business").text
+    csrf = csrf_of(client.get("/client/phone").text)
+    client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "business_contact": "", "owner_mobile": "980 555 0199"})
+    assert "Kept your current mobile" in client.post("/client/phone/keep", data={"csrf": csrf}).text
+    assert "Confirm your new mobile" not in client.get("/client/phone").text
     assert client.app.state.owner_mobile == OWNER
 
 
@@ -105,7 +106,7 @@ def test_owner_connects_google_and_picks_the_calendar(tmp_path, monkeypatch):
     client, telecom, credentials, transport = google_fixture(tmp_path, monkeypatch)
     sign_in(client, telecom)
     page = client.get("/client/calendar")
-    assert "disconnected" in page.text and "Connect Google Calendar" in page.text
+    assert "disconnected" in page.text and "Reconnect Google Calendar" in page.text
     csrf = csrf_of(page.text)
     start = client.post("/client/calendar", data={"csrf": csrf, "action": "connect"}, follow_redirects=False)
     assert start.status_code == 303 and start.headers["location"].startswith(BASE + "/calendar/connect?token=")
@@ -123,10 +124,10 @@ def test_owner_connects_google_and_picks_the_calendar(tmp_path, monkeypatch):
     # The old calendar was not writable by this account, so the main calendar is used until the owner picks.
     assert client.app.state.calendar.calendar_id == "owner@example.test"
     page = client.get("/client/calendar")
-    assert "Google Calendar is connected" in page.text and "<strong>Personal</strong>" in page.text
+    assert "Connected" in page.text and "Bookings go here: Personal" in page.text
     assert "Tree jobs" in page.text and "Holidays" not in page.text  # reader-only calendars are not offered
     chosen = client.post("/client/calendar", data={"csrf": csrf, "calendar_id": "jobs@group.calendar.google.com"})
-    assert "now uses Tree jobs" in chosen.text
+    assert "now books on Tree jobs" in chosen.text
     assert client.app.state.calendar.calendar_id == "jobs@group.calendar.google.com"
     assert "Pick one of the calendars" in client.post("/client/calendar", data={"csrf": csrf, "calendar_id": "holidays"}).text
     assert "new-access" not in page.text and "new-refresh" not in chosen.text
@@ -146,18 +147,20 @@ def test_denied_consent_returns_to_the_settings_page_with_an_explanation(tmp_pat
     cookie = consent.cookies.get("text_back_oauth")
     back = client.get(BASE + "/calendar/callback", params={"state": state, "error": "access_denied"},
                       headers={"Cookie": f"text_back_oauth={cookie}"}, follow_redirects=False)
-    assert back.status_code == 303 and "did+not+grant" in back.headers["location"]
+    assert back.status_code == 303 and back.headers["location"] == "/client/calendar?error=access"
     assert credentials.status() == "reauth_required" and not transport.requests
-    assert "did not grant" in client.get(back.headers["location"]).text
+    assert "Google didn't give TextBack calendar access" in html.unescape(client.get(back.headers["location"]).text)
+    # Only fixed codes reach the page: free text in the query string is never shown.
+    assert "pwned" not in client.get("/client/calendar?error=pwned").text
 
 
 def test_without_a_web_client_the_page_explains_and_connect_is_refused(tmp_path, monkeypatch):
     client, telecom, credentials, transport = google_fixture(tmp_path, monkeypatch, client_file=False)
     sign_in(client, telecom)
     page = client.get("/client/calendar")
-    assert "still being set up" in page.text and "Connect Google Calendar" not in page.text
+    assert "isn't set up for your account yet" in html.unescape(page.text) and "Connect Google Calendar" not in page.text
     refused = client.post("/client/calendar", data={"csrf": csrf_of(page.text), "action": "connect"})
-    assert "not set up" in refused.text
+    assert "Connecting a calendar isn't set up for this account yet." in html.unescape(refused.text)
     assert client.get("/client/calendar", follow_redirects=False).status_code == 200
     client.cookies.clear()
     assert client.get("/client/calendar", follow_redirects=False).headers["location"] == "/client/login"

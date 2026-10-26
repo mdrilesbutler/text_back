@@ -1,4 +1,5 @@
 """Client settings page: passwordless sign-in and message editing."""
+import html
 import json
 import re
 from datetime import datetime, timedelta, timezone
@@ -38,7 +39,7 @@ def sign_in(client, telecom, mobile="(980) 555-0123"):
     assert client.post("/client/login", data={"mobile": mobile}, follow_redirects=False).status_code == 303
     code, _ = code_from(telecom)
     response = client.post("/client/verify", data={"code": code}, follow_redirects=False)
-    assert response.status_code == 303 and response.headers["location"] == "/client/messages"
+    assert response.status_code == 303 and response.headers["location"] == "/client/home"
 
 
 def csrf_of(page_html):
@@ -52,7 +53,7 @@ def test_login_texts_a_code_only_to_the_number_on_file(tmp_path, monkeypatch):
     assert other.status_code == 303 and other.headers["location"] == "/client/verify"  # same answer, no leak
     assert not [m for m in telecom.outbound if m.kind == "login_code"]
     unknown = client.post("/client/verify", data={"code": "123456"})
-    assert unknown.status_code == 200 and "not right or has expired" in unknown.text  # same words as a wrong code
+    assert unknown.status_code == 200 and "isn't right, or it has expired" in html.unescape(unknown.text)  # same words as a wrong code
 
     client.post("/client/login", data={"mobile": "980-555-0123"}, follow_redirects=False)
     code, text = code_from(telecom)
@@ -67,8 +68,8 @@ def test_wrong_code_five_times_then_locked_and_expiry(tmp_path, monkeypatch):
     code, _ = code_from(telecom)
     for _ in range(5):
         page = client.post("/client/verify", data={"code": "000000"})
-        assert "not right or has expired" in page.text
-    assert "not right or has expired" in client.post("/client/verify", data={"code": code}).text  # locked after 5 guesses
+        assert "isn't right, or it has expired" in html.unescape(page.text)
+    assert "isn't right, or it has expired" in html.unescape(client.post("/client/verify", data={"code": code}).text)  # locked after 5 guesses
     client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
     code, _ = code_from(telecom)
     clock[0] += timedelta(minutes=11)
@@ -125,14 +126,14 @@ def test_logout_ends_the_session_and_sessions_expire(tmp_path, monkeypatch):
     assert client.get("/client/messages", follow_redirects=False).headers["location"] == "/client/login"
     sign_in(client, telecom)
     clock[0] += timedelta(hours=13)
-    assert client.get("/client/messages", follow_redirects=False).headers["location"] == "/client/login"
+    assert client.get("/client/messages", follow_redirects=False).headers["location"].startswith("/client/login")
 
 
 def test_without_a_messages_file_the_page_explains_and_cannot_save(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch, messages_file=False)
     sign_in(client, telecom)
     page = client.get("/client/messages")
-    assert "not set up" in page.text and "Save messages" not in page.text
+    assert "isn't turned on" in html.unescape(page.text) and "Save messages" not in page.text and "name=save" not in page.text
 
 
 def test_login_code_ignores_quiet_hours(tmp_path, monkeypatch):
@@ -150,10 +151,10 @@ def test_a_pending_login_cookie_is_not_a_session(tmp_path, monkeypatch):
     pending = response.cookies.get("text_back_client_login")
     assert pending
     forged = client.get("/client/messages", cookies={"text_back_client": pending}, follow_redirects=False)
-    assert forged.status_code == 303 and forged.headers["location"] == "/client/login"
+    assert forged.status_code == 303 and forged.headers["location"].startswith("/client/login")
     csrf_probe = client.post("/client/messages", data={"csrf": "x", "intro": "pwned"},
                              cookies={"text_back_client": pending}, follow_redirects=False)
-    assert csrf_probe.status_code == 303 and csrf_probe.headers["location"] == "/client/login"
+    assert csrf_probe.status_code == 303 and csrf_probe.headers["location"].startswith("/client/login")
 
 
 def test_verify_error_is_identical_for_unknown_number_and_wrong_code(tmp_path, monkeypatch):

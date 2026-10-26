@@ -1,0 +1,12 @@
+{#- The deck's error_summary_fields block for Schedule and Phone: one linked item per field. -#}
+{% from "client/_macros.html.j2" import icon %}
+{% macro field_summary(summary) -%}
+<div class="notice notice--danger error-summary" id=error-summary role=alert tabindex=-1>
+  {{ icon("circle-alert", "notice__icon") }}
+  <div class=notice__body>
+    <p class=notice__title>{{ summary.title }}</p>
+    <ul class=error-summary__list>{% for item in summary["items"] %}<li><a href=#{{ item.field }} data-error-link>{{ item.text }}</a></li>{% endfor %}</ul>
+    <p class=notice__text>{{ summary.kept }}</p>
+  </div>
+</div>
+{%- endmacro %}

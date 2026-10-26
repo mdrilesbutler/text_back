@@ -50,7 +50,7 @@ WORD_UNREADABLE = "Couldn't be read"
 BODY_UNREADABLE = "TextBack couldn't read the calendar connection. Bookings are paused until you reconnect."
 CONSENT_NOTE = ("What Google will ask: (1) You pick the Google account that owns your business calendar. "
                 "(2) Google asks you to let TextBack see and edit your calendars. "
-                "(3) TextBack only checks free times and adds appointments. Nothing else in that account is read. "
+                "(3) TextBack only checks free times and adds appointments. TextBack sees your calendars only. "
                 "(4) Afterwards you choose which calendar it uses.")
 PICKER_LEGEND = "Which calendar should the assistant use?"
 PICKER_HINT = "Free times are checked on this calendar and new appointments are added to it."
@@ -242,6 +242,7 @@ def availability_card(state, result: dict | None) -> dict:
         "button": "" if replaced else AVAIL_BUTTON, "busy_label": AVAIL_BUTTON_BUSY, "replaced": replaced,
         "checked": checked, "duration": duration,
         "slots": [availability.format_slot(start, duration) for start in starts],
+        "starts": starts,  # the datetimes behind ``slots``; templates format them with the `when` filter
         "empty": AVAIL_EMPTY.format(n=duration) if checked and not starts else "",
         "error": str(result.get("error") or ""),
         "caption": AVAIL_CAPTION.format(hours=wh.describe(hours)) if checked else "",

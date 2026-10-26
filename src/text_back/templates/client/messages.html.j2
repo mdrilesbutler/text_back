@@ -1,0 +1,50 @@
+{#- Messages: the steps in conversation order, START/HELP/STOP collapsed, the save bar and the example
+    conversation. Contract: the form always posts all 21 textareas and both ask_* switches; the hidden
+    name=save submit comes first so Enter never triggers a Reset button; never `disabled` on a field. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, notice as notice_box, csrf_input %}
+{% from "client/_message_card.html.j2" import step_section, keywords_section, error_summary as error_box %}
+{% from "client/_rail.html.j2" import rail as rail_panel %}
+{% block page_class %}messages{% endblock %}
+{% block content %}
+<header class=page-head>
+  <h1>Your messages</h1>
+  <p class=lead>The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.</p>
+  <p class=page-head__meta>{{ icon("info") }}<span>Green bubbles are what customers see. The job, address, time and names are made-up examples.</span></p>
+  {% if network_notice %}<p class=page-head__notice data-network-notice>{{ network_notice }}</p>{% endif %}
+  <nav class=jump aria-label="On this page"><ul class=jump__list>{% for href, label in jump %}<li><a class=jump__link href={{ href }}>{{ label }}</a></li>{% endfor %}</ul></nav>
+</header>
+{% if not editable %}
+<div class="notice notice--info" data-not-enabled>
+  <p class=notice__text>{{ not_enabled }}</p>
+  {% if support_href %}<a class="btn btn--secondary" href="{{ support_href }}">Text FluxWorks support</a>{% endif %}
+</div>
+{% endif %}
+<div class=msg-layout>
+{% if editable %}
+<form method=post action=/client/messages id=messages class=msg-list>
+  {{ csrf_input(csrf) }}
+  <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
+{% else %}
+<div class=msg-list>
+{% endif %}
+  {% if error_summary %}{{ error_box(error_summary) }}{% endif %}
+  <ol class=moments aria-label="The conversation, in order">
+  {% for s in steps %}{{ step_section(s, editable, max_chars) }}{% endfor %}
+  </ol>
+  {{ keywords_section(keywords, editable, max_chars) }}
+{% if editable %}
+  <div class=savebar data-savebar data-state=nojs data-initial={{ savebar_initial }}>
+    <p class="savebar__status tnum" data-savebar-status>Saves every text at once</p>
+    <div class=savebar__actions>
+      <button type=button class="btn btn--danger-ghost" data-discard hidden>Discard</button>
+      <button type=submit class="btn btn--primary" name=save value=1 data-save data-loading="Saving…">Save</button>
+    </div>
+  </div>
+</form>
+{% else %}
+</div>
+{% endif %}
+{{ rail_panel(rail, business_name, scenario) }}
+</div>
+{% endblock %}

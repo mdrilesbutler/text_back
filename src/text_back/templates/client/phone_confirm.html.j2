@@ -1,0 +1,31 @@
+{#- Owner mobile, step two: a code went to the NEW number; nothing moves until it is entered.
+    "Keep my current mobile" is a POST (a state change is never a GET). -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import otp, button, csrf_input, stepper %}
+{% block page_class %}confirm{% endblock %}
+{% block content %}
+<header class=page-head>
+  <h1>Confirm your new mobile</h1>
+  {{ stepper() }}
+  <p class=lead id=confirm-help>{{ confirm_intro }}</p>
+</header>
+<div class=page__body>
+  <form method=post action=/client/phone/confirm id=confirm-form>
+    {{ csrf_input(csrf) }}
+    <div class=field>
+      <label class=field__label for=code>Code from the text</label>
+      {{ otp(error=code_error, help_id="confirm-help") }}
+    </div>
+    {{ button("Confirm new mobile", block="block-phone", loading="Confirming…") }}
+  </form>
+  <form method=post action=/client/phone/keep class=actions__form>
+    {{ csrf_input(csrf) }}
+    <button type=submit class="btn btn--secondary btn--block-phone" data-keep>{{ confirm_keep }}</button>
+  </form>
+  <form method=post action=/client/phone/confirm class=resend>
+    {{ csrf_input(csrf) }}<input type=hidden name=action value=resend>
+    <span class=resend__text>Didn't get it?</span>
+    {{ button("Send the code again", variant="ghost", icon_name="refresh-cw", loading="Sending…") }}
+  </form>
+</div>
+{% endblock %}

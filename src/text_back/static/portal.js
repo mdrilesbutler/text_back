@@ -270,7 +270,12 @@ function drawBubble(node, body, tail) {
 }
 
 // = client_portal.fill: str.format_map with unknown names kept; anything Python would refuse leaves the text as typed.
+// Inserts are shown as [Label] (never braces); DATA.labels maps each label to its placeholder name.
+const LABELS = DATA.labels || { 'Business name': 'business_name' };
+const tokens = t => t.replace(/\[([^\]]+)\]/g, (m, label) => (Object.hasOwn(LABELS, label) ? `{${LABELS[label]}}` : m));
+
 function fill(t, values = DATA.sample || {}) {
+  t = tokens(t);
   let out = '';
   for (let i = 0; i < t.length;) {
     const c = t[i];

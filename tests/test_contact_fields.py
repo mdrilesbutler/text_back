@@ -112,7 +112,7 @@ def test_settings_page_checkboxes_write_the_question_list(tmp_path, monkeypatch)
     code = re.search(r"\b(\d{6})\b", [m for m in telecom.outbound if m.kind == "login_code"][-1].body).group(1)
     client.post("/client/verify", data={"code": code}, follow_redirects=False)
     page = client.get("/client/messages").text
-    assert "Also ask for an email address" in page and "checked" not in page
+    assert "Also ask for an email address" in page and "value=1 checked" not in page
     csrf = re.search(r"name=csrf value='([^']+)'", page).group(1)
     saved = client.post("/client/messages", data={"csrf": csrf, "ask_email": "1"}).text
     assert "Saved" in saved and 'name=ask_email value=1 checked' in saved

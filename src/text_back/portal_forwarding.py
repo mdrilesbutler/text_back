@@ -14,12 +14,12 @@ from text_back.portal_dates import when
 DONE, NOT_YET, YOU_CHECKED = "done", "not_yet", "you_checked"
 STATE_WORDS = {DONE: "Done", NOT_YET: "Not yet", YOU_CHECKED: "You checked this"}
 MANUAL = {3: "answered_no_text", 5: "deactivation_saved"}
-LABELS = {
-    1: "Forwarding works",
-    2: "The caller got one text",
+LABELS = {  # copy deck, section 7 (check_1..check_5)
+    1: "A call to your business number reached TextBack",
+    2: "Exactly one text went out",
     3: "An answered call sent no text",
     4: "The caller's own number came through",
-    5: "Turn-off code saved",
+    5: "You saved the turn-off code",
 }
 
 

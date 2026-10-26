@@ -66,7 +66,8 @@ def setup_items(state, now: datetime) -> list[dict]:
                           action_label="Reconnect", action_href="/client/calendar"))
     else:
         items.append(dict(key="calendar", title="Calendar", state_word="Needs you",
-                          detail="No calendar yet. Nothing can be booked until you connect one.",
+                          detail=("No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see."
+                                  if status == "none" else "No calendar yet. Nothing can be booked until you connect one."),
                           action_label="Connect calendar" if view.get("can_connect") else "Open Calendar",
                           action_href="/client/calendar"))
     checks = checklist(state, now)

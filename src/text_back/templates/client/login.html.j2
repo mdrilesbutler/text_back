@@ -1,17 +1,19 @@
+{#- Sign in. The label is "Your mobile number", the placeholder is neutral and nothing is prefilled. -#}
 {% extends "client/auth.html.j2" %}
 {% from "client/_macros.html.j2" import field_error, button %}
 {% block content %}
 <header class=auth__head>
-  <p class="eyebrow eyebrow--accent">Scheduling assistant settings</p>
-  <h1>{{ business_name }}</h1>
-  <p class=lead>Enter the business mobile on file and we'll text you a sign-in code. No password to remember.</p>
+  <p class="eyebrow eyebrow--accent">Owner settings</p>
+  <h1>Sign in</h1>
+  <p class=lead id=mobile-help>Enter your mobile number. We text a six-digit code to the mobile on file for this business. No password.</p>
 </header>
+<div class=notice-slot id=notice role=status>{% if notice %}<p class=notice-slot__text>{{ notice }}</p>{% endif %}</div>
 <form method=post action=/client/login class=auth__form>
   <div class=field>
-    <label class=field__label for=mobile>Business mobile</label>
-    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="704 555 0123"{% if error %} aria-invalid=true aria-describedby=mobile-error autofocus{% endif %}>
+    <label class=field__label for=mobile>Your mobile number</label>
+    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="10 digits" aria-describedby="mobile-help{{ ' mobile-error' if error else '' }}"{% if error %} aria-invalid=true autofocus{% endif %}>
     {% if error %}{{ field_error("mobile-error", error) }}{% endif %}
   </div>
-  {{ button("Text me a code", size="lg", block="block", loading="Sending code…") }}
+  {{ button("Text me a code", size="lg", block="block", loading="Sending…") }}
 </form>
 {% endblock %}

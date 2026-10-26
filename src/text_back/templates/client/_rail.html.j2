@@ -1,27 +1,41 @@
-{#- The phone-frame rail: sample conversations drawn with the same rendered texts as the cards.
-    It sits outside form#messages, so the scenario select is never posted. Switching works without JS through
-    :has(option:checked); JS mirrors the selected option into data-active for browsers without :has().
-    The styleguide draws specimens with an id prefix (idp) and hook=False, so JS leaves them alone. -#}
-{% from "client/_macros.html.j2" import icon, thread_item %}
+{#- The example conversation: every TextBack bubble comes from running the real handlers on scripted replies
+    (portal_sample) with the SAVED texts. It sits outside form#messages, so the select is never posted.
+    Switching works without JS through :has(option:checked); JS mirrors the option into data-active. -#}
+{% from "client/_macros.html.j2" import icon %}
 
-{% macro rail(r, editable=True, asked=(), idp="", hook=True) -%}
-<aside class=rail id={{ idp }}conversation aria-labelledby={{ idp }}rail-title{% if hook %} data-rail{% endif %}>
-  <div class=rail__head>
-    <h2 class=rail__title id={{ idp }}rail-title>Conversation preview</h2>
-    <label class=rail__show for={{ idp }}scenario>Show</label>
-    <span class=select><select class=select__input id={{ idp }}scenario{% if hook %} data-scenario-select{% endif %}>
-      {% for s in r.scenarios %}<option value={{ s.id }}{% if loop.first %} selected{% endif %}>{{ s.label }}</option>{% endfor %}
+{% macro thread_row(it) -%}
+{%- if it.kind == "customer" -%}
+<li class="sms sms--customer"><span class=sms__badge>Customer</span><p class=sms__bubble>{{ it.text }}</p></li>
+{%- elif it.kind == "textback" -%}
+<li class="sms sms--textback"><span class=sms__badge>TextBack</span><p class=sms__bubble data-preview={{ it.key }}>{{ it.text|sms_links }}</p></li>
+{%- elif it.kind == "divider" -%}
+<li class=handoff>{{ it.text }}</li>
+{%- else -%}
+<li class="tpill tpill--{{ it.kind }}">{{ it.text }}</li>
+{%- endif -%}
+{%- endmacro %}
+
+{#- The select lives in its own GET form (never the Messages POST form): without JavaScript the Show button
+    reloads the page with ?scenario=…, which only chooses the thread drawn first and changes nothing. -#}
+{% macro rail(scenarios, business_name, chosen) -%}
+<aside class=rail id=conversation aria-labelledby=rail-title data-rail>
+  <form method=get action=/client/messages#conversation class=rail__head>
+    <h2 class=rail__title id=rail-title>Example conversation</h2>
+    <label class=rail__show for=scenario>Show</label>
+    <span class=select><select class=select__input id=scenario name=scenario data-scenario-select>
+      {% for s in scenarios %}<option value={{ s.id }}{% if s.id == chosen %} selected{% endif %}>{{ s.label }}</option>{% endfor %}
     </select>{{ icon("chevrons-up-down", "select__icon") }}</span>
-  </div>
-  <div class=phone role=group aria-label="Sample text conversation with {{ r.business_name }}">
+    <button type=submit class="btn btn--ghost rail__go" data-scenario-go>Show</button>
+  </form>
+  <div class=phone role=group aria-label="Example text conversation with {{ business_name }}">
     <div class=phone__screen>
-      <div class=phone__head><span class=phone__avatar aria-hidden=true>{{ r.initials }}</span><div class=phone__who><p class=phone__name>{{ r.business_name }}</p><p class=phone__sub>Text message</p></div></div>
-      <div class=phone__log tabindex=0 role=group aria-label="Sample messages"{% if hook %} data-rail-log{% endif %}>
-      {% for s in r.scenarios %}<ol class=thread data-scenario={{ s.id }} aria-label="{{ s.label }}">{% for it in s.thread %}{{ thread_item(it, "li", hide=(not editable and it.ask and it.ask not in asked)) }}{% endfor %}</ol>{% endfor %}
+      <div class=phone__head><div class=phone__who><p class=phone__name>{{ business_name }}</p><p class=phone__sub>Text message</p></div></div>
+      <div class=phone__log tabindex=0 role=group aria-label="Example messages" data-rail-log>
+      {% for s in scenarios %}<ol class=thread data-scenario={{ s.id }} aria-label="{{ s.label }}">{% for it in s.thread %}{{ thread_row(it) }}{% endfor %}</ol>{% endfor %}
       </div>
     </div>
   </div>
-  <p class=phone__foot>Sample conversation · nothing is sent · names invented</p>
-  {% if hook %}<a class=rail__back href=#main>{{ icon("arrow-up") }}Back to editing</a>{% endif %}
+  <p class=phone__foot>Example conversation · nothing is sent · names made up</p>
+  <a class=rail__back href=#main>{{ icon("arrow-up") }}Back to editing</a>
 </aside>
 {%- endmacro %}

@@ -52,6 +52,41 @@ def url_runs(text: str) -> Markup:
 
 ENV.filters["url_runs"] = url_runs
 
+# The add-to-calendar links in a TextBack bubble: a short label on screen, the full link in title.
+LINK_LABELS = {"g": "Add to Google Calendar ›", "o": "Add to Outlook ›", "i": "Add to iCal ›", "": "Calendar links page ›"}
+_CAL_LINK = re.compile(r"(?:\b(?:Google|Outlook|iCal) )?(https?://\S+?/a/[\w-]+?(?:/([goi]))?)(?=[\s.,;!?]*(?:\s|$))")
+
+
+def sms_links(text: str) -> Markup:
+    """Escape ``text``; each /a/<ref>/g|o|i link becomes its label (the provider word before it is
+    folded into the label), every other URL is wrapped like ``url_runs``."""
+    out, last = [], 0
+    for match in _CAL_LINK.finditer(text):
+        out.append(url_runs(text[last:match.start()]))
+        url = match.group(1)
+        out.append(Markup('<span class=sms__link title="{}">{}</span>').format(url, LINK_LABELS[match.group(2) or ""]))
+        last = match.end()
+    out.append(url_runs(text[last:]))
+    return Markup("").join(out)
+
+
+ENV.filters["sms_links"] = sms_links
+
+
+def _when(value, tz_name: str, now=None) -> str:
+    from text_back.portal_dates import when
+    return when(value, tz_name, now)
+
+
+def _day(value, tz_name: str) -> str:
+    from text_back.portal_dates import day
+    return day(value, tz_name)
+
+
+# Every date a template shows goes through portal_dates (never strftime in a template).
+ENV.filters["when"] = _when
+ENV.filters["day"] = _day
+
 
 def _asset_version() -> str:
     """First 8 hex characters of the CSS + JS hash, with digits mapped to letters,

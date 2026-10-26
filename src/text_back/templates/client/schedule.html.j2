@@ -1,0 +1,113 @@
+{#- Schedule: the timing rules the engine enforces (portal_scheduling). One form; every rule shows its
+    default and a Reset that posts the whole form with that rule back to its default. The duration chips
+    are radios whose checked state comes from the field value; any other value checks Custom. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, csrf_input, field_error, button %}
+{% from "client/_form_errors.html.j2" import field_summary %}
+{% block page_class %}schedule{% endblock %}
+{% macro reset(group) -%}
+<button type=submit class="btn btn--ghost" name=reset value={{ group }}>{{ icon("rotate-ccw") }}Reset<span class=vh> {{ labels[group] }}</span></button>
+{%- endmacro %}
+{% macro err(key) -%}{% if errors.get(key) %}{{ field_error(key ~ "-error", errors[key]) }}{% endif %}{%- endmacro %}
+{% macro opts(options, current) -%}{% for value, label in options %}<option value="{{ value }}"{% if value == current %} selected{% endif %}>{{ label }}</option>{% endfor %}{%- endmacro %}
+{% block content %}
+<header class=page-head>
+  <h1>Schedule</h1>
+  <p class=lead>The timing rules the assistant follows when it books. Reset puts a rule back to its default.</p>
+</header>
+{% if summary %}{{ field_summary(summary) }}{% endif %}
+<form method=post action=/client/schedule class=page__body id=schedule>
+  {{ csrf_input(csrf) }}
+  <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
+  <section class="card card--form" aria-labelledby=appointments-title>
+    <h2 class=card__title id=appointments-title>Appointments</h2>
+    <p class=card__sub>How long each booking blocks on your calendar, and which time zone it uses.</p>
+    <fieldset class=field id=appointment_duration_minutes>
+      <legend class=field__label>Appointment length</legend>
+      <div class=pill-radios>
+      {% for chip in duration_chips %}<input class=vh-input type=radio name=appointment_duration_minutes id=dur-{{ chip.value }} value={{ chip.value }}{% if chip.selected %} checked{% endif %}><label class=pill-radio for=dur-{{ chip.value }}>{{ chip.label }}</label>{% endfor %}
+        <input class=vh-input type=radio name=appointment_duration_minutes id=dur-custom value=custom{% if duration_custom %} checked{% endif %}><label class=pill-radio for=dur-custom>Custom</label>
+      </div>
+      <label class=vh for=appointment_duration_custom>Appointment length</label>
+      <input class="input tnum" id=appointment_duration_custom name=appointment_duration_custom inputmode=numeric value="{{ values.appointment_duration_minutes }}" aria-describedby="duration-hint"> <span>minutes</span>
+      <p class=field-help id=duration-hint>{{ consequences.appointment_duration_minutes }}</p>
+      <p class=field-default>Default: {{ defaults.appointment_duration_minutes }}</p>
+      {{ err("appointment_duration_minutes") }}
+      {{ reset("appointment_duration_minutes") }}
+    </fieldset>
+    <div class=field>
+      <label class=field__label for=timezone>Time zone</label>
+      <span class=select><select class=select__input id=timezone name=timezone aria-describedby=timezone-hint>{{ opts(timezone_options, values.timezone) }}</select></span>
+      <p class=field-help id=timezone-hint>{{ consequences.timezone }}</p>
+      <p class=field-default>Default: {{ defaults.timezone }}</p>
+      {{ err("timezone") }}
+      {{ reset("timezone") }}
+    </div>
+  </section>
+  <section class="card card--form" aria-labelledby=hours-title id=hours>
+    <h2 class=card__title id=hours-title>Working hours</h2>
+    <p class=card__sub>When the assistant may book a job.</p>
+    {% if hours_warning %}<p class="notice notice--warning" data-hours-corrupt>{{ hours_warning }}</p>{% endif %}
+    <fieldset class=field id=hours_mode>
+      <legend class=vh>Working hours</legend>
+      <label class=choice><input type=radio class=radio name=hours_mode value=any{% if values.hours_mode == "any" %} checked{% endif %}><span>Any day, any time</span></label>
+      <label class=choice><input type=radio class=radio name=hours_mode value=set{% if values.hours_mode == "set" %} checked{% endif %}><span>Set hours</span></label>
+      <p class=field-help>{{ consequences.working_hours }}</p>
+      {{ err("hours_mode") }}
+    </fieldset>
+    {% if any_time_warning %}
+    <div class="notice notice--warning" data-any-time-warning>
+      <p class=notice__text>{{ any_time_warning_text }}</p>
+      <button type=submit class="btn btn--secondary" name=suggest_hours value=1>{{ any_time_button }}</button>
+    </div>
+    {% endif %}
+    {{ err("hours") }}
+    <div class=hours-grid>
+    {% for d in day_rows %}
+      <div class=hours-row id=hours_{{ d.key }} data-day={{ d.key }}>
+        <label class=switch-row for=open_{{ d.key }}><span class=switch-row__text>{{ d.name }}</span><input type=checkbox role=switch class=switch id=open_{{ d.key }} name=open_{{ d.key }} value=1 aria-label="Open on {{ d.name }}"{% if d.on %} checked{% endif %}></label>
+        <span class=select><select class=select__input name={{ d.key }}_open aria-label="{{ d.name }} opening time">{{ opts(d.open_options, d.open) }}</select></span>
+        <span class=select><select class=select__input name={{ d.key }}_close aria-label="{{ d.name }} closing time">{{ opts(d.close_options, d.close) }}</select></span>
+        {% if d.error %}{{ field_error("hours_" ~ d.key ~ "-error", d.error) }}{% endif %}
+      </div>
+    {% endfor %}
+    </div>
+    <p class=field-default>Default: {{ defaults.working_hours }}</p>
+    {{ reset("working_hours") }}
+  </section>
+  <section class="card card--form" aria-labelledby=quiet-title id=quiet_hours>
+    <h2 class=card__title id=quiet-title>Quiet hours</h2>
+    <p class=card__sub>{{ consequences.quiet_hours }}</p>
+    <fieldset class=field>
+      <legend class=field__label>No texts between</legend>
+      <span class=select><select class=select__input name=quiet_hours_start aria-label="Quiet hours start">{{ opts(quiet_options, values.quiet_hours_start) }}</select></span>
+      <span>and</span>
+      <span class=select><select class=select__input name=quiet_hours_end aria-label="Quiet hours end">{{ opts(quiet_options, values.quiet_hours_end) }}</select></span>
+    </fieldset>
+    <label class=switch-row for=no_quiet_hours><span class=switch-row__text>No quiet hours</span><input type=checkbox role=switch class=switch id=no_quiet_hours name=no_quiet_hours value=1{% if values.no_quiet_hours %} checked{% endif %} aria-describedby=no-quiet-hint></label>
+    <p class=field-help id=no-quiet-hint>Texts may go out at any hour.</p>
+    <p class=field-default>Default: {{ defaults.quiet_hours }}</p>
+    {{ err("quiet_hours") }}
+    {{ reset("quiet_hours") }}
+  </section>
+  <section class="card card--form" aria-labelledby=reminders-title>
+    <h2 class=card__title id=reminders-title>Reminders</h2>
+    <p class=card__sub>Two reminders when a customer never replies to the first text. After that the assistant stops texting.</p>
+    {% for key, options in (("followup_delay_1", delay1_options), ("followup_delay_2", delay2_options), ("followup_expiry_minutes", expiry_options)) %}
+    <div class=field>
+      <label class=field__label for={{ key }}>{{ labels[key] }}</label>
+      <span class=select><select class=select__input id={{ key }} name={{ key }}{% if key == "followup_expiry_minutes" %} aria-describedby=expiry-hint{% endif %}>{{ opts(options, values[key]) }}</select></span>
+      {% if key == "followup_expiry_minutes" %}<p class=field-help id=expiry-hint>{{ consequences.followup_expiry_minutes }}</p>{% endif %}
+      <p class=field-default>Default: {{ defaults[key] }}</p>
+      {{ err(key) }}
+      {{ reset(key) }}
+    </div>
+    {% endfor %}
+    <p class=field-help>{{ consequences.followup_delay_1 }}</p>
+  </section>
+  <div class=actions>
+    {% if unsaved %}<p class=savebar__status data-unsaved>Unsaved changes</p>{% endif %}
+    {{ button("Save", block="block-phone", loading="Saving…") }}
+  </div>
+</form>
+{% endblock %}

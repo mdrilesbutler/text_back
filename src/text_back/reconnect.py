@@ -130,7 +130,7 @@ def install_routes(app):
         owner_flow = row['purpose'] == 'client'
         if error or not code:
             if owner_flow:
-                return _back_to_settings(app_state, error='Google did not grant calendar access. Try connecting again.')
+                return _back_to_settings(app_state, error='access')  # client_settings.CALENDAR_ERRORS
             raise HTTPException(400,'Calendar permission was not granted; request a new connection link')
         try:
             # The owner may connect any account and pick a calendar next; the operator
@@ -140,7 +140,7 @@ def install_routes(app):
                 calendar_id=None if owner_flow else app_state.calendar.calendar_id)
         except CalendarProviderError:
             if owner_flow:
-                return _back_to_settings(app_state, error='Google could not confirm a calendar this account can write to. Try again with the account that owns your business calendar.')
+                return _back_to_settings(app_state, error='no_calendar')
             raise HTTPException(400,'Calendar connection could not be verified; request a new link') from None
         with app_state.store.transaction():
             app_state.store.conn.execute("UPDATE handoff_deliveries SET status='cancelled' WHERE alert_id LIKE 'calendar-reauth:%' AND status='pending'")

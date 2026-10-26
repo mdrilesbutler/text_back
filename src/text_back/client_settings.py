@@ -1,40 +1,49 @@
-"""Business details and calendar connection on the client settings pages.
+"""Owner settings applied to the running app, and the Home, Schedule, Calendar and Phone pages.
 
-The owner (signed in through client_portal) edits the business name, the
-phone number customers are given, and their own mobile, and connects the
-Google calendar the assistant books against. Values are stored in the
-``client_settings`` table and applied to the running app; the environment
-keeps supplying the defaults. Changing the owner's mobile texts a code to the
-NEW number and only takes effect once that code is entered, so a borrowed
-session can never move the account to a stranger's phone.
+Values are stored in the ``client_settings`` table and overlaid on the env defaults at boot
+(``apply_settings``); a Schedule save rebuilds the live policy (``apply_scheduling``). The
+pages are thin: each route reads the form, checks CSRF, and hands the work to the page
+module (portal_status, portal_scheduling, portal_calendar, portal_phone) in the threadpool
+or in a sync route, so SQLite, telecom and calendar I/O never run on the event loop.
+
+Changing the owner's mobile texts a code to the NEW number and only takes effect once that
+code is entered, so a borrowed session can never move the account to a stranger's phone.
+The texting number is read-only: no route reads or writes it.
 """
 from __future__ import annotations
 
 import dataclasses
-import hmac
-import html
 import json
 from datetime import datetime, timedelta
 
-from fastapi import HTTPException, Request
+from fastapi import Form, Request
 from fastapi.responses import RedirectResponse
+from starlette.concurrency import run_in_threadpool
 
 from text_back.calendars.credentials import GoogleCredentials
 from text_back.calendars.protocol import CalendarProviderError
 from text_back.client_portal import (
     CODE_FAILURE,
     _now,
-    _page,
-    _session,
-    check_code,
-    nav_html,
-    normalize_mobile,
-    send_code,
+    check_csrf,
+    require_session,
+    shell,
 )
-from text_back.policy import format_contact_number
+from text_back.portal_render import render
 
-NAME_MAX = 60
 CONNECT_LINK_TTL = timedelta(minutes=15)
+
+# Calendar callback error codes (reconnect.py) -> the deck's notices. Only these fixed
+# strings can appear; the query string never reaches the page as text.
+CALENDAR_ERRORS = {
+    "access": "Google didn't give TextBack calendar access. Try connecting again.",
+    "no_calendar": "Google didn't show a calendar this account can add appointments to. "
+                   "Try again with the account that owns your business calendar.",
+}
+ERROR_FIELDS = "Not saved. {n} things need a change."
+ERROR_FIELDS_ONE = "Not saved. 1 thing needs a change."
+ERROR_KEPT = "Your other edits are still here. Nothing was saved yet."
+ERROR_GENERIC = "Something went wrong on our side. Nothing was saved. Try again."
 
 
 # --- settings applied to the running app -------------------------------------
@@ -142,52 +151,8 @@ def calendar_choices(state) -> list[dict]:
     return [entry for entry in choices if isinstance(entry, dict) and isinstance(entry.get("id"), str)]
 
 
-# --- pages ---------------------------------------------------------------------
 
-def _flash(error: str = "", notice: str = "") -> str:
-    if error:
-        return f"<p class=err>{html.escape(error)}</p>"
-    return f"<p class=ok>{html.escape(notice)}</p>" if notice else ""
-
-
-def _business_form(state, session, *, error: str = "", notice: str = "", values: dict | None = None):
-    values = values or {}
-    name = values.get("business_name", state.business_name)
-    contact = values.get("business_contact", state.business_contact or "")
-    mobile = values.get("owner_mobile", format_contact_number(state.owner_mobile) if state.owner_mobile else "")
-    body = (
-        nav_html(session, "Your business", "business")
-        + "<p>How the assistant introduces the business and where it reaches you.</p>"
-        + _flash(error, notice)
-        + "<form method=post action=/client/business>"
-        + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + "<label for=business_name>Business name</label><small>Used in every text, for example \"Thanks for calling {business_name}\".</small>"
-        + f"<input id=business_name name=business_name required maxlength={NAME_MAX} value=\"{html.escape(name, quote=True)}\">"
-        + "<label for=business_contact>Phone number customers should call</label>"
-        + "<small>Shown when a customer texts HELP. Leave blank to show the number the texts come from.</small>"
-        + f"<input id=business_contact name=business_contact type=tel inputmode=tel maxlength=24 value=\"{html.escape(contact, quote=True)}\">"
-        + "<label for=owner_mobile>Your mobile</label>"
-        + "<small>Signs you in here. Changing it texts a code to the new number, which you enter before the change counts.</small>"
-        + f"<input id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 value=\"{html.escape(mobile, quote=True)}\">"
-        + "<button type=submit>Save business details</button></form>"
-    )
-    return _page("Your business", body)
-
-
-def _confirm_form(session, pending_mobile: str, *, error: str = ""):
-    body = (
-        nav_html(session, "Confirm your new mobile", "business")
-        + f"<p>We texted a six-digit code to <strong>{html.escape(format_contact_number(pending_mobile))}</strong>. "
-        "Enter it to switch sign-in to that number. It expires in ten minutes.</p>"
-        + _flash(error)
-        + "<form method=post action=/client/business/confirm>"
-        + f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>"
-        + "<label for=code>Code</label><input id=code name=code inputmode=numeric autocomplete=one-time-code pattern='[0-9]{6}' required maxlength=6>"
-        + "<button type=submit>Confirm new mobile</button></form>"
-        + "<p><a href=/client/business/keep>Keep my current mobile</a></p>"
-    )
-    return _page("Confirm your new mobile", body)
-
+# --- calendar connection state ----------------------------------------------
 
 def calendar_status(state) -> dict:
     """What the calendar page shows: provider, connection state, chosen calendar, whether connecting is possible."""
@@ -210,160 +175,289 @@ def calendar_status(state) -> dict:
     return view
 
 
-def _calendar_page(state, session, *, error: str = "", notice: str = ""):
-    view = calendar_status(state)
-    choices = calendar_choices(state)
-    names = {entry["id"]: entry.get("summary") or entry["id"] for entry in choices}
-    current = view["calendar_id"]
-    current_label = names.get(current, current)
-    if view["provider"] == "google":
-        if view["status"] == "ready":
-            state_line = f"<p class=ok>Google Calendar is connected. Appointments are checked against and booked on <strong>{html.escape(current_label)}</strong>.</p>"
-        elif view["status"] == "reauth_required":
-            state_line = "<p class=err>Google has disconnected the calendar. Bookings are paused until you reconnect.</p>"
-        else:
-            state_line = "<p class=err>The calendar connection could not be read. Reconnect to resume bookings.</p>"
-        if view["can_connect"]:
-            verb = "Reconnect" if view["status"] == "ready" else "Connect"
-            connect = (
-                "<form method=post action=/client/calendar>"
-                f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'><input type=hidden name=action value=connect>"
-                f"<button type=submit>{verb} Google Calendar</button></form>"
-                "<p class=muted>You will be sent to Google to choose the account that owns your business calendar and allow calendar access. "
-                "Nothing else in that account is read.</p>"
-            )
-        else:
-            connect = "<p class=muted>Connecting a calendar from this page is still being set up by your operator.</p>"
-        picker = ""
-        if len(choices) > 1:
-            options = "".join(
-                f"<label><input type=radio name=calendar_id value=\"{html.escape(entry['id'], quote=True)}\"{' checked' if entry['id'] == current else ''}> "
-                f"{html.escape(entry.get('summary') or entry['id'])}{' (main calendar)' if entry.get('primary') else ''}</label>"
-                for entry in choices
-            )
-            picker = (
-                "<h2>Which calendar should the assistant use?</h2>"
-                "<p>Free times are checked on this calendar and new appointments are added to it.</p>"
-                "<form method=post action=/client/calendar>"
-                f"<input type=hidden name=csrf value='{html.escape(session['csrf'])}'>{options}"
-                "<button type=submit>Use this calendar</button></form>"
-            )
-        body_main = state_line + connect + picker
-    elif view["provider"] == "stub":
-        body_main = "<p class=err>No real calendar is connected (test mode). Bookings are not recorded anywhere yet.</p>"
-    else:
-        body_main = f"<p class=ok>Your {html.escape(view['provider'])} calendar is connected and managed by your operator.</p>"
-    body = (
-        nav_html(session, "Your calendar", "calendar")
-        + "<p>The assistant only offers times that are free on this calendar, and every booking is added to it before the customer gets a confirmation.</p>"
-        + _flash(error, notice)
-        + body_main
-    )
-    return _page("Your calendar", body)
 
+
+# --- page helpers ----------------------------------------------------------------
+
+def error_summary(errors: dict, order: tuple[str, ...]) -> dict | None:
+    """The deck's error_summary_fields block: one linked item per bad field, in page order."""
+    if not errors:
+        return None
+    keys = [key for key in order if key in errors] + [key for key in errors if key not in order]
+    count = len(keys)
+    return {"title": ERROR_FIELDS_ONE if count == 1 else ERROR_FIELDS.format(n=count), "kept": ERROR_KEPT,
+            "items": [{"field": key, "text": errors[key]} for key in keys]}
+
+
+def _home_page(request: Request, state, session):
+    from text_back import portal_status
+
+    now = _now(state)
+    items = portal_status.setup_items(state, now)
+    return render(request, "client/home.html.j2", **shell(state, session, title="Home", nav="home"),
+                  headline=portal_status.headline(items), setup=items, week=portal_status.this_week(state, now))
+
+
+def _schedule_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", unsaved=False):
+    from text_back import portal_scheduling
+
+    values = values if values is not None else portal_scheduling.current_values(state)
+    context = portal_scheduling.page_context(state, values, errors)
+    title = "Not saved · Schedule" if errors else "Schedule"
+    return render(request, "client/schedule.html.j2", **shell(state, session, title=title, nav="schedule", notice=notice),
+                  **context, summary=error_summary(errors or {}, portal_scheduling.FIELD_ORDER), unsaved=unsaved)
+
+
+def _save_schedule(request: Request, state, session, form):
+    from text_back import portal_scheduling
+
+    # The length chips are radios; "Custom" (or no chip) means the number typed beside them.
+    form = {key: form.get(key) for key in form.keys()}
+    if str(form.get("appointment_duration_minutes") or "custom") == "custom":
+        form["appointment_duration_minutes"] = form.get("appointment_duration_custom", "")
+    reset = str(form.get("reset", "") or "")
+    if reset:
+        merged = portal_scheduling.reset_form(form, reset, state)
+        form = merged if merged is not None else form
+    if str(form.get("suggest_hours", "") or "") == "1":
+        # "Use Mon–Fri, 8 AM–5 PM" without JavaScript: fill the grid, save nothing.
+        values, _ = portal_scheduling.parse_form(form, state)
+        values["hours_mode"] = "set"
+        for day, window in portal_scheduling.SUGGESTED_HOURS.items():
+            values["hours"][day] = {"on": bool(window), "open": (window or {"open": "08:00"})["open"],
+                                    "close": (window or {"close": "17:00"})["close"]}
+        values.pop("_settings", None)
+        return _schedule_page(request, state, session, values=values, unsaved=True)
+    values, errors = portal_scheduling.parse_form(form, state)
+    if errors:
+        return _schedule_page(request, state, session, values=values, errors=errors)
+    problem = portal_scheduling.save(state, values["_settings"], _now(state))
+    if problem:
+        return _schedule_page(request, state, session, values=values, errors={"followup_delay_1": problem})
+    return _schedule_page(request, state, session, notice=portal_scheduling.SAVED)
+
+
+def _calendar_page(request: Request, state, session, *, result=None, notice: str = "", error: str = "",
+                   picker_error: str = ""):
+    from text_back import portal_calendar
+
+    context = portal_calendar.page_context(state, result)
+    support = str(getattr(state, "support_contact", "") or "").strip()
+    return render(request, "client/calendar.html.j2", **shell(state, session, title="Calendar", nav="calendar", notice=notice),
+                  **context, page_error=error, picker_error=picker_error, support_contact=support)
+
+
+def _phone_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", page_error: str = ""):
+    from text_back import portal_messages, portal_phone
+
+    now = _now(state)
+    context = portal_phone.page_context(state, values, errors, now=now)
+    current = state.messages.current()
+    preview_name = (context["values"].get("business_name") or state.business_name).strip() or state.business_name
+    sample = {**portal_messages.preview_values(state, now), "business_name": preview_name}
+    templates = dict(current.templates)
+    rename = None
+    old_name = state.store.setting(RENAME_FROM_KEY) or ""
+    if old_name:
+        rename = portal_phone.rename_offer(_saved_overrides(state), old_name, state.business_name)
+    from text_back.policy import format_contact_number
+
+    shown = context["values"]
+    display = {key: str(shown.get(key, "") or "") for key in portal_phone.FIELD_ORDER}
+    for key in ("business_line", "owner_mobile"):
+        if display[key].startswith("+") and not (errors or {}).get(key):
+            display[key] = format_contact_number(display[key])
+    title = "Not saved · Phone" if errors else "Phone"
+    return render(request, "client/phone.html.j2", **shell(state, session, title=title, nav="phone", notice=notice),
+                  **context, display=display, page_error=page_error, rename_offer=rename,
+                  name_preview=portal_messages.preview_text("intro", templates, sample),
+                  name_template=portal_messages.to_display(templates["intro"]),
+                  summary=error_summary(errors or {}, portal_phone.FIELD_ORDER))
+
+
+def _confirm_page(request: Request, state, session, *, error: str = "", notice: str = ""):
+    from text_back import portal_phone
+
+    context = portal_phone.page_context(state, now=_now(state), code_error=error)
+    return render(request, "client/phone_confirm.html.j2",
+                  **shell(state, session, title="Confirm your new mobile", nav="phone", notice=notice), **context)
+
+
+RENAME_FROM_KEY = "rename_offer_from"
+
+
+def _saved_overrides(state) -> dict[str, str]:
+    from text_back.messages import DEFAULT_TEMPLATES
+
+    current = state.messages.current().templates
+    return {key: value for key, value in current.items() if value != DEFAULT_TEMPLATES[key]}
+
+
+def _save_phone(request: Request, state, session, form):
+    from text_back import portal_phone
+
+    now = _now(state)
+    submitted = portal_phone.read_form(form)  # the texting number is not a field: a posted one is ignored
+    values, errors = portal_phone.validate(submitted, state)
+    if errors:
+        shown = dict(submitted)
+        return _phone_page(request, state, session, values=shown, errors=errors)
+    old_name = state.business_name
+    pending = portal_phone.save(state, values, now)
+    if old_name != values["business_name"] and portal_phone.texts_with_old_name(_saved_overrides(state), old_name):
+        state.store.set_setting(RENAME_FROM_KEY, old_name, now=now)
+    if pending:
+        return _confirm_page(request, state, session, notice=portal_phone.SAVED_CONFIRM_MOBILE)
+    return _phone_page(request, state, session, notice=portal_phone.SAVED)
+
+
+def _rename_texts(request: Request, state, session, form):
+    from text_back import portal_phone
+    from text_back.messages import MessageTemplateError, write_message_file
+
+    now = _now(state)
+    old_name = state.store.setting(RENAME_FROM_KEY) or ""
+    if str(form.get("action", "") or "") != "update" or not old_name:
+        state.store.set_setting(RENAME_FROM_KEY, None, now=now)
+        return _phone_page(request, state, session)
+    overrides = _saved_overrides(state)
+    keys = portal_phone.texts_with_old_name(overrides, old_name)
+    if not keys or state.messages.path is None:
+        state.store.set_setting(RENAME_FROM_KEY, None, now=now)
+        return _phone_page(request, state, session)
+    try:
+        write_message_file(state.messages.path, portal_phone.rename_in_texts(overrides, old_name, state.business_name))
+    except MessageTemplateError:
+        return _phone_page(request, state, session, page_error=ERROR_GENERIC)
+    state.messages.current()  # pick up the new file right away
+    state.store.set_setting(RENAME_FROM_KEY, None, now=now)
+    return _phone_page(request, state, session, notice=portal_phone.rename_done_text(len(keys)))
+
+
+def _confirm_mobile(request: Request, state, session, form):
+    from text_back import portal_phone
+
+    now = _now(state)
+    if not portal_phone.pending_mobile(state):
+        return _phone_page(request, state, session)
+    if str(form.get("action", "") or "") == "resend":
+        portal_phone.resend_mobile_code(state, now)
+        return _confirm_page(request, state, session)
+    confirmed = portal_phone.confirm_new_mobile(state, str(form.get("code", "") or ""), now)
+    if not confirmed:
+        return _confirm_page(request, state, session, error=CODE_FAILURE)
+    from text_back.policy import format_contact_number
+    return _phone_page(request, state, session, notice=portal_phone.NEW_MOBILE_SAVED.format(n=format_contact_number(confirmed)))
+
+
+def _keep_mobile(request: Request, state, session, form):
+    from text_back import portal_phone
+
+    portal_phone.keep_current_mobile(state, _now(state))
+    return _phone_page(request, state, session, notice=portal_phone.KEPT)
+
+
+def _save_checks(request: Request, state, session, form):
+    from text_back import portal_phone
+
+    portal_phone.save_checklist(state, form, _now(state))
+    return _phone_page(request, state, session, notice=portal_phone.CHECKS_SAVED)
+
+
+# --- routes --------------------------------------------------------------------
 
 def install_routes(app):
     state = app.state
 
-    def _require(request: Request):
-        session = _session(state, request)
-        if not session:
-            raise _Redirect("/client/login")
-        return session
+    def _guarded(request: Request, form, reload_url: str, handler):
+        """Session and CSRF first, then the page's handler; runs in the threadpool."""
+        session = require_session(state, request)
+        check_csrf(form, session, reload_url)
+        return handler(request, state, session, form)
 
-    class _Redirect(Exception):
-        def __init__(self, target):
-            self.target = target
-
-    @app.exception_handler(_Redirect)
-    async def _redirect(request, exc):
-        return RedirectResponse(exc.target, status_code=303)
-
-    async def _checked_form(request: Request, session):
-        form = await request.form()
-        if not hmac.compare_digest(str(form.get("csrf", "")), session["csrf"]):
-            raise HTTPException(400, "Form expired; reload the page and try again")
-        return form
+    @app.get("/client/home", include_in_schema=False)
+    def home_page(request: Request):
+        session = require_session(state, request)
+        return _home_page(request, state, session)
 
     @app.get("/client/business", include_in_schema=False)
-    def business_page(request: Request):
-        session = _require(request)
-        pending = state.store.setting("owner_mobile_pending")
-        if pending:
-            return _confirm_form(session, pending)
-        return _business_form(state, session)
+    def business_moved(request: Request):
+        # Business details now live on Phone; old bookmarks land there.
+        require_session(state, request)
+        return RedirectResponse("/client/phone", status_code=303)
 
-    @app.post("/client/business", include_in_schema=False)
-    async def save_business(request: Request):
-        session = _require(request)
-        form = await _checked_form(request, session)
-        now = _now(state)
-        submitted = {key: str(form.get(key, "")).strip() for key in ("business_name", "business_contact", "owner_mobile")}
-        name = " ".join(submitted["business_name"].split())
-        if not name or len(name) > NAME_MAX:
-            return _business_form(state, session, error=f"Enter a business name of 1 to {NAME_MAX} characters.", values=submitted)
-        contact = ""
-        if submitted["business_contact"]:
-            normalized = normalize_mobile(submitted["business_contact"])
-            if normalized is None:
-                return _business_form(state, session, error="Enter the customer phone number as digits, like 704 555 0123, or leave it blank.", values=submitted)
-            contact = format_contact_number(normalized)
-        mobile = normalize_mobile(submitted["owner_mobile"])
-        if mobile is None:
-            return _business_form(state, session, error="Enter your mobile as digits, like 704 555 0123.", values=submitted)
-        state.store.set_setting("business_name", name, now=now)
-        state.store.set_setting("business_contact", contact, now=now)
-        state.business_name = name
-        state.business_contact = contact
-        if mobile != state.owner_mobile:
-            state.store.set_setting("owner_mobile_pending", mobile, now=now)
-            send_code(state, mobile, now, purpose="new mobile")
-            return _confirm_form(session, mobile)
-        return _business_form(state, session, notice="Saved.")
+    # --- Schedule ------------------------------------------------------------------
 
-    @app.post("/client/business/confirm", include_in_schema=False)
-    async def confirm_mobile(request: Request):
-        session = _require(request)
-        form = await _checked_form(request, session)
-        now = _now(state)
-        pending = state.store.setting("owner_mobile_pending")
-        if not pending:
-            return _business_form(state, session)
-        if str(form.get("cancel", "")):
-            state.store.set_setting("owner_mobile_pending", None)
-            return _business_form(state, session, notice="Kept your current mobile.")
-        if not check_code(state, pending, str(form.get("code", "")), now):
-            return _confirm_form(session, pending, error=CODE_FAILURE)
-        state.store.set_setting("owner_mobile", pending, now=now)
-        state.store.set_setting("owner_mobile_pending", None)
-        state.owner_mobile = pending
-        return _business_form(state, session, notice=f"Saved. Sign-in codes now go to {format_contact_number(pending)}.")
+    @app.get("/client/schedule", include_in_schema=False)
+    def schedule_page(request: Request):
+        session = require_session(state, request)
+        return _schedule_page(request, state, session)
 
-    @app.get("/client/business/keep", include_in_schema=False)
-    def keep_mobile(request: Request):
-        session = _require(request)
-        state.store.set_setting("owner_mobile_pending", None)
-        return _business_form(state, session, notice="Kept your current mobile.")
+    @app.post("/client/schedule", include_in_schema=False)
+    async def schedule_save(request: Request):
+        form = await request.form()
+        return await run_in_threadpool(_guarded, request, form, "/client/schedule", _save_schedule)
 
     @app.get("/client/calendar", include_in_schema=False)
     def calendar_page(request: Request, error: str = ""):
-        session = _require(request)
-        return _calendar_page(state, session, error=error[:200])
+        session = require_session(state, request)
+        return _calendar_page(request, state, session, error=CALENDAR_ERRORS.get(error, ""))
 
     @app.post("/client/calendar", include_in_schema=False)
-    async def calendar_action(request: Request):
-        session = _require(request)
-        form = await _checked_form(request, session)
+    def calendar_action(request: Request, csrf: str = Form(""), action: str = Form(""), calendar_id: str = Form("")):
+        # A sync route: the free-times check and the connect link both do calendar or DB I/O.
+        from text_back import portal_calendar
+
+        session = require_session(state, request)
+        check_csrf({"csrf": csrf}, session, "/client/calendar")
         now = _now(state)
-        if str(form.get("action", "")) == "connect":
+        if action == "connect":
             if not calendar_status(state)["can_connect"]:
-                return _calendar_page(state, session, error="Connecting a calendar is not set up for this account yet.")
+                return _calendar_page(request, state, session, error=portal_calendar.ERR_NOT_SET_UP)
             from text_back.reconnect import create_link
             return RedirectResponse(create_link(state, "client", CONNECT_LINK_TTL), status_code=303,
                                     headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
-        chosen = str(form.get("calendar_id", ""))
+        if action == "check":
+            return _calendar_page(request, state, session, result=portal_calendar.check_availability(state, now))
         choices = {entry["id"]: entry for entry in calendar_choices(state)}
-        if chosen not in choices:
-            return _calendar_page(state, session, error="Pick one of the calendars listed.")
-        use_calendar(state, chosen, now)
-        return _calendar_page(state, session, notice=f"The assistant now uses {choices[chosen].get('summary') or chosen}.")
+        if calendar_status(state)["status"] != "ready" or calendar_id not in choices:
+            return _calendar_page(request, state, session, picker_error=portal_calendar.PICKER_ERROR)
+        use_calendar(state, calendar_id, now)
+        name = choices[calendar_id].get("summary") or calendar_id
+        return _calendar_page(request, state, session, notice=portal_calendar.TOAST_PICKED.format(name=name))
+
+    # --- Phone ---------------------------------------------------------------------
+
+    @app.get("/client/phone", include_in_schema=False)
+    def phone_page(request: Request):
+        from text_back import portal_phone
+
+        session = require_session(state, request)
+        if portal_phone.pending_mobile(state):
+            return _confirm_page(request, state, session)
+        return _phone_page(request, state, session)
+
+    @app.post("/client/phone", include_in_schema=False)
+    async def phone_save(request: Request):
+        form = await request.form()
+        return await run_in_threadpool(_guarded, request, form, "/client/phone", _save_phone)
+
+    @app.post("/client/phone/confirm", include_in_schema=False)
+    async def phone_confirm(request: Request):
+        form = await request.form()
+        return await run_in_threadpool(_guarded, request, form, "/client/phone", _confirm_mobile)
+
+    @app.post("/client/phone/keep", include_in_schema=False)
+    async def phone_keep(request: Request):
+        form = await request.form()
+        return await run_in_threadpool(_guarded, request, form, "/client/phone", _keep_mobile)
+
+    @app.post("/client/phone/checks", include_in_schema=False)
+    async def phone_checks(request: Request):
+        form = await request.form()
+        return await run_in_threadpool(_guarded, request, form, "/client/phone", _save_checks)
+
+    @app.post("/client/phone/rename-texts", include_in_schema=False)
+    async def phone_rename_texts(request: Request):
+        form = await request.form()
+        return await run_in_threadpool(_guarded, request, form, "/client/phone", _rename_texts)

@@ -1,0 +1,68 @@
+{#- Calendar (portal_calendar.page_context): the connection card, the picker while Google is connected, and
+    the free-times check. No state is a dead end: every card ends in a button or a sentence naming who does
+    the next step. Free times are datetimes formatted by the `when` filter. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, csrf_input, field_error, button, notice as notice_box, pill %}
+{% block page_class %}calendar{% endblock %}
+{% block content %}
+<header class=page-head>
+  <h1>Calendar</h1>
+  <p class=lead>The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation.</p>
+</header>
+<div class=page__body>
+  {% if page_error %}{{ notice_box("danger", page_error) }}{% endif %}
+  <section class="status status--{{ card.kind }}" data-status={{ card.status }} aria-labelledby=status-title>
+    <p class=status__word>{{ card.state_word }}</p>
+    <h2 class=status__title id=status-title>{{ card.title }}</h2>
+    <p class=status__detail>{{ card.body }}</p>
+    {% if card.buttons %}
+    <div class=status__next>
+    {% for b in card.buttons %}
+      {% if b.get("action") == "connect" %}
+      <form method=post action=/client/calendar data-connect>{{ csrf_input(csrf) }}<input type=hidden name=action value=connect>{{ button(b.label, variant=b.kind, block="block-phone", loading=b.busy_label) }}</form>
+      {% elif b.get("action") == "pick" %}
+      <a class="btn btn--{{ b.kind }} btn--block-phone" href=#picker>{{ b.label }}</a>
+      {% elif b.get("href") %}
+      <a class="btn btn--{{ b.kind }} btn--block-phone" href="{{ b.href }}" data-support>{{ b.label }}</a>
+      {% endif %}
+    {% endfor %}
+    </div>
+    {% endif %}
+    {% if support_contact and not card.connected and not card.can_connect %}<p class=field-help data-support-contact>{{ support_contact }}</p>{% endif %}
+  </section>
+  {% if not card.connected and card.can_connect %}
+  <details class=asks open><summary class=asks__summary>What Google will ask</summary><p>{{ consent_note }}</p></details>
+  {% endif %}
+  {% if picker %}
+  <form method=post action=/client/calendar class=card id=picker data-picker>
+    {{ csrf_input(csrf) }}<input type=hidden name=action value=pick>
+    <fieldset class=choice-list aria-describedby="picker-help{{ ' picker-error' if picker_error else '' }}">
+      <legend class=choice-list__legend>{{ picker.legend }}</legend>
+      <p class=field-help id=picker-help>{{ picker.hint }}</p>
+      {% if picker_error %}{{ field_error("picker-error", picker_error) }}{% endif %}
+      <div class=choice-list__items>
+      {% for ch in picker.choices %}
+        <label class=choice><input type=radio class=radio name=calendar_id value="{{ ch.id }}"{% if ch.in_use %} checked{% endif %}><span class=choice__text><span class=choice__name>{{ ch.name }}</span>{% if ch.main %} <span class=choice__meta>{{ picker.main_suffix }}</span>{% endif %}</span>{% if ch.in_use %}{{ pill("success", "circle-check", picker.pill) }}{% endif %}</label>
+      {% endfor %}
+      </div>
+      {% if picker.only %}<p class=field-help>{{ picker.only }}</p>{% endif %}
+    </fieldset>
+    <div class=actions>{{ button(picker.button, variant="secondary", block="block-phone", loading="Saving…") }}</div>
+  </form>
+  {% elif picker_error %}{{ notice_box("danger", picker_error) }}{% endif %}
+  <section class=card aria-labelledby=avail-title data-availability>
+    <h2 class=card__title id=avail-title>{{ availability.title }}</h2>
+    <p class=card__sub>{{ availability.intro }}</p>
+    {% if availability.button %}
+    <form method=post action=/client/calendar>{{ csrf_input(csrf) }}<input type=hidden name=action value=check>{{ button(availability.button, variant="secondary", block="block-phone", loading=availability.busy_label) }}</form>
+    {% elif availability.replaced %}<p class=field-help data-check-replaced>{{ availability.replaced }}</p>{% endif %}
+    {% if availability.error %}<p class=field-error>{{ availability.error }}</p>{% endif %}
+    {% if availability.starts %}
+    <ul class=slots data-slots>{% for start in availability.starts %}<li class=tnum>{{ start|when(tz, now) }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if availability.empty %}<p class=empty__body>{{ availability.empty }}</p>{% endif %}
+    {% if availability.caption %}<p class=field-help>{{ availability.caption }}</p>{% endif %}
+    {% if availability.note %}<p class=field-help data-any-time-note>{{ availability.note }}</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

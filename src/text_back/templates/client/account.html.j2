@@ -1,0 +1,41 @@
+{#- Account: who is signed in, remembered devices, "Remember this phone", sign out everywhere (an inline
+    confirm step, no modal) and sign out. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, csrf_input, button %}
+{% block page_class %}account{% endblock %}
+{% block content %}
+<header class=page-head>
+  <h1>Account</h1>
+  <p class=lead>Signed in as <span class="tnum nowrap">{{ signed_in_as }}</span></p>
+  <p class=field-help>To change the mobile that signs you in, open <a href=/client/phone>Phone</a>.</p>
+</header>
+<div class=page__body>
+  <section class=card aria-labelledby=devices-title>
+    <h2 class=card__title id=devices-title>Remembered devices</h2>
+    <ul class=devices>
+      <li data-device=this>This phone · signed in {{ this_device.signed_in|day(tz) }} · stays signed in until {{ this_device.until|day(tz) }}</li>
+      {% for d in other_devices %}<li data-device=other>Another device · signed in {{ d.signed_in|day(tz) }}</li>{% endfor %}
+    </ul>
+    {% if not other_devices %}<p class=field-help>Only this phone is signed in.</p>{% endif %}
+  </section>
+  <form method=post action=/client/account/remember class=card>
+    {{ csrf_input(csrf) }}
+    <label class=switch-row for=remember><span class=switch-row__text>Remember this phone for 30 days</span><input type=checkbox role=switch class=switch id=remember name=remember value=1{% if remember %} checked{% endif %} aria-describedby=remember-status></label>
+    <p class=field-help id=remember-status data-remember-status>{{ remember_status }}</p>
+    {{ button("Save", variant="secondary", block="block-phone", loading="Saving…") }}
+  </form>
+  <section class=card aria-labelledby=everywhere-title>
+    <h2 class=vh id=everywhere-title>Sign out everywhere</h2>
+    {% if confirm_everywhere %}
+    <p class=notice__text data-confirm-everywhere>Sign out of every device? You'll need a new code on each one.</p>
+    <div class=actions>
+      <form method=post action=/client/account/signout-everywhere>{{ csrf_input(csrf) }}<input type=hidden name=confirm value=1>{{ button("Sign out everywhere", block="block-phone") }}</form>
+      <a class="btn btn--secondary btn--block-phone" href=/client/account>Stay signed in</a>
+    </div>
+    {% else %}
+    <form method=post action=/client/account/signout-everywhere>{{ csrf_input(csrf) }}{{ button("Sign out everywhere", variant="secondary", block="block-phone") }}</form>
+    {% endif %}
+  </section>
+  <form method=post action=/client/logout class=actions>{{ csrf_input(csrf) }}{{ button("Sign out", variant="ghost", icon_name="log-out", block="block-phone") }}</form>
+</div>
+{% endblock %}
