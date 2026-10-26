@@ -199,7 +199,15 @@ scrolls (A's sidebar scrolled away and left an empty rail).
    shows "Default: …" and Reset. Quiet hours say what still goes out (the first text, live replies,
    STOP/HELP). If working hours are "any time", show a warning: "Customers can be offered times
    like 1 AM. Set your hours." plus a one-tap "Mon–Fri, 8 AM–5 PM" the owner can accept. Do not
-   change the backend default yourself. Save confirmation: "Saved. New conversations use these hours."
+   change the backend default yourself. Every consequence line and save confirmation must match what
+   the code actually does. B applies scheduling settings live, so first establish which settings
+   affect conversations already in progress, then word the confirmation to match. Example: "Saved.
+   Applies now, including customers mid-conversation; reminders already scheduled keep their time."
+   Add a test that pins each claim to the behaviour.
+   When porting B's backend, also fix the diff-review items in docs/notes/ui-bakeoff-2026-10-26.md:
+   run find_event recovery BEFORE the working-hours check, so narrowing hours mid-retry can never
+   orphan a created calendar event (with a test); drive the registration card from live status,
+   not submit-time files; and fix the calendar-link end time.
 4. Calendar — connected: name, account, "Bookings go here", change button. Not connected: one
    sentence on why it matters plus the Connect button when the Google Web client is configured, or a
    real contact action ("Text FluxWorks support", from a config value; add one if none exists) when
