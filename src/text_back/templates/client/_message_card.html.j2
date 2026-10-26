@@ -1,95 +1,97 @@
-{#- Messages page parts: the message card, a step, the START/HELP/STOP section, the error summary.
-    Contract: every textarea and both ask_* switches always post; never `disabled` on them. Inserts are
-    shown as [Label] text, never braces; data-default / data-saved carry the same display form. -#}
-{% from "client/_macros.html.j2" import icon, pill, switch, field_error %}
+{#- Messages page parts (mockup d1 round 3): bubbles, the message card, the error summary.
+    Contract: every textarea and both ask_* switches always post (a switched-off question and its branch
+    are hidden by CSS, never removed or `disabled`). Inserts show as [Label], never braces. A TextBack
+    bubble shows the words; its calendar links show as labels under them (full link in title); portal.js
+    draws the same nodes (drawBubble). -#}
+{% from "client/_macros.html.j2" import icon, field_error %}
+
+{% macro bubble(body, links=(), suffix="", who="", key="", tag="div") -%}
+<{{ tag }} class="sms sms--textback">{% if who %}<span class=sms__who>{{ who }}</span>{% endif %}<div class=sms__bubble>{% if not who %}<span class=vh>TextBack: </span>{% endif %}<p{% if key %} data-preview={{ key }}{% endif %}>{{ body|url_runs }}{% if suffix %} <span class=sms__suffix>{{ suffix }}</span>{% endif %}</p><ul class=sms__links{% if key %} data-links={{ key }}{% endif %}{% if not links %} hidden{% endif %}>{% for label, url in links %}<li><span class=sms__linkbtn title="{{ url }}">{{ label }}</span></li>{% endfor %}</ul></div></{{ tag }}>
+{%- endmacro %}
+
+{% macro customer(text, tag="div") -%}
+<{{ tag }} class="sms sms--customer"><span class=sms__who>Customer</span><div class=sms__bubble><p>{{ text }}</p></div></{{ tag }}>
+{%- endmacro %}
+
+{% macro rule_lines(rules) -%}
+{% for r in rules %}<p class=msg__rule>{{ icon("info") }}<span>{{ r }}</span></p>{% endfor %}
+{%- endmacro %}
 
 {% macro message_card(c, editable, max_chars) -%}
-<article class="msg{% if c.branch %} msg--branch{% endif %}{% if c.optional %} msg--optional{% endif %}{% if c.error %} msg--invalid{% endif %}" id=m_{{ c.key }} data-card={{ c.key }} data-optout={{ 1 if c.optout_required else 0 }} data-default="{{ c.default }}" data-saved="{{ c.saved }}"{% if c.dirty %} data-dirty{% endif %} aria-labelledby=l_{{ c.key }}>
-  <header class=msg__head>
-    <div class=msg__title>
-      <h3 class=msg__label id=l_{{ c.key }}>{% if c.branch %}{{ icon("corner-down-right", "msg__branch") }}{% endif %}{{ c.title }}</h3>
-      <span class=msg__badges>
-        {%- if c.error %}{{ pill("danger", "circle-alert", "Not saved") }}{% elif c.saved_custom %}{{ pill("success", "pencil", "Customized") }}{% endif -%}
-        {%- if editable %}{{ pill("warning", "circle-alert", "Unsaved", hook="data-dirty-pill", hidden=not c.dirty) }}{% endif -%}
-      </span>
-    </div>
-    {% if c.optional %}<div class=msg__ask>{% if editable %}{{ switch(c.optional, c.switch_label, c.asked, c.asked_saved, bare=True) }}{% elif c.asked %}{{ pill("success", "check", "Asked") }}{% else %}{{ pill("neutral", "x", "Not asked") }}{% endif %}</div>{% endif %}
-    <p class=msg__when id=w_{{ c.key }}>{{ c.when }}</p>
-  </header>
-  <div class=msg__preview{% if editable %} data-band{% endif %}>
-    <div class="sms sms--textback"><p class=sms__bubble data-preview={{ c.key }}>{{ c.body|sms_links }}{% if c.suffix %} <span class=sms__suffix>{{ c.suffix }}</span>{% endif %}</p></div>
-    <p class="msg__receipt tnum" data-receipt{% if c.segments > 1 %} data-warn{% endif %}>
-      {%- if c.optout_required %}<span class=msg__added data-optout-note{% if not c.optout_added %} hidden{% endif %}>STOP line added for you</span>{% endif -%}
-      <span class=msg__meter><span data-count>{{ c.count }}</span></span>
-      {%- if editable or c.bill %}<span class=msg__bill data-bill{% if not c.bill %} hidden{% endif %}>{{ icon("triangle-alert") }}<span>{{ c.bill }}</span></span>{% endif -%}
-    </p>
-  </div>
-  {% if c.optional and editable and not c.asked_saved %}<p class=msg__off>Off. Customers skip this question.</p>{% endif %}
-  {% if editable %}
-  <div class=msg__foot>
-    <details class=editor{% if c.error %} open{% endif %}>
-      <summary class=editor__summary>Edit wording<span class=vh>: {{ c.title }}</span>{{ icon("chevron-down", "editor__chev") }}</summary>
-      <div class=editor__body>
-        {% if c.error %}{{ field_error("e_" ~ c.key, c.error) }}{% endif %}
-        {% if c.rule %}<p class=msg__rule id=r_{{ c.key }}>{{ icon("shield-check") }}<span>{{ c.rule }}</span></p>{% endif %}
-        {% if c.destination %}<p class=msg__destination id=d_{{ c.key }} data-destination>{{ c.destination }}</p>{% endif %}
-        <label class=vh for=f_{{ c.key }}>Wording for {{ c.title }}</label>
-        <textarea class=textarea id=f_{{ c.key }} name={{ c.key }} maxlength={{ max_chars }} rows=4 spellcheck=true autocapitalize=sentences enterkeyhint=done aria-describedby="x_{{ c.key }}{% if c.rule %} r_{{ c.key }}{% endif %}{% if c.error %} e_{{ c.key }}{% endif %}"{% if c.error %} aria-invalid=true{% endif %}>{{ c.value }}</textarea>
-        {% if c.chips %}
-        <div class=chips role=group aria-label="Insert a detail" data-chips hidden>{% for text, label in c.chips %}<button type=button class=chip data-insert="{{ text }}">{{ icon("plus") }}{{ label }}</button>{% endfor %}</div>
-        <p class=chips-fallback>Insert a detail: {% for text, label in c.chips %}{{ text }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
-        {% else %}
-        <p class=chips-fallback>This text fills in no details.</p>
-        {% endif %}
-        <p class=field-help id=x_{{ c.key }}>Sent as one paragraph. Up to {{ max_chars }} characters.</p>
-        <p class="limit tnum" data-limit{% if c.length < 420 %} hidden{% endif %}>{{ c.length }} of {{ max_chars }} characters</p>
+{% set off = c.optional and not c.asked %}
+<article class="qset{{ ' qset--branch' if c.branch else '' }}{{ ' qset--off' if off else '' }}" id=card-{{ c.key }} data-card={{ c.key }} data-change-label="{{ c.title }}" data-optout={{ 1 if c.optout_required else 0 }} data-default="{{ c.default }}" data-saved="{{ c.saved }}"{% if c.hidden %} data-branch-off{% endif %} aria-labelledby=t-{{ c.key }}>
+  <div class="msg{{ ' msg--optional' if c.optional else '' }}{{ ' msg--isoff' if off else '' }}{{ ' msg--invalid' if c.error else '' }}">
+    <div class=msg__head>
+      <div class=msg__title>
+        {% if c.branch %}{{ icon("corner-down-right", "msg__branch") }}{% endif %}
+        <h3 class=msg__label id=t-{{ c.key }}>{{ c.title }}</h3>
+        <span class=msg__badges>
+          {%- if c.error %}<span class="pill pill--danger">Not saved</span>
+          {%- else %}<span class="pill pill--warning" data-unsaved-pill{% if not c.dirty %} hidden{% endif %}>Unsaved</span>{% if c.saved_custom %}<span class="pill pill--success" data-custom-pill{% if c.dirty %} hidden{% endif %}>Customized</span>{% endif %}{% endif -%}
+          {%- if c.optional and editable %}<span class=pill data-not-asked>Not asked</span>{% elif c.optional %}<span class=pill>{{ "Asked" if c.asked else "Not asked" }}</span>{% endif -%}
+        </span>
       </div>
-    </details>
-    <div class=msg__aside>
-      <span class=msg__std data-std{% if c.custom %} hidden{% endif %}>{{ icon("check") }}Standard wording</span>
-      <button type=submit name=reset value={{ c.key }} class="btn btn--ghost msg__reset" data-reset{% if not c.custom %} hidden{% endif %}>{{ icon("rotate-ccw") }}<span class=msg__reset-js>Reset</span><span class=msg__reset-nojs>Reset and save</span><span class=vh> {{ c.title }}</span></button>
+      {% if c.when %}<p class=msg__when>{{ c.when }}</p>{% endif %}
+      {% if c.next_steps or c.destination %}
+      {{ rule_lines(c.rules) }}
+      {% if c.next_steps %}
+      <div class=next data-next>
+        <p class=next__title>What happens next</p>
+        <ol class=next__steps>{% for st in c.next_steps %}<li>{{ st }}</li>{% endfor %}</ol>
+      </div>
+      {% else %}
+      <p class="msg__rule msg__rule--dest" data-destination>{{ icon("info") }}<span>{{ c.destination }}</span></p>
+      {% endif %}
+      {% endif %}
     </div>
+    {% if c.optional and editable %}
+    <label class="switch-row msg__switch" for=ask_{{ c.optional }}><span class=switch-row__text>{{ c.switch_label }}</span><input type=checkbox role=switch class=switch id=ask_{{ c.optional }} name=ask_{{ c.optional }} value=1{% if c.asked %} checked{% endif %}></label>
+    <p class=msg__offq>{{ c.body }}</p>
+    <p class=msg__off>Off. Customers skip this question.</p>
+    {% endif %}
+    <div class=msg__preview{% if editable %} data-band{% endif %}>
+      {% if c.trigger %}<p class=msg__trigger>When the customer sends something like</p>{{ customer(c.trigger) }}{% endif %}
+      {{ bubble(c.body, c.links, c.suffix, c.who, c.key) }}
+      <p class=msg__linknote data-link-note{% if not c.links %} hidden{% endif %}>Each label is a link. The text count includes the full links.</p>
+      <p class=msg__receipt>{% if c.optout_required %}<span class=msg__added data-optout-note{% if not c.suffix %} hidden{% endif %}>STOP line added for you</span>{% endif %}<span class=msg__meter data-count>{{ c.count }}</span></p>
+      <p class=msg__was data-was{% if not c.text_dirty %} hidden{% endif %}><span class=msg__was-k>Was:</span> <span data-was-text>{{ c.was }}</span></p>
+      <div class=msg__bill data-bill{% if not c.bill %} hidden{% endif %}>{{ icon("triangle-alert") }}<p data-bill-text>{{ c.bill }}</p>
+        {%- if editable %}<button type=submit class="btn btn--ghost msg__fix" name=fix value={{ c.key }} data-fix{% if not c.fix %} hidden{% endif %}><span data-fix-label>{{ c.fix }}</span><span class=vh> {{ c.title }}</span></button>{% endif -%}
+      </div>
+    </div>
+    {% if editable %}
+    <div class=msg__foot>
+      <details class=editor{% if c.error %} open{% endif %}>
+        <summary class=editor__summary>Edit wording<span class=vh>: {{ c.title }}</span>{{ icon("chevron-down", "editor__chev") }}</summary>
+        <div class=editor__body>
+          {% if c.error %}{{ field_error("e-" ~ c.key, c.error) }}{% endif %}
+          {% if not (c.next_steps or c.destination) %}{{ rule_lines(c.rules) }}{% endif %}
+          <label class=vh for=w-{{ c.key }}>Wording: {{ c.title }}</label>
+          <textarea class=textarea id=w-{{ c.key }} name={{ c.key }} maxlength={{ max_chars }} rows=3 spellcheck=true autocapitalize=sentences enterkeyhint=done aria-describedby="h-{{ c.key }}{{ ' e-' ~ c.key if c.error else '' }}"{% if c.error %} aria-invalid=true{% endif %}>{{ c.value }}</textarea>
+          {% if c.chips %}
+          <div class=chips role=group aria-label="Insert a detail" data-chips hidden>{% for text, label in c.chips %}<button type=button class=chip data-insert="{{ text }}" aria-controls=w-{{ c.key }}>{{ icon("plus") }}{{ label }}</button>{% endfor %}</div>
+          <p class=chips-fallback>Insert a detail: {% for text, label in c.chips %}{{ text }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+          {% else %}
+          <p class="field-help chips-none">This text fills in no details.</p>
+          {% endif %}
+          <div class=editor__meta id=h-{{ c.key }}><p class=field-help>Sent as one paragraph. Up to {{ max_chars }} characters.</p><p class="limit tnum"><span data-count>{{ c.count }}</span><span data-limit{% if c.length < 420 %} hidden{% endif %}> · <span data-limit-n>{{ c.length }}</span> of {{ max_chars }} characters</span></p></div>
+        </div>
+      </details>
+      <div class=msg__aside>
+        <button type=submit name=reset value={{ c.key }} class="btn btn--ghost" data-reset{% if not c.custom %} hidden{% endif %}><span class=msg__reset-js>Reset</span><span class=msg__reset-nojs>Reset and save</span><span class=vh> {{ c.title }}</span></button>
+        <span class=msg__std data-std{% if c.custom %} hidden{% endif %}>Standard wording</span>
+      </div>
+    </div>
+    {% endif %}
   </div>
-  {% else %}
-  {% if c.destination %}<p class=msg__destination data-destination>{{ c.destination }}</p>{% endif %}
-  {% endif %}
 </article>
-{%- endmacro %}
-
-{% macro qsets(step, editable, max_chars) -%}
-{% for s in step.sets %}
-  {% if s.eyebrow %}<p class="eyebrow eyebrow--muted moment__eyebrow">{{ s.eyebrow }}</p>{% endif %}
-  <div class=qset>{{ message_card(s.parent, editable, max_chars) }}{% for b in s.branches %}{{ message_card(b, editable, max_chars) }}{% endfor %}</div>
-{% endfor %}
-{%- endmacro %}
-
-{% macro step_section(step, editable, max_chars) -%}
-<li class=moment id=g_{{ step.id }} aria-labelledby=h_{{ step.id }}>
-  <div class=moment__head><h2 id=h_{{ step.id }} tabindex=-1>{{ step.heading }}</h2><p>{{ step.blurb }}</p></div>
-  <div class=moment__cards>{{ qsets(step, editable, max_chars) }}</div>
-</li>
-{%- endmacro %}
-
-{#- START, HELP and STOP: collapsed (most owners never change these); open when one of its cards was rejected.
-    Closed cards still post: a closed <details> keeps its fields in the form. -#}
-{% macro keywords_section(step, editable, max_chars) -%}
-<section class=anytime id=g_{{ step.id }} aria-labelledby=h_{{ step.id }}>
-  <details class=anytime__details{% if step.has_error %} open{% endif %}>
-    <summary class=anytime__summary>
-      <h2 class=anytime__title id=h_{{ step.id }}>{{ step.heading }}</h2>
-      <span class=anytime__blurb>{{ step.blurb }}</span>
-      {{ icon("chevron-down", "anytime__chev") }}
-    </summary>
-    <div class=anytime__cards>{{ qsets(step, editable, max_chars) }}</div>
-  </details>
-</section>
 {%- endmacro %}
 
 {% macro error_summary(es) -%}
 <div class="notice notice--danger error-summary" id=error-summary role=alert tabindex=-1>
   {{ icon("circle-alert", "notice__icon") }}
   <div class=notice__body>
-    <p class=notice__text>{{ es.text }}{% if es.key %} <a href=#f_{{ es.key }} data-error-link>{{ es.link }}</a>{% endif %}</p>
+    <p class=notice__text>{{ es.text }}{% if es.key %} <a href=#w-{{ es.key }} data-error-link>{{ es.link }}</a>{% endif %}</p>
     <p class=notice__text>{{ es.kept }}</p>
   </div>
 </div>

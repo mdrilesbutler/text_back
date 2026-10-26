@@ -87,6 +87,21 @@ def sms_links(text: str) -> Markup:
 
 ENV.filters["sms_links"] = sms_links
 
+_ADD_TO_CALENDAR = re.compile(r"\s*\bAdd to calendar:\s*", re.IGNORECASE)
+
+
+def split_links(text: str) -> tuple[str, tuple[tuple[str, str], ...]]:
+    """(bubble words, ((label, url), ...)): every /a/<ref>/g|o|i link (and the provider word before it) is
+    taken out of the words and returned as its label, so a bubble shows "Add to Google Calendar ›" under the
+    text and never a raw link. "Add to calendar:" goes with them when it only introduced the links.
+    portal.js splitLinks() does the same for live previews."""
+    links = tuple((LINK_LABELS[m.group(2) or ""], m.group(1)) for m in _CAL_LINK.finditer(text))
+    if not links:
+        return text, ()
+    body = _CAL_LINK.sub(" ", text)
+    body = _ADD_TO_CALENDAR.sub(" ", body)
+    return " ".join(body.split()), links
+
 
 def _when(value, tz_name: str, now=None, relative: bool = True) -> str:
     from text_back.portal_dates import when

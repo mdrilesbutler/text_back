@@ -22,13 +22,13 @@ SAMPLE = {"business_name": "Oak & Pine", "service": "tree removal", "when": "Thu
 
 
 def card(page_html, key):
-    match = re.search(rf'<article class="msg[^"]*" id=m_{key} .*?</article>', page_html, re.S)
+    match = re.search(rf'<article class="qset[^"]*" id=card-{key} .*?</article>', page_html, re.S)
     assert match, f"no card for {key}"
     return match.group(0)
 
 
 def messages_form(page_html):
-    return re.search(r"<form method=post action=/client/messages id=messages.*?</form>", page_html, re.S).group(0)
+    return re.search(r"<form method=post action=/client/messages id=messages-form.*?</form>", page_html, re.S).group(0)
 
 
 # --- order ---------------------------------------------------------------------------------
@@ -36,10 +36,10 @@ def messages_form(page_html):
 def test_every_message_is_shown_once_in_conversation_order():
     assert sorted(FIELD_KEYS) == sorted(k for k in DEFAULT_TEMPLATES if k != "fields")
     assert len(set(FIELD_KEYS)) == len(FIELD_KEYS) == 21
-    assert [heading for _, heading, _, _ in STEPS] == ["Missed call", "Questions", "Booking", "No reply",
-                                                       "When the assistant steps back"]
+    assert [step[1] for step in STEPS] == ["Missed call", "Questions", "Booking", "No reply",
+                                           "When the assistant steps back"]
     assert KEYWORDS[1] == "START, HELP and STOP"
-    questions = [key for parent, branches in STEPS[1][3] for key in (parent, *branches)]
+    questions = [*STEPS[1][4], *STEPS[1][5]]
     assert questions[:3] == ["prompt_service", "prompt_location", "prompt_preferred_time"]
     assert questions.index("prompt_name") < questions.index("prompt_phone") < questions.index("prompt_email")
     assert set(OPTIONAL_QUESTIONS) == {"prompt_phone", "prompt_email"}
@@ -49,14 +49,14 @@ def test_page_renders_steps_in_order_with_switches_on_the_optional_questions(tmp
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     page = client.get("/client/messages").text
-    positions = [page.index(f"id=g_{sid}") for sid, _, _, _ in (*STEPS, KEYWORDS)]
+    positions = [page.index(f"id={step[0]}>") for step in (*STEPS, KEYWORDS)]
     assert positions == sorted(positions)
     for key in FIELD_KEYS:
-        assert f"id=m_{key}" in page
+        assert f"id=card-{key} " in page
     assert "name=ask_phone" in card(page, "prompt_phone") and "name=ask_email" in card(page, "prompt_email")
     assert "name=ask_phone" not in card(page, "intro")
     assert "Off. Customers skip this question." in card(page, "prompt_email")
-    assert "data-savebar" in page and "Saves every text at once" in page
+    assert "data-savebar" in page and "Saves every text at once" in page  # the no-JS words; JS rests it
 
 
 def test_jump_chips_are_the_five_step_headings_and_keywords_start_closed(tmp_path, monkeypatch):
@@ -64,16 +64,16 @@ def test_jump_chips_are_the_five_step_headings_and_keywords_start_closed(tmp_pat
     sign_in(client, telecom)
     page = client.get("/client/messages").text
     jump = re.search(r'<nav class=jump aria-label="On this page">.*?</nav>', page, re.S).group(0)
-    assert re.findall(r"href=(\S+?)>([^<]+)<", jump) == [
-        ("#g_missed", "Missed call"), ("#g_questions", "Questions"), ("#g_booking", "Booking"),
-        ("#g_noreply", "No reply"), ("#g_steps_back", "Steps back")]
-    for sid in ("missed", "questions", "booking", "noreply", "steps_back"):
-        assert f"<h2 id=h_{sid} tabindex=-1>" in page  # a jump target takes focus
-    assert "<details class=anytime__details>" in page and "Required by phone companies." in page
+    assert re.findall(r"href=(#\w+)(?: aria-current=location)?>([^<]+)<", jump) == [
+        ("#missed_call", "Missed call"), ("#questions", "Questions"), ("#booking", "Booking"),
+        ("#no_reply", "No reply"), ("#steps_back", "Steps back")]
+    for sid in ("missed_call", "questions", "booking", "no_reply", "steps_back"):
+        assert re.search(rf"id={sid}>.*?<h2 tabindex=-1>", page, re.S)  # a jump target takes focus
+    assert "<details class=anytime>" in page and "Required by phone companies." in page
     # The example-conversation select sits in its own GET form, outside the Messages POST form.
     assert "<label class=rail__show for=scenario>Show</label>" in page
-    assert "name=scenario" not in messages_form(page) and page.index("id=conversation") > page.index("</form>")
-    rail_form = re.search(r"<form method=get action=/client/messages#conversation .*?</form>", page, re.S).group(0)
+    assert "name=scenario" not in messages_form(page) and page.index("id=example") > page.index("</form>")
+    rail_form = re.search(r"<form method=get action=/client/messages#example .*?</form>", page, re.S).group(0)
     assert "name=scenario" in rail_form and "csrf" not in rail_form
     chosen = client.get("/client/messages", params={"scenario": "failed"}).text
     assert "<option value=failed selected>" in chosen and "<option value=booked selected>" not in chosen
@@ -120,8 +120,9 @@ def test_cost_line_counts_texts_first_and_names_the_symbol_with_a_plain_one_inst
     assert bill_label("a" * 161) == "Billed as 2 texts. Customers still see one message."
     assert bill_label("€" * 81) == "Billed as 2 texts. Customers still see one message."
     assert bill_label("It’s " + "a" * 70) == \
-        'Billed as 2 texts. The "’" symbol makes each text hold only 70 characters. Use "\'" instead.'
-    assert bill_label("—" + "a" * 70).endswith('Use "-" instead.')
+        "Billed as 2 texts. The “’” symbol makes each text hold only 70 characters. Use “'” instead."
+    assert bill_label("—" + "a" * 70).endswith("Use “-” instead.")
+    assert count_label("Hello", True) == "1 text · 29 characters with the notice"
     assert bill_label("ç" + "a" * 70).endswith("Use a plain letter instead.")
     assert preview_parts("prompt_name", dict(DEFAULT_TEMPLATES), SAMPLE) == (DEFAULT_TEMPLATES["prompt_name"], "")
 
@@ -134,10 +135,10 @@ def test_page_shows_the_rendered_preview_and_cost_line_for_each_message(tmp_path
     assert "Oak &amp; Pine Tree Care&#39;s scheduling assistant" in intro
     assert "<span class=sms__suffix>Reply STOP to opt out.</span>" in intro
     assert "STOP line added for you" in intro and "data-optout-note hidden" not in intro
-    assert re.search(r"data-count>[23] texts · \d+ characters<", intro) and "data-warn" in intro
-    assert "The &#34;—&#34; symbol makes each text hold only 70 characters. Use &#34;-&#34; instead." in intro
+    assert re.search(r"data-count>[23] texts · \d+ characters( with the notice)?<", intro) and "data-bill hidden" not in intro
+    assert "The “—” symbol makes each text hold only 70 characters. Use “-” instead." in intro
     name = card(page, "prompt_name")
-    assert re.search(r"data-count>1 text · \d+ characters<", name) and "data-warn" not in name
+    assert re.search(r"data-count>1 text · \d+ characters( with the notice)?<", name) and "data-bill hidden" in name
     assert "STOP line added" not in name
     confirmation = card(page, "booking_confirmation")
     assert 'title="https://example.test/a/' in confirmation and "Add to Google Calendar ›" in confirmation
@@ -160,18 +161,18 @@ def test_standard_versus_customized_and_reset_without_javascript(tmp_path, monke
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     page = client.get("/client/messages").text
-    assert page.count("Standard wording</span>") == len(FIELD_KEYS) and "Customized</span>" not in page
+    assert page.count("data-std>Standard wording</span>") == len(FIELD_KEYS) and "data-custom-pill" not in page
     assert "data-reset hidden" in card(page, "intro") and "data-std hidden" not in card(page, "intro")
     csrf = csrf_of(page)
     saved = client.post("/client/messages", data={"csrf": csrf, "intro": "Oak here, missed you. What do you need?"}).text
     intro = card(saved, "intro")
-    assert "Customized</span>" in intro and "data-reset>" in intro and "data-std hidden" in intro
-    assert saved.count("Customized</span>") == 1
+    assert "data-custom-pill>Customized</span>" in intro and "data-reset>" in intro and "data-std hidden" in intro
+    assert saved.count("data-custom-pill>Customized</span>") == 1
     assert "Oak here, missed you. What do you need? <span class=sms__suffix>Reply STOP to opt out.</span>" in intro
     assert "<span class=msg__reset-js>Reset</span><span class=msg__reset-nojs>Reset and save</span>" in intro
     back = client.post("/client/messages", data={"csrf": csrf, "intro": "Oak here, missed you. What do you need?",
                                                  "reset": "intro"}).text
-    assert "Saved" in back and "Standard wording</span>" in card(back, "intro")
+    assert "Saved" in back and "data-std>Standard wording</span>" in card(back, "intro")
     assert json.loads(path.read_text()) == {}
 
 
@@ -183,7 +184,7 @@ def test_the_standard_wording_posted_back_is_stored_as_standard(tmp_path, monkey
     data["intro"] = to_display(DEFAULT_TEMPLATES["intro"]).replace(" ", "  ")
     page = client.post("/client/messages", data=data).text
     assert json.loads(path.read_text()) == {}
-    assert "Standard wording</span>" in card(page, "intro") and "Customized</span>" not in page
+    assert "data-std>Standard wording</span>" in card(page, "intro") and "data-custom-pill" not in page
 
 
 def test_a_rejected_save_marks_the_message_and_keeps_what_was_typed(tmp_path, monkeypatch):
@@ -193,22 +194,22 @@ def test_a_rejected_save_marks_the_message_and_keeps_what_was_typed(tmp_path, mo
     typed = "Call our business line any time"
     page = client.post("/client/messages", data={"csrf": csrf, "intro": typed, "prompt_name": "Your name?"}).text
     assert "<title>Not saved · Messages · TextBack</title>" in page
-    assert ("Not saved. &#34;First text after a missed call&#34; needs a change: Take out &#34;business line&#34;. "
+    assert ("Not saved. “First text after a missed call” needs a change: Take out “business line”. "
             "Customers stay in the text thread") in page
-    assert "<a href=#f_intro data-error-link>Go to that text</a>" in page
+    assert "<a href=#w-intro data-error-link>Go to that text</a>" in page
     assert "Your other edits are still here. Nothing was saved yet." in page
-    assert page.index("id=error-summary") > page.index("<form method=post action=/client/messages")
+    assert page.index("id=error-summary") < page.index("<form method=post action=/client/messages")  # above the list
     intro = card(page, "intro")
     assert "msg--invalid" in intro and f">{typed}</textarea>" in intro and "aria-invalid=true" in intro
     assert "<details class=editor open>" in intro and "<details class=editor open>" not in card(page, "prompt_name")
     assert "Not saved</span>" in intro and "Customized</span>" not in intro
     assert ">Your name?</textarea>" in card(page, "prompt_name")
-    assert "data-dirty-pill hidden" not in card(page, "prompt_name") and "data-dirty-pill hidden" in card(page, "prompt_service")
-    assert "<details class=anytime__details>" in page
-    assert "data-initial=error" in page
+    assert "data-unsaved-pill hidden" not in card(page, "prompt_name") and "data-unsaved-pill hidden" in card(page, "prompt_service")
+    assert "<details class=anytime>" in page
+    assert "data-dirty-initial" in page
     assert not path.exists()
     page = client.post("/client/messages", data={"csrf": csrf, "opt_out_suffix": "Text END to quit"}).text
-    assert "<details class=anytime__details open>" in page
+    assert "<details class=anytime open>" in page
     assert "Include the word STOP. Phone companies require it." in card(page, "opt_out_suffix")
     page = client.post("/client/messages", data={"csrf": csrf, "intro": "Hi {a.b}"}).text
     assert ">Hi {a.b}</textarea>" in card(page, "intro") and not path.exists()
@@ -225,10 +226,10 @@ def test_friendly_reasons_reword_every_validator_message():
         raise AssertionError(f"{overrides} was accepted")
 
     key, text = reason({"intro": "Call our business line"})
-    assert key == "intro" and text.startswith('Take out "business line".')
-    assert reason({"handoff_ack": "Paused."})[1] == 'Add the words "follow up", like "We\'ll follow up with you by text."'
+    assert key == "intro" and text.startswith("Take out “business line”.")
+    assert reason({"handoff_ack": "Paused."})[1] == "Add the words “follow up”, like “We'll follow up with you by text.”"
     assert reason({"handoff_ack_safety": "Paused. We will follow up."})[1] == "Tell people to call 911 if anyone is in danger."
-    assert reason({"booking_error": "Sorry, call us."})[1] == 'Say "No booking was made" and leave out the word "call".'
+    assert reason({"booking_error": "Sorry, call us."})[1] == "Say “No booking was made” and leave out the word “call”."
     assert reason({"opt_out_suffix": "Text END"})[1] == "Include the word STOP. Phone companies require it."
     bad = "Something typed by hand isn't a detail we can fill in. Use the Insert buttons under the box, or remove it."
     assert reason({"intro": "Hi {"}) == ("intro", bad) and reason({"intro": "Hi {a.b}"}) == ("intro", bad)

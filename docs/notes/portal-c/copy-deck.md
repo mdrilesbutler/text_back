@@ -195,6 +195,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 | key | text | where |
 |---|---|---|
 | savebar_changed | 1 text changed / [N] texts changed: [card title], [card title] / No unsaved changes / Show what changed | unsaved count (phone: the header becomes the save bar and the count opens the list of changed items) / resting state beside a visibly disabled Save / hidden hint on the count toggle |
+| link_note | Each label is a link. The text count includes the full links. | under a bubble whose calendar links show as labels |
 | draft_was | Was: [saved wording] | under an unsaved draft bubble |
 | savebar_actions | Save / Saving… / Discard | primary / while posting / ghost |
 | savebar_not_saved | Not saved · [N] texts changed | after a rejected save |

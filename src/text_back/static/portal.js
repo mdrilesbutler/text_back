@@ -13,15 +13,15 @@ const GROWS = !(window.CSS && CSS.supports('field-sizing', 'content'));
 // Every string this file puts on screen (spec §6).
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const COPY = {
-  clean: 'No unsaved changes', saved: 'Saved just now', notSaved: 'Not saved',
-  notSavedLong: n => (n ? `Not saved · ${plural(n, 'unsaved change')}` : 'Not saved'),
-  unsavedShort: n => `${n} unsaved`, unsavedLong: n => plural(n, 'unsaved change'),
-  saving: 'Saving…', discarded: 'Changes discarded.', dismiss: 'Dismiss', unsaved: 'Unsaved changes',
-  discard: 'Discard', save: 'Save', showChanged: 'Show what changed',
-  restored: label => `Standard wording restored for ${label}.`, limit: (n, max) => `${n} of ${max} characters`,
-  count: (n, k) => `${plural(k, 'text')} · ${n} characters`,  // = client_portal.count_label
-  bill: (k, symbol) => `Billed as ${k} texts. ` +  // = client_portal.bill_label
-    (symbol ? `The \u201c${symbol}\u201d symbol limits each text to 70 characters.` : 'Customers still see one message.'),
+  discarded: 'Changes discarded.', dismiss: 'Dismiss', unsaved: 'Unsaved changes',
+  discard: 'Discard', save: 'Save', showChanged: 'Show what changed', textback: 'TextBack: ',
+  restored: label => `Standard wording restored for ${label}.`,
+  // = portal_messages.count_label / bill_label / fix_label (deck cost_line, cost_bill_*)
+  count: (n, k, notice) => `${plural(k, 'text')} · ${n} characters${notice ? ' with the notice' : ''}`,
+  bill: (k, symbol, plain) => `Billed as ${k} texts. ` + (symbol
+    ? `The \u201c${symbol}\u201d symbol makes each text hold only 70 characters. ${plain ? `Use \u201c${plain}\u201d instead.` : 'Use a plain letter instead.'}`
+    : 'Customers still see one message.'),
+  fix: (symbol, plain) => `Replace ${symbol} with ${plain}`,
 };
 
 // ---------------------------------------------------------------- helpers
@@ -149,26 +149,29 @@ function initNotices() {
   for (const node of $$('[data-notice]', slot || document)) wireNotice(node);
 }
 
-// ---------------------------------------------------------------- jump chips (Messages)
-// The chip of the step on screen is marked current and kept in view inside its scrolling row.
+// ---------------------------------------------------------------- jump to a step (Messages)
+// The step on screen is marked current in the chip row (from 640 px) and named in the phone "Jump to"
+// control, whose summary then reads "Jump to: <step>"; picking a step closes it.
 function initJump() {
-  const list = $('.jump__list');
-  if (!list || !('IntersectionObserver' in window)) return;
-  const chips = {};
-  for (const a of $$("a[href^='#']", list)) chips[a.getAttribute('href').slice(1)] = a;
-  const steps = Object.keys(chips).map(id => document.getElementById(id)).filter(Boolean);
+  const chipList = $('.jump__list');
+  const menu = $('[data-jumpmenu]');
+  const label = menu && $('.jumpmenu__label', menu);
+  const links = $$('.jump__link, .jumpmenu__link');
+  const steps = [...new Set(links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean))];
+  menu?.addEventListener('click', e => { if (e.target.closest('.jumpmenu__link')) menu.open = false; });
+  if (!steps.length || !('IntersectionObserver' in window)) return;
   const visible = {};
   const mark = () => {
-    const current = steps.find(s => visible[s.id])?.id;
+    const current = steps.find(s => visible[s.id]);
     if (!current) return;
-    for (const [id, chip] of Object.entries(chips)) {
-      if (id === current) chip.setAttribute('aria-current', 'location');
-      else chip.removeAttribute('aria-current');
-    }
-    const chip = chips[current];
-    const bar = list.parentElement;
-    if (chip.offsetLeft < bar.scrollLeft || chip.offsetLeft + chip.offsetWidth > bar.scrollLeft + bar.clientWidth) {
-      bar.scrollLeft = chip.offsetLeft - 16;
+    for (const a of links) {
+      const on = a.getAttribute('href') === `#${current.id}`;
+      if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
+      if (on && label && a.classList.contains('jumpmenu__link')) label.textContent = `${label.dataset.lead} ${a.textContent}`;
+      if (on && chipList && a.classList.contains('jump__link')) {
+        const bar = chipList.parentElement;
+        if (a.offsetLeft < bar.scrollLeft || a.offsetLeft + a.offsetWidth > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = a.offsetLeft - 16;
+      }
     }
   };
   const io = new IntersectionObserver(entries => {
@@ -184,8 +187,10 @@ function initJump() {
 // beside it says so. A form also marked data-topsave turns the header into its save bar below 1024 px: what
 // changed (links to [data-change-label] holders), Discard and Save. Count words come from the form:
 // data-changed-one ("1 rule changed") and data-changed-many ("{n} rules changed"); default "Unsaved changes".
-// A header the server already drew (data-topsave-server, a no-JS round trip) is left alone; its Discard
-// reloads the saved page.
+// The desktop bar for the same form ([data-savebar][data-form=<id>]) follows too: in flow with "No unsaved
+// changes" at rest, sticky with the count, the changed items as links and Discard while something differs.
+// A form the server answered with unsaved values (data-dirty-initial, a rejected save) keeps the server's
+// header and bar; its Discard reloads the saved page.
 const fieldValue = el => (el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value);
 
 // A switch whose line underneath states its position (data-note-on / data-note-off) keeps that line true.
@@ -202,7 +207,10 @@ function initChangeTracking() {
   if (server) {
     $('[data-topsave-discard]', server)?.addEventListener('click', e => { e.preventDefault(); location.assign(location.pathname); });
   }
+  // A rejected save's Discard (desktop bar) also reloads the saved page.
   for (const form of $$('form[data-track-changes]')) {
+    const initial = 'dirtyInitial' in form.dataset;
+    const savebar = $(`[data-savebar][data-form="${form.id}"]`);
     const controls = () => [...form.elements].filter(el => el.name && el.type !== 'hidden' && el.type !== 'submit'
       && el.type !== 'button' && el.name !== 'csrf');
     const baseline = new Map(controls().map(el => [el, fieldValue(el)]));
@@ -211,6 +219,23 @@ function initChangeTracking() {
     const restText = status?.textContent || '';
     let submitting = false;
     let bar = null;
+
+    function discard() {
+      if (initial) { location.assign(location.pathname); return; }
+      const moved = [...baseline.keys()].filter(field => fieldValue(field) !== baseline.get(field));
+      HTMLFormElement.prototype.reset.call(form);  // a control named "reset" (Reset buttons) shadows form.reset
+      for (const field of moved) {
+        const value = baseline.get(field);
+        if (field.type === 'checkbox' || field.type === 'radio') field.checked = value; else field.value = value;
+        // Dependants (switch notes, previews, counts) follow the restored value.
+        field.dispatchEvent(new Event(field.tagName === 'TEXTAREA' ? 'input' : 'change', { bubbles: true }));
+      }
+      update();
+      notify(COPY.discarded);
+      $('#main')?.focus();
+    }
+    const discardButton = savebar && $('[data-savebar-discard]', savebar);
+    discardButton?.addEventListener('click', e => { e.preventDefault(); discard(); });
 
     const changes = () => {
       const groups = new Map();
@@ -233,24 +258,13 @@ function initChangeTracking() {
         summary.append(el('span', 'topsave__count'), el('span', 'vh', `. ${COPY.showChanged}`), icon('chevron-down', 'topsave__chev'));
         details.append(summary, el('ul', 'topsave__list'));
         const actions = el('div', 'topsave__actions');
-        const discard = el('button', 'btn btn--ghost', COPY.discard);
-        discard.type = 'button';
-        discard.addEventListener('click', () => {
-          const moved = [...baseline.keys()].filter(field => fieldValue(field) !== baseline.get(field));
-          form.reset();
-          for (const field of moved) {
-            const value = baseline.get(field);
-            if (field.type === 'checkbox' || field.type === 'radio') field.checked = value; else field.value = value;
-            field.dispatchEvent(new Event('change', { bubbles: true }));  // dependants (notes, previews) follow
-          }
-          update();
-          notify(COPY.discarded);
-          $('#main')?.focus();
-        });
+        const discardTop = el('button', 'btn btn--ghost', COPY.discard);
+        discardTop.type = 'button';
+        discardTop.addEventListener('click', discard);
         const submit = el('button', 'btn btn--primary', form.dataset.saveLabel || save?.textContent.trim() || COPY.save);
         submit.type = 'submit';
         submit.setAttribute('form', form.id);
-        actions.append(discard, submit);
+        actions.append(discardTop, submit);
         bar.append(details, actions);
         topbar.append(bar);
       }
@@ -265,11 +279,28 @@ function initChangeTracking() {
       }));
     }
 
+    function drawSavebar(list, dirty) {
+      savebar.classList.toggle('savebar--on', dirty);
+      savebar.dataset.state = dirty ? 'dirty' : 'clean';
+      if (discardButton) discardButton.hidden = !dirty;
+      const line = $('[data-savebar-status]', savebar);
+      if (!dirty) { line.textContent = line.dataset.clean || restText; return; }
+      const names = el('span', 'savebar__names', ': ');
+      list.filter(Boolean).forEach(([href, label], i) => {
+        const a = el('a', '', label);
+        a.href = href || '#main';
+        names.append(...(i ? [', '] : []), a);
+      });
+      line.replaceChildren(el('span', 'savebar__count', countText(list.length)), ...(names.childNodes.length > 1 ? [names] : []));
+    }
+
     function update() {
       const list = changes();
-      const dirty = list.length > 0;
+      const dirty = initial || list.length > 0;
       if (save) save.setAttribute('aria-disabled', String(!dirty));
       if (status) status.textContent = dirty ? COPY.unsaved : restText;
+      if (initial) { form.setAttribute('data-dirty', ''); return; }
+      if (savebar) drawSavebar(list, dirty);
       if (topbar && !server && 'topsave' in form.dataset) {
         if (dirty) drawBar(list);
         topbar.classList.toggle('topbar--dirty', dirty);
@@ -358,8 +389,11 @@ function initOtp() {
 const GSM = new Set([...(DATA.gsm || ''), ...(DATA.ext || '')]);
 const EXT = new Set([...(DATA.ext || '')]);
 const STOP = /\bstop\b/i;
+const PLAIN = { '—': '-', '–': '-', '“': '"', '”': '"', '‘': "'", '’': "'", '…': '...' };
+// = portal_messages.NOTICE_MODEL: the network notice's length (24 characters, two of them billed twice).
+const NOTICE_MODEL = `[${'a'.repeat(21)}] `;
 
-// = client_portal.sms_parts: (characters, texts, plain GSM). Code points, like Python's len().
+// = portal_messages.sms_parts: (characters, texts, plain GSM). Code points, like Python's len().
 function parts(text) {
   const chars = [...text];
   if (chars.every(c => GSM.has(c))) {
@@ -369,19 +403,45 @@ function parts(text) {
   return [chars.length, chars.length <= 70 ? 1 : Math.ceil(chars.length / 67), false];
 }
 
-// = the bubble_text macro: URLs in span.sms__link, the opt-out line added for the owner in span.sms__suffix.
-function drawBubble(node, body, tail) {
-  const kids = body.split(/(https?:\/\/\S+)/).map((part, i) => (i % 2 ? el('span', 'sms__link', part) : part)).filter(k => k !== '');
-  if (tail) kids.push(' ', el('span', 'sms__suffix', tail));
-  node.replaceChildren(...kids);
+// = portal_render.split_links: calendar links come out of the words and show as labels (never a raw link).
+const CAL_LINK = /(?:\b(?:Google|Outlook|iCal) )?(https?:\/\/\S+?\/a\/[\w-]+?(?:\/([goi]))?)(?=[\s.,;!?]*(?:\s|$))/g;
+const LINK_LABELS = { g: 'Add to Google Calendar ›', o: 'Add to Outlook ›', i: 'Add to iCal ›', '': 'Calendar links page ›' };
+function splitLinks(text) {
+  const links = [...text.matchAll(CAL_LINK)].map(m => [LINK_LABELS[m[2] || ''], m[1]]);
+  if (!links.length) return [text, links];
+  return [norm(text.replace(CAL_LINK, ' ').replace(/\s*\bAdd to calendar:\s*/gi, ' ')), links];
 }
 
-// = client_portal.fill: str.format_map with unknown names kept; anything Python would refuse leaves the text as typed.
+// = the bubble macro: words (URLs in span.sms__link), the opt-out line in span.sms__suffix, links as labels.
+function drawBubble(p, body, tail, links) {
+  const kids = body.split(/(https?:\/\/\S+)/).map((part, i) => (i % 2 ? el('span', 'sms__link', part) : part)).filter(k => k !== '');
+  if (tail) kids.push(' ', el('span', 'sms__suffix', tail));
+  p.replaceChildren(...kids);
+  const list = p.parentElement && $('.sms__links', p.parentElement);
+  if (!list) return;
+  list.replaceChildren(...links.map(([label, url]) => {
+    const li = el('li');
+    const span = el('span', 'sms__linkbtn', label);
+    span.title = url;
+    li.append(span);
+    return li;
+  }));
+  list.hidden = !links.length;
+}
+
+// = portal_messages.fill: str.format_map with unknown names kept; anything Python would refuse leaves the text as typed.
 // Inserts are shown as [Label] (never braces); DATA.labels maps each label to its placeholder name.
 const LABELS = DATA.labels || { 'Business name': 'business_name' };
 const tokens = t => t.replace(/\[([^\]]+)\]/g, (m, label) => (Object.hasOwn(LABELS, label) ? `{${LABELS[label]}}` : m));
 
-function fill(t, values = DATA.sample || {}) {
+// The invite sentence follows the email question's switch, as the booking code does.
+function sampleValues() {
+  const email = $('#ask_email');
+  const invite = email?.checked ? (DATA.invite || {}) : { invite_line: '', invited_email: '' };
+  return { ...(DATA.sample || {}), ...(email ? invite : {}) };
+}
+
+function fill(t, values = sampleValues()) {
   t = tokens(t);
   let out = '';
   for (let i = 0; i < t.length;) {
@@ -398,101 +458,90 @@ function fill(t, values = DATA.sample || {}) {
   return out;
 }
 
-// ---------------------------------------------------------------- message cards
+// ---------------------------------------------------------------- message cards (live previews)
+// Each card follows its textarea: the bubble (here and in the example conversation), the cost line, the
+// billing line and its one-tap fix, the STOP-line note, "Unsaved" and "Was: …", Reset vs Standard wording.
 const area = card => $('textarea', card);
-// The template in force: what is typed, or the standard wording when the field is empty.
 const tpl = card => area(card).value.trim() || card.dataset.default;
-const textDirty = card => (norm(area(card).value) || norm(card.dataset.default)) !== norm(card.dataset.saved);
-const switchDirty = sw => sw.checked !== (sw.dataset.savedChecked === '1');
+const textDirty = card => norm(area(card).value || card.dataset.default) !== norm(card.dataset.saved);
 
-function initCards(form, bar) {
-  const cards = $$('article.msg', form);
+function initCards(form) {
+  if (!form) return;
+  const cards = $$('article[data-card]', form);
+  if (!cards.length) return;
   const byKey = Object.fromEntries(cards.map(card => [card.dataset.card, card]));
   const suffix = byKey.opt_out_suffix;
 
-  // = client_portal.preview_parts: [wording, opt-out line added for the owner or '']
-  const preview = card => {
+  function render(card) {
+    const key = card.dataset.card;
     const t = tpl(card);
-    return [norm(fill(t)), card.dataset.optout === '1' && suffix && !STOP.test(t) ? norm(fill(tpl(suffix))) : ''];
-  };
-
-  // The footer follows the textarea: "Standard wording" while it holds the standard text, else Reset.
-  // (The Customized pill follows the saved file, so it only changes after a save.)
-  function setAside(card) {
+    const body = norm(fill(t));
+    const tail = card.dataset.optout === '1' && suffix && !STOP.test(t) ? norm(fill(tpl(suffix))) : '';
+    const [words, links] = splitLinks(body);
+    for (const p of $$(`[data-preview="${key}"]`)) drawBubble(p, words, tail, links);
+    const preview = tail ? `${body} ${tail}` : body;
+    const notice = Boolean(DATA.notice) && key !== 'opt_out_suffix';
+    const [n, k, plain] = parts(notice ? NOTICE_MODEL + preview : preview);
+    for (const c of $$('[data-count]', card)) c.textContent = COPY.count(n, k, notice);
+    const symbol = plain ? '' : [...preview].find(ch => !GSM.has(ch)) || '';
+    const bill = $('[data-bill]', card);
+    bill.hidden = k < 2;
+    $('[data-bill-text]', bill).textContent = k < 2 ? '' : COPY.bill(k, symbol, PLAIN[symbol]);
+    const fix = $('[data-fix]', bill);
+    if (fix) {
+      fix.hidden = k < 2 || !PLAIN[symbol];
+      $('[data-fix-label]', fix).textContent = PLAIN[symbol] ? COPY.fix(symbol, PLAIN[symbol]) : '';
+    }
+    $('[data-link-note]', card).hidden = !links.length;
+    const added = $('[data-optout-note]', card);
+    if (added) added.hidden = !tail;
+    const dirty = textDirty(card);
+    $('[data-unsaved-pill]', card)?.toggleAttribute('hidden', !dirty);
+    $('[data-custom-pill]', card)?.toggleAttribute('hidden', dirty);
+    $('[data-was]', card).hidden = !dirty;
     const value = norm(area(card).value);
     const custom = value !== '' && value !== norm(card.dataset.default);
     $('[data-reset]', card).hidden = !custom;
     $('[data-std]', card).hidden = custom;
-  }
-
-  function setDirty(card) {
-    const sw = $('.switch', card);
-    const dirty = textDirty(card) || (sw ? switchDirty(sw) : false);
-    card.toggleAttribute('data-dirty', dirty);
-    $('[data-dirty-pill]', card).hidden = !dirty;
-  }
-
-  // The bubbles (card and rail) and the receipt: texts, characters, pips and the billing line from 2 texts.
-  function render(card) {
-    const [body, tail] = preview(card);
-    const text = tail ? `${body} ${tail}`.trim() : body;
-    for (const bubble of $$(`[data-preview="${card.dataset.card}"]`)) drawBubble(bubble, body, tail);
-    const [n, k, gsm] = parts(text);
-    $('[data-count]', card).textContent = COPY.count(n, k);
-    $('[data-pips]', card).replaceChildren(...(k > 1 ? Array.from({ length: Math.min(k, 5) }, () => el('i')) : []),
-      ...(k > 5 ? [el('b', '', '+')] : []));
-    const bill = $('[data-bill]', card);
-    bill.hidden = k < 2;
-    bill.lastElementChild.textContent = k < 2 ? '' : COPY.bill(k, gsm ? '' : [...text].find(c => !GSM.has(c)));
-    $('[data-receipt]', card).toggleAttribute('data-warn', k > 1);
-    const note = $('[data-optout-note]', card);
-    if (note) note.hidden = !tail;
-    setAside(card);
-    setDirty(card);
     const ta = area(card);
     const limit = $('[data-limit]', card);
-    const length = ta.value.length;
-    limit.hidden = length < 420;
-    limit.toggleAttribute('data-warn', length >= 460);
-    limit.textContent = COPY.limit(length, ta.maxLength);
+    limit.hidden = ta.value.length < 420;
+    $('[data-limit-n]', limit).textContent = String(ta.value.length);
     grow(ta);
   }
-
-  function renderWithDependants(card) {
+  const renderWithDependants = card => {
     render(card);
     if (card === suffix) for (const other of cards) if (other.dataset.optout === '1') render(other);
-  }
+  };
 
   for (const chips of $$('[data-chips]', form)) chips.hidden = false;
-
   form.addEventListener('input', e => {
-    if (e.target.tagName !== 'TEXTAREA') return;
-    renderWithDependants(e.target.closest('article.msg'));
-    bar.update(e.target);
+    if (e.target.tagName === 'TEXTAREA') renderWithDependants(e.target.closest('article[data-card]'));
   });
   form.addEventListener('change', e => {
-    if (!e.target.matches('.switch')) return;
-    setDirty(e.target.closest('article.msg'));
-    bar.update(e.target);
+    const sw = e.target.closest('.switch');
+    if (!sw) return;
+    const card = sw.closest('article[data-card]');
+    card.classList.toggle('qset--off', !sw.checked);
+    $('.msg', card).classList.toggle('msg--isoff', !sw.checked);
+    if (sw.id === 'ask_email' && byKey.booking_confirmation) render(byKey.booking_confirmation);
   });
-
   form.addEventListener('click', e => {
     const reset = e.target.closest('[data-reset]');
     if (reset) {
-      e.preventDefault();  // local and undoable through Discard; without JS it posts reset=<key>
-      const card = reset.closest('article.msg');
+      e.preventDefault();  // local and undoable through Discard; without JS it posts reset=<key> (Reset and save)
+      const card = reset.closest('article[data-card]');
       const ta = area(card);
       ta.value = card.dataset.default;
       ta.dispatchEvent(new Event('input', { bubbles: true }));
       announce(COPY.restored($('.msg__label', card).textContent));
       const details = ta.closest('details');
-      if (details.open) focusField(ta);
-      else $('summary', details).focus();
+      if (details.open) focusField(ta); else $('summary', details).focus();
       return;
     }
     const chip = e.target.closest('[data-insert]');
     if (chip) {
-      const ta = area(chip.closest('article.msg'));
+      const ta = area(chip.closest('article[data-card]'));
       ta.focus();
       if (!document.execCommand('insertText', false, chip.dataset.insert)) {
         ta.setRangeText(chip.dataset.insert, ta.selectionStart, ta.selectionEnd, 'end');
@@ -506,9 +555,9 @@ function initCards(form, bar) {
       requestAnimationFrame(() => { if (details.open) focusField(area(details)); });
       return;
     }
-    // Tapping the preview opens that card's editor (unless the owner was selecting text in it).
+    // Tapping the preview opens that card's editor (unless the owner was selecting text or tapped a control).
     const band = e.target.closest('[data-band]');
-    if (band && getSelection().isCollapsed) focusField(area(band.closest('article.msg')));
+    if (band && !e.target.closest('button, a') && getSelection().isCollapsed) focusField(area(band.closest('article[data-card]')));
   });
   // Keep the caret in the textarea when a chip is clicked with a mouse.
   form.addEventListener('mousedown', e => { if (e.target.closest('[data-insert]')) e.preventDefault(); });
@@ -516,114 +565,8 @@ function initCards(form, bar) {
   form.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.tagName === 'TEXTAREA' && !e.isComposing) e.preventDefault();
   });
-
   // Fields the browser restored (back button, reload) need their previews redrawn.
   for (const card of cards) if (area(card).value !== area(card).defaultValue) renderWithDependants(card);
-  for (const sw of $$('.switch', form)) if (sw.checked !== sw.defaultChecked) setDirty(sw.closest('article.msg'));
-  return { cards, renderAll: () => cards.forEach(render), setDirty };
-}
-
-// ---------------------------------------------------------------- the save bar
-function initSavebar(form) {
-  const bar = $('[data-savebar]', form);
-  const status = $('[data-savebar-status]', bar);
-  const save = $('[data-save]', bar);
-  const discard = $('[data-discard]', bar);
-  const show = $('[data-show-error]', bar);
-  const cards = $$('article.msg', form);
-  const switches = $$('.switch', form);
-  let state = bar.dataset.initial || 'clean';
-  let errorField = $('.msg--invalid textarea', form);
-  let count = 0;
-  let lastLong = '';
-  let api = null;
-
-  const recount = () => cards.filter(textDirty).length + switches.filter(switchDirty).length;
-
-  function paint(announceIt) {
-    bar.dataset.state = state;
-    const idle = state === 'clean' || state === 'saved';
-    save.setAttribute('aria-disabled', String(idle || state === 'saving'));
-    discard.hidden = state !== 'dirty';
-    if (show) show.hidden = state !== 'error';  // C's Messages bar has no Show button
-    const [ic, short, long] = {
-      clean: ['circle-check', COPY.clean, COPY.clean],
-      saved: ['circle-check', COPY.saved, COPY.saved],
-      dirty: ['', COPY.unsavedShort(count), COPY.unsavedLong(count)],
-      error: ['circle-alert', COPY.notSaved, COPY.notSavedLong(count)],
-      saving: ['loader-circle', COPY.saving, COPY.saving],
-    }[state];
-    const shortSpan = el('span', 'savebar__short', short);
-    shortSpan.setAttribute('aria-hidden', 'true');  // the long label stays readable to assistive tech
-    status.replaceChildren(...(ic ? [icon(ic, state === 'saving' ? 'spin' : '')] : []), shortSpan, el('span', 'savebar__long', long));
-    if (announceIt && long !== lastLong) announce(long, { debounce: 800, channel: 'savebar' });
-    lastLong = long;
-  }
-
-  function update(changed) {
-    if (state === 'saving') return;
-    count = recount();
-    if (state === 'error' && errorField && changed !== errorField) { paint(false); return; }
-    errorField = null;
-    state = count ? 'dirty' : (state === 'saved' ? 'saved' : 'clean');
-    paint(true);
-  }
-
-  function clearErrors() {
-    for (const card of $$('.msg--invalid', form)) card.classList.remove('msg--invalid');
-    for (const field of $$('[aria-invalid="true"]', form)) {
-      field.removeAttribute('aria-invalid');
-      const ids = (field.getAttribute('aria-describedby') || '').split(' ').filter(id => !id.startsWith('e_'));
-      field.setAttribute('aria-describedby', ids.join(' '));
-    }
-    for (const error of $$('.field-error[id^="e_"]', form)) error.remove();
-    $('#error-summary')?.remove();
-    errorField = null;
-  }
-
-  discard.addEventListener('click', () => {
-    cards.forEach(c => { area(c).value = c.dataset.saved; });
-    switches.forEach(s => { s.checked = s.dataset.savedChecked === '1'; });
-    api.renderAll();
-    clearErrors();
-    count = 0;
-    state = 'clean';
-    paint(false);  // the notice below does the announcing (the slot is role=status)
-    notify(COPY.discarded);
-    save.focus();  // Discard hides itself; focus stays on the bar
-  });
-
-  show?.addEventListener('click', () => {
-    const target = errorField || $('#error-summary [data-error-link]');
-    if (target?.tagName === 'TEXTAREA') focusField(target);
-    else $('#error-summary')?.focus();
-  });
-
-  form.addEventListener('submit', e => {
-    if (e.defaultPrevented) return;
-    state = 'saving';
-    paint(false);
-  });
-
-  document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      if (recount() > 0 && state !== 'saving') form.requestSubmit(save);
-    }
-  });
-
-  addEventListener('beforeunload', e => {
-    if (state === 'saving' || recount() === 0) return;
-    e.preventDefault();
-    e.returnValue = '';
-    setTimeout(releaseForms);  // runs only if the owner chose to stay (e.g. after pressing Sign out)
-  });
-  addEventListener('pageshow', e => { if (e.persisted && state === 'saving') { state = 'clean'; update(); } });
-
-  count = recount();
-  if (state === 'clean' && count) state = 'dirty';
-  paint(false);  // "Saved just now" stays until the next edit
-  return { update, attach(cardsApi) { api = cardsApi; } };
 }
 
 // ---------------------------------------------------------------- error summary and links
@@ -640,48 +583,42 @@ function initErrorFocus() {
   });
 }
 
-// ---------------------------------------------------------------- the rail
+// ---------------------------------------------------------------- the example conversation
+// The select switches the thread drawn (data-active). On desktop, editing a card brings its bubble into
+// view inside the rail's own scroll (never the page) and rings it.
 function initRail(form) {
   const rail = $('[data-rail]');
   if (!rail) return;
   const log = $('[data-rail-log]', rail);
   const select = $('[data-scenario-select]', rail);
   let ringed = null;
-
   const activate = () => { rail.dataset.active = select.value; };
   const clear = () => { if (ringed) delete ringed.dataset.current; ringed = null; };
   activate();
-  select.addEventListener('change', () => {
-    activate();
-    clear();
-    log.scrollTop = 0;
-  });
-
+  select.addEventListener('change', () => { activate(); clear(); log.scrollTop = 0; });
   if (!form) return;
   form.addEventListener('focusin', e => {
     if (!WIDE.matches) return;
-    const card = e.target.closest('article.msg');
+    const card = e.target.closest('article[data-card]');
     if (!card) return;
-    const sw = $('.switch', card);
-    if (sw && !sw.checked) { clear(); return; }
-    const key = card.dataset.sync;
-    let thread = $(`.thread[data-scenario="${rail.dataset.active}"]`, rail);
-    if (!$(`[data-preview="${key}"]`, thread)) {
-      select.value = card.dataset.scenario;
+    const key = card.dataset.card;
+    let p = $(`.thread[data-scenario="${rail.dataset.active}"] [data-preview="${key}"]`, rail);
+    if (!p) {
+      p = $(`[data-preview="${key}"]`, log);
+      if (!p) { clear(); return; }
+      select.value = p.closest('.thread').dataset.scenario;
       activate();
-      thread = $(`.thread[data-scenario="${select.value}"]`, rail);
     }
-    const bubble = $(`[data-preview="${key}"]`, thread);
-    if (!bubble || bubble === ringed || !bubble.offsetParent) return;
+    const bubble = p.closest('.sms__bubble');
+    if (bubble === ringed || !bubble.offsetParent) return;
     clear();
     bubble.dataset.current = '';
     ringed = bubble;
-    // offsetTop is relative to the log (position: relative). Never scrollIntoView: it would move the page.
     const top = bubble.offsetTop - (log.clientHeight - bubble.offsetHeight) / 2;
     log.scrollTo({ top, behavior: REDUCED.matches ? 'auto' : 'smooth' });
   });
   form.addEventListener('focusout', e => {
-    const card = e.target.closest('article.msg');
+    const card = e.target.closest('article[data-card]');
     if (card && !card.contains(e.relatedTarget)) clear();
   });
 }
@@ -705,12 +642,9 @@ function initPicker(form = $('[data-picker]'), save = form && $('[data-picker-sa
 }
 
 // ---------------------------------------------------------------- start
+const messagesForm = $('#messages-form');
+initCards(messagesForm);  // before the tracker, so a restored draft is drawn before it is counted
 for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initChangeTracking, initForms, initTel, initOtp, initPicker]) init();
-const messagesForm = $('#messages');
-if (messagesForm) {
-  const bar = initSavebar(messagesForm);
-  bar.attach(initCards(messagesForm, bar));
-}
 initRail(messagesForm);
 initErrorFocus();
 initNamePreview();

@@ -27,26 +27,33 @@ from text_back.messages import DEFAULT_TEMPLATES, MAX_TEMPLATE_CHARS, OPT_OUT_RE
 from text_back.policy import format_contact_number
 from text_back.portal_sample import LINK_SECRET, SCENARIOS as SAMPLE_SCENARIOS, render_scenario
 
-# --- words (copy deck, section 4; verbatim) ------------------------------------------------
+# --- words (copy deck, section 4; verbatim; quotes curly per round 2) -----------------------
 
-TITLE = "Your messages"
+TITLE = "Messages"
 INTRO = ("The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. "
          "Changes start with the next missed call after you save.")
 META = "Green bubbles are what customers see. The job, address, time and names are made-up examples."
 NOT_ENABLED = "Message editing isn't turned on for your account yet. FluxWorks sets this up for you."
 SUPPORT_BUTTON = "Text FluxWorks support"
-NETWORK_NOTICE = "Until phone companies approve your business for texting, each text starts with a short network notice."
+NETWORK_NOTICE = ("Until phone companies approve your business for texting, the network adds a short notice to the start "
+                  "of each text. Customers see it before your wording. The text counts here include it.")
 JUMP_LABEL = "On this page"
+JUMP_LEAD, JUMP_NOJS = "Jump to:", "Jump to a step"
 OPTIONAL_EYEBROW = "Optional questions"
 
-RULE_STOP = ('Phone companies require "Reply STOP to opt out." If your wording leaves out STOP, we add that line for you.')
+RULE_STOP = "Phone companies require “Reply STOP to opt out.” If your wording leaves out STOP, we add that line for you."
 RULE_STOP_WORD = "The word STOP stays. Phone companies check for it."
-RULE_BOOKING_ERROR = 'Must say "No booking was made" and can\'t use the word "call". The customer stays in the text thread.'
+RULE_BOOKING_ERROR = "Must say “No booking was made” and can't use the word “call”. The customer stays in the text thread."
 RULE_STEPS_BACK = ("This text must tell the customer someone will follow up. Don't ask them to call, and don't say "
                    "they'll be put through to someone.")
 RULE_SAFETY = "Must tell people to call 911 if anyone is in danger, and must say someone will follow up."
 RULE_PARAGRAPH = f"Sent as one paragraph. Up to {MAX_TEMPLATE_CHARS} characters."
+NEXT_HEADING = "What happens next"
+NEXT_STEPS = ("TextBack stops texting this customer.", "Their name, number and message go to FluxWorks.",
+              "FluxWorks passes them to you. You follow up; the text promised the customer someone would.")
 DESTINATION_CHAT = "the FluxWorks operator"
+DESTINATION_LOG = "a log FluxWorks can read. Nobody is alerted. Ask FluxWorks to set up where these should go."
+DESTINATION_LOG_SHORT = "a log FluxWorks can read"
 DESTINATION_LINE = "These go to {label}."
 DESTINATION_OFF = "These go nowhere yet. FluxWorks turns this on when your account is set up."
 
@@ -58,33 +65,43 @@ CHIPS_NONE = "This text fills in no details."
 SWITCH_OFF = "Off. Customers skip this question."
 EDITOR_OPEN = "Edit wording"
 RESET, RESET_NOJS = "Reset", "Reset and save"
+TRIGGER_LABEL = "When the customer sends something like"
+WAS = "Was:"
+# Not in the deck yet (layer 2, round-3 panel): under a bubble whose links show as labels.
+LINK_NOTE = "Each label is a link. The text count includes the full links."
+SPEAKER_CUSTOMER = "Customer"
 
 RAIL_TITLE = "Example conversation"
 RAIL_SHOW = "Show"
 RAIL_SUB = "Text message"
 RAIL_FOOT = "Example conversation · nothing is sent · names made up"
+RAIL_NOTICE_HINT = "Each text in this example also starts with the network notice."
 RAIL_BACK = "Back to editing"
 PILL_MISSED = "Missed call · just now"
 PILL_NO_REPLY, PILL_STILL_NO_REPLY = "No reply", "Still no reply"
-PILL_STOPS = "Texting stops here"
+PILL_STOPS = "Texts stop here"
 PILL_NO_BOOKING = "No booking was made"
 PILL_BOOKED, PILL_BOOKED_TEST = "Booked · on your calendar", "Booked · on the test calendar"
 DIVIDER_STEPS_BACK = "The assistant steps back here"
 PILL_DETAILS_SENT = "Customer's details sent to {label}"
 
 SAVEBAR_NOJS = "Saves every text at once"
+SAVEBAR_CLEAN = "No unsaved changes"
+CHANGED_ONE, CHANGED_MANY = "1 text changed", "{n} texts changed"
+NOT_SAVED_COUNT = "Not saved · {count}"
 SAVE, SAVING, DISCARD = "Save", "Saving…", "Discard"
+DISCARDED = "Changes discarded."
 
-ERROR_SUMMARY = 'Not saved. "{title}" needs a change: {reason}'
+ERROR_SUMMARY = "Not saved. “{title}” needs a change: {reason}"
 ERROR_LINK = "Go to that text"
 ERROR_KEPT = "Your other edits are still here. Nothing was saved yet."
 ERROR_UNPLACED = "Not saved. {reason}"
 
-REASON_NUMBER = ('Take out "{phrase}". Customers stay in the text thread, so say you\'ll follow up by text, like '
-                 '"We\'ll follow up with you by text."')
-REASON_FOLLOW_UP = 'Add the words "follow up", like "We\'ll follow up with you by text."'
+REASON_NUMBER = ("Take out “{phrase}”. Customers stay in the text thread, so say you'll follow up by text, like "
+                 "“We'll follow up with you by text.”")
+REASON_FOLLOW_UP = "Add the words “follow up”, like “We'll follow up with you by text.”"
 REASON_911 = "Tell people to call 911 if anyone is in danger."
-REASON_NO_BOOKING = 'Say "No booking was made" and leave out the word "call".'
+REASON_NO_BOOKING = "Say “No booking was made” and leave out the word “call”."
 REASON_STOP = "Include the word STOP. Phone companies require it."
 REASON_BAD_INSERT = ("Something typed by hand isn't a detail we can fill in. Use the Insert buttons under the box, "
                      "or remove it.")
@@ -94,7 +111,7 @@ REASON_TOO_LONG = f"Shorten it to {MAX_TEMPLATE_CHARS} characters or fewer."
 
 # key -> (card title, when-line). followup_1/2 when-lines carry the live reminder delays (when_line).
 MESSAGES: dict[str, tuple[str, str]] = {
-    "intro": ("First text after a missed call", "Sent the moment a call goes unanswered."),
+    "intro": ("First text after a missed call", ""),  # the step blurb already says when it is sent
     "prompt_service": ("Question 1: the job", "Asked as soon as the customer replies."),
     "prompt_location": ("Question 2: the address", "Asked once the job is known."),
     "prompt_preferred_time": ("Question 3: day and time",
@@ -125,29 +142,41 @@ RULES = {key: RULE_STOP for key in OPT_OUT_REQUIRED} | {
     "handoff_ack": RULE_STEPS_BACK, "handoff_ack_safety": RULE_SAFETY,
 }
 DESTINATION_KEYS = ("handoff_ack", "handoff_ack_safety")
+# The customer reply that triggers each fallback text (deck trigger_examples); made-up sample lines.
+TRIGGERS = {
+    "preferred_time_reprompt": "Sometime next week", "phone_reprompt": "my cell", "email_reprompt": "dana at gmail",
+    "slot_unavailable": "Wednesday at 10", "booking_error": "Thursday at 10",
+    "handoff_ack": "Can I just talk to the owner?",
+    "handoff_ack_safety": "A big limb just came down on the power line by our house",
+    "opt_in": "START", "help": "HELP", "opt_out_ack": "STOP",
+}
 
-# (step id, heading, blurb, ((parent key, (branch keys...)), ...))
-STEPS: tuple[tuple[str, str, str, tuple], ...] = (
-    ("missed", "Missed call", "A call goes unanswered. Within a minute the caller gets this text.", (("intro", ()),)),
-    ("questions", "Questions", "Asked one at a time, in this order. The assistant moves on only once it has an answer.", (
-        ("prompt_service", ()), ("prompt_location", ()),
-        ("prompt_preferred_time", ("preferred_time_reprompt",)), ("prompt_name", ()),
-        ("prompt_phone", ("phone_reprompt",)), ("prompt_email", ("email_reprompt",)))),
+# The conversation spine (mockup d1): (step id, heading, blurb, glyph, keys, optional keys). A branch card
+# (re-ask, time taken, calendar failed) hangs under the card before it; a switched-off optional question
+# hides its branch (still posted).
+STEPS: tuple[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...]], ...] = (
+    ("missed_call", "Missed call", "A call goes unanswered. Within a minute the caller gets this text.", "phone",
+     ("intro",), ()),
+    ("questions", "Questions", "Asked one at a time, in this order. The assistant moves on only once it has an answer.",
+     "circle-help", ("prompt_service", "prompt_location", "prompt_preferred_time", "preferred_time_reprompt", "prompt_name"),
+     ("prompt_phone", "phone_reprompt", "prompt_email", "email_reprompt")),
     ("booking", "Booking", "Once it has the answers, the assistant checks your calendar and books a free time.",
-     (("booking_confirmation", ("slot_unavailable", "booking_error")),)),
-    ("noreply", "No reply", "If the customer goes quiet, the assistant sends two reminders. Then the texting stops.",
-     (("followup_1", ()), ("followup_2", ()))),
+     "calendar", ("slot_unavailable", "booking_confirmation", "booking_error"), ()),
+    ("no_reply", "No reply", "If the customer goes quiet, the assistant sends two reminders. Then the texting stops.",
+     "bell", ("followup_1", "followup_2"), ()),
     ("steps_back", "When the assistant steps back",
      "When a text needs a person, the assistant stops scheduling and passes the customer's details on.",
-     (("handoff_ack", ()), ("handoff_ack_safety", ()))),
+     "user-round", ("handoff_ack", "handoff_ack_safety"), ()),
 )
-KEYWORDS = ("keywords", "START, HELP and STOP", "Required by phone companies. Most businesses never change these.",
-            (("opt_in", ()), ("help", ()), ("opt_out_ack", ()), ("opt_out_suffix", ())))
-JUMP = (("missed", "Missed call"), ("questions", "Questions"), ("booking", "Booking"), ("noreply", "No reply"),
+KEYWORDS = ("any_time", "START, HELP and STOP", "Required by phone companies. Most businesses never change these.",
+            "shield-check", ("opt_in", "help", "opt_out_ack", "opt_out_suffix"), ())
+JUMP = (("missed_call", "Missed call"), ("questions", "Questions"), ("booking", "Booking"), ("no_reply", "No reply"),
         ("steps_back", "Steps back"))
+BRANCH_OF = {"preferred_time_reprompt": "prompt_preferred_time", "phone_reprompt": "prompt_phone",
+             "email_reprompt": "prompt_email"}
+BRANCH_KEYS = frozenset(BRANCH_OF) | {"slot_unavailable", "booking_error"}
 
-FIELD_KEYS: tuple[str, ...] = tuple(key for *_, sets in (*STEPS, KEYWORDS) for parent, branches in sets
-                                    for key in (parent, *branches))
+FIELD_KEYS: tuple[str, ...] = tuple(key for *_, keys, optional in (*STEPS, KEYWORDS) for key in (*keys, *optional))
 OPTIONAL_QUESTIONS = {"prompt_phone": ("phone", "Also ask for the best phone number"),
                       "prompt_email": ("email", "Also ask for an email address")}
 
@@ -206,9 +235,19 @@ def sms_parts(text: str) -> tuple[int, int, bool]:
     return len(text), (1 if len(text) <= 70 else math.ceil(len(text) / 67)), False
 
 
-def count_label(text: str) -> str:
-    chars, parts, _ = sms_parts(text)
-    return f"{parts} text{'s' if parts != 1 else ''} · {chars} characters"
+# The network notice a text carries until texting approval clears: 24 characters, two of them the brackets
+# the plain alphabet bills twice. It models the real prefix's length without its words (never shown).
+NOTICE_MODEL = "[" + "a" * 21 + "] "
+
+
+def count_label(text: str, notice: bool = False) -> str:
+    """Deck cost_line. With ``notice`` the count covers the text as it arrives, network notice included."""
+    chars, parts, _ = sms_parts(NOTICE_MODEL + text if notice else text)
+    return f"{parts} text{'s' if parts != 1 else ''} · {chars} characters" + (" with the notice" if notice else "")
+
+
+def _first_symbol(text: str) -> str:
+    return next((ch for ch in text if ch not in GSM_BASIC and ch not in GSM_EXTENDED), "")
 
 
 def bill_label(text: str) -> str:
@@ -218,9 +257,22 @@ def bill_label(text: str) -> str:
         return ""
     if plain:
         return f"Billed as {parts} texts. Customers still see one message."
-    symbol = next(ch for ch in text if ch not in GSM_BASIC and ch not in GSM_EXTENDED)
-    instead = f'Use "{_PLAIN[symbol]}" instead.' if symbol in _PLAIN else "Use a plain letter instead."
-    return f'Billed as {parts} texts. The "{symbol}" symbol makes each text hold only 70 characters. {instead}'
+    symbol = _first_symbol(text)
+    instead = f"Use “{_PLAIN[symbol]}” instead." if symbol in _PLAIN else "Use a plain letter instead."
+    return f"Billed as {parts} texts. The “{symbol}” symbol makes each text hold only 70 characters. {instead}"
+
+
+def fix_label(text: str) -> str:
+    """The one-tap fix beside a symbol billing line ("Replace — with -"), or '' when there is none."""
+    _, parts, plain = sms_parts(text)
+    symbol = _first_symbol(text)
+    return f"Replace {symbol} with {_PLAIN[symbol]}" if parts > 1 and not plain and symbol in _PLAIN else ""
+
+
+def apply_fix(text: str) -> str:
+    """The wording with its first billed symbol swapped for the plain one (what the fix button does)."""
+    symbol = _first_symbol(text)
+    return text.replace(symbol, _PLAIN[symbol]) if symbol in _PLAIN else text
 
 
 # --- previews ------------------------------------------------------------------------------
@@ -250,13 +302,21 @@ def sample_when(state, now: datetime) -> str:
     return start.strftime("%A, %b %d at %I:%M %p %Z").replace(" 0", " ")
 
 
-def preview_values(state, now: datetime) -> dict[str, str]:
+INVITE_LINE = f"A calendar invite is on its way to {SAMPLE_EMAIL}."
+
+
+def preview_values(state, now: datetime, asked: set[str] | None = None) -> dict[str, str]:
+    """Example values for the previews. The invite sentence and the customer's email are filled in only
+    while the email question is asked (asked=None: as saved), as the booking code does."""
+    if asked is None:
+        asked = set(state.messages.current().fields) & {"phone", "email"}
+    email = "email" in asked
     urls = CalendarLinks(str(state.public_base_url), LINK_SECRET).urls(1, "example")
     contact = (getattr(state, "business_contact", "") or "").strip() or format_contact_number(getattr(state, "business_number", "") or "")
     return {
         "business_name": state.business_name, "service": SAMPLE_SERVICE, "when": sample_when(state, now),
-        "location": SAMPLE_LOCATION, "event_id": "", "invited_email": SAMPLE_EMAIL,
-        "invite_line": f"A calendar invite is on its way to {SAMPLE_EMAIL}.",
+        "location": SAMPLE_LOCATION, "event_id": "", "invited_email": SAMPLE_EMAIL if email else "",
+        "invite_line": INVITE_LINE if email else "",
         "calendar_links": CalendarLinks.sms_line(urls), "contact_line": f" Contact: {contact}." if contact else "", **urls,
     }
 
@@ -344,22 +404,25 @@ def change_summary(old: dict[str, str], new: dict[str, str], old_asked: set[str]
 
 # --- config-driven lines ---------------------------------------------------------------------
 
-def destination_label(state) -> str | None:
-    """Who receives the customer's details when the assistant steps back, or None when nobody does.
-
-    Only the chat channel with a destination set delivers anywhere a person reads; "log",
-    "disabled" and an "unconfigured" destination all read as "nowhere yet"."""
+def _channel(state) -> str:
+    """chat | log | off: where the customer's details go when the assistant steps back."""
     transport = getattr(state, "delivery_transport", None)
     channel = getattr(transport, "channel_name", "disabled")
     destination = str(getattr(state, "handoff_destination", "") or "")
     if channel == "telegram" and destination and destination != "unconfigured":
-        return DESTINATION_CHAT
-    return None
+        return "chat"
+    return "log" if channel == "log" and destination != "unconfigured" else "off"
+
+
+def destination_label(state) -> str | None:
+    """Who receives the customer's details (short form), or None when nobody does."""
+    return {"chat": DESTINATION_CHAT, "log": DESTINATION_LOG_SHORT}.get(_channel(state))
 
 
 def destination_line(state) -> str:
-    label = destination_label(state)
-    return DESTINATION_LINE.format(label=label) if label else DESTINATION_OFF
+    """The line that replaces the three next steps when they would not be true (log or off)."""
+    return {"chat": DESTINATION_LINE.format(label=DESTINATION_CHAT), "log": f"These go to {DESTINATION_LOG}",
+            "off": DESTINATION_OFF}[_channel(state)]
 
 
 def when_line(key: str, state) -> str:
@@ -380,7 +443,7 @@ class Item:
     kind: str        # customer | textback | missed | neutral | booked | divider
     text: str
     key: str = ""
-    suffix: str = ""
+    links: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -388,36 +451,36 @@ class Card:
     key: str
     title: str
     when: str
-    rule: str
-    destination: str        # the steps-back destination line, steps-back cards only
-    default: str            # standard wording, display form (data-default)
-    saved: str              # wording in the file, display form (data-saved)
-    value: str              # textarea content, display form; never ""
+    rules: tuple[str, ...]
+    next_steps: tuple[str, ...]  # steps-back cards with a real destination: the three steps
+    destination: str             # steps-back cards otherwise: the line that replaces them
+    default: str                 # standard wording, display form (data-default)
+    saved: str                   # wording in the file, display form (data-saved)
+    value: str                   # textarea content, display form; never ""
     length: int
-    custom: bool            # the textarea differs from the standard wording
-    saved_custom: bool      # the saved wording differs from the standard: "Customized"
-    body: str
-    suffix: str
+    custom: bool                 # the textarea differs from the standard wording
+    saved_custom: bool           # the saved wording differs from the standard: "Customized"
+    body: str                    # bubble words, links taken out
+    links: tuple[tuple[str, str], ...]
+    suffix: str                  # the opt-out line added for the owner, or ''
+    was: str                     # the saved text as sent, for "Was: …" while the draft differs
     count: str
     bill: str
+    fix: str                     # "Replace — with -" or ''
     segments: int
     optout_required: bool
-    optout_added: bool
-    optional: str           # phone | email | ""
+    optional: str                # phone | email | ""
     switch_label: str
     asked: bool
     asked_saved: bool
     branch: bool
+    hidden: bool                 # the branch of a switched-off optional question
     chips: tuple[tuple[str, str], ...]
     error: str
     dirty: bool
-
-
-@dataclass(frozen=True, slots=True)
-class QSet:
-    eyebrow: str
-    parent: Card
-    branches: tuple[Card, ...]
+    text_dirty: bool             # the wording differs from the saved one (a switch alone does not count)
+    trigger: str
+    who: str                     # speaker label over the bubble when a customer reply is shown above it
 
 
 @dataclass(frozen=True, slots=True)
@@ -425,7 +488,9 @@ class Step:
     id: str
     heading: str
     blurb: str
-    sets: tuple[QSet, ...]
+    glyph: str
+    cards: tuple[Card, ...]
+    optional: tuple[Card, ...]
     has_error: bool = False
 
 
@@ -442,6 +507,8 @@ def _norm(text: str) -> str:
 
 def rail_scenarios(state, now: datetime) -> tuple[Scenario, ...]:
     """The example conversations from the real handlers with the SAVED texts, as thread rows."""
+    from text_back.portal_render import split_links
+
     current = state.messages.current()
     saved = {key: current.templates[key] for key in FIELD_KEYS if current.templates[key] != DEFAULT_TEMPLATES[key]}
     asked = set(current.fields) & {"phone", "email"}
@@ -455,7 +522,8 @@ def rail_scenarios(state, now: datetime) -> tuple[Scenario, ...]:
         rows: list[Item] = []
         for bubble in bubbles:
             if bubble.side == "event":
-                text = {"Missed call": PILL_MISSED, "Booked on the calendar": booked}.get(bubble.text, bubble.text)
+                text = {"Missed call": PILL_MISSED, "Booked on the calendar": booked,
+                        "Texting stops here": PILL_STOPS}.get(bubble.text, bubble.text)
                 rows.append(Item("booked" if text == booked else "missed" if text == PILL_MISSED else "neutral", text))
                 continue
             if bubble.side == "customer":
@@ -465,7 +533,8 @@ def rail_scenarios(state, now: datetime) -> tuple[Scenario, ...]:
                 rows.append(Item("neutral", PILL_NO_REPLY))
             elif bubble.key == "followup_2":
                 rows.append(Item("neutral", PILL_STILL_NO_REPLY))
-            rows.append(Item("textback", bubble.text, key=bubble.key or ""))
+            body, links = split_links(bubble.text)
+            rows.append(Item("textback", body, key=bubble.key or "", links=links))
             if bubble.key == "booking_error":
                 rows.append(Item("neutral", PILL_NO_BOOKING))
             if bubble.key in DESTINATION_KEYS:
@@ -476,11 +545,16 @@ def rail_scenarios(state, now: datetime) -> tuple[Scenario, ...]:
     return tuple(out)
 
 
+def changed_words(n: int) -> str:
+    return CHANGED_ONE if n == 1 else CHANGED_MANY.format(n=n)
+
+
 def page_view(state, now: datetime, *, values: dict[str, str] | None = None, asked: set[str] | None = None,
               error: str = "") -> dict:
     """Context for messages.html.j2. ``values`` are the owner's custom texts in display form
     ('' = standard); after a rejected save they are the texts as typed, so nothing is lost."""
     from text_back.portal_registry import network_notice_applies
+    from text_back.portal_render import split_links
 
     current = state.messages.current()
     editable = state.messages.path is not None
@@ -490,70 +564,92 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
     asked_saved = set(current.fields) & {"phone", "email"}
     asked = asked_saved if asked is None else asked
     templates = {key: to_template(values.get(key) or "") or DEFAULT_TEMPLATES[key] for key in FIELD_KEYS}
-    sample = preview_values(state, now)
+    saved_templates = {key: current.templates[key] for key in FIELD_KEYS}
+    sample = preview_values(state, now, asked)
     bad_key, reason = blame(error, templates) if error else (None, "")
     friendly = friendly_reason(reason, bad_key) if error else ""
-    destination = destination_line(state)
+    notice = network_notice_applies(state, now)
+    channel_line = destination_line(state)
+    chat = _channel(state) == "chat"
 
-    def card(key: str, branch: bool) -> Card:
+    def card(key: str) -> Card:
         optional, switch_label = OPTIONAL_QUESTIONS.get(key, ("", ""))
         default = to_display(DEFAULT_TEMPLATES[key])
         saved = to_display(current.templates[key])
         value = values.get(key) or default
         body, suffix = preview_parts(key, templates, sample)
         preview = " ".join(part for part in (body, suffix) if part)
+        words, links = split_links(body)
+        billed = NOTICE_MODEL + preview if notice and key != "opt_out_suffix" else preview
+        parent = BRANCH_OF.get(key)
+        trigger = TRIGGERS.get(key, "")
         dirty = _norm(value) != _norm(saved) or (optional in asked) != (optional in asked_saved)
         return Card(
-            key=key, title=MESSAGES[key][0], when=when_line(key, state), rule=RULES.get(key, ""),
-            destination=destination if key in DESTINATION_KEYS else "",
+            key=key, title=MESSAGES[key][0], when=when_line(key, state),
+            rules=(RULES[key],) if key in RULES else (),
+            next_steps=NEXT_STEPS if key in DESTINATION_KEYS and chat else (),
+            destination=channel_line if key in DESTINATION_KEYS and not chat else "",
             default=default, saved=saved, value=value, length=len(value), custom=bool(values.get(key)),
             saved_custom=_norm(current.templates[key]) != _norm(DEFAULT_TEMPLATES[key]),
-            body=body, suffix=suffix, count=count_label(preview), bill=bill_label(preview), segments=sms_parts(preview)[1],
-            optout_required=key in OPT_OUT_REQUIRED, optout_added=bool(suffix),
-            optional=optional, switch_label=switch_label, asked=optional in asked, asked_saved=optional in asked_saved,
-            branch=branch, chips=chips_for(key), error=friendly if key == bad_key else "", dirty=dirty,
+            body=words, links=links, suffix=suffix, was=split_links(preview_text(key, saved_templates, sample))[0],
+            count=count_label(preview, notice and key != "opt_out_suffix"), bill=bill_label(billed),
+            fix=fix_label(billed), segments=sms_parts(billed)[1],
+            optout_required=key in OPT_OUT_REQUIRED, optional=optional, switch_label=switch_label,
+            asked=optional in asked, asked_saved=optional in asked_saved,
+            branch=key in BRANCH_KEYS, hidden=bool(parent and OPTIONAL_QUESTIONS.get(parent) and
+                                                   OPTIONAL_QUESTIONS[parent][0] not in asked),
+            chips=chips_for(key), error=friendly if key == bad_key else "", dirty=dirty,
+            text_dirty=_norm(value) != _norm(saved), trigger=trigger, who=state.business_name if trigger else "",
         )
 
-    def step(sid: str, heading: str, blurb: str, sets) -> Step:
-        qsets, eyebrow_used = [], False
-        for parent, branches in sets:
-            eyebrow = ""
-            if parent in OPTIONAL_QUESTIONS and not eyebrow_used:
-                eyebrow, eyebrow_used = OPTIONAL_EYEBROW, True
-            qsets.append(QSet(eyebrow, card(parent, False), tuple(card(b, True) for b in branches)))
-        keys = {key for parent, branches in sets for key in (parent, *branches)}
-        return Step(sid, heading, blurb, tuple(qsets), has_error=bad_key in keys)
+    def step(sid, heading, blurb, glyph, keys, optional) -> Step:
+        return Step(sid, heading, blurb, glyph, tuple(card(k) for k in keys), tuple(card(k) for k in optional),
+                    has_error=bad_key in (*keys, *optional))
 
+    steps = tuple(step(*row) for row in STEPS)
+    keywords = step(*KEYWORDS)
+    every = [c for st in (*steps, keywords) for c in (*st.cards, *st.optional)]
+    dirty = [c for c in every if c.dirty]
     error_summary = None
     if error:
         error_summary = {"key": bad_key or "", "title": MESSAGES[bad_key][0] if bad_key else "", "reason": friendly,
                          "text": (ERROR_SUMMARY.format(title=MESSAGES[bad_key][0], reason=friendly) if bad_key
                                   else ERROR_UNPLACED.format(reason=friendly)),
                          "link": ERROR_LINK, "kept": ERROR_KEPT}
+    names = tuple((f"#card-{c.key}", c.title) for c in dirty)
+    count = NOT_SAVED_COUNT.format(count=changed_words(len(dirty))) if dirty else ""
     support = str(getattr(state, "support_contact", "") or "").strip()
     return {
         "editable": editable,
         "max_chars": MAX_TEMPLATE_CHARS,
-        "steps": tuple(step(*row) for row in STEPS),
-        "keywords": step(*KEYWORDS),
-        "jump": tuple((f"#g_{sid}", label) for sid, label in JUMP),
+        "steps": steps,
+        "keywords": keywords,
+        "jump": JUMP,
         "error_summary": error_summary,
         "asked": tuple(sorted(asked)),
-        "network_notice": NETWORK_NOTICE if network_notice_applies(state, now) else "",
+        "network_notice": NETWORK_NOTICE if notice else "",
         "not_enabled": "" if editable else NOT_ENABLED,
         "support_href": f"sms:{support}" if support and not editable else "",
         "rail": rail_scenarios(state, now),
-        "tb_data": {"sample": sample, "labels": {label: name for label, name in _LABEL_NAMES.items()},
-                    "gsm": GSM_BASIC, "ext": GSM_EXTENDED} if editable else None,
+        # A rejected save answers with the typed texts: the header (phone) and the bar (desktop) say so.
+        "dirty_count": count, "dirty_names": names,
+        "topsave": ({"form": "messages-form", "changed": count, "save": SAVE, "names": names}
+                    if editable and dirty and error else None),
+        "tb_data": {"sample": sample, "invite": {"invite_line": INVITE_LINE, "invited_email": SAMPLE_EMAIL}, "labels": {label: name for label, name in _LABEL_NAMES.items()},
+                    "gsm": GSM_BASIC, "ext": GSM_EXTENDED, "notice": notice} if editable else None,
     }
 
 
 def read_form(form) -> tuple[dict[str, str], dict[str, str], set[str]]:
     """(values as typed in display form, overrides for the file, asked questions).
 
-    An untouched or re-typed standard text is stored as standard; a Reset button posts the whole
-    form with its own key named in ``reset``, so it works without JavaScript and keeps the other edits."""
+    An untouched or re-typed standard text is stored as standard. A Reset button posts the whole form with
+    its own key named in ``reset``, and a "Replace — with -" button names its key in ``fix``, so both work
+    without JavaScript and keep the other edits."""
     submitted = {key: str(form.get(key, "") or "").strip() for key in FIELD_KEYS}
+    fix = str(form.get("fix", "") or "")
+    if fix in submitted:
+        submitted[fix] = apply_fix(submitted[fix] or to_display(DEFAULT_TEMPLATES[fix]))
     for key, value in submitted.items():
         if _norm(to_template(value)) == _norm(DEFAULT_TEMPLATES[key]):
             submitted[key] = ""

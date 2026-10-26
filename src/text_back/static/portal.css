@@ -1767,3 +1767,58 @@
   .pill { height: auto; min-height: 28px; white-space: normal; text-align: center; }
   @media (prefers-reduced-motion: reduce) { .menu__chev, .editor__chev, .asks__chev, .anytime__chev { transition: none; } }
 }
+
+/* ======================================================================== app (candidate C build glue)
+   Rules the mockup did not need because it is static: live states the app reaches (a question switched
+   on or off without reloading, the example scenario switch, link labels as spans) and the round-3 panel
+   fixes. Declared after d1. */
+@layer app;
+@layer app {
+  /* A switched-off optional question: its question line and "Not asked" show only while off; its re-ask
+     branch hides with it (still posted). Works without JavaScript through :has(). */
+  .msg--optional:has(.switch:checked) :is(.msg__offq, [data-not-asked]) { display: none; }
+  .msg--optional:not(.msg--invalid):has(.switch:not(:checked)) .msg__off { display: block; }
+  .spine:has(#ask_phone:not(:checked)) [data-card="phone_reprompt"]:not(:has(.msg--invalid)),
+  .spine:has(#ask_email:not(:checked)) [data-card="email_reprompt"]:not(:has(.msg--invalid)) { display: none; }
+  .chips-none { margin-top: 0; }
+
+  /* Calendar links show as labels under the words; the full link is in title. */
+  span.sms__linkbtn { cursor: default; }
+  .msg__linknote { font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--text-muted); text-align: right; }
+
+  /* Example conversation: the caption sits right under the heading (round-3 panel). */
+  .rail__caption { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2);
+    font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--text-muted); }
+  .rail__head { grid-template-columns: minmax(0, 1fr); }
+  .rail__pick { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .rail__pick .select, .rail__pick .select__input { min-width: 0; max-width: 100%; }
+  /* The added opt-out line reads as part of the text (the receipt says it was added). */
+  .sms__suffix { text-decoration: none; }
+  :where(.js) .rail__go { display: none; }
+  .thread { list-style: none; margin: 0; padding: 0; }
+  .thread .sms { list-style: none; }
+  .thread > .tpill, .thread > .handoff { align-self: center; }
+  /* Which example is drawn: the selected option (no JS, via :has) or data-active (JS). */
+  .rail:has(option:checked) .thread { display: none; }
+  .rail:has(option[value="booked"]:checked) .thread[data-scenario="booked"],
+  .rail:has(option[value="unclear"]:checked) .thread[data-scenario="unclear"],
+  .rail:has(option[value="noreply"]:checked) .thread[data-scenario="noreply"],
+  .rail:has(option[value="failed"]:checked) .thread[data-scenario="failed"],
+  .rail:has(option[value="steps_back"]:checked) .thread[data-scenario="steps_back"],
+  .rail:has(option[value="safety"]:checked) .thread[data-scenario="safety"],
+  .rail:has(option[value="keywords"]:checked) .thread[data-scenario="keywords"] { display: flex; }
+  .rail[data-active] .thread { display: none; }
+  .rail[data-active="booked"] .thread[data-scenario="booked"],
+  .rail[data-active="unclear"] .thread[data-scenario="unclear"],
+  .rail[data-active="noreply"] .thread[data-scenario="noreply"],
+  .rail[data-active="failed"] .thread[data-scenario="failed"],
+  .rail[data-active="steps_back"] .thread[data-scenario="steps_back"],
+  .rail[data-active="safety"] .thread[data-scenario="safety"],
+  .rail[data-active="keywords"] .thread[data-scenario="keywords"] { display: flex; }
+  /* The desktop rail scrolls its own thread: the faded bottom edge sits in padding, so the last bubble
+     (the confirmation with its link labels, or the booked pill) is fully visible when scrolled to the end. */
+  @media (min-width: 1024px) {
+    .phone__log { padding-bottom: 3.5rem; scroll-padding-bottom: 3.5rem; }
+    .rail { max-height: calc(100dvh - var(--header-h) - 2rem); }
+  }
+}

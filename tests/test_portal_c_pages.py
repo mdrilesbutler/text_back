@@ -8,7 +8,7 @@ from datetime import timedelta
 from text_back import client_settings, portal_status
 from text_back.handlers import handle_voice_event
 from text_back.portal_messages import DESTINATION_OFF, NETWORK_NOTICE
-from text_back.portal_render import sms_links
+from text_back.portal_render import split_links, url_runs
 from text_back.portal_sample import render_scenario
 from text_back.portal_scheduling import SAVED as SCHEDULE_SAVED
 from text_back.telecom import FakeTelecom
@@ -112,8 +112,15 @@ def test_the_example_conversation_is_the_real_product_output_with_the_saved_text
                                    asked={"email"}, now=clock[0], public_base_url=state.public_base_url,
                                    tz_name=state.timezone_name)
         rail = thread(page, scenario)
-        shown = re.findall(r'<p class=sms__bubble data-preview=(\w*)>(.*?)</p>', rail, re.S)
-        wanted = [(b.key or "", str(sms_links(b.text))) for b in expected if b.side == "textback"]
+        shown = re.findall(r'<p data-preview=(\w*)>(.*?)</p><ul class=sms__links data-links=\w*( hidden)?>(.*?)</ul>', rail, re.S)
+        wanted = []
+        for b in expected:
+            if b.side != "textback":
+                continue
+            words, links = split_links(b.text)
+            wanted.append((b.key or "", str(url_runs(words)), "" if links else " hidden",
+                           "".join(f'<li><span class=sms__linkbtn title="{html.escape(url, quote=True)}">{label}</span></li>'
+                                   for label, url in links)))
         assert shown == wanted, scenario
     booked = thread(page, "booked")
     assert "Oak &amp; Pine Tree Care here, sorry we missed you." in booked  # the SAVED wording, not the default
@@ -125,7 +132,7 @@ def test_the_example_conversation_is_the_real_product_output_with_the_saved_text
 def test_the_steps_back_destination_comes_from_config(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     page = text_of(client.get("/client/messages"))
-    card = re.search(r'<article class="msg" id=m_handoff_ack .*?</article>', page, re.S).group(0)
+    card = re.search(r'<article class="qset" id=card-handoff_ack .*?</article>', page, re.S).group(0)
     assert "This text must tell the customer someone will follow up." in card and DESTINATION_OFF in card
     assert "details sent to" not in thread(page, "steps_back")
 
@@ -135,8 +142,8 @@ def test_the_steps_back_destination_comes_from_config(tmp_path, monkeypatch):
     client.app.state.delivery_transport = Chat()
     client.app.state.handoff_destination = "operator-chat"
     page = text_of(client.get("/client/messages"))
-    card = re.search(r'<article class="msg" id=m_handoff_ack_safety .*?</article>', page, re.S).group(0)
-    assert "These go to the FluxWorks operator." in card and DESTINATION_OFF not in page
+    card = re.search(r'<article class="qset" id=card-handoff_ack_safety .*?</article>', page, re.S).group(0)
+    assert "What happens next" in card and DESTINATION_OFF not in page
     rail = thread(page, "safety")
     assert "The assistant steps back here" in rail and "Customer's details sent to the FluxWorks operator" in rail
 
@@ -145,7 +152,7 @@ def test_save_notice_names_the_change_in_the_slot_under_the_header(tmp_path, mon
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     saved = client.post("/client/messages", data={"csrf": csrf, "prompt_location": "Where is the job?", "ask_phone": "1"}).text
     assert slot_text(saved) == "Saved. You changed “Question 2: the address”, “Best phone number switched on”."
-    assert saved.index("id=notice") < saved.index("<h1>Your messages</h1>")
+    assert saved.index("id=notice") < saved.index("<h1>Messages</h1>")
     back = client.post("/client/messages", data={"csrf": csrf, "ask_phone": "1"}).text
     assert "Saved. Back to standard wording: “Question 2: the address”." in html.unescape(back)
     same = client.post("/client/messages", data={"csrf": csrf, "ask_phone": "1"}).text

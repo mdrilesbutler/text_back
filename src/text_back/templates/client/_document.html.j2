@@ -1,6 +1,6 @@
 {#- The HTML document every portal page shares. No inline style, no inline executable script (CSP). -#}
 <!doctype html>
-<html lang=en class=no-js{% if theme %} data-theme={{ theme }}{% endif %}>
+<html lang=en class={{ '"no-js has-jump"'|safe if has_jump is defined and has_jump else "no-js" }}{% if theme %} data-theme={{ theme }}{% endif %}>
 <head>
 <meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1, viewport-fit=cover">

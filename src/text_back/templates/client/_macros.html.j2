@@ -9,10 +9,11 @@
 {#- A node on the spine (mockup d1). State nodes draw the status: done (filled tick), needs (amber "!"),
     waiting (clock), todo (plain ring), manual (dashed ring, tick). Section nodes (kind="icon") only label a
     section with a decorative ring around `glyph`. `attrs` is a pre-rendered attribute string. -#}
+{#- kind="missed" is a section node with the red missed-call dot (Messages' first step). -#}
 {% macro node(kind, glyph="", attrs="", cls="") -%}
 <li class="node node--{{ kind }}{{ (' ' ~ cls) if cls else '' }}"{% if attrs %} {{ attrs }}{% endif %}>
   <span class=node__dot aria-hidden=true>
-    {%- if kind == "icon" %}{{ icon(glyph) }}{% elif kind in ("done", "manual") %}{{ icon("check") }}{% elif kind == "waiting" %}{{ icon("clock") }}{% elif kind == "needs" %}<b class=node__bang>!</b>{% endif -%}
+    {%- if kind in ("icon", "missed") %}{{ icon(glyph) }}{% elif kind in ("done", "manual") %}{{ icon("check") }}{% elif kind == "waiting" %}{{ icon("clock") }}{% elif kind == "needs" %}<b class=node__bang>!</b>{% endif -%}
   </span>
   <div class=node__body>
     {{ caller() }}

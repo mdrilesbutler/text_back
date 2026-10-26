@@ -91,7 +91,7 @@ def test_signed_in_owner_edits_copy_and_the_app_uses_it(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     page = client.get("/client/messages")
-    assert page.status_code == 200 and "Your messages" in page.text
+    assert page.status_code == 200 and "<h1>Messages</h1>" in page.text
     assert "Hey, sorry we missed your call" in page.text  # default shown as placeholder
     csrf = csrf_of(page.text)
     saved = client.post("/client/messages", data={"csrf": csrf, "intro": "Oak & Pine here, sorry we missed you! What do you need?",

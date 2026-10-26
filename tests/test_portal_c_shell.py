@@ -116,7 +116,7 @@ def test_every_post_form_carries_the_csrf_token(tmp_path, monkeypatch):
             assert f"name=csrf value='{csrf}'" in form, form[:160]
             actions.add(re.search(r"action=(\S+?)[\s>]", form).group(1))
         # The only GET form picks which example conversation is drawn; it changes nothing.
-        assert re.findall(r"<form method=get action=(\S+)", page) in ([], ["/client/messages#conversation"])
+        assert re.findall(r"<form method=get action=(\S+)", page) in ([], ["/client/messages#example"])
         assert not re.search(r"<form(?! method=(?:post|get) )", page)
     assert {"/client/logout", "/client/messages", "/client/schedule", "/client/calendar", "/client/phone",
             "/client/phone/checks", "/client/phone/confirm", "/client/phone/keep", "/client/account/remember",

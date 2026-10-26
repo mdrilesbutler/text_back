@@ -1,50 +1,83 @@
-{#- Messages: the steps in conversation order, START/HELP/STOP collapsed, the save bar and the example
-    conversation. Contract: the form always posts all 21 textareas and both ask_* switches; the hidden
-    name=save submit comes first so Enter never triggers a Reset button; never `disabled` on a field. -#}
+{#- Messages (mockup d1 round 3): the conversation spine (Missed call → Questions → Booking → No reply →
+    Steps back; START, HELP and STOP collapsed), the save bar (in flow at rest; while something changed the
+    phone header becomes the save bar and desktop keeps a sticky bottom bar) and the example conversation.
+    Contract: the form always posts all 21 textareas and both ask_* switches; the hidden name=save submit
+    comes first so Enter never triggers Reset or Replace; never `disabled` on a field. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon, notice as notice_box, csrf_input %}
-{% from "client/_message_card.html.j2" import step_section, keywords_section, error_summary as error_box %}
+{% from "client/_macros.html.j2" import icon, csrf_input, node %}
+{% from "client/_message_card.html.j2" import message_card, error_summary as error_box %}
 {% from "client/_rail.html.j2" import rail as rail_panel %}
-{% block page_class %}messages{% endblock %}
-{% block content %}
-<header class=page-head>
-  <h1>Your messages</h1>
-  <p class=lead>The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.</p>
-  <p class=page-head__meta>{{ icon("info") }}<span>Green bubbles are what customers see. The job, address, time and names are made-up examples.</span></p>
-  {% if network_notice %}<p class=page-head__notice data-network-notice>{{ network_notice }}</p>{% endif %}
-  <nav class=jump aria-label="On this page"><ul class=jump__list>{% for href, label in jump %}<li><a class=jump__link href={{ href }}>{{ label }}</a></li>{% endfor %}</ul></nav>
-</header>
-{% if not editable %}
-<div class="notice notice--info" data-not-enabled>
-  <p class=notice__text>{{ not_enabled }}</p>
-  {% if support_href %}<a class="btn btn--secondary" href="{{ support_href }}">Text FluxWorks support</a>{% endif %}
+
+{% macro step_cards(st) -%}
+<div class=cards>
+  {% for c in st.cards %}{{ message_card(c, editable, max_chars) }}{% endfor %}
+  {% if st.optional %}
+  <p class="eyebrow cards__eyebrow">Optional questions</p>
+  {% for c in st.optional %}{{ message_card(c, editable, max_chars) }}{% endfor %}
+  {% endif %}
+  {% if st.id == "no_reply" %}<p class=cards__end><span class=tpill>Texts stop here</span></p>{% endif %}
 </div>
-{% endif %}
+{%- endmacro %}
+
+{% macro spine() -%}
+<ol class=spine>
+  {% for st in steps %}
+  {% call node("missed" if st.id == "missed_call" else "icon", st.glyph, attrs="id=" ~ st.id) %}
+    <div class=node__head><h2 tabindex=-1>{{ st.heading }}</h2><p class=node__blurb>{{ st.blurb }}</p></div>
+    {{ step_cards(st) }}
+  {% endcall %}
+  {% endfor %}
+  {% call node("icon", keywords.glyph, attrs="id=" ~ keywords.id, cls="node--anytime") %}
+    <details class=anytime{% if keywords.has_error %} open{% endif %}>
+      <summary class=anytime__summary>
+        <span class=anytime__text><h2 tabindex=-1>{{ keywords.heading }}</h2><span class=node__blurb>{{ keywords.blurb }}</span></span>
+        {{ icon("chevron-down", "anytime__chev") }}
+      </summary>
+      {{ step_cards(keywords) }}
+    </details>
+  {% endcall %}
+</ol>
+{%- endmacro %}
+
+{% block content %}
 <div class=msg-layout>
-{% if editable %}
-<form method=post action=/client/messages id=messages class=msg-list>
-  {{ csrf_input(csrf) }}
-  <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
-{% else %}
 <div class=msg-list>
-{% endif %}
+  <div class=page-head>
+    <h1>Messages</h1>
+    <p class=lead>The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.</p>
+    <p class=page-head__meta>{{ icon("info") }}<span>Green bubbles are what customers see. The job, address, time and names are made-up examples. <a class="tap page-head__ex" href=#example>Example conversation</a></span></p>
+    {% if network_notice %}<p class="page-head__meta page-head__meta--notice" data-network-notice>{{ icon("clock") }}<span>{{ network_notice }}</span></p>{% endif %}
+  </div>
+  {% if not editable %}
+  <div class="notice notice--info msg-notice" data-not-enabled>
+    {{ icon("info", "notice__icon") }}
+    <div class=notice__body><p class=notice__text>{{ not_enabled }}</p>{% if support_href %}<a class="btn btn--secondary" href="{{ support_href }}">Text FluxWorks support</a>{% endif %}</div>
+  </div>
+  {% endif %}
   {% if error_summary %}{{ error_box(error_summary) }}{% endif %}
-  <ol class=moments aria-label="The conversation, in order">
-  {% for s in steps %}{{ step_section(s, editable, max_chars) }}{% endfor %}
-  </ol>
-  {{ keywords_section(keywords, editable, max_chars) }}
-{% if editable %}
-  <div class=savebar data-savebar data-state=nojs data-initial={{ savebar_initial }}>
-    <p class="savebar__status tnum" data-savebar-status>Saves every text at once</p>
+  {#- Below 640 px one sticky 44 px control; wider, the chip row. portal.js marks the step on screen. #}
+  <details class=jumpmenu data-jumpmenu>
+    <summary class=jumpmenu__summary><span class=jumpmenu__label data-lead="Jump to:">Jump to a step</span>{{ icon("chevron-down", "jumpmenu__chev") }}</summary>
+    <ul class=jumpmenu__list aria-label="On this page">{% for sid, label in jump %}<li><a class=jumpmenu__link href=#{{ sid }}{% if loop.first %} aria-current=location{% endif %}>{{ label }}</a></li>{% endfor %}</ul>
+  </details>
+  <nav class=jump aria-label="On this page"><ul class=jump__list>{% for sid, label in jump %}<li><a class=jump__link href=#{{ sid }}{% if loop.first %} aria-current=location{% endif %}>{{ label }}</a></li>{% endfor %}</ul></nav>
+  {% if editable %}
+  <form method=post action=/client/messages id=messages-form data-track-changes data-topsave data-changed-one="1 text changed" data-changed-many="{n} texts changed" data-save-label=Save{% if topsave %} data-dirty-initial{% endif %}>
+    {{ csrf_input(csrf) }}
+    <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
+    {{ spine() }}
+  </form>
+  <div class="savebar{{ ' savebar--on' if dirty_count else '' }}" data-state={{ "dirty" if dirty_count else "clean" }} data-savebar data-form=messages-form>
+    <p class=savebar__status role=status data-savebar-status data-clean="No unsaved changes">{% if dirty_count %}<span class=savebar__count>{{ dirty_count }}</span><span class=savebar__names>: {% for href, title in dirty_names %}<a href="{{ href }}">{{ title }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% else %}Saves every text at once{% endif %}</p>
     <div class=savebar__actions>
-      <button type=button class="btn btn--danger-ghost" data-discard hidden>Discard</button>
-      <button type=submit class="btn btn--primary" name=save value=1 data-save data-loading="Saving…">Save</button>
+      <button type=submit class="btn btn--ghost" name=discard value=1 form=messages-form formnovalidate data-savebar-discard{% if not dirty_count %} hidden{% endif %}>Discard</button>
+      <button type=submit class="btn btn--primary" form=messages-form name=save value=1 data-rest-save data-loading="Saving…">Save</button>
     </div>
   </div>
-</form>
-{% else %}
+  {% else %}
+  {{ spine() }}
+  {% endif %}
 </div>
-{% endif %}
-{{ rail_panel(rail, business_name, scenario) }}
+{{ rail_panel(rail, business_name, scenario, network_notice) }}
 </div>
 {% endblock %}

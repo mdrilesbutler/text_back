@@ -304,11 +304,12 @@ def _messages_page(request: Request, state, session, *, notice: str = "", values
     ids = [s.id for s in view["rail"]]
     view["scenario"] = scenario if scenario in ids else ids[0]
     tb_data = view.pop("tb_data")
+    topsave = view.pop("topsave")
     title = "Not saved · Messages" if view["error_summary"] else "Messages"
     context = shell(state, session, title=title, nav="messages", notice=notice)
-    context["tb_data"] = tb_data
-    savebar_initial = "error" if view["error_summary"] else ("saved" if notice else "clean")
-    return render(request, "client/messages.html.j2", **context, savebar_initial=savebar_initial, **view)
+    context.update(tb_data=tb_data, topsave=topsave)
+    # has_jump: the sticky jump control sits under the header, so scroll-padding-top counts it (d1 CSS).
+    return render(request, "client/messages.html.j2", **context, **view, has_jump=True)
 
 
 def _save_messages(request: Request, state, session, form):
@@ -316,6 +317,9 @@ def _save_messages(request: Request, state, session, form):
 
     if state.messages.path is None:
         return _messages_page(request, state, session)
+    if str(form.get("discard", "") or "") == "1":
+        # Discard without JavaScript (after a rejected save): back to what is saved; nothing is written.
+        return _messages_page(request, state, session, notice=portal_messages.DISCARDED)
     submitted, overrides, asked = portal_messages.read_form(form)
     with MESSAGE_FILE_LOCK:  # one portal writer at a time: read, write, re-read as a unit
         before = state.messages.current()
