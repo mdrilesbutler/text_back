@@ -2,8 +2,8 @@
 {% import "_icons.html" as I %}
 {% set h = f.home %}
 {% block content %}
-<div class="ph">
-  <h1>{{ h.title }}</h1>
+<div class="ph ph--home">
+  <h1 class="ph__kicker">{{ h.title }}</h1>
   <p class="verdict">{{ h.status }}</p>
 </div>
 
@@ -32,7 +32,7 @@
 </section>
 
 <section class="sec" aria-labelledby="week-h">
-  <div class="sec__head"><h2 class="sec__title" id="week-h">{{ h.week_heading }}</h2></div>
+  <div class="sec__head"><h2 class="sec__title" id="week-h">{{ h.week_heading }}</h2><span class="xtag">{{ h.week_counts_example }}</span></div>
   <p class="sec__blurb">{{ h.week_caption }}</p>
   <ul class="stats">
     {% for s in h.week_counts %}
@@ -48,7 +48,7 @@
   <ol class="ledger">
     {% for c in h.callers %}
     <li class="row row--caller">
-      <span class="row__name">{{ c.name }} <span class="xtag">{{ c.example }}</span></span>
+      <span class="row__name"><span>{{ c.name }}</span> <span class="xtag">{{ c.example }}</span></span>
       <span class="cstat{% if c.status == h.status_order[0] %} cstat--booked{% endif %}">{{ c.status }}</span>
       <span class="row__when">{{ c.last_activity }}</span>
       <q class="row__last">{{ c.last_text }}</q>

@@ -11,12 +11,12 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell">
 <header class="hd">
-  <a class="hd__brand" href="/client"><span class="hd__mark" aria-hidden="true"></span>TextBack</a>
+  <a class="hd__brand" href="/client">TextBack</a>
   <span class="hd__sep" aria-hidden="true"></span>
   <details class="acct">
     <summary class="acct__sum"><span class="hd__biz">Oak &amp; Pine Tree Care</span><span class="vh">, Account</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="acct__panel" id="menu">
-      <p class="acct__who">Signed in with 980 555 0123</p>
+      <p class="acct__who">Signed in as 980 555 0123</p>
       <a class="acct__item" href="/client/account">Account</a>
       <form method="post" action="/client/logout"><button class="acct__item" type="submit">Sign out</button></form>
     </div>
@@ -25,8 +25,8 @@
 <main id="main" class="main" tabindex="-1">
   <div class="col">
     <div class="slot" role="status" id="status"></div>
-<div class="ph">
-  <h1>Home</h1>
+<div class="ph ph--home">
+  <h1 class="ph__kicker">Home</h1>
   <p class="verdict">Not working yet: 2 steps left.</p>
 </div>
 
@@ -36,15 +36,15 @@
     <li>
       <a class="row row--task row--link" href="/client/calendar">
         <span class="row__label">Calendar</span>
-        <span class="state state--needs"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring"/></svg><span class="state__word">Needs you</span></span>
-        <span class="row__hint">No calendar yet. Nothing can be booked until you connect one.</span>
+        <span class="state state--needs"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring g-ring--needs"/><path d="M10 5.5v5.5M10 14.2v.3" class="g-mark"/></svg><span class="state__word">Needs you</span></span>
+        <span class="row__hint">No calendar of yours yet. Until you connect one, bookings go on a test calendar you can&#39;t see.</span>
         <span class="row__act">Connect calendar<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
       </a>
     </li>
     <li>
       <a class="row row--task row--link" href="/client/phone#forwarding">
         <span class="row__label">Call forwarding</span>
-        <span class="state state--needs"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring"/></svg><span class="state__word">Needs you</span></span>
+        <span class="state state--needs"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring g-ring--needs"/><path d="M10 5.5v5.5M10 14.2v.3" class="g-mark"/></svg><span class="state__word">Needs you</span></span>
         <span class="row__hint">3 of 5 checks done.</span>
         <span class="row__act">Finish forwarding<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span>
       </a>
@@ -52,7 +52,7 @@
     <li>
       <div class="row row--task">
         <span class="row__label">Texting approval</span>
-        <span class="state state--waiting"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring"/></svg><span class="state__word">Waiting on phone companies</span></span>
+        <span class="state state--waiting"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring"/><path d="M10 5.5V10l3 2" class="g-hand"/></svg><span class="state__word">Waiting on phone companies</span></span>
         <span class="row__hint">FluxWorks has filed your business for texting approval. Until it clears, each text starts with a short network notice. Nothing for you to do.</span>
       </div>
     </li>
@@ -60,7 +60,7 @@
 </section>
 
 <section class="sec" aria-labelledby="week-h">
-  <div class="sec__head"><h2 class="sec__title" id="week-h">This week</h2></div>
+  <div class="sec__head"><h2 class="sec__title" id="week-h">This week</h2><span class="xtag">Example numbers</span></div>
   <p class="sec__blurb">Since Mon, Oct 26. The counts and the list below cover the same days.</p>
   <ul class="stats">
     <li class="stat"><span class="stat__n">3</span><span class="stat__l">Missed calls</span></li>
@@ -75,19 +75,19 @@
   <div class="cols" aria-hidden="true"><span>Customer</span><span>Status</span><span>Last activity</span><span>Last text</span></div>
   <ol class="ledger">
     <li class="row row--caller">
-      <span class="row__name">Dana Whitfield <span class="xtag">Example</span></span>
-      <span class="cstat cstat--booked">Booked</span>
+      <span class="row__name"><span>Dana Whitfield</span> <span class="xtag">Example</span></span>
+      <span class="cstat cstat--booked">Booked on test calendar</span>
       <span class="row__when">Mon, Oct 26, 9:12 AM</span>
       <q class="row__last">Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte.</q>
     </li>
     <li class="row row--caller">
-      <span class="row__name">Marcus Lee <span class="xtag">Example</span></span>
+      <span class="row__name"><span>Marcus Lee</span> <span class="xtag">Example</span></span>
       <span class="cstat">Assistant stepped back</span>
       <span class="row__when">Mon, Oct 26, 11:48 AM</span>
-      <q class="row__last">Got it—automated scheduling is paused. The owner will follow up with you directly.</q>
+      <q class="row__last">Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</q>
     </li>
     <li class="row row--caller">
-      <span class="row__name">Priya Natarajan <span class="xtag">Example</span></span>
+      <span class="row__name"><span>Priya Natarajan</span> <span class="xtag">Example</span></span>
       <span class="cstat">Waiting for a reply</span>
       <span class="row__when">Mon, Oct 26, 1:55 PM</span>
       <q class="row__last">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</q>

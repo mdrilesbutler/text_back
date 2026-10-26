@@ -6,6 +6,7 @@
 <title>Account · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
+<script src="d1.js" defer></script>
 </head>
 <body data-page="account">
 <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -41,22 +42,23 @@
 </svg><a class="skip" href="#main">Skip to content</a>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-missed"/></svg>TextBack</a>
+    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>TextBack</a>
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in with 980 555 0123</p>
+        <p class="menu__who">Signed in as 980 555 0123</p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
     </details>
   </header>
-  <nav class="nav" aria-label="Settings">
+  <nav class="nav" aria-label="Pages">
     <a class="nav__item" href="/client"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-home"/></svg></span><span>Home</span></a>
     <a class="nav__item" href="/client/messages"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-messages"/></svg></span><span>Messages</span></a>
     <a class="nav__item" href="/client/schedule"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg></span><span>Schedule</span></a>
     <a class="nav__item" href="/client/calendar"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg></span><span>Calendar</span></a>
     <a class="nav__item" href="/client/phone"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg></span><span>Phone</span></a>
+    <a class="nav__item nav__item--wide" href="/client/account" aria-current="page"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg></span><span>Account</span></a>
     <p class="nav__foot">TextBack by FluxWorks</p>
   </nav>
   <main class="page" id="main" tabindex="-1">
@@ -74,21 +76,31 @@
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-device"/></svg></span>
   <div class="node__body">
         <div class="node__head"><h2>Remembered devices</h2></div>
-    <div class="card">
+    <form class="card" method="post" action="/client/account">
       <ul class="devices">
 <li class="device device--current"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-device"/></svg><span class="tnum">This phone · signed in Mon, Oct 26, 8:02 AM · stays signed in until Wed, Nov 25</span></li><li class="device"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-device"/></svg><span class="tnum">Another device · last used Fri, Oct 23, 5:30 PM</span></li>      </ul>
-      <label class="switch-row"><span class="switch-row__text">Remember this phone for 30 days</span><input class="switch" type="checkbox" role="switch" checked></label>
+      <label class="switch-row"><span class="switch-row__text">Remember this phone for 30 days</span><input class="switch" type="checkbox" role="switch" name="remember" value="on" checked></label>
       <p class="field-help">On. This phone stays signed in for 30 days.</p>
-    </div>
+      <div class="actions"><button class="btn btn--secondary" type="submit">Save</button></div>
+    </form>
 
   </div>
 </li>
 <li class="node node--icon">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg></span>
   <div class="node__body">
-        <div class="actions">
-      <form method="post" action="/client/logout"><button class="btn btn--primary" type="submit">Sign out</button></form>
-      <button class="btn btn--secondary" type="button">Sign out everywhere</button>
+        <div class="signout">
+      <form method="post" action="/client/logout"><button class="btn btn--secondary" type="submit">Sign out</button></form>
+      <details class="confirm-inline">
+        <summary class="btn btn--secondary confirm-inline__trigger">Sign out everywhere</summary>
+        <form class="confirm-inline__panel" method="post" action="/client/account" aria-labelledby="everywhere-q">
+          <p class="confirm-inline__q" id="everywhere-q">Sign out of every device? You&#39;ll need a new code on each one.</p>
+          <div class="actions">
+            <a class="btn btn--secondary" href="/client/account">Stay signed in</a>
+            <button class="btn btn--danger" type="submit" name="action" value="signout_everywhere">Sign out everywhere</button>
+          </div>
+        </form>
+      </details>
     </div>
 
   </div>

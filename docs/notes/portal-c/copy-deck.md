@@ -194,6 +194,8 @@ replies, so the thread can never show a step-back or a time reading the product 
 | toast_discarded | Changes discarded. / Undo | toast / its action |
 | error_summary | Not saved. "[card title]" needs a change: [reason] Go to that text | top of the list; the last three words are a link |
 | error_summary_kept | Your other edits are still here. Nothing was saved yet. | second line |
+| draft_was | Was: [old text] | under a changed text's draft bubble until it is saved |
+| phone_renamed | Saved. Business name is now “[new name]”. | first sentence of the rename offer, before "Update N texts…" |
 | error_summary_fields | Not saved. [N] things need a change. | top of a settings form when several fields are wrong; each item links to its field |
 | reason_unanswered_number | Take out "[phrase]". Customers stay in the text thread, so say you'll follow up by text, like "We'll follow up with you by text." | rejected save |
 | reason_follow_up | Add the words "follow up", like "We'll follow up with you by text." | rejected save |
@@ -252,7 +254,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 | cal_no_connect | Connecting from this page isn't set up for your account yet. FluxWorks sets this up for you. / Text FluxWorks support | body when no web client / button (sms link) shown only when a support contact is configured |
 | cal_reconnect | Reconnect needed / Google disconnected the calendar, so bookings are paused until you reconnect. Customers are told no booking was made. | state word / body |
 | cal_unreadable | Couldn't be read / TextBack couldn't read the calendar connection. Bookings are paused until you reconnect. | state word / body |
-| cal_asks | What Google will ask: (1) You pick the Google account that owns your business calendar. (2) Google asks you to let TextBack see and edit your calendars. (3) TextBack only checks free times and adds appointments. Nothing else in that account is read. (4) Afterwards you choose which calendar it uses. | disclosure, open while not connected |
+| cal_asks | What Google will ask: (1) You pick the Google account that owns your business calendar. (2) Google asks you to let TextBack see and edit your calendars. (3) TextBack only checks free times and adds appointments. TextBack sees your calendars only. (4) Afterwards you choose which calendar it uses. | disclosure, open while not connected |
 | cal_picker | Which calendar should the assistant use? / Free times are checked on this calendar and new appointments are added to it. / (main calendar) / In use / Use this calendar | legend / hint / after the main calendar / pill / button |
 | cal_picker_error | Pick one of the calendars listed. | error |
 | cal_picker_only | This is the only calendar this account can add appointments to. | empty state, one calendar |

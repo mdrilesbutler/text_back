@@ -1605,7 +1605,7 @@
       "asks": [
         "You pick the Google account that owns your business calendar.",
         "Google asks you to let TextBack see and edit your calendars.",
-        "TextBack only checks free times and adds appointments. Nothing else in that account is read.",
+        "TextBack only checks free times and adds appointments. TextBack sees your calendars only.",
         "Afterwards you choose which calendar it uses."
       ],
       "asks_open": true,
@@ -1674,7 +1674,9 @@
         "offer": "Update 2 texts that still say \"Oak & Pine Tree Care\"",
         "update": "Update them",
         "leave": "Leave them",
-        "toast": "Updated 2 texts."
+        "toast": "Updated 2 texts.",
+        "new_name": "Oak & Pine Tree Service",
+        "old_name": "Oak & Pine Tree Care"
       }
     },
     "numbers": {

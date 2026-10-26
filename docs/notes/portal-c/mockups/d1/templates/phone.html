@@ -1,52 +1,59 @@
 {% extends "base.html" %}
 {% set page_id = 'phone' %}{% set title = fx.phone.title %}{% set current_nav = 'Phone' %}
-{% block content %}
 {% set p = fx.phone %}
+{% set n = p.numbers %}
+{% block summary %}
+{% if invalid_mobile %}{{ ui.error_summary(p.error_summary, [('#omobile', n.owner_mobile.error)]) }}{% endif %}
+{% if rename_offer %}
+{% set ro = p.business.rename_offer %}
+{% call ui.notice('info', ro.offer, 'info', cls='page-offer', id='focus') %}
+  <div class="actions"><button class="btn btn--secondary" type="submit" form="phone-form" name="rename" value="update">{{ ro['update'] }}</button><button class="btn btn--ghost" type="submit" form="phone-form" name="rename" value="leave">{{ ro.leave }}</button></div>
+{% endcall %}
+{% endif %}
+{% endblock %}
+{% block content %}
 <div class="page-head"><h1>{{ p.title }}</h1><p class="lead">{{ p.intro }}</p></div>
-<form method="post" action="/client/phone">
+<form id="phone-form" method="post" action="/client/phone">
 <ol class="spine">
   {% set b = p.business %}
-  {% call ui.node('icon', 'store') %}
+  {% call ui.node('icon', 'store', focus=(focus == 'business')) %}
     <div class="node__head"><h2>{{ b.title }}</h2></div>
     <div class="card card--form">
       <div class="field">
         <label class="field__label" for="bname">{{ b.name.label }}</label>
-        <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" value="{{ b.name.value }}">
-        <p class="field-help">{{ b.name.hint }}</p>
+        <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" maxlength="60" value="{{ p.dirty_value if (dirty or rename_offer) else b.name.value }}" aria-describedby="bname-help">
+        <p class="field-help" id="bname-help">{{ b.name.hint }}</p>
       </div>
       <div class="field-preview">
         <p class="eyebrow">{{ b.name.preview_eyebrow }}</p>
-        <div class="sms sms--textback"><span class="sms__badge">{{ fx.messages.example.badges.textback }}</span><div class="sms__bubble"><p>{{ b.name.preview }}</p></div></div>
+        {{ ui.bubble(b.name.preview, fx.messages.example, notice=fx.messages.network_notice_shown) }}
       </div>
     </div>
   {% endcall %}
-  {% set n = p.numbers %}
   {% call ui.node('icon', 'phone') %}
     <div class="node__head"><h2>{{ n.title }}</h2><p class="node__blurb">{{ n.subtitle }}</p></div>
     <div class="card card--form">
       <div class="field">
         <label class="field__label" for="bline">{{ n.business_line.label }}</label>
-        <input class="input input--tel" id="bline" type="tel" inputmode="numeric" autocomplete="tel" value="{{ n.business_line.value }}">
-        <p class="field-help">{{ n.business_line.hint }}</p>
+        <input class="input input--tel" id="bline" name="business_line" type="tel" inputmode="numeric" autocomplete="tel" value="{{ n.business_line.value }}" aria-describedby="bline-help">
+        <p class="field-help" id="bline-help">{{ n.business_line.hint }}</p>
       </div>
       <div class="ro">
         <p class="field__label">{{ n.texting_number.label }}</p>
         <p class="ro__value tnum">{{ n.texting_number.value }}</p>
         <p class="field-help">{{ n.texting_number.note }}</p>
       </div>
-      <div class="field"{% if focus == 'mobile' %} id="focus"{% endif %}>
+      <div class="field"{% if focus == 'mobile' %} id="focus-field"{% endif %}>
         <label class="field__label" for="omobile">{{ n.owner_mobile.label }}</label>
-        <input class="input input--tel" id="omobile" type="tel" inputmode="numeric" autocomplete="tel" value="{{ n.owner_mobile.invalid_entry if invalid_mobile else n.owner_mobile.value }}"{% if invalid_mobile %} aria-invalid="true" aria-describedby="omobile-error"{% endif %}>
+        <input class="input input--tel" id="omobile" name="owner_mobile" type="tel" inputmode="numeric" autocomplete="tel" value="{{ n.owner_mobile.invalid_entry if invalid_mobile else n.owner_mobile.value }}"{% if invalid_mobile %} aria-invalid="true" aria-describedby="omobile-error omobile-help"{% else %} aria-describedby="omobile-help"{% endif %}>
         {% if invalid_mobile %}{{ ui.field_error(n.owner_mobile.error, 'omobile-error') }}{% endif %}
-        <p class="field-help">{{ n.owner_mobile.hint }}</p>
-        {% if not invalid_mobile %}<p class="field-help field-help--status">{{ ui.icon('check') }}<span>{{ n.owner_mobile.status_unchanged }}</span></p>{% endif %}
+        <p class="field-help" id="omobile-help">{{ n.owner_mobile.hint }}{% if not invalid_mobile %} {{ n.owner_mobile.status_unchanged }}{% endif %}</p>
       </div>
       <div class="field">
         <label class="field__label" for="hnum">{{ n.help_number.label }} <span class="tag">{{ n.help_number.tag }}</span></label>
-        <input class="input input--tel" id="hnum" type="tel" inputmode="numeric" value="{{ n.help_number.value }}">
-        <p class="field-help">{{ n.help_number.hint }}</p>
+        <input class="input input--tel" id="hnum" name="help_number" type="tel" inputmode="numeric" value="{{ n.help_number.value }}" aria-describedby="hnum-help">
+        <p class="field-help" id="hnum-help">{{ n.help_number.hint }}</p>
       </div>
-      <div class="actions"><button class="btn btn--primary" type="submit">{{ n.save }}</button></div>
     </div>
   {% endcall %}
   {% set f = p.forwarding %}
@@ -58,26 +65,22 @@
         <legend class="field__label">{{ f.carrier_legend }}</legend>
         <div class="pill-radios">
           {% for c in f.carriers %}
-          <input class="vh-input" type="radio" name="carrier" id="carrier-{{ loop.index }}"{% if c.name == f.carrier_selected %} checked{% endif %}><label class="pill-radio" for="carrier-{{ loop.index }}">{% if c.name == f.carrier_selected %}{{ ui.icon('check') }}{% endif %}{{ c.name }}</label>
+          <input class="vh-input" type="radio" name="carrier" value="{{ c.name }}" id="carrier-{{ loop.index }}"{% if c.name == f.carrier_selected %} checked{% endif %}><label class="pill-radio" for="carrier-{{ loop.index }}">{{ c.name }}</label>
           {% endfor %}
         </div>
       </fieldset>
       {% for c in f.carriers if c.name == f.carrier_selected %}
       <div class="codes-wrap"{% if focus == 'codes' %} id="focus"{% endif %}>
         {% if c.steps is defined %}<p class="status__detail">{{ c.steps }}</p>{% endif %}
-        <h3 class="card__title">{{ f.codes_headings.on }}</h3>
+        {% for head, rows in [(f.codes_headings.on, c.turn_on), (f.codes_headings.off, c.turn_off)] %}
+        <h3 class="card__title">{{ head }}</h3>
         <ol class="codes">
-          {% for row in c.turn_on %}
-          <li class="code"><span class="code__label">{{ row.label }}</span><code class="code__val">{{ row.code }}</code><button class="btn btn--secondary" type="button">{{ ui.icon('copy') }}{{ f['copy'] }}<span class="vh"> {{ row.label }}</span></button></li>
+          {% for row in rows %}
+          <li class="code"><span class="code__label">{{ row.label }}</span><code class="code__val">{{ row.code | dial }}</code><button class="btn btn--secondary" type="button" data-copy="{{ row.code }}">{{ ui.icon('copy') }}{{ f['copy'] }}<span class="vh"> {{ head }}: {{ row.label }}</span></button></li>
           {% endfor %}
         </ol>
-        {% if c.note is defined %}<p class="field-help">{{ c.note }}</p>{% endif %}
-        <h3 class="card__title">{{ f.codes_headings.off }}</h3>
-        <ol class="codes">
-          {% for row in c.turn_off %}
-          <li class="code"><span class="code__label">{{ row.label }}</span><code class="code__val">{{ row.code }}</code><button class="btn btn--secondary" type="button">{{ ui.icon('copy') }}{{ f['copy'] }}<span class="vh"> {{ row.label }}</span></button></li>
-          {% endfor %}
-        </ol>
+        {% if loop.first and c.note is defined %}<p class="field-help">{{ c.note }}</p>{% endif %}
+        {% endfor %}
         {% if c.unverified is defined %}{{ ui.notice('warning', c.unverified, 'alert') }}{% endif %}
       </div>
       {% endfor %}
@@ -89,19 +92,18 @@
   {% set kind = 'done' if item.state == 'Done' else ('manual' if item.manual is defined and item.state == item.manual_state else 'todo') %}
   {% call ui.node(kind) %}
     <div class="card check">
-      <div class="check__head"><h3 class="check__title"><span class="check__n tnum">{{ item.n }}</span>{{ item.step }}</h3>{{ ui.state(kind, item.state) }}</div>
+      <h3 class="check__title"><span class="check__n tnum">{{ item.n }}</span>{{ item.step }}</h3>
+      {{ ui.state(kind, item.state) }}
       {% if item.state == 'Done' %}<p class="check__ev tnum">{{ item.evidence }}</p>
       {% elif item.manual is defined %}
       <p class="field-help">{{ item.hint }}</p>
-      <label class="switch-row"><span class="switch-row__text">{{ item.manual_state }}</span><input class="checkbox" type="checkbox"></label>
+      <label class="switch-row"><span class="switch-row__text">{{ k.manual_label }}</span><input class="checkbox" type="checkbox" name="check_{{ item.n }}" value="done"></label>
       {% else %}<p class="field-help">{{ item.not_yet }}</p>{% endif %}
     </div>
   {% endcall %}
   {% endfor %}
-  <li class="spine__label spine__label--foot">
-    <p class="field-help">{{ k.evidence_note }}</p>
-    <div class="actions"><button class="btn btn--secondary" type="submit">{{ k.save }}</button></div>
-  </li>
+  <li class="spine__label spine__label--foot"><p class="field-help">{{ k.evidence_note }}</p></li>
 </ol>
 </form>
+{{ ui.savebar(dirty, p.unsaved_one, n.save, fx.messages.save_bar.discard, 'phone-form') }}
 {% endblock %}

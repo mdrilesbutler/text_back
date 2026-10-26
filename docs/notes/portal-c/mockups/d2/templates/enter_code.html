@@ -3,6 +3,7 @@
 {% set s = f.enter_code %}
 {% block content %}
 <div class="auth2">
+  {% if error %}{{ I.errsum([('#code', s.code_error)], focused=focus=='errors') }}{% endif %}
   <div class="ph">
     <p class="eyebrow">{{ s.eyebrow }}</p>
     <h1>{{ s.title }}</h1>
@@ -13,12 +14,12 @@
       <label class="field__label" for="code">{{ s.code_label }}</label>
       <div class="otp" data-filled="0">
         <span class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
-        <input class="otp__input" {{ fid('code') }} name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"{% if error %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
+        <input class="otp__input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"{% if error %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
       </div>
       {% if error %}<p class="field-error" id="code-error">{{ I.ic('warn') }}<span>{{ s.code_error }}</span></p>{% endif %}
     </div>
     <div class="switch-block">
-      <label class="switch-row"><span class="switch-row__text">{{ s.remember_switch }}</span><input class="switch" type="checkbox" role="switch" name="remember" checked></label>
+      <label class="switch-row"><span class="switch-row__text">{{ s.remember_switch }}</span><input class="switch" type="checkbox" role="switch" name="remember" value="on" checked></label>
       <p class="switch-row__note">{{ s.remember_note }}</p>
     </div>
     <button class="btn btn--primary btn--block" type="submit">{{ s.submit }}</button>

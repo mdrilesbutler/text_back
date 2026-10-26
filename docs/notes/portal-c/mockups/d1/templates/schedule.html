@@ -3,32 +3,35 @@
 {% block content %}
 {% set s = fx.schedule %}
 <div class="page-head"><h1>{{ s.title }}</h1><p class="lead">{{ s.intro }}</p></div>
-<form method="post" action="/client/schedule">
+<form id="schedule-form" method="post" action="/client/schedule">
 <ol class="spine">
   {% set a = s.appointments %}
   {% call ui.node('icon', 'sliders', focus=(focus == 'duration')) %}
     <div class="node__head"><h2>{{ a.title }}</h2><p class="node__blurb">{{ a.subtitle }}</p></div>
     <div class="card card--form">
       {% set d = a.duration %}
-      {% set dval = d.variant_custom.value if custom else d.value %}
-      {% set dchip = d.variant_custom.selected_chip if custom else d.selected_chip %}
+      {% set dval = d.variant_custom.value if custom else (s.dirty_value if dirty else d.value) %}
+      {% set dchip = d.variant_custom.selected_chip if custom else ((d.chips | selectattr('value', 'equalto', s.dirty_value) | map(attribute='label') | first) if dirty else d.selected_chip) %}
       <div class="field">
         <label class="field__label" for="duration">{{ d.label }}</label>
         <div class="inline-field"><input class="input input--num tnum" id="duration" name="duration" type="number" inputmode="numeric" min="15" max="480" step="5" value="{{ dval }}"><span class="unit">{{ d.unit }}</span></div>
-        <div class="pill-radios">
-          {% for c in d.chips %}
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-{{ loop.index }}"{% if c.label == dchip %} checked{% endif %}><label class="pill-radio" for="pick-{{ loop.index }}">{% if c.label == dchip %}{{ ui.icon('check') }}{% endif %}{{ c.label }}</label>
-          {% endfor %}
-        </div>
+        <fieldset class="pill-group">
+          <legend class="vh">{{ d.label }}</legend>
+          <div class="pill-radios">
+            {% for c in d.chips %}
+            <input class="vh-input" type="radio" name="duration_pick" value="{{ c.value if c.value is not none else 'custom' }}" id="pick-{{ loop.index }}"{% if c.label == dchip %} checked{% endif %}><label class="pill-radio" for="pick-{{ loop.index }}">{{ c.label }}</label>
+            {% endfor %}
+          </div>
+        </fieldset>
         <p class="field-help">{{ d.hint }}</p>
       </div>
-      {{ ui.rule_foot(d.default_line, s.reset, d.label) }}
+      {{ ui.rule_foot(d.default_line, s.reset, d.label, 'duration') }}
       {% set tz = a.timezone %}
       <div class="field">
         {{ ui.select('timezone', tz.value_label, [tz.value_label], label=tz.label) }}
         <p class="field-help">{{ tz.hint }}</p>
       </div>
-      {{ ui.rule_foot(tz.default_line, s.reset, tz.label) }}
+      {{ ui.rule_foot(tz.default_line, s.reset, tz.label, 'timezone') }}
     </div>
   {% endcall %}
   {% set hh = s.hours %}
@@ -40,50 +43,53 @@
         <legend class="vh">{{ hh.title }}</legend>
         <div class="choice-list__items choice-list__items--row">
           {% for o in hh.mode_options %}
-          <label class="choice"><input class="radio" type="radio" name="hours_mode"{% if o == mode %} checked{% endif %}><span class="choice__name">{{ o }}</span></label>
+          <label class="choice"><input class="radio" type="radio" name="hours_mode" value="{{ o }}"{% if o == mode %} checked{% endif %}><span class="choice__name">{{ o }}</span></label>
           {% endfor %}
         </div>
         <p class="field-help">{{ hh.hint_any if any_time else hh.hint_set }}</p>
       </fieldset>
       {% if any_time %}
       {% call ui.notice('warning', hh.variant_any_time.warning, 'alert') %}
-        <div class="actions"><button class="btn btn--secondary" type="button">{{ hh.variant_any_time.button }}</button><span class="field-help">{{ hh.variant_any_time.button_note }}</span></div>
+        <div class="actions"><button class="btn btn--secondary" type="submit" name="fill_hours" value="weekdays">{{ hh.variant_any_time.button }}</button></div>
+        <p class="field-help">{{ hh.variant_any_time.button_note }}</p>
       {% endcall %}
       {% else %}
       <fieldset class="hours">
         <legend class="vh">{{ hh.title }}</legend>
         {% for row in hh.grid %}
         <div class="hrow{% if not row.open %} hrow--closed{% endif %}">
-          <label class="hrow__day"><input class="switch" type="checkbox" role="switch"{% if row.open %} checked{% endif %}><span class="vh">{{ row.accessible.switch }}</span><span aria-hidden="true">{{ row.day }}</span></label>
+          <label class="hrow__day"><input class="switch" type="checkbox" role="switch" name="open_{{ loop.index }}" value="on"{% if row.open %} checked{% endif %}><span class="vh">{{ row.accessible.switch }}</span><span class="hrow__name" aria-hidden="true">{{ row.day }}</span><span class="hrow__word" aria-hidden="true">{{ hh.day_on if row.open else hh.day_off }}</span></label>
           {% if row.open %}
           <div class="hrow__times">
-            {{ ui.select('open-' ~ loop.index, row.opens, [row.opens], vh_label=row.accessible.opens) }}
+            {{ ui.select('opens_' ~ loop.index, row.opens, [row.opens], vh_label=row.accessible.opens) }}
             <span class="hrow__dash" aria-hidden="true">–</span>
-            {{ ui.select('close-' ~ loop.index, row.closes, [row.closes], vh_label=row.accessible.closes) }}
+            {{ ui.select('closes_' ~ loop.index, row.closes, [row.closes], vh_label=row.accessible.closes) }}
           </div>
           {% endif %}
         </div>
         {% endfor %}
       </fieldset>
       {% endif %}
-      {{ ui.rule_foot(hh.default_line, s.reset, hh.title) }}
+      {{ ui.rule_foot(hh.default_line, s.reset, hh.title, 'hours') }}
     </div>
   {% endcall %}
   {% set q = s.quiet %}
+  {% set quiet_on = q.switch_state == 'on' %}
   {% call ui.node('icon', 'moon') %}
     <div class="node__head"><h2>{{ q.title }}</h2><p class="node__blurb">{{ q.subtitle }}</p></div>
     <div class="card card--form">
+      <label class="switch-row"><span class="switch-row__text">{{ q.switch }}</span><input class="switch" type="checkbox" role="switch" name="quiet_on" value="on"{% if quiet_on %} checked{% endif %}></label>
+      {% if quiet_on %}
       <fieldset class="field">
         <legend class="field__label">{{ q.legend }}</legend>
         <div class="quiet">
-          {{ ui.select('quiet-from', q.from, [q.from], vh_label=q.legend) }}
+          {{ ui.select('quiet_from', q.from, [q.from], vh_label=q.legend) }}
           <span class="quiet__and">{{ q.between }}</span>
-          {{ ui.select('quiet-to', q.to, [q.to], vh_label=q.between) }}
+          {{ ui.select('quiet_to', q.to, [q.to], vh_label=q.between) }}
         </div>
       </fieldset>
-      <label class="switch-row"><span class="switch-row__text">{{ q.switch }}</span><input class="switch" type="checkbox" role="switch"{% if q.switch_state == 'on' %} checked{% endif %}></label>
-      {% if q.switch_state == 'on' %}<p class="field-help">{{ q.switch_note }}</p>{% endif %}
-      {{ ui.rule_foot(q.default_line, s.reset, q.title) }}
+      {% else %}<p class="field-help">{{ q.switch_note_off }}</p>{% endif %}
+      {{ ui.rule_foot(q.default_line, s.reset, q.title, 'quiet') }}
     </div>
   {% endcall %}
   {% set r = s.reminders %}
@@ -92,15 +98,15 @@
     <div class="card card--form">
       {% for key, rr in [('first', r.first), ('last', r.last), ('stop', r.stop)] %}
       <div class="field field--rem">
-        {{ ui.select('rem-' ~ key, rr.value, [rr.value], label=rr.label) }}
+        {{ ui.select('reminder_' ~ key, rr.value, [rr.value], label=rr.label) }}
         {% if rr.hint is defined %}<p class="field-help">{{ rr.hint }}</p>{% endif %}
-        {{ ui.rule_foot(rr.default_line, s.reset, rr.label) }}
+        {{ ui.rule_foot(rr.default_line, s.reset, rr.label, 'reminder_' ~ key) }}
       </div>
       {% endfor %}
       <p class="msg__rule">{{ ui.icon('info') }}<span>{{ r.consequence }}</span></p>
     </div>
   {% endcall %}
 </ol>
-<div class="actions actions--page"><button class="btn btn--primary btn--lg" type="submit">{{ s.save }}</button></div>
 </form>
+{{ ui.savebar(dirty, s.unsaved_one, s.save, fx.messages.save_bar.discard, 'schedule-form') }}
 {% endblock %}

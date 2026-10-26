@@ -6,6 +6,7 @@
 <title>Schedule · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
+<script src="d1.js" defer></script>
 </head>
 <body data-page="schedule">
 <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -41,28 +42,29 @@
 </svg><a class="skip" href="#main">Skip to content</a>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-missed"/></svg>TextBack</a>
+    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>TextBack</a>
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in with 980 555 0123</p>
+        <p class="menu__who">Signed in as 980 555 0123</p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
     </details>
   </header>
-  <nav class="nav" aria-label="Settings">
+  <nav class="nav" aria-label="Pages">
     <a class="nav__item" href="/client"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-home"/></svg></span><span>Home</span></a>
     <a class="nav__item" href="/client/messages"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-messages"/></svg></span><span>Messages</span></a>
     <a class="nav__item" href="/client/schedule" aria-current="page"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg></span><span>Schedule</span></a>
     <a class="nav__item" href="/client/calendar"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg></span><span>Calendar</span></a>
     <a class="nav__item" href="/client/phone"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg></span><span>Phone</span></a>
+    <a class="nav__item nav__item--wide" href="/client/account"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg></span><span>Account</span></a>
     <p class="nav__foot">TextBack by FluxWorks</p>
   </nav>
   <main class="page" id="main" tabindex="-1">
     <div class="status-slot" role="status" id="status"></div>
 <div class="page-head"><h1>Schedule</h1><p class="lead">The timing rules the assistant follows when it books. Reset puts a rule back to its default.</p></div>
-<form method="post" action="/client/schedule">
+<form id="schedule-form" method="post" action="/client/schedule">
 <ol class="spine">
 <li class="node node--icon">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-sliders"/></svg></span>
@@ -72,22 +74,25 @@
       <div class="field">
         <label class="field__label" for="duration">Appointment length</label>
         <div class="inline-field"><input class="input input--num tnum" id="duration" name="duration" type="number" inputmode="numeric" min="15" max="480" step="5" value="60"><span class="unit">minutes</span></div>
-        <div class="pill-radios">
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-1"><label class="pill-radio" for="pick-1">30 min</label>
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-2"><label class="pill-radio" for="pick-2">45 min</label>
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-3" checked><label class="pill-radio" for="pick-3"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>60 min</label>
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-4"><label class="pill-radio" for="pick-4">90 min</label>
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-5"><label class="pill-radio" for="pick-5">120 min</label>
-          <input class="vh-input" type="radio" name="duration_pick" id="pick-6"><label class="pill-radio" for="pick-6">Custom</label>
-        </div>
+        <fieldset class="pill-group">
+          <legend class="vh">Appointment length</legend>
+          <div class="pill-radios">
+            <input class="vh-input" type="radio" name="duration_pick" value="30" id="pick-1"><label class="pill-radio" for="pick-1">30 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="45" id="pick-2"><label class="pill-radio" for="pick-2">45 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="60" id="pick-3" checked><label class="pill-radio" for="pick-3">60 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="90" id="pick-4"><label class="pill-radio" for="pick-4">90 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="120" id="pick-5"><label class="pill-radio" for="pick-5">120 min</label>
+            <input class="vh-input" type="radio" name="duration_pick" value="custom" id="pick-6"><label class="pill-radio" for="pick-6">Custom</label>
+          </div>
+        </fieldset>
         <p class="field-help">Used for new bookings. 15 to 480 minutes, in steps of 5.</p>
       </div>
-      <div class="rule-foot"><p class="default">Default: 60 minutes</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> Appointment length</span></button></div>
+      <div class="rule-foot"><p class="default">Default: 60 minutes</p><button class="btn btn--ghost" type="submit" name="reset" value="duration">Reset<span class="vh"> Appointment length</span></button></div>
       <div class="field">
-        <label class="field__label" for="timezone">Time zone</label><span class="select"><select class="select__input" id="timezone"><option selected>Eastern (New York)</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+        <label class="field__label" for="timezone">Time zone</label><span class="select"><select class="select__input" id="timezone" name="timezone"><option value="Eastern (New York)" selected>Eastern (New York)</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
         <p class="field-help">Used for working hours, quiet hours and the times in texts.</p>
       </div>
-      <div class="rule-foot"><p class="default">Default: Eastern (New York)</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> Time zone</span></button></div>
+      <div class="rule-foot"><p class="default">Default: Eastern (New York)</p><button class="btn btn--ghost" type="submit" name="reset" value="timezone">Reset<span class="vh"> Time zone</span></button></div>
     </div>
 
   </div>
@@ -100,17 +105,18 @@
       <fieldset class="choice-list">
         <legend class="vh">Working hours</legend>
         <div class="choice-list__items choice-list__items--row">
-          <label class="choice"><input class="radio" type="radio" name="hours_mode" checked><span class="choice__name">Any day, any time</span></label>
-          <label class="choice"><input class="radio" type="radio" name="hours_mode"><span class="choice__name">Set hours</span></label>
+          <label class="choice"><input class="radio" type="radio" name="hours_mode" value="Any day, any time" checked><span class="choice__name">Any day, any time</span></label>
+          <label class="choice"><input class="radio" type="radio" name="hours_mode" value="Set hours"><span class="choice__name">Set hours</span></label>
         </div>
         <p class="field-help">The assistant accepts any time a customer asks for if your calendar is free, including the middle of the night.</p>
       </fieldset>
 <div class="notice notice--warning">
   <svg class="icon notice__icon" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg>
-  <div class="notice__body"><p class="notice__text">Customers can be offered times like 1 AM. Set your hours.</p>        <div class="actions"><button class="btn btn--secondary" type="button">Use Mon–Fri, 8 AM–5 PM</button><span class="field-help">Fills the grid; still needs Save.</span></div>
+  <div class="notice__body"><p class="notice__text">Customers can be offered times like 1 AM. Set your hours.</p>        <div class="actions"><button class="btn btn--secondary" type="submit" name="fill_hours" value="weekdays">Use Mon–Fri, 8 AM–5 PM</button></div>
+        <p class="field-help">Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it.</p>
 </div>
 </div>
-      <div class="rule-foot"><p class="default">Default: Any day, any time</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> Working hours</span></button></div>
+      <div class="rule-foot"><p class="default">Default: Any day, any time</p><button class="btn btn--ghost" type="submit" name="reset" value="hours">Reset<span class="vh"> Working hours</span></button></div>
     </div>
 
   </div>
@@ -120,16 +126,16 @@
   <div class="node__body">
         <div class="node__head"><h2>Quiet hours</h2><p class="node__blurb">Reminders and retried texts wait until quiet hours end. Still sent right away: the first text after a missed call, replies to a customer who is texting, and the START, HELP and STOP replies.</p></div>
     <div class="card card--form">
+      <label class="switch-row"><span class="switch-row__text">Quiet hours</span><input class="switch" type="checkbox" role="switch" name="quiet_on" value="on" checked></label>
       <fieldset class="field">
         <legend class="field__label">No texts between</legend>
         <div class="quiet">
-          <label class="vh" for="quiet-from">No texts between</label><span class="select"><select class="select__input" id="quiet-from"><option selected>9:00 PM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+          <label class="vh" for="quiet_from">No texts between</label><span class="select"><select class="select__input" id="quiet_from" name="quiet_from"><option value="9:00 PM" selected>9:00 PM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
           <span class="quiet__and">and</span>
-          <label class="vh" for="quiet-to">and</label><span class="select"><select class="select__input" id="quiet-to"><option selected>8:00 AM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+          <label class="vh" for="quiet_to">and</label><span class="select"><select class="select__input" id="quiet_to" name="quiet_to"><option value="8:00 AM" selected>8:00 AM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
         </div>
       </fieldset>
-      <label class="switch-row"><span class="switch-row__text">No quiet hours</span><input class="switch" type="checkbox" role="switch"></label>
-      <div class="rule-foot"><p class="default">Default: 9:00 PM–8:00 AM</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> Quiet hours</span></button></div>
+      <div class="rule-foot"><p class="default">Default: 9:00 PM–8:00 AM</p><button class="btn btn--ghost" type="submit" name="reset" value="quiet">Reset<span class="vh"> Quiet hours</span></button></div>
     </div>
 
   </div>
@@ -140,16 +146,16 @@
         <div class="node__head"><h2>Reminders</h2><p class="node__blurb">Two reminders when a customer never replies to the first text. After that the assistant stops texting.</p></div>
     <div class="card card--form">
       <div class="field field--rem">
-        <label class="field__label" for="rem-first">If there&#39;s no reply, send a reminder after</label><span class="select"><select class="select__input" id="rem-first"><option selected>2 hours</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
-        <div class="rule-foot"><p class="default">Default: 2 hours</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> If there&#39;s no reply, send a reminder after</span></button></div>
+        <label class="field__label" for="reminder_first">If there&#39;s no reply, send a reminder after</label><span class="select"><select class="select__input" id="reminder_first" name="reminder_first"><option value="2 hours" selected>2 hours</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+        <div class="rule-foot"><p class="default">Default: 2 hours</p><button class="btn btn--ghost" type="submit" name="reset" value="reminder_first">Reset<span class="vh"> If there&#39;s no reply, send a reminder after</span></button></div>
       </div>
       <div class="field field--rem">
-        <label class="field__label" for="rem-last">Send the last reminder after another</label><span class="select"><select class="select__input" id="rem-last"><option selected>1 day</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
-        <div class="rule-foot"><p class="default">Default: 1 day</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> Send the last reminder after another</span></button></div>
+        <label class="field__label" for="reminder_last">Send the last reminder after another</label><span class="select"><select class="select__input" id="reminder_last" name="reminder_last"><option value="1 day" selected>1 day</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+        <div class="rule-foot"><p class="default">Default: 1 day</p><button class="btn btn--ghost" type="submit" name="reset" value="reminder_last">Reset<span class="vh"> Send the last reminder after another</span></button></div>
       </div>
       <div class="field field--rem">
-        <label class="field__label" for="rem-stop">Stop waiting for a reply after</label><span class="select"><select class="select__input" id="rem-stop"><option selected>2 days</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
-<p class="field-help">Counted from the last reminder. The customer is marked &#34;No reply&#34; on Home.</p>        <div class="rule-foot"><p class="default">Default: 2 days</p><button class="btn btn--ghost" type="button">Reset<span class="vh"> Stop waiting for a reply after</span></button></div>
+        <label class="field__label" for="reminder_stop">Stop waiting for a reply after</label><span class="select"><select class="select__input" id="reminder_stop" name="reminder_stop"><option value="2 days" selected>2 days</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
+<p class="field-help">Counted from the last reminder. The customer is marked &#34;No reply&#34; on Home.</p>        <div class="rule-foot"><p class="default">Default: 2 days</p><button class="btn btn--ghost" type="submit" name="reset" value="reminder_stop">Reset<span class="vh"> Stop waiting for a reply after</span></button></div>
       </div>
       <p class="msg__rule"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg><span>A reminder that is already scheduled keeps its time. Later reminders use the new delays.</span></p>
     </div>
@@ -157,8 +163,14 @@
   </div>
 </li>
 </ol>
-<div class="actions actions--page"><button class="btn btn--primary btn--lg" type="submit">Save</button></div>
 </form>
+<div class="savebar" data-state="clean">
+  <p class="savebar__status" role="status"></p>
+  <div class="savebar__actions">
+    <button class="btn btn--primary" type="submit" form="schedule-form">Save</button>
+  </div>
+</div>
+
   </main>
 </div>
 </body>

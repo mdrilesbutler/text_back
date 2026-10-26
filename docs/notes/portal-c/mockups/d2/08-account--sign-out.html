@@ -11,12 +11,12 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell">
 <header class="hd">
-  <a class="hd__brand" href="/client"><span class="hd__mark" aria-hidden="true"></span>TextBack</a>
+  <a class="hd__brand" href="/client">TextBack</a>
   <span class="hd__sep" aria-hidden="true"></span>
   <details class="acct">
     <summary class="acct__sum"><span class="hd__biz">Oak &amp; Pine Tree Care</span><span class="vh">, Account</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="acct__panel" id="menu">
-      <p class="acct__who">Signed in with 980 555 0123</p>
+      <p class="acct__who">Signed in as 980 555 0123</p>
       <a class="acct__item" href="/client/account">Account</a>
       <form method="post" action="/client/logout"><button class="acct__item" type="submit">Sign out</button></form>
     </div>
@@ -29,10 +29,9 @@
   <h1>Account</h1>
 </div>
 
-<section class="sec" aria-labelledby="signed-h">
-  <div class="sec__head"><h2 class="sec__title" id="signed-h">Account</h2></div>
-  <div class="ledger">
-    <div class="row"><span class="row__label">Signed in as 980 555 0123</span></div>
+<section class="sec sec--nohead" aria-labelledby="signed-h">
+  <div class="ledger ledger--top">
+    <div class="row"><span class="row__label" id="signed-h">Signed in as 980 555 0123</span></div>
     <a class="row row--link row--go" href="/client/phone"><span class="row__hint row__hint--ink">To change the mobile that signs you in, open Phone.</span><span class="row__act">Phone<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6"/></svg></span></a>
   </div>
 </section>
@@ -43,16 +42,15 @@
     <li class="row row--slim"><span class="row__value row__value--left tnum">This phone · signed in Mon, Oct 26, 8:02 AM · stays signed in until Wed, Nov 25</span></li>
     <li class="row row--slim"><span class="row__value row__value--left tnum">Another device · last used Fri, Oct 23, 5:30 PM</span></li>
   </ul>
-  <label class="switch-row"><span class="switch-row__text">Remember this phone for 30 days</span><input class="switch" type="checkbox" role="switch" name="remember" checked></label>
+  <form method="post" action="/client/account/remember">
+  <label class="switch-row"><span class="switch-row__text">Remember this phone for 30 days</span><input class="switch" type="checkbox" role="switch" name="remember" value="on" checked></label>
   <p class="switch-row__note">On. This phone stays signed in for 30 days.</p>
-  <div class="acts">
-    <form method="post" action="/client/logout-all"><button class="btn btn--secondary" type="submit">Sign out everywhere</button></form>
-  </div>
+  </form>
   <div class="confirm" role="group" aria-labelledby="confirm-text" id="focus">
     <p id="confirm-text">Sign out of every device? You&#39;ll need a new code on each one.</p>
     <div class="confirm__acts">
-      <form method="post" action="/client/logout-all"><button class="btn btn--primary" type="submit">Sign out everywhere</button></form>
-      <button class="btn btn--secondary" type="button">Stay signed in</button>
+      <form method="post" action="/client/logout-all"><button class="btn btn--danger2" type="submit" autofocus>Sign out everywhere</button></form>
+      <a class="btn btn--secondary" href="/client/account">Stay signed in</a>
     </div>
   </div>
 </section>

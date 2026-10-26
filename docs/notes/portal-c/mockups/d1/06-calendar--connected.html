@@ -6,6 +6,7 @@
 <title>Calendar · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
+<script src="d1.js" defer></script>
 </head>
 <body data-page="calendar">
 <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -41,22 +42,23 @@
 </svg><a class="skip" href="#main">Skip to content</a>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-missed"/></svg>TextBack</a>
+    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>TextBack</a>
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in with 980 555 0123</p>
+        <p class="menu__who">Signed in as 980 555 0123</p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
     </details>
   </header>
-  <nav class="nav" aria-label="Settings">
+  <nav class="nav" aria-label="Pages">
     <a class="nav__item" href="/client"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-home"/></svg></span><span>Home</span></a>
     <a class="nav__item" href="/client/messages"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-messages"/></svg></span><span>Messages</span></a>
     <a class="nav__item" href="/client/schedule"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg></span><span>Schedule</span></a>
     <a class="nav__item" href="/client/calendar" aria-current="page"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg></span><span>Calendar</span></a>
     <a class="nav__item" href="/client/phone"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg></span><span>Phone</span></a>
+    <a class="nav__item nav__item--wide" href="/client/account"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg></span><span>Account</span></a>
     <p class="nav__foot">TextBack by FluxWorks</p>
   </nav>
   <main class="page" id="main" tabindex="-1">
@@ -68,19 +70,21 @@
   <div class="node__body" id="focus">
         <div class="node__head"><h2>Google Calendar</h2></div>
     <div class="card status">
-      <span class="state state--done"><span class="glyph glyph--done" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span><span>Connected</span></span>
-      <p class="status__detail">Bookings go here: Oak &amp; Pine jobs. Connected as owner@example.com.</p>
-      <div class="actions"><button class="btn btn--secondary" type="button">Use a different calendar</button><button class="btn btn--secondary" type="button">Reconnect Google Calendar</button></div>
+      <span class="pill state state--done pill--success">Connected</span>
+      <p class="status__detail">Bookings go here: Oak &amp; Pine jobs.</p>
+      <p class="status__detail"><a class="tap" href="/client/calendar/connect">Reconnect Google Calendar</a></p>
     </div>
-    <fieldset class="card choice-list">
-      <legend class="choice-list__legend">Which calendar should the assistant use?</legend>
-      <p class="field-help">Free times are checked on this calendar and new appointments are added to it.</p>
-      <div class="choice-list__items">
-        <label class="choice"><input class="radio" type="radio" name="calendar" checked><span class="choice__text"><span class="choice__name">Oak &amp; Pine jobs</span></span><span class="pill pill--success">In use</span></label>
-        <label class="choice"><input class="radio" type="radio" name="calendar"><span class="choice__text"><span class="choice__name">owner@example.com</span><span class="choice__meta">(main calendar)</span></span></label>
-      </div>
+    <form class="card choice-list" method="post" action="/client/calendar">
+      <fieldset class="choice-list__set">
+        <legend class="choice-list__legend">Which calendar should the assistant use?</legend>
+        <p class="field-help">Free times are checked on this calendar and new appointments are added to it.</p>
+        <div class="choice-list__items">
+          <label class="choice"><input class="radio" type="radio" name="calendar" value="Oak &amp; Pine jobs" checked><span class="choice__text"><span class="choice__name">Oak &amp; Pine jobs</span></span><span class="pill pill--success">In use</span></label>
+          <label class="choice"><input class="radio" type="radio" name="calendar" value="owner@example.com"><span class="choice__text"><span class="choice__name">owner@example.com</span><span class="choice__meta">(main calendar)</span></span></label>
+        </div>
+      </fieldset>
       <div class="actions"><button class="btn btn--secondary" type="submit">Use this calendar</button></div>
-    </fieldset>
+    </form>
 
   </div>
 </li>
@@ -88,9 +92,9 @@
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg></span>
   <div class="node__body">
         <div class="node__head"><h2>Next free times on Oak &amp; Pine jobs</h2><p class="node__blurb">The first three free 60-minute times in the next 14 days, inside your working hours.</p></div>
-    <div class="card">
-      <div class="actions"><button class="btn btn--secondary" type="button">Check free times</button></div>
-    </div>
+    <form class="card" method="post" action="/client/calendar/availability">
+      <div class="actions"><button class="btn btn--secondary" type="submit">Check free times</button></div>
+    </form>
 
   </div>
 </li>

@@ -1,0 +1,54 @@
+{
+  "_note": "Strings d1 needs that fixture.json does not carry yet. build.py merges them over the fixture (deep merge, these win). Each one is a proposal for the session lead to fold into fixture.json and copy-deck.md; none is product copy that customers receive.",
+  "shell": {
+    "nav": {"accessible_name": "Pages"},
+    "account_menu": {"signed_in": "Signed in as 980 555 0123"}
+  },
+  "messages": {
+    "title": "Messages",
+    "jump_label": "On this page",
+    "editor": {
+      "open_for": "Edit wording: ",
+      "field_label": "Wording: ",
+      "insert_open": "[",
+      "insert_close": "]"
+    },
+    "bill_fix": {"followup_1": "Replace — with -"}
+  },
+  "schedule": {
+    "unsaved_one": "1 rule changed",
+    "toast": "Saved. You changed “Appointment length”. It applies now, including to customers mid-conversation. Reminders already scheduled keep their time.",
+    "quiet": {
+      "switch": "Quiet hours",
+      "switch_state": "on",
+      "switch_note_off": "Off. Texts may go out at any hour."
+    },
+    "hours": {
+      "variant_any_time": {"button_note": "Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it."},
+      "day_on": "Open",
+      "day_off": "Closed"
+    },
+    "dirty_field": "duration",
+    "dirty_value": 90
+  },
+  "phone": {
+    "business": {"name": {"hint": "Used in every text. The first text is shown below."}},
+    "unsaved_one": "1 change: Business name",
+    "toast": "Saved. You changed “Business name”.",
+    "checks": {"manual_label": "I checked this"},
+    "error_summary": "Not saved. 1 thing needs a change:",
+    "dirty_value": "Oak & Pine Tree Service"
+  },
+  "sign_in": {"error_summary": "1 thing needs a change:"},
+  "enter_code": {"error_summary": "1 thing needs a change:"},
+  "calendar": {
+    "connected": {"body_no_account": "Bookings go here: Oak & Pine jobs."},
+    "not_connected_without_connect": {
+      "lead": "Without a calendar the assistant can't check free times or book jobs.",
+      "no_connect_body": "Connecting from this page isn't set up for your account yet. FluxWorks sets this up for you."
+    }
+  },
+  "account": {
+    "remember_save": "Save"
+  }
+}

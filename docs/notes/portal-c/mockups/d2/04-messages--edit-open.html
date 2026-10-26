@@ -11,12 +11,12 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell">
 <header class="hd">
-  <a class="hd__brand" href="/client"><span class="hd__mark" aria-hidden="true"></span>TextBack</a>
+  <a class="hd__brand" href="/client">TextBack</a>
   <span class="hd__sep" aria-hidden="true"></span>
   <details class="acct">
     <summary class="acct__sum"><span class="hd__biz">Oak &amp; Pine Tree Care</span><span class="vh">, Account</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="acct__panel" id="menu">
-      <p class="acct__who">Signed in with 980 555 0123</p>
+      <p class="acct__who">Signed in as 980 555 0123</p>
       <a class="acct__item" href="/client/account">Account</a>
       <form method="post" action="/client/logout"><button class="acct__item" type="submit">Sign out</button></form>
     </div>
@@ -31,10 +31,10 @@
   <p class="ph__meta">Green bubbles are what customers see. The job, address, time and names are made-up examples.</p>
 </div>
 
-<nav class="jumpbar" aria-label="Jump to:">
+<nav class="jumpbar" aria-label="Jump to">
   <div class="jumpbar__scroll">
     <ul class="jumpbar__list">
-<li><a href="#missed_call" aria-current="true"><span>Missed call</span></a></li><li><a href="#questions"><span>Questions</span></a></li><li><a href="#booking"><span>Booking</span></a></li><li><a href="#no_reply"><span>No reply</span></a></li><li><a href="#steps_back"><span>Steps back</span></a></li>    </ul>
+<li><a href="#questions"><span>Questions</span></a></li><li><a href="#booking"><span>Booking</span></a></li><li><a href="#no_reply"><span>No reply</span></a></li><li><a href="#steps_back"><span>Steps back</span></a></li><li class="jumpbar__ex"><a href="#example"><span>Example conversation</span></a></li>    </ul>
   </div>
 </nav>
 
@@ -44,272 +44,262 @@
   <section class="sec" id="missed_call" aria-labelledby="missed_call-h">
     <div class="sec__head"><h2 class="sec__title" id="missed_call-h" tabindex="-1">Missed call</h2></div>
     <p class="sec__blurb">A call goes unanswered. Within a minute the caller gets this text.</p>
-    <div class="ledger"><details class="mrow" id="m-intro">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">First text after a missed call</span><span class="badge badge--custom">Customized</span></span>
-      <span class="mrow__when">Sent the moment a call goes unanswered.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
-      <span class="mrow__receipt"><span class="mrow__added">STOP line added for you</span><span>1 text · 107 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-intro-label">First text after a missed call</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-intro-label" aria-describedby="w-intro-par">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done?</div>
-    <p class="mrow__par" id="w-intro-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 107 characters</span>
-<button class="btn btn--ghost" type="button"><span class="vh">Reset First text after a missed call: </span>Reset</button>    </div>
+    <div class="ledger"><div class="mrow" id="m-intro">
+  <div class="mrow__l">
+    <h3 class="mrow__title">First text after a missed call</h3>
+    <p class="mrow__badges"><span class="badge badge--custom">Customized</span><button class="btn btn--ghost mrow__reset" type="submit" form="messages-form" name="reset" value="intro" aria-label="Reset: First text after a missed call">Reset</button></p>
+    <p class="mrow__when">Sent the moment a call goes unanswered.</p>
   </div>
-</details>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
+    <p class="mrow__receipt"><span class="mrow__added">STOP line added for you</span><span>1 text · 107 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: First text after a missed call">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-intro">First text after a missed call</label>
+      <textarea class="input mrow__ta" id="t-intro" name="intro" rows="3" maxlength="480" aria-describedby="t-intro-par">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done?</textarea>
+      <p class="mrow__par" id="t-intro-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? <span class="sms__suffix">Reply STOP to opt out.</span></span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_intro" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    </div>
+  </details>
+</div>
 </div>
   </section>
   <section class="sec" id="questions" aria-labelledby="questions-h">
     <div class="sec__head"><h2 class="sec__title" id="questions-h" tabindex="-1">Questions</h2></div>
     <p class="sec__blurb">Asked one at a time, in this order. The assistant moves on only once it has an answer.</p>
-    <div class="ledger"><details class="mrow" id="m-prompt_service">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Question 1: the job</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Asked as soon as the customer replies.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s the job you need done (e.g. tree removal, trimming, stump grinding)?</span></span>
-      <span class="mrow__receipt"><span>1 text · 75 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-prompt_service-label">Question 1: the job</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-prompt_service-label" aria-describedby="w-prompt_service-par">What&#39;s the job you need done (e.g. tree removal, trimming, stump grinding)?</div>
-    <p class="mrow__par" id="w-prompt_service-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 75 characters</span>
-    </div>
+    <div class="ledger"><div class="mrow" id="m-prompt_service">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Question 1: the job</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Asked as soon as the customer replies.</p>
   </div>
-</details>
-<details class="mrow" id="focus" open>
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Question 2: the address</span><span class="badge badge--custom">Customized</span></span>
-      <span class="mrow__when">Asked once the job is known.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s the address for the job?</span></span>
-      <span class="mrow__receipt"><span>1 text · 31 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-prompt_location-label">Question 2: the address</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-prompt_location-label" aria-describedby="w-prompt_location-par">What&#39;s the address for the job?</div>
-    <p class="mrow__par" id="w-prompt_location-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 31 characters</span>
-<button class="btn btn--ghost" type="button"><span class="vh">Reset Question 2: the address: </span>Reset</button>    </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s the job you need done (e.g. tree removal, trimming, stump grinding)?</span></span>
+    <p class="mrow__receipt"><span>1 text · 75 characters</span></p>
   </div>
-</details>
-<details class="mrow" id="m-prompt_preferred_time">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Question 3: day and time</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Asked once the address is known. Examples in everyday words help: Wednesday at 2, tomorrow at 10am.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.</span></span>
-      <span class="mrow__receipt"><span>1 text · 94 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-prompt_preferred_time-label">Question 3: day and time</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-prompt_preferred_time-label" aria-describedby="w-prompt_preferred_time-par">What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.</div>
-    <p class="mrow__par" id="w-prompt_preferred_time-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Question 1: the job">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-prompt_service">Question 1: the job</label>
+      <textarea class="input mrow__ta" id="t-prompt_service" name="prompt_service" rows="3" maxlength="480" aria-describedby="t-prompt_service-par">What&#39;s the job you need done (e.g. tree removal, trimming, stump grinding)?</textarea>
+      <p class="mrow__par" id="t-prompt_service-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s the job you need done (e.g. tree removal, trimming, stump grinding)?</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_prompt_service" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
     </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 94 characters</span>
-    </div>
-  </div>
-</details>
-<details class="mrow mrow--branch" id="m-preferred_time_reprompt">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>If the time couldn&#39;t be understood</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent instead of moving on when the reply isn&#39;t a day and time.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.</span></span>
-      <span class="mrow__receipt"><span>1 text · 86 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-preferred_time_reprompt-label">If the time couldn&#39;t be understood</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-preferred_time_reprompt-label" aria-describedby="w-preferred_time_reprompt-par">Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.</div>
-    <p class="mrow__par" id="w-preferred_time_reprompt-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 86 characters</span>
-    </div>
-  </div>
-</details>
-<details class="mrow" id="m-prompt_name">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Question 4: the name</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Asked once the time is known.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What name should we put the appointment under?</span></span>
-      <span class="mrow__receipt"><span>1 text · 46 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-prompt_name-label">Question 4: the name</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-prompt_name-label" aria-describedby="w-prompt_name-par">What name should we put the appointment under?</div>
-    <p class="mrow__par" id="w-prompt_name-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 46 characters</span>
-    </div>
-  </div>
-</details>
+  </details>
 </div>
-    <div class="sec sec--sub">
-      <div class="sec__head"><h3 class="sec__title">Optional questions</h3></div>
+<div class="mrow" id="focus">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Question 2: the address</h3>
+    <p class="mrow__badges"><span class="badge badge--custom">Customized</span><button class="btn btn--ghost mrow__reset" type="submit" form="messages-form" name="reset" value="prompt_location" aria-label="Reset: Question 2: the address">Reset</button></p>
+    <p class="mrow__when">Asked once the job is known.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s the address for the job?</span></span>
+    <p class="mrow__receipt"><span>1 text · 31 characters</span></p>
+  </div>
+  <details class="mrow__ed" open>
+    <summary class="mrow__edit" aria-label="Edit wording: Question 2: the address">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-prompt_location">Question 2: the address</label>
+      <textarea class="input mrow__ta" id="t-prompt_location" name="prompt_location" rows="3" maxlength="480" aria-describedby="t-prompt_location-par">What&#39;s the address for the job?</textarea>
+      <p class="mrow__par" id="t-prompt_location-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s the address for the job?</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_prompt_location" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="mrow" id="m-prompt_preferred_time">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Question 3: day and time</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Asked once the address is known. Examples in everyday words help: Wednesday at 2, tomorrow at 10am.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</span></span>
+    <p class="mrow__receipt"><span>1 text · 94 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Question 3: day and time">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-prompt_preferred_time">Question 3: day and time</label>
+      <textarea class="input mrow__ta" id="t-prompt_preferred_time" name="prompt_preferred_time" rows="3" maxlength="480" aria-describedby="t-prompt_preferred_time-par">What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</textarea>
+      <p class="mrow__par" id="t-prompt_preferred_time-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_prompt_preferred_time" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="mrow mrow--branch" id="m-preferred_time_reprompt">
+  <div class="mrow__l">
+    <h3 class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>If the time couldn&#39;t be understood</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent instead of moving on when the reply isn&#39;t a day and time.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</span></span>
+    <p class="mrow__receipt"><span>1 text · 86 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: If the time couldn&#39;t be understood">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-preferred_time_reprompt">If the time couldn&#39;t be understood</label>
+      <textarea class="input mrow__ta" id="t-preferred_time_reprompt" name="preferred_time_reprompt" rows="3" maxlength="480" aria-describedby="t-preferred_time_reprompt-par">Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</textarea>
+      <p class="mrow__par" id="t-preferred_time_reprompt-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_preferred_time_reprompt" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="mrow" id="m-prompt_name">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Question 4: the name</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Asked once the time is known.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What name should we put the appointment under?</span></span>
+    <p class="mrow__receipt"><span>1 text · 46 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Question 4: the name">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-prompt_name">Question 4: the name</label>
+      <textarea class="input mrow__ta" id="t-prompt_name" name="prompt_name" rows="3" maxlength="480" aria-describedby="t-prompt_name-par">What name should we put the appointment under?</textarea>
+      <p class="mrow__par" id="t-prompt_name-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">What name should we put the appointment under?</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_prompt_name" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+</div>
+    <div class="sec sec--sub" aria-labelledby="questions-opt-h">
+      <div class="sec__head"><h3 class="sec__title" id="questions-opt-h">Optional questions</h3></div>
       <div class="ledger">
-        <label class="switch-row"><span class="switch-row__text">Also ask for the best phone number</span><input class="switch" type="checkbox" role="switch" name="ask_prompt_phone"></label>
+        <label class="switch-row"><span class="switch-row__text">Also ask for the best phone number</span><input class="switch" type="checkbox" role="switch" name="ask_prompt_phone" value="on"></label>
         <p class="switch-row__note">Off. Customers skip this question.</p>
-        <details class="mrow" id="m-prompt_phone">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Best phone number</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Asked only when switched on. YES keeps the number they&#39;re texting from.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Is this the best number to reach you? Reply YES, or send a different number.</span></span>
-      <span class="mrow__receipt"><span>1 text · 76 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-prompt_phone-label">Best phone number</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-prompt_phone-label" aria-describedby="w-prompt_phone-par">Is this the best number to reach you? Reply YES, or send a different number.</div>
-    <p class="mrow__par" id="w-prompt_phone-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 76 characters</span>
-    </div>
+        <div class="mrow mrow--off" id="m-prompt_phone">
+  <div class="mrow__l">
+    <h4 class="mrow__title">Best phone number</h4>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Asked only when switched on. YES keeps the number they&#39;re texting from.</p>
   </div>
-</details>
-
-        <details class="mrow mrow--branch" id="m-phone_reprompt">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>If the phone number couldn&#39;t be read</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when the reply isn&#39;t a phone number or YES.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.</span></span>
-      <span class="mrow__receipt"><span>1 text · 91 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-phone_reprompt-label">If the phone number couldn&#39;t be read</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-phone_reprompt-label" aria-describedby="w-phone_reprompt-par">Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.</div>
-    <p class="mrow__par" id="w-phone_reprompt-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 91 characters</span>
-    </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Is this the best number to reach you? Reply YES, or send a different number.</span></span>
+    <p class="mrow__receipt"><span>1 text · 76 characters</span></p>
   </div>
-</details>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Best phone number">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-prompt_phone">Best phone number</label>
+      <textarea class="input mrow__ta" id="t-prompt_phone" name="prompt_phone" rows="3" maxlength="480" aria-describedby="t-prompt_phone-par">Is this the best number to reach you? Reply YES, or send a different number.</textarea>
+      <p class="mrow__par" id="t-prompt_phone-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Is this the best number to reach you? Reply YES, or send a different number.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_prompt_phone" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
 
-        <label class="switch-row"><span class="switch-row__text">Also ask for an email address</span><input class="switch" type="checkbox" role="switch" name="ask_prompt_email"></label>
+        <div class="mrow mrow--branch mrow--off" id="m-phone_reprompt">
+  <div class="mrow__l">
+    <h4 class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>If the phone number couldn&#39;t be read</h4>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when the reply isn&#39;t a phone number or YES.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.</span></span>
+    <p class="mrow__receipt"><span>1 text · 91 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: If the phone number couldn&#39;t be read">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-phone_reprompt">If the phone number couldn&#39;t be read</label>
+      <textarea class="input mrow__ta" id="t-phone_reprompt" name="phone_reprompt" rows="3" maxlength="480" aria-describedby="t-phone_reprompt-par">Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.</textarea>
+      <p class="mrow__par" id="t-phone_reprompt-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Please send a phone number with area code, like 704 555 0123, or reply YES to use this one.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_phone_reprompt" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+
+        <label class="switch-row"><span class="switch-row__text">Also ask for an email address</span><input class="switch" type="checkbox" role="switch" name="ask_prompt_email" value="on"></label>
         <p class="switch-row__note">Off. Customers skip this question.</p>
-        <details class="mrow" id="m-prompt_email">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Email address</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Asked only when switched on. SKIP is allowed.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</span></span>
-      <span class="mrow__receipt"><span>1 text · 80 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-prompt_email-label">Email address</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-prompt_email-label" aria-describedby="w-prompt_email-par">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</div>
-    <p class="mrow__par" id="w-prompt_email-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 80 characters</span>
-    </div>
+        <div class="mrow mrow--off" id="m-prompt_email">
+  <div class="mrow__l">
+    <h4 class="mrow__title">Email address</h4>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Asked only when switched on. SKIP is allowed.</p>
   </div>
-</details>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</span></span>
+    <p class="mrow__receipt"><span>1 text · 80 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Email address">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-prompt_email">Email address</label>
+      <textarea class="input mrow__ta" id="t-prompt_email" name="prompt_email" rows="3" maxlength="480" aria-describedby="t-prompt_email-par">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</textarea>
+      <p class="mrow__par" id="t-prompt_email-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_prompt_email" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
 
-        <details class="mrow mrow--branch" id="m-email_reprompt">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>If the email couldn&#39;t be read</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when the reply isn&#39;t an email address or SKIP.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">That doesn&#39;t look like an email address. Please send it like name@example.com, or reply SKIP.</span></span>
-      <span class="mrow__receipt"><span>1 text · 93 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-email_reprompt-label">If the email couldn&#39;t be read</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-email_reprompt-label" aria-describedby="w-email_reprompt-par">That doesn&#39;t look like an email address. Please send it like name@example.com, or reply SKIP.</div>
-    <p class="mrow__par" id="w-email_reprompt-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 93 characters</span>
-    </div>
+        <div class="mrow mrow--branch mrow--off" id="m-email_reprompt">
+  <div class="mrow__l">
+    <h4 class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>If the email couldn&#39;t be read</h4>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when the reply isn&#39;t an email address or SKIP.</p>
   </div>
-</details>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">That doesn&#39;t look like an email address. Please send it like name@example.com, or reply SKIP.</span></span>
+    <p class="mrow__receipt"><span>1 text · 93 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: If the email couldn&#39;t be read">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-email_reprompt">If the email couldn&#39;t be read</label>
+      <textarea class="input mrow__ta" id="t-email_reprompt" name="email_reprompt" rows="3" maxlength="480" aria-describedby="t-email_reprompt-par">That doesn&#39;t look like an email address. Please send it like name@example.com, or reply SKIP.</textarea>
+      <p class="mrow__par" id="t-email_reprompt-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">That doesn&#39;t look like an email address. Please send it like name@example.com, or reply SKIP.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_email_reprompt" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
 
       </div>
     </div>
@@ -317,365 +307,349 @@
   <section class="sec" id="booking" aria-labelledby="booking-h">
     <div class="sec__head"><h2 class="sec__title" id="booking-h" tabindex="-1">Booking</h2></div>
     <p class="sec__blurb">Once it has the answers, the assistant checks your calendar and books a free time.</p>
-    <div class="ledger"><details class="mrow mrow--branch" id="m-slot_unavailable">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>When the time is already taken</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when your calendar shows that time busy.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">That time is unavailable. Please send another day and time, like Thursday at 4.</span></span>
-      <span class="mrow__receipt"><span>1 text · 79 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-slot_unavailable-label">When the time is already taken</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-slot_unavailable-label" aria-describedby="w-slot_unavailable-par">That time is unavailable. Please send another day and time, like Thursday at 4.</div>
-    <p class="mrow__par" id="w-slot_unavailable-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 79 characters</span>
-    </div>
+    <div class="ledger"><div class="mrow mrow--branch" id="m-slot_unavailable">
+  <div class="mrow__l">
+    <h3 class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>When the time is already taken</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when your calendar shows that time busy.</p>
   </div>
-</details>
-<details class="mrow" id="m-booking_confirmation">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Booking confirmation</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent only after the appointment is on your calendar.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant. A calendar invite is on its way to dana@example.com.<span class="sms__links"><span class="sms__linklabel">Add to Google Calendar ›</span><span class="sms__linklabel">Add to Outlook ›</span><span class="sms__linklabel">Add to iCal ›</span></span></span></span>
-      <span class="mrow__receipt" data-warn><span>3 texts · 399 characters</span></span>
-<span class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 3 texts. Customers still see one message.</span></span>    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-booking_confirmation-label">Booking confirmation</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-booking_confirmation-label" aria-describedby="w-booking_confirmation-par">Booked: <span class="ins" contenteditable="false">Job</span> on <span class="ins" contenteditable="false">Day and time</span> at <span class="ins" contenteditable="false">Address</span>. This is <span class="ins" contenteditable="false">Business name</span>&#39;s scheduling assistant. <span class="ins" contenteditable="false">Invite sentence</span> <span class="ins" contenteditable="false">Calendar links</span></div>
-    <p class="mrow__par" id="w-booking_confirmation-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Job</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Day and time</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Address</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Calendar links</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Invite sentence</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Customer&#39;s email</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Google Calendar link</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Outlook link</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>iCal link</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Calendar links page</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot" data-warn>3 texts · 399 characters</span>
-    </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">That time is unavailable. Please send another day and time, like Thursday at 4.</span></span>
+    <p class="mrow__receipt"><span>1 text · 79 characters</span></p>
   </div>
-</details>
-<details class="mrow mrow--branch" id="m-booking_error">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>When the calendar failed</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent if the appointment couldn&#39;t be added to your calendar. It tells the customer no booking was made.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</span></span>
-      <span class="mrow__receipt"><span>1 text · 113 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-booking_error-label">When the calendar failed</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-booking_error-label" aria-describedby="w-booking_error-par">We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</div>
-    <p class="mrow__par" id="w-booking_error-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: When the time is already taken">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-slot_unavailable">When the time is already taken</label>
+      <textarea class="input mrow__ta" id="t-slot_unavailable" name="slot_unavailable" rows="3" maxlength="480" aria-describedby="t-slot_unavailable-par">That time is unavailable. Please send another day and time, like Thursday at 4.</textarea>
+      <p class="mrow__par" id="t-slot_unavailable-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">That time is unavailable. Please send another day and time, like Thursday at 4.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_slot_unavailable" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
     </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Must say &#34;No booking was made&#34; and can&#39;t use the word &#34;call&#34;. The customer stays in the text thread.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 113 characters</span>
-    </div>
+  </details>
+</div>
+<div class="mrow" id="m-booking_confirmation">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Booking confirmation</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent only after the appointment is on your calendar.</p>
   </div>
-</details>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant. A calendar invite is on its way to dana@example.com.<span class="sms__links"><span class="sms__linklabel">Add to Google Calendar ›</span><span class="sms__linklabel">Add to Outlook ›</span><span class="sms__linklabel">Add to iCal ›</span></span></span></span>
+    <p class="mrow__receipt" data-warn><span>3 texts · 399 characters</span></p>
+<p class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 3 texts. Customers still see one message.</span></p>  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Booking confirmation">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-booking_confirmation">Booking confirmation</label>
+      <textarea class="input mrow__ta" id="t-booking_confirmation" name="booking_confirmation" rows="3" maxlength="480" aria-describedby="t-booking_confirmation-par">Booked: [Job] on [Day and time] at [Address]. This is [Business name]&#39;s scheduling assistant. [Invite sentence] [Calendar links]</textarea>
+      <p class="mrow__par" id="t-booking_confirmation-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant. A calendar invite is on its way to dana@example.com.<span class="sms__links"><span class="sms__linklabel">Add to Google Calendar ›</span><span class="sms__linklabel">Add to Outlook ›</span><span class="sms__linklabel">Add to iCal ›</span></span></span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_booking_confirmation" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Job]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Job</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Day and time]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Day and time</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Address]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Address</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Calendar links]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Calendar links</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Invite sentence]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Invite sentence</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Customer&#39;s email]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Customer&#39;s email</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Google Calendar link]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Google Calendar link</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Outlook link]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Outlook link</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[iCal link]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>iCal link</button><button class="chip" type="submit" name="insert_booking_confirmation" value="[Calendar links page]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Calendar links page</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="mrow mrow--branch" id="m-booking_error">
+  <div class="mrow__l">
+    <h3 class="mrow__title"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 4v8a4 4 0 0 0 4 4h8M14 12l4 4-4 4"/></svg>When the calendar failed</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent if the appointment couldn&#39;t be added to your calendar. It tells the customer no booking was made.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</span></span>
+    <p class="mrow__receipt"><span>1 text · 113 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: When the calendar failed">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-booking_error">When the calendar failed</label>
+      <textarea class="input mrow__ta" id="t-booking_error" name="booking_error" rows="3" maxlength="480" aria-describedby="t-booking_error-par">We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</textarea>
+      <p class="mrow__par" id="t-booking_error-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_booking_error" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Must say &#34;No booking was made&#34; and can&#39;t use the word &#34;call&#34;. The customer stays in the text thread.</span></p>    </div>
+  </details>
+</div>
 </div>
   </section>
   <section class="sec" id="no_reply" aria-labelledby="no_reply-h">
     <div class="sec__head"><h2 class="sec__title" id="no_reply-h" tabindex="-1">No reply</h2></div>
     <p class="sec__blurb">If the customer goes quiet, the assistant sends two reminders. Then the texting stops.</p>
-    <div class="ledger"><details class="mrow" id="m-followup_1">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">First reminder</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent 2 hours after the first text if there&#39;s no reply.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Hi again from Oak &amp; Pine Tree Care&#39;s scheduling assistant—still happy to get you on the calendar. What job do you need done? <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
-      <span class="mrow__receipt" data-warn><span class="mrow__added">STOP line added for you</span><span>3 texts · 147 characters</span></span>
-<span class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 3 texts. The &#34;—&#34; symbol makes each text hold only 70 characters. Use &#34;-&#34; instead.</span></span>    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-followup_1-label">First reminder</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-followup_1-label" aria-describedby="w-followup_1-par">Hi again from <span class="ins" contenteditable="false">Business name</span>&#39;s scheduling assistant—still happy to get you on the calendar. What job do you need done?</div>
-    <p class="mrow__par" id="w-followup_1-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot" data-warn>3 texts · 147 characters</span>
-    </div>
+    <div class="ledger"><div class="mrow" id="m-followup_1">
+  <div class="mrow__l">
+    <h3 class="mrow__title">First reminder</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent 2 hours after the first text if there&#39;s no reply.</p>
   </div>
-</details>
-<details class="mrow" id="m-followup_2">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Last reminder</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent 1 day after the first reminder. After this the assistant stops texting.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Last check-in from Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job you need and we&#39;ll set a time. <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
-      <span class="mrow__receipt"><span class="mrow__added">STOP line added for you</span><span>1 text · 136 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-followup_2-label">Last reminder</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-followup_2-label" aria-describedby="w-followup_2-par">Last check-in from <span class="ins" contenteditable="false">Business name</span>&#39;s scheduling assistant. Reply with the job you need and we&#39;ll set a time.</div>
-    <p class="mrow__par" id="w-followup_2-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 136 characters</span>
-    </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Hi again from Oak &amp; Pine Tree Care&#39;s scheduling assistant—still happy to get you on the calendar. What job do you need done? <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
+    <p class="mrow__receipt" data-warn><span class="mrow__added">STOP line added for you</span><span>3 texts · 147 characters</span></p>
+<p class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 3 texts. The &#34;—&#34; symbol makes each text hold only 70 characters. Use &#34;-&#34; instead.</span></p>  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: First reminder">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-followup_1">First reminder</label>
+      <textarea class="input mrow__ta" id="t-followup_1" name="followup_1" rows="3" maxlength="480" aria-describedby="t-followup_1-par">Hi again from [Business name]&#39;s scheduling assistant—still happy to get you on the calendar. What job do you need done?</textarea>
+      <p class="mrow__par" id="t-followup_1-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Hi again from Oak &amp; Pine Tree Care&#39;s scheduling assistant—still happy to get you on the calendar. What job do you need done? <span class="sms__suffix">Reply STOP to opt out.</span></span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_followup_1" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    </div>
+  </details>
+</div>
+<div class="mrow" id="m-followup_2">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Last reminder</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent 1 day after the first reminder. After this the assistant stops texting.</p>
   </div>
-</details>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Last check-in from Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job you need and we&#39;ll set a time. <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
+    <p class="mrow__receipt"><span class="mrow__added">STOP line added for you</span><span>1 text · 136 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Last reminder">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-followup_2">Last reminder</label>
+      <textarea class="input mrow__ta" id="t-followup_2" name="followup_2" rows="3" maxlength="480" aria-describedby="t-followup_2-par">Last check-in from [Business name]&#39;s scheduling assistant. Reply with the job you need and we&#39;ll set a time.</textarea>
+      <p class="mrow__par" id="t-followup_2-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Last check-in from Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job you need and we&#39;ll set a time. <span class="sms__suffix">Reply STOP to opt out.</span></span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_followup_2" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    </div>
+  </details>
+</div>
 </div>
   </section>
   <section class="sec" id="steps_back" aria-labelledby="steps_back-h">
     <div class="sec__head"><h2 class="sec__title" id="steps_back-h" tabindex="-1">When the assistant steps back</h2></div>
     <p class="sec__blurb">When a text needs a person, the assistant stops scheduling and passes the customer&#39;s details on.</p>
-    <div class="ledger"><details class="mrow" id="m-handoff_ack">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">When the assistant steps back</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when the customer asks for the owner or the assistant can&#39;t help.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Got it—automated scheduling is paused. The owner will follow up with you directly.</span></span>
-      <span class="mrow__receipt" data-warn><span>2 texts · 82 characters</span></span>
-<span class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 2 texts. The &#34;—&#34; symbol makes each text hold only 70 characters. Use &#34;-&#34; instead.</span></span>    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-handoff_ack-label">When the assistant steps back</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-handoff_ack-label" aria-describedby="w-handoff_ack-par">Got it—automated scheduling is paused. The owner will follow up with you directly.</div>
-    <p class="mrow__par" id="w-handoff_ack-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>This text must tell the customer someone will follow up. Don&#39;t ask them to call, and don&#39;t say they&#39;ll be put through to someone.</span></p><p class="mrow__dest">These go to the FluxWorks operator.</p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot" data-warn>2 texts · 82 characters</span>
-    </div>
+    <div class="ledger"><div class="mrow" id="m-handoff_ack">
+  <div class="mrow__l">
+    <h3 class="mrow__title">When the assistant steps back</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when the customer asks for the owner or the assistant can&#39;t help.</p>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>This text must tell the customer someone will follow up. Don&#39;t ask them to call, and don&#39;t say they&#39;ll be put through to someone.</span></p><p class="mrow__dest"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 11l18-7-7 18-2-8z"/></svg><span>These go to the FluxWorks operator.</span></p>  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</span></span>
+    <p class="mrow__receipt"><span>1 text · 78 characters</span></p>
   </div>
-</details>
-<details class="mrow" id="m-handoff_ack_safety">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">When someone may be in danger</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when a text mentions danger.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Automated scheduling is paused. The owner will follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</span></span>
-      <span class="mrow__receipt"><span>1 text · 134 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-handoff_ack_safety-label">When someone may be in danger</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-handoff_ack_safety-label" aria-describedby="w-handoff_ack_safety-par">Automated scheduling is paused. The owner will follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</div>
-    <p class="mrow__par" id="w-handoff_ack_safety-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: When the assistant steps back">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-handoff_ack">When the assistant steps back</label>
+      <textarea class="input mrow__ta" id="t-handoff_ack" name="handoff_ack" rows="3" maxlength="480" aria-describedby="t-handoff_ack-par">Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</textarea>
+      <p class="mrow__par" id="t-handoff_ack-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_handoff_ack" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
     </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Must tell people to call 911 if anyone is in danger, and must say someone will follow up.</span></p><p class="mrow__dest">These go to the FluxWorks operator.</p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 134 characters</span>
-    </div>
+  </details>
+</div>
+<div class="mrow" id="m-handoff_ack_safety">
+  <div class="mrow__l">
+    <h3 class="mrow__title">When someone may be in danger</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when a text mentions danger.</p>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Must tell people to call 911 if anyone is in danger, and must say someone will follow up.</span></p><p class="mrow__dest"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 11l18-7-7 18-2-8z"/></svg><span>These go to the FluxWorks operator.</span></p>  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Automated scheduling is paused. We&#39;ll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</span></span>
+    <p class="mrow__receipt"><span>1 text · 125 characters</span></p>
   </div>
-</details>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: When someone may be in danger">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-handoff_ack_safety">When someone may be in danger</label>
+      <textarea class="input mrow__ta" id="t-handoff_ack_safety" name="handoff_ack_safety" rows="3" maxlength="480" aria-describedby="t-handoff_ack_safety-par">Automated scheduling is paused. We&#39;ll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</textarea>
+      <p class="mrow__par" id="t-handoff_ack_safety-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Automated scheduling is paused. We&#39;ll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_handoff_ack_safety" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
 </div>
   </section>
-  <details class="sec sec--details" id="any_time">
-    <summary class="sec__head sec__head--sum"><h2 class="sec__title">START, HELP and STOP</h2><span class="sec__blurb sec__blurb--inline">Required by phone companies. Most businesses never change these.</span><svg class="icon sec__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
-    <div class="ledger"><details class="mrow" id="m-opt_in">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Reply to START</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when a customer texts START.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">You&#39;re subscribed to Oak &amp; Pine Tree Care&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</span></span>
-      <span class="mrow__receipt"><span>1 text · 129 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-opt_in-label">Reply to START</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-opt_in-label" aria-describedby="w-opt_in-par">You&#39;re subscribed to <span class="ins" contenteditable="false">Business name</span>&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</div>
-    <p class="mrow__par" id="w-opt_in-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 129 characters</span>
-    </div>
+  <section class="sec" id="any_time" aria-labelledby="any_time-h">
+    <div class="sec__head"><h2 class="sec__title" id="any_time-h" tabindex="-1">START, HELP and STOP</h2></div>
+    <details class="sec__more">
+      <summary class="sec__more-sum"><span>Required by phone companies. Most businesses never change these.</span><svg class="icon sec__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+      <div class="ledger"><div class="mrow" id="m-opt_in">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Reply to START</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when a customer texts START.</p>
   </div>
-</details>
-<details class="mrow" id="m-help">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Reply to HELP</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent when a customer texts HELP. The number it shows is set on the Phone page.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on. Contact: (704) 555-0123. Msg &amp; data rates may apply. <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
-      <span class="mrow__receipt" data-warn><span class="mrow__added">STOP line added for you</span><span>2 texts · 237 characters</span></span>
-<span class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 2 texts. Customers still see one message.</span></span>    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-help-label">Reply to HELP</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-help-label" aria-describedby="w-help-par"><span class="ins" contenteditable="false">Business name</span>&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on.<span class="ins" contenteditable="false">Contact number sentence</span> Msg &amp; data rates may apply.</div>
-    <p class="mrow__par" id="w-help-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Contact number sentence</button></div>
-    </div>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot" data-warn>2 texts · 237 characters</span>
-    </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">You&#39;re subscribed to Oak &amp; Pine Tree Care&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</span></span>
+    <p class="mrow__receipt"><span>1 text · 129 characters</span></p>
   </div>
-</details>
-<details class="mrow" id="m-opt_out_ack">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Reply to STOP</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Sent once when a customer texts STOP. Nothing follows it.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</span></span>
-      <span class="mrow__receipt"><span>1 text · 143 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-opt_out_ack-label">Reply to STOP</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-opt_out_ack-label" aria-describedby="w-opt_out_ack-par">You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</div>
-    <p class="mrow__par" id="w-opt_out_ack-par">Sent as one paragraph. Up to 480 characters.</p>
-    <div class="chipset" role="group" aria-label="Insert a detail">
-      <p class="chips-head" aria-hidden="true">Insert a detail</p>
-      <div class="chips"><button class="chip" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
-    </div>
-    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 143 characters</span>
-    </div>
-  </div>
-</details>
-<details class="mrow" id="m-opt_out_suffix">
-  <summary class="mrow__sum">
-    <span class="mrow__l">
-      <span class="mrow__head"><span class="mrow__title">Opt-out line</span><span class="badge badge--std">Standard wording</span></span>
-      <span class="mrow__when">Added to the first text, both reminders and the START and HELP replies when they leave out the word STOP.</span>
-      <span class="mrow__edit">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
-    </span>
-    <span class="mrow__r">
-      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Reply STOP to opt out.</span></span>
-      <span class="mrow__receipt"><span>1 text · 22 characters</span></span>
-    </span>
-  </summary>
-  <div class="mrow__body">
-    <p class="vh" id="w-opt_out_suffix-label">Opt-out line</p>
-    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-opt_out_suffix-label" aria-describedby="w-opt_out_suffix-par">Reply STOP to opt out.</div>
-    <p class="mrow__par" id="w-opt_out_suffix-par">Sent as one paragraph. Up to 480 characters.</p>
-    <p class="mrow__par">This text fills in no details.</p>
-<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>The word STOP stays. Phone companies check for it.</span></p>    <div class="mrow__foot">
-      <span class="mrow__receipt mrow__receipt--foot">1 text · 22 characters</span>
-    </div>
-  </div>
-</details>
-</div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Reply to START">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-opt_in">Reply to START</label>
+      <textarea class="input mrow__ta" id="t-opt_in" name="opt_in" rows="3" maxlength="480" aria-describedby="t-opt_in-par">You&#39;re subscribed to [Business name]&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</textarea>
+      <p class="mrow__par" id="t-opt_in-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">You&#39;re subscribed to Oak &amp; Pine Tree Care&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_opt_in" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    </div>
   </details>
+</div>
+<div class="mrow" id="m-help">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Reply to HELP</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent when a customer texts HELP. The number it shows is set on the Phone page.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on. Contact: (704) 555-0123. Msg &amp; data rates may apply. <span class="sms__suffix">Reply STOP to opt out.</span></span></span>
+    <p class="mrow__receipt" data-warn><span class="mrow__added">STOP line added for you</span><span>2 texts · 237 characters</span></p>
+<p class="mrow__bill"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16l-2-1.5L16 20l-2-1.5L12 20l-2-1.5L8 20l-2-1.5L4 20z"/><path d="M8 9h8M8 13h5"/></svg><span>Billed as 2 texts. Customers still see one message.</span></p>  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Reply to HELP">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-help">Reply to HELP</label>
+      <textarea class="input mrow__ta" id="t-help" name="help" rows="3" maxlength="480" aria-describedby="t-help-par">[Business name]&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on.[Contact number sentence] Msg &amp; data rates may apply.</textarea>
+      <p class="mrow__par" id="t-help-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on. Contact: (704) 555-0123. Msg &amp; data rates may apply. <span class="sms__suffix">Reply STOP to opt out.</span></span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_help" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button><button class="chip" type="submit" name="insert_help" value="[Contact number sentence]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Contact number sentence</button></div>
+      </div>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>Phone companies require &#34;Reply STOP to opt out.&#34; If your wording leaves out STOP, we add that line for you.</span></p>    </div>
+  </details>
+</div>
+<div class="mrow" id="m-opt_out_ack">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Reply to STOP</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Sent once when a customer texts STOP. Nothing follows it.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</span></span>
+    <p class="mrow__receipt"><span>1 text · 143 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Reply to STOP">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-opt_out_ack">Reply to STOP</label>
+      <textarea class="input mrow__ta" id="t-opt_out_ack" name="opt_out_ack" rows="3" maxlength="480" aria-describedby="t-opt_out_ack-par">You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</textarea>
+      <p class="mrow__par" id="t-opt_out_ack-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</span></span></div>
+      <div class="chipset" role="group" aria-label="Insert a detail">
+        <p class="chips-head" aria-hidden="true">Insert a detail</p>
+        <div class="chips"><button class="chip" type="submit" name="insert_opt_out_ack" value="[Business name]"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="vh">Insert a detail: </span>Business name</button></div>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="mrow" id="m-opt_out_suffix">
+  <div class="mrow__l">
+    <h3 class="mrow__title">Opt-out line</h3>
+    <p class="mrow__badges"><span class="badge badge--std">Standard wording</span></p>
+    <p class="mrow__when">Added to the first text, both reminders and the START and HELP replies when they leave out the word STOP.</p>
+  </div>
+  <div class="mrow__r">
+    <span class="sms sms--textback mrow__sms"><span class="sms__bubble">Reply STOP to opt out.</span></span>
+    <p class="mrow__receipt"><span>1 text · 22 characters</span></p>
+  </div>
+  <details class="mrow__ed">
+    <summary class="mrow__edit" aria-label="Edit wording: Opt-out line">Edit wording<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="mrow__body">
+      <label class="vh" for="t-opt_out_suffix">Opt-out line</label>
+      <textarea class="input mrow__ta" id="t-opt_out_suffix" name="opt_out_suffix" rows="3" maxlength="480" aria-describedby="t-opt_out_suffix-par">Reply STOP to opt out.</textarea>
+      <p class="mrow__par" id="t-opt_out_suffix-par">Sent as one paragraph. Up to 480 characters.</p>
+      <div class="mrow__live" aria-live="off"><span class="sms sms--textback mrow__sms"><span class="sms__bubble">Reply STOP to opt out.</span></span></div>
+      <p class="mrow__par">This text fills in no details.</p>
+<p class="mrow__rule"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg><span>The word STOP stays. Phone companies check for it.</span></p>    </div>
+  </details>
+</div>
+</div>
+    </details>
+  </section>
+  <div class="acts acts--formsave">
+    <button class="btn btn--primary btn--block-phone" type="submit">Save</button>
+    <p class="field-help">Saves every text at once</p>
+  </div>
 </form>
   </div>
 <aside class="rail" id="example" aria-labelledby="rail-h">
   <div class="rail__head">
     <h2 class="rail__title" id="rail-h">Example conversation</h2>
-    <label class="rail__show"><span>Show</span><span class="select"><select class="select__input"><option selected>Books a job</option><option>Unclear answers</option><option>No reply</option><option>Booking failed</option><option>Asks for the owner</option><option>Mentions danger</option><option>START, HELP and STOP</option></select><svg class="icon select__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span></label>
-  </div>
+<p class="rail__label">Nothing is sent · names made up</p>
+    <form class="rail__show" method="get" action="/client/messages#example">
+      <label class="vh" for="example-pick">Example conversation</label>
+      <span class="select"><select class="select__input" id="example-pick" name="example"><option value="0" selected>Books a job</option><option value="1">Unclear answers</option><option value="2">No reply</option><option value="3">Booking failed</option><option value="4">Asks for the owner</option><option value="5">Mentions danger</option><option value="6">START, HELP and STOP</option></select><svg class="icon select__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></span>
+      <button class="btn btn--secondary" type="submit">Show</button>
+    </form>
+<p class="rail__hint"><span class="netmark">Network notice</span> While texting approval is pending, each text also starts with a short network notice. The text counts include it.</p>  </div>
   <div class="phone">
     <div class="phone__screen">
       <div class="phone__head"><span class="phone__avatar" aria-hidden="true">O</span><span class="phone__who"><span class="phone__name">Oak &amp; Pine Tree Care</span><span class="phone__sub">Text message</span></span></div>
-      <div class="phone__log" tabindex="0">
+      <div class="phone__log" tabindex="0" aria-label="Example conversation">
         <div class="thread thread--on">
           <span class="tpill tpill--missed">Missed call · just now</span>
           <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</span>
+            <span class="sms__badge">Oak &amp; Pine Tree Care</span>
+            <span class="sms__bubble"><span class="netmark netmark--in">Network notice</span>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</span>
           </div>
           <div class="sms">
             <span class="sms__badge">Customer</span>
             <span class="sms__bubble">Tree trimming</span>
           </div>
           <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">What&#39;s the address for the job?</span>
+            <span class="sms__badge">Oak &amp; Pine Tree Care</span>
+            <span class="sms__bubble"><span class="netmark netmark--in">Network notice</span>What&#39;s the address for the job?</span>
           </div>
           <div class="sms">
             <span class="sms__badge">Customer</span>
             <span class="sms__bubble">412 Maple St, Charlotte</span>
           </div>
           <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.</span>
+            <span class="sms__badge">Oak &amp; Pine Tree Care</span>
+            <span class="sms__bubble"><span class="netmark netmark--in">Network notice</span>What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</span>
           </div>
           <div class="sms">
             <span class="sms__badge">Customer</span>
             <span class="sms__bubble">Thursday at 10</span>
           </div>
           <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">What name should we put the appointment under?</span>
+            <span class="sms__badge">Oak &amp; Pine Tree Care</span>
+            <span class="sms__bubble"><span class="netmark netmark--in">Network notice</span>What name should we put the appointment under?</span>
           </div>
           <div class="sms">
             <span class="sms__badge">Customer</span>
             <span class="sms__bubble">Dana</span>
           </div>
-          <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">Is this the best number to reach you? Reply YES, or send a different number.</span>
-          </div>
-          <div class="sms">
-            <span class="sms__badge">Customer</span>
-            <span class="sms__bubble">YES</span>
-          </div>
-          <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</span>
-          </div>
-          <div class="sms">
-            <span class="sms__badge">Customer</span>
-            <span class="sms__bubble">dana@example.com</span>
-          </div>
           <span class="tpill tpill--booked">Booked · on the test calendar</span>
           <div class="sms sms--textback">
-            <span class="sms__badge">TextBack</span>
-            <span class="sms__bubble">Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant. A calendar invite is on its way to dana@example.com.<span class="sms__links"><button class="sms__linkbtn" type="button" aria-expanded="false">Add to Google Calendar ›</button><button class="sms__linkbtn" type="button" aria-expanded="false">Add to Outlook ›</button><button class="sms__linkbtn" type="button" aria-expanded="false">Add to iCal ›</button></span></span>
+            <span class="sms__badge">Oak &amp; Pine Tree Care</span>
+            <span class="sms__bubble"><span class="netmark netmark--in">Network notice</span>Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant.<span class="sms__links"><span class="sms__linklabel">Add to Google Calendar ›</span><span class="sms__linklabel">Add to Outlook ›</span><span class="sms__linklabel">Add to iCal ›</span></span></span>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <p class="phone__foot">Example conversation · nothing is sent · names made up</p>
   <a class="rail__back" href="#main"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>Back to editing</a>
 </aside>
 </main>

@@ -4,16 +4,52 @@
 usage: .venv/bin/python docs/notes/portal-c/mockups/d1/build.py
 Reads ../fixture.json, renders templates/*.html with Jinja2 into this folder as
 NN-<page>.html and NN-<page>--<state>.html. No content is typed here: every
-visible string comes from the fixture. The only logic is ordering (a branch text
-follows its parent) and which state flags each file turns on.
+visible string comes from the fixture, or from proposed-copy.json for the few
+strings the fixture does not carry yet (merged over it; each is a proposal for the
+session lead). The only logic is ordering (a branch text follows its parent), digit
+grouping for dial codes, and which state flags each file turns on.
 """
 import json
+import re
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 HERE = Path(__file__).resolve().parent
 FX = json.loads((HERE.parent / "fixture.json").read_text())
+PROPOSED = json.loads((HERE / "proposed-copy.json").read_text())
+
+
+def merge(base, extra):
+    for k, v in extra.items():
+        if k.startswith("_"):
+            continue
+        if isinstance(v, dict) and isinstance(base.get(k), dict):
+            merge(base[k], v)
+        else:
+            base[k] = v
+
+
+merge(FX, PROPOSED)
+
+# The fixture must not contradict itself: a booked caller while no calendar is connected has to say
+# the booking went on the test calendar (critique d1 #1).
+if FX["calendar"]["state"] != "connected":
+    for row in FX["home"]["callers"]:
+        assert row["status"] != "Booked", f"{row['name']} is Booked while no calendar is connected"
+# The example conversation asks only the questions that are switched on (critique d1 #2).
+_asked = {k for k, c in FX["messages"]["cards"].items() if not ("switch" in c and c["switch"]["state"] == "off")}
+for b in FX["messages"]["example"]["bubbles"]:
+    assert b.get("key", "intro") in _asked, f"example asks {b['key']}, which is switched off"
+
+
+def dial(code):
+    """Group the 10-digit number inside a dial code for reading: *717045550100 -> *71 704 555 0100."""
+    m = re.fullmatch(r"([*#]+\d*?[*#]*)(\d{10})([#]?)", code)
+    if not m:
+        return code
+    pre, num, post = m.groups()
+    return f"{pre} {num[:3]} {num[3:6]} {num[6:]}{post}"
 
 env = Environment(
     loader=FileSystemLoader(HERE / "templates"),
@@ -22,6 +58,7 @@ env = Environment(
     trim_blocks=True,
     lstrip_blocks=True,
 )
+env.filters["dial"] = dial
 
 # Icon per nav item and per Messages step (glyph names in templates/_sprite.html).
 NAV_ICONS = {"Home": "home", "Messages": "messages", "Schedule": "clock", "Calendar": "calendar", "Phone": "phone"}
@@ -52,7 +89,7 @@ def base_ctx():
         # state flags, all off by default
         "menu_open": False, "banner": None, "dirty": False, "edit_open": None, "focus": None,
         "error": False, "any_time": False, "custom": False, "cal_state": FX["calendar"]["state"],
-        "invalid_mobile": False, "dialog": False,
+        "invalid_mobile": False, "dialog": False, "rename_offer": False,
     }
 
 
@@ -74,13 +111,16 @@ PAGES = [
     ("05-schedule--any-time-warning", "schedule.html", {"any_time": True, "focus": "hours"}),
     ("05-schedule--custom-length", "schedule.html", {"custom": True, "focus": "duration"}),
     ("05-schedule--saved-toast", "schedule.html", {"banner": S["toast"], "focus": "banner"}),
+    ("05-schedule--unsaved-bar", "schedule.html", {"dirty": True, "focus": "duration"}),
     ("06-calendar", "calendar.html", {"cal_state": "not_connected_with_connect"}),
     ("06-calendar--connected", "calendar.html", {"cal_state": "connected", "focus": "connection"}),
     ("06-calendar--not-connected-no-connect", "calendar.html", {"cal_state": "not_connected_without_connect", "focus": "connection"}),
     ("07-phone", "phone.html", {}),
     ("07-phone--carrier-verizon", "phone.html", {"focus": "codes"}),
     ("07-phone--invalid-mobile", "phone.html", {"invalid_mobile": True, "focus": "mobile"}),
-    ("07-phone--saved-toast", "phone.html", {"banner": P["numbers"]["toast"], "focus": "banner"}),
+    ("07-phone--saved-toast", "phone.html", {"banner": P["toast"], "focus": "banner"}),
+    ("07-phone--unsaved-bar", "phone.html", {"dirty": True, "focus": "business"}),
+    ("07-phone--rename-offer", "phone.html", {"banner": P["toast"], "rename_offer": True}),
     ("07-phone--confirm-mobile", "confirm_mobile.html", {}),
     ("07-phone--keep-mobile-toast", "phone.html", {"banner": P["confirm_mobile"]["toast_kept"], "focus": "banner"}),
     ("08-account", "account.html", {}),

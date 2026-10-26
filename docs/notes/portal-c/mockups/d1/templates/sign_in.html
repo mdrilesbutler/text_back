@@ -2,6 +2,7 @@
 {% set page_id = 'sign-in' %}{% set title = fx.sign_in.title %}{% set step = 1 %}
 {% block content %}
 {% set s = fx.sign_in %}
+{% if error %}{{ ui.error_summary(s.error_summary, [('#mobile', s.mobile_error)]) }}{% endif %}
 <div class="auth__head">
   <p class="eyebrow">{{ s.eyebrow }}</p>
   <h1>{{ s.title }}</h1>

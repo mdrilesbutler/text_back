@@ -1,20 +1,21 @@
 {% import "_macros.html" as ui %}
-{% set m = fx.messages %}
 <!doctype html>
 <html lang="en"{% if page_id == 'messages' %} class="has-jump"{% endif %}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{ title }} · {{ meta.business_name }} · {{ meta.product }}</title>
+{# A toast rendered at load is not announced by its live region, so the page title carries it too. #}
+<title>{% if banner %}{{ banner }} · {% endif %}{{ title }} · {{ meta.business_name }} · {{ meta.product }}</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
+<script src="d1.js" defer></script>
 </head>
 <body data-page="{{ page_id }}"{% if dirty %} data-dirty{% endif %}>
 {% include "_sprite.html" %}
 <a class="skip" href="#main">{{ shell.skip_link }}</a>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" href="/client">{{ ui.icon('missed', 'icon brand__icon') }}{{ shell.header.product }}</a>
+    <a class="brand" href="/client">{{ ui.icon('phone', 'icon brand__icon') }}{{ shell.header.product }}</a>
     <details class="menu"{% if menu_open %} open{% endif %}>
       <summary class="menu__trigger"><span class="menu__biz">{{ shell.header.business_name }}</span>{{ ui.icon('chevron', 'icon menu__chev') }}<span class="vh">{{ shell.header.menu_trigger }}</span></summary>
       <div class="menu__panel"{% if focus == 'menu' %} id="focus"{% endif %}>
@@ -28,12 +29,15 @@
     {% for item in shell.nav['items'] %}
     <a class="nav__item" href="{{ item.href }}"{% if item.label == current_nav %} aria-current="page"{% endif %}><span class="nav__icon">{{ ui.icon(nav_icons[item.label]) }}</span><span>{{ item.label }}</span></a>
     {% endfor %}
+    {# Account sits in the sidebar on desktop; on a phone it lives behind the business name. #}
+    <a class="nav__item nav__item--wide" href="/client/account"{% if current_nav == 'Account' %} aria-current="page"{% endif %}><span class="nav__icon">{{ ui.icon('person') }}</span><span>{{ shell.account_menu['items'][0] }}</span></a>
     <p class="nav__foot">{{ shell.foot }}</p>
   </nav>
   <main class="page" id="main" tabindex="-1">
     <div class="status-slot" role="status" id="status">
       {%- if banner %}{{ ui.notice('success', banner, 'check', dismiss=fx.shared.toast_dismiss, id='focus' if focus == 'banner' else None) }}{% endif -%}
     </div>
+    {% block summary %}{% endblock %}
     {% block content %}{% endblock %}
   </main>
   {% block after %}{% endblock %}

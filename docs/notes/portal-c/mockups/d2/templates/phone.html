@@ -7,29 +7,37 @@
 {% set carrier = (FW.carriers | selectattr('selected') | first) %}
 {% set suffix = f.messages.cards.opt_out_suffix.preview %}
 {% set first_text = P.business.name.preview %}
+{% set RO = P.business.rename_offer %}
+{% set new_mobile = N.owner_mobile.status_changed | replace('.', '') %}
+{% set new_mobile = new_mobile.split(' to ')[-1] %}
+{% set done_n = (K["items"] | selectattr('state', 'equalto', 'Done') | list | length) + (1 if checked3 else 0) %}
 {% block content %}
+{% if invalid_mobile %}{{ I.errsum([('#owner-mobile', N.owner_mobile.label ~ ': ' ~ N.owner_mobile.error)], f.messages.errors.summary.split('. ')[0] ~ '.', focused=focus=='errors') }}{% endif %}
 <div class="ph">
   <h1>{{ P.title }}</h1>
   <p class="ph__intro">{{ P.intro }}</p>
 </div>
-<form method="post" action="/client/phone" novalidate>
+<form id="phone-form" method="post" action="/client/phone" novalidate>
 
 <section class="sec" aria-labelledby="biz-h">
   <div class="sec__head"><h2 class="sec__title" id="biz-h">{{ P.business.title }}</h2></div>
   <div class="frow">
     <label class="field__label" for="bname">{{ P.business.name.label }}</label>
-    <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" autocorrect="off" value="{{ P.business.name.value }}" aria-describedby="bname-hint">
-    <p class="field-help" id="bname-hint">{{ P.business.name.hint }}</p>
+    <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" autocorrect="off" value="{{ RO.new_name if rename else P.business.name.value }}" aria-describedby="bname-hint">
+    <p class="field-help" id="bname-hint">{{ P.business.name.hint.split(', for example')[0] }}.</p>
     <div class="frow__preview">
       <p class="chips-head">{{ P.business.name.preview_eyebrow }}</p>
       <span class="sms sms--textback mrow__sms"><span class="sms__bubble">{% if first_text.endswith(' ' + suffix) %}{{ first_text[:-(suffix|length) - 1] }} <span class="sms__suffix">{{ suffix }}</span>{% else %}{{ first_text }}{% endif %}</span></span>
     </div>
+    {% if rename %}
+    <div class="notice notice--info notice--inflow" {{ fid('rename') }}>{{ I.ic('info', 'notice__icon') }}<div class="notice__body"><p class="notice__text">Saved. Business name is now “{{ RO.new_name }}”. {{ RO.offer }}</p>
+      <p class="notice__acts"><button class="btn btn--secondary" type="submit" name="rename_texts" value="update">{{ RO["update"] }}</button><button class="btn btn--ghost" type="submit" name="rename_texts" value="leave">{{ RO.leave }}</button></p></div></div>
+    {% endif %}
   </div>
 </section>
 
 <section class="sec" aria-labelledby="num-h">
   <div class="sec__head"><h2 class="sec__title" id="num-h">{{ N.title }}</h2></div>
-  <p class="sec__blurb">{{ N.subtitle }}</p>
   <div class="frow">
     <label class="field__label" for="bline">{{ N.business_line.label }}</label>
     <input class="input input--tel" id="bline" name="business_line" type="tel" inputmode="tel" autocomplete="tel" value="{{ N.business_line.value }}" aria-describedby="bline-hint">
@@ -40,19 +48,19 @@
     <span class="row__value">{{ N.texting_number.value }}</span>
     <span class="row__hint">{{ N.texting_number.note }}</span>
   </div>
-  <div class="frow">
+  <div class="frow" {{ fid('owner-mobile-row') }}>
     <label class="field__label" for="owner-mobile">{{ N.owner_mobile.label }}</label>
-    <input class="input input--tel" {{ fid('owner-mobile') }} name="owner_mobile" type="tel" inputmode="tel" autocomplete="tel" value="{{ N.owner_mobile.invalid_entry if invalid_mobile else N.owner_mobile.value }}" aria-describedby="om-hint{% if invalid_mobile %} om-error{% endif %}"{% if invalid_mobile %} aria-invalid="true"{% endif %}>
+    <input class="input input--tel" id="owner-mobile" name="owner_mobile" type="tel" inputmode="tel" autocomplete="tel" value="{{ N.owner_mobile.invalid_entry if invalid_mobile else (new_mobile if mobile_changed else N.owner_mobile.value) }}" aria-describedby="{% if invalid_mobile %}om-error {% endif %}om-hint om-status"{% if invalid_mobile %} aria-invalid="true"{% endif %}>
     {% if invalid_mobile %}<p class="field-error" id="om-error">{{ I.ic('warn') }}<span>{{ N.owner_mobile.error }}</span></p>{% endif %}
     <p class="field-help" id="om-hint">{{ N.owner_mobile.hint }}</p>
-    <p class="frow__status">{{ N.owner_mobile.status_unchanged }}</p>
+    <p class="frow__status{% if mobile_changed %} frow__status--changed{% endif %}" id="om-status">{{ N.owner_mobile.status_changed if mobile_changed else N.owner_mobile.status_unchanged }}</p>
   </div>
   <div class="frow">
     <label class="field__label" for="helpnum">{{ N.help_number.label }} <span class="tag">{{ N.help_number.tag }}</span></label>
     <input class="input input--tel" id="helpnum" name="help_number" type="tel" inputmode="tel" value="{{ N.help_number.value }}" aria-describedby="help-hint">
     <p class="field-help" id="help-hint">{{ N.help_number.hint }}</p>
   </div>
-  <div class="acts"><button class="btn btn--primary btn--block-phone" type="submit">{{ N.save }}</button></div>
+  <div class="acts acts--formsave"><button class="btn btn--primary btn--block-phone" type="submit">{{ N.save }}</button></div>
 </section>
 </form>
 
@@ -64,7 +72,7 @@
     <legend class="field__label">{{ FW.carrier_legend }}</legend>
     <div class="pill-radios">
       {% for c in FW.carriers %}
-      <input class="vh-input" type="radio" name="carrier" id="car-{{ loop.index }}"{% if c.selected %} checked{% endif %}><label class="pill-radio" for="car-{{ loop.index }}">{{ c.name }}</label>
+      <input class="vh-input" type="radio" name="carrier" value="{{ c.name }}" id="car-{{ loop.index }}"{% if c.selected %} checked{% endif %}><label class="pill-radio" for="car-{{ loop.index }}">{{ c.name }}</label>
       {% endfor %}
     </div>
   </fieldset>
@@ -77,7 +85,7 @@
     <h3 class="codes__h">{{ heading }}</h3>
     <ul class="ledger">
       {% for r in rows %}
-      <li class="crow"><span class="crow__l">{{ r.label }}</span><code class="crow__c">{{ r.code }}</code><button class="btn btn--ghost" type="button">{{ I.ic('copy') }}<span class="vh">{{ FW["copy"] }} {{ r.label }}: </span>{{ FW["copy"] }}</button></li>
+      <li class="crow"><span class="crow__l">{{ r.label }}</span><code class="crow__c">{{ r.code }}</code><button class="btn btn--ghost" type="button" data-copy="{{ r.code }}">{{ I.ic('copy') }}<span class="vh">{{ FW["copy"] }} {{ r.label }}: </span>{{ FW["copy"] }}</button></li>
       {% endfor %}
     </ul>
     {% endif %}
@@ -87,18 +95,20 @@
 
 <form method="post" action="/client/phone/checks">
 <section class="sec" aria-labelledby="checks-h" {{ fid('checks') }}>
-  <div class="sec__head"><h2 class="sec__title" id="checks-h">{{ K.heading }}</h2><span class="sec__aside">{{ K.progress }}</span></div>
+  <div class="sec__head"><h2 class="sec__title" id="checks-h">{{ K.heading }}</h2><span class="sec__aside">{{ K.progress | replace(K.progress.split(' ')[0], done_n|string, 1) }}</span></div>
   <ol class="ledger">
     {% for c in K["items"] %}
     <li class="check">
       <span class="check__n" aria-hidden="true">{{ c.n }}</span>
       <span class="check__step">{{ c.step }}</span>
-      {{ I.st(kind(c.state), c.state) }}
+      {% set word = c.manual_state if (checked3 and c.n == 3) else c.state %}
+      {{ I.st(kind(word), word) }}
       {% if c.manual %}
+      {% set ticked = checked3 and c.n == 3 %}
       <span class="check__ev">{{ c.hint }}</span>
-      <label class="manual"><input type="checkbox" name="check_{{ c.n }}"><span>{{ c.manual_state }}</span></label>
+      <label class="manual"><input type="checkbox" name="check_{{ c.n }}" value="done"{% if ticked %} checked{% endif %}><span>{{ c.manual_state }}</span></label>
       {% elif c.state == 'Done' %}
-      <span class="check__ev check__ev--done">{{ c.evidence }}</span>
+      <span class="check__ev check__ev--done">{{ c.evidence }} <span class="xtag">{{ f.home.example_tag }}</span></span>
       {% else %}
       <span class="check__ev">{{ c.not_yet }}</span>
       {% endif %}

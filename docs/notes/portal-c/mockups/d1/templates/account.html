@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% set page_id = 'account' %}{% set title = fx.account.title %}{% set current_nav = none %}
+{% set page_id = 'account' %}{% set title = fx.account.title %}{% set current_nav = 'Account' %}
 {% block content %}
 {% set a = fx.account %}
+{% set e = a.signout_everywhere %}
 <div class="page-head"><h1>{{ a.title }}</h1></div>
 <ol class="spine">
   {% call ui.node('icon', 'person') %}
@@ -9,30 +10,30 @@
   {% endcall %}
   {% call ui.node('icon', 'device') %}
     <div class="node__head"><h2>{{ a.devices_title }}</h2></div>
-    <div class="card">
+    <form class="card" method="post" action="/client/account">
       <ul class="devices">
         {% for d in a.devices %}<li class="device{% if d.current %} device--current{% endif %}">{{ ui.icon('device') }}<span class="tnum">{{ d.line }}</span></li>{% endfor %}
       </ul>
-      <label class="switch-row"><span class="switch-row__text">{{ a.remember.switch }}</span><input class="switch" type="checkbox" role="switch"{% if a.remember.state == 'on' %} checked{% endif %}></label>
+      <label class="switch-row"><span class="switch-row__text">{{ a.remember.switch }}</span><input class="switch" type="checkbox" role="switch" name="remember" value="on"{% if a.remember.state == 'on' %} checked{% endif %}></label>
       <p class="field-help">{{ a.remember.note_on if a.remember.state == 'on' else a.remember.note_off }}</p>
-    </div>
+      <div class="actions"><button class="btn btn--secondary" type="submit">{{ a.remember_save }}</button></div>
+    </form>
   {% endcall %}
   {% call ui.node('icon', 'arrow-left') %}
-    <div class="actions">
-      <form method="post" action="/client/logout"><button class="btn btn--primary" type="submit">{{ a.signout }}</button></form>
-      <button class="btn btn--secondary" type="button">{{ a.signout_everywhere.button }}</button>
+    <div class="signout">
+      <form method="post" action="/client/logout"><button class="btn btn--secondary" type="submit">{{ a.signout }}</button></form>
+      {# Sign out everywhere confirms in place, never in a modal: the page stays readable around it. #}
+      <details class="confirm-inline"{% if dialog %} open{% endif %}>
+        <summary class="btn btn--secondary confirm-inline__trigger">{{ e.button }}</summary>
+        <form class="confirm-inline__panel" method="post" action="/client/account"{% if dialog %} id="focus"{% endif %} aria-labelledby="everywhere-q">
+          <p class="confirm-inline__q" id="everywhere-q">{{ e.dialog }}</p>
+          <div class="actions">
+            <a class="btn btn--secondary" href="/client/account">{{ e.cancel }}</a>
+            <button class="btn btn--danger" type="submit" name="action" value="signout_everywhere">{{ e.confirm }}</button>
+          </div>
+        </form>
+      </details>
     </div>
   {% endcall %}
 </ol>
-{% endblock %}
-{% block after %}
-{% if dialog %}
-{% set e = fx.account.signout_everywhere %}
-<div class="scrim">
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-text" id="focus">
-    <p class="dialog__text" id="dialog-text">{{ e.dialog }}</p>
-    <div class="actions"><button class="btn btn--primary" type="submit">{{ e.confirm }}</button><button class="btn btn--secondary" type="button">{{ e.cancel }}</button></div>
-  </div>
-</div>
-{% endif %}
 {% endblock %}

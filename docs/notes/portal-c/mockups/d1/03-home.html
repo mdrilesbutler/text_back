@@ -6,6 +6,7 @@
 <title>Home · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
+<script src="d1.js" defer></script>
 </head>
 <body data-page="home">
 <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -41,30 +42,31 @@
 </svg><a class="skip" href="#main">Skip to content</a>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-missed"/></svg>TextBack</a>
+    <a class="brand" href="/client"><svg class="icon brand__icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>TextBack</a>
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in with 980 555 0123</p>
+        <p class="menu__who">Signed in as 980 555 0123</p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
     </details>
   </header>
-  <nav class="nav" aria-label="Settings">
+  <nav class="nav" aria-label="Pages">
     <a class="nav__item" href="/client" aria-current="page"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-home"/></svg></span><span>Home</span></a>
     <a class="nav__item" href="/client/messages"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-messages"/></svg></span><span>Messages</span></a>
     <a class="nav__item" href="/client/schedule"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg></span><span>Schedule</span></a>
     <a class="nav__item" href="/client/calendar"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg></span><span>Calendar</span></a>
     <a class="nav__item" href="/client/phone"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg></span><span>Phone</span></a>
+    <a class="nav__item nav__item--wide" href="/client/account"><span class="nav__icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg></span><span>Account</span></a>
     <p class="nav__foot">TextBack by FluxWorks</p>
   </nav>
   <main class="page" id="main" tabindex="-1">
     <div class="status-slot" role="status" id="status"></div>
 <div class="page-head"><h1>Home</h1></div>
 <ol class="spine">
-<li class="node node--missed">
-  <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-missed"/></svg></span>
+<li class="node node--todo node--status">
+  <span class="node__dot" aria-hidden="true"></span>
   <div class="node__body">
         <p class="status-line">Not working yet: 2 steps left.</p>
 
@@ -75,8 +77,8 @@
   <span class="node__dot" aria-hidden="true"></span>
   <div class="node__body">
         <div class="setup setup--needs">
-      <div class="setup__head"><h3 class="setup__title">Calendar</h3><span class="state state--needs"><span class="glyph glyph--needs" aria-hidden="true"></span><span>Needs you</span></span></div>
-      <p class="setup__detail">No calendar yet. Nothing can be booked until you connect one.</p>
+      <div class="setup__head"><h3 class="setup__title">Calendar</h3><span class="pill state state--needs pill--warning">Needs you</span></div>
+      <p class="setup__detail">No calendar of yours yet. Until you connect one, bookings go on a test calendar you can&#39;t see.</p>
 <a class="btn btn--secondary setup__btn" href="/client/calendar">Connect calendar</a>    </div>
 
   </div>
@@ -85,7 +87,7 @@
   <span class="node__dot" aria-hidden="true"></span>
   <div class="node__body">
         <div class="setup setup--needs">
-      <div class="setup__head"><h3 class="setup__title">Call forwarding</h3><span class="state state--needs"><span class="glyph glyph--needs" aria-hidden="true"></span><span>Needs you</span></span></div>
+      <div class="setup__head"><h3 class="setup__title">Call forwarding</h3><span class="pill state state--needs pill--warning">Needs you</span></div>
       <p class="setup__detail">3 of 5 checks done.</p>
 <a class="btn btn--secondary setup__btn" href="/client/phone#forwarding">Finish forwarding</a>    </div>
 
@@ -95,7 +97,7 @@
   <span class="node__dot" aria-hidden="true"></span>
   <div class="node__body">
         <div class="setup setup--waiting">
-      <div class="setup__head"><h3 class="setup__title">Texting approval</h3><span class="state state--waiting"><span class="glyph glyph--waiting" aria-hidden="true"></span><span>Waiting on phone companies</span></span></div>
+      <div class="setup__head"><h3 class="setup__title">Texting approval</h3><span class="pill state state--waiting">Waiting on phone companies</span></div>
       <p class="setup__detail">FluxWorks has filed your business for texting approval. Until it clears, each text starts with a short network notice. Nothing for you to do.</p>
     </div>
 
@@ -104,9 +106,12 @@
 <li class="node node--icon">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-calendar"/></svg></span>
   <div class="node__body">
-        <div class="node__head"><h2>This week</h2><p class="node__blurb">Since Mon, Oct 26. The counts and the list below cover the same days.</p></div>
+        <div class="node__head">
+      <div class="node__title"><h2>This week</h2><span class="extag">Example numbers</span></div>
+      <p class="node__blurb">Since Mon, Oct 26. The counts and the list below cover the same days.</p>
+    </div>
     <dl class="counts">
-<div><dt>Missed calls</dt><dd class="tnum">3</dd></div><div><dt>Customers texted</dt><dd class="tnum">3</dd></div><div><dt>Booked</dt><dd class="tnum">1</dd></div><div><dt>Assistant stepped back</dt><dd class="tnum">1</dd></div>    </dl>
+<div class="counts__item"><dt>Missed calls</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Customers texted</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Booked</dt><dd class="tnum">1</dd></div><div class="counts__item"><dt>Assistant stepped back</dt><dd class="tnum">1</dd></div>    </dl>
 
   </div>
 </li>
@@ -116,20 +121,20 @@
         <div class="node__head"><h2>This week&#39;s callers</h2></div>
     <ol class="callers">
       <li class="caller">
-        <p class="caller__who"><span class="caller__name">Dana Whitfield</span><span class="extag">Example</span></p>
-        <span class="pill caller__pill pill--success">Booked</span>
+        <p class="caller__who"><span class="caller__name">Dana Whitfield</span> <span class="extag">Example</span></p>
+        <p class="caller__status">Booked on test calendar</p>
         <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum">Mon, Oct 26, 9:12 AM</span></p>
         <p class="caller__text"><span class="caller__k">Last text</span> Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte.</p>
       </li>
       <li class="caller">
-        <p class="caller__who"><span class="caller__name">Marcus Lee</span><span class="extag">Example</span></p>
-        <span class="pill caller__pill">Assistant stepped back</span>
+        <p class="caller__who"><span class="caller__name">Marcus Lee</span> <span class="extag">Example</span></p>
+        <p class="caller__status">Assistant stepped back</p>
         <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum">Mon, Oct 26, 11:48 AM</span></p>
-        <p class="caller__text"><span class="caller__k">Last text</span> Got it—automated scheduling is paused. The owner will follow up with you directly.</p>
+        <p class="caller__text"><span class="caller__k">Last text</span> Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</p>
       </li>
       <li class="caller">
-        <p class="caller__who"><span class="caller__name">Priya Natarajan</span><span class="extag">Example</span></p>
-        <span class="pill caller__pill">Waiting for a reply</span>
+        <p class="caller__who"><span class="caller__name">Priya Natarajan</span> <span class="extag">Example</span></p>
+        <p class="caller__status">Waiting for a reply</p>
         <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum">Mon, Oct 26, 1:55 PM</span></p>
         <p class="caller__text"><span class="caller__k">Last text</span> Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
       </li>

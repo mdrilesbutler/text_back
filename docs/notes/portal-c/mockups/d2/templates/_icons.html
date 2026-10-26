@@ -26,10 +26,21 @@
 <span class="state state--{{ kind }}"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
 {%- if kind == 'done' %}<circle cx="10" cy="10" r="10" class="g-fill"/><path d="M5.5 10.5l3 3 6-6" class="g-tick"/>
 {%- elif kind == 'checked' %}<circle cx="10" cy="10" r="9" class="g-ring g-ring--dash"/><path d="M5.5 10.5l3 3 6-6" class="g-tick g-tick--ink"/>
+{%- elif kind == 'needs' %}<circle cx="10" cy="10" r="9" class="g-ring g-ring--needs"/><path d="M10 5.5v5.5M10 14.2v.3" class="g-mark"/>
+{%- elif kind == 'waiting' %}<circle cx="10" cy="10" r="9" class="g-ring"/><path d="M10 5.5V10l3 2" class="g-hand"/>
 {%- else %}<circle cx="10" cy="10" r="9" class="g-ring"/>
 {%- endif %}</svg><span class="state__word">{{ word }}</span></span>
 {%- endmacro %}
 
 {% macro notice(kind, text, title=None) -%}
 <div class="notice notice--{{ kind }}">{{ ic('warn' if kind == 'warning' or kind == 'danger' else 'info', 'notice__icon') }}<div class="notice__body">{% if title %}<p class="notice__title">{{ title }}</p>{% endif %}<p class="notice__text">{{ text }}</p>{{ caller() if caller }}</div></div>
+{%- endmacro %}
+
+
+{# Error summary: top of the page, focused on load (role=alert), each item links to its field. #}
+{% macro errsum(items, heading=None, focused=False) -%}
+<div class="errsum" role="alert" tabindex="-1" id="{{ 'focus' if focused else 'errors' }}">
+  {% if heading %}<p class="errsum__h">{{ heading }}</p>{% endif %}
+  <ul class="errsum__list">{% for href, text in items %}<li><a href="{{ href }}">{{ ic('warn') }}<span>{{ text }}</span></a></li>{% endfor %}</ul>
+</div>
 {%- endmacro %}

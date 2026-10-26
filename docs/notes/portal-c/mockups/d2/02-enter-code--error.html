@@ -11,13 +11,15 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell shell--auth">
 <header class="hd">
-  <span class="hd__brand"><span class="hd__mark" aria-hidden="true"></span>TextBack</span>
+  <span class="hd__brand">TextBack</span>
 </header>
 <main id="main" class="main main--auth" tabindex="-1">
   <div class="col">
     <div class="slot" role="status" id="status"></div>
 <div class="auth2">
-  <div class="ph">
+<div class="errsum" role="alert" tabindex="-1" id="focus">
+  <ul class="errsum__list"><li><a href="#code"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l10 18H2z"/><path d="M12 9v5M12 17.5v.5"/></svg><span>That code isn&#39;t right, or it has expired. Check the text or send a new code.</span></a></li></ul>
+</div>  <div class="ph">
     <p class="eyebrow">Oak &amp; Pine Tree Care</p>
     <h1>Check your phone</h1>
     <p class="ph__intro">Enter the six-digit code we just texted. It expires in ten minutes.</p>
@@ -27,11 +29,11 @@
       <label class="field__label" for="code">Sign-in code</label>
       <div class="otp" data-filled="0">
         <span class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
-        <input class="otp__input" id="focus" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" aria-invalid="true" aria-describedby="code-error">
+        <input class="otp__input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" aria-invalid="true" aria-describedby="code-error">
       </div>
 <p class="field-error" id="code-error"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l10 18H2z"/><path d="M12 9v5M12 17.5v.5"/></svg><span>That code isn&#39;t right, or it has expired. Check the text or send a new code.</span></p>    </div>
     <div class="switch-block">
-      <label class="switch-row"><span class="switch-row__text">Remember this phone for 30 days</span><input class="switch" type="checkbox" role="switch" name="remember" checked></label>
+      <label class="switch-row"><span class="switch-row__text">Remember this phone for 30 days</span><input class="switch" type="checkbox" role="switch" name="remember" value="on" checked></label>
       <p class="switch-row__note">Otherwise this phone signs out after 12 hours.</p>
     </div>
     <button class="btn btn--primary btn--block" type="submit">Sign in</button>

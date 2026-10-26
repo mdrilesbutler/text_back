@@ -11,12 +11,12 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell">
 <header class="hd">
-  <a class="hd__brand" href="/client"><span class="hd__mark" aria-hidden="true"></span>TextBack</a>
+  <a class="hd__brand" href="/client">TextBack</a>
   <span class="hd__sep" aria-hidden="true"></span>
   <details class="acct">
     <summary class="acct__sum"><span class="hd__biz">Oak &amp; Pine Tree Care</span><span class="vh">, Account</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="acct__panel" id="menu">
-      <p class="acct__who">Signed in with 980 555 0123</p>
+      <p class="acct__who">Signed in as 980 555 0123</p>
       <a class="acct__item" href="/client/account">Account</a>
       <form method="post" action="/client/logout"><button class="acct__item" type="submit">Sign out</button></form>
     </div>
@@ -33,27 +33,26 @@
 <section class="sec" aria-labelledby="conn-h">
   <div class="sec__head"><h2 class="sec__title" id="conn-h">Google Calendar</h2></div>
   <div class="row row--state" id="cal-state">
-    <span class="row__label">Google Calendar</span>
-    <span class="state state--done"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="10" class="g-fill"/><path d="M5.5 10.5l3 3 6-6" class="g-tick"/></svg><span class="state__word">Connected</span></span>
-    <span class="row__hint row__hint--ink">Bookings go here: Oak &amp; Pine jobs.</span>
+    <span class="row__label row__label--body">Bookings go here: Oak &amp; Pine jobs. Connected as owner@example.com.</span>
+    <span class="state state--done"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="10" class="g-fill"/><path d="M5.5 10.5l3 3 6-6" class="g-tick"/></svg><span class="state__word">Done</span></span>
   </div>
   <div class="acts">
-<button class="btn btn--secondary" type="button">Use a different calendar</button><button class="btn btn--secondary" type="button">Reconnect Google Calendar</button>  </div>
-  <fieldset class="picker">
+<button class="btn btn--secondary" type="submit" form="connect-form">Reconnect Google Calendar</button>  </div>
+<form id="connect-form" method="post" action="/client/calendar/connect"></form>  <form method="post" action="/client/calendar/pick"><fieldset class="picker">
     <legend class="picker__legend">Which calendar should the assistant use?</legend>
     <p class="field-help">Free times are checked on this calendar and new appointments are added to it.</p>
     <div class="ledger">
-      <label class="choice"><input class="radio" type="radio" name="calendar_id" checked><span class="choice__text"><span class="choice__name">Oak &amp; Pine jobs</span></span><span class="pill pill--success">In use</span></label>
-      <label class="choice"><input class="radio" type="radio" name="calendar_id"><span class="choice__text"><span class="choice__name">owner@example.com</span><span class="choice__meta">(main calendar)</span></span></label>
+      <label class="choice"><input class="radio" type="radio" name="calendar_id" value="0" checked><span class="choice__text"><span class="choice__name">Oak &amp; Pine jobs</span></span><span class="pill pill--success">In use</span></label>
+      <label class="choice"><input class="radio" type="radio" name="calendar_id" value="1"><span class="choice__text"><span class="choice__name">owner@example.com</span><span class="choice__meta">(main calendar)</span></span></label>
     </div>
     <div class="acts acts--tight"><button class="btn btn--secondary" type="submit">Use this calendar</button></div>
-  </fieldset>
+  </fieldset></form>
 </section>
 
 <section class="sec" aria-labelledby="avail-h">
   <div class="sec__head"><h2 class="sec__title" id="avail-h">Next free times on Oak &amp; Pine jobs</h2></div>
   <p class="sec__blurb">The first three free 60-minute times in the next 14 days, inside your working hours.</p>
-  <div class="acts acts--tight"><button class="btn btn--secondary" type="button">Check free times</button></div>
+  <form class="acts acts--tight" method="post" action="/client/calendar/check"><button class="btn btn--secondary" type="submit">Check free times</button></form>
 </section>
   </div>
 </main>

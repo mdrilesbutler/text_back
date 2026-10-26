@@ -13,18 +13,18 @@
 <div class="shell{% if not signed_in %} shell--auth{% endif %}">
 <header class="hd">
   {% if signed_in %}
-  <a class="hd__brand" href="{{ f.shell.nav["items"][0].href }}"><span class="hd__mark" aria-hidden="true"></span>{{ f.shell.header.product }}</a>
+  <a class="hd__brand" href="{{ f.shell.nav["items"][0].href }}">{{ f.shell.header.product }}</a>
   <span class="hd__sep" aria-hidden="true"></span>
   <details class="acct"{% if menu_open %} open{% endif %}>
     <summary class="acct__sum"><span class="hd__biz">{{ f.shell.header.business_name }}</span><span class="vh">, {{ f.shell.header.menu_trigger }}</span>{{ I.ic('chev') }}</summary>
     <div class="acct__panel" {{ fid('menu') }}>
-      <p class="acct__who">{{ f.shell.account_menu.signed_in }}</p>
+      <p class="acct__who">{{ f.account.signed_in }}</p>
       <a class="acct__item" href="/client/account">{{ f.shell.account_menu["items"][0] }}</a>
       <form method="post" action="/client/logout"><button class="acct__item" type="submit">{{ f.shell.account_menu["items"][1] }}</button></form>
     </div>
   </details>
   {% else %}
-  <span class="hd__brand"><span class="hd__mark" aria-hidden="true"></span>{{ f.sign_in.product }}</span>
+  <span class="hd__brand">{{ f.sign_in.product }}</span>
   {% endif %}
 </header>
 <main id="main" class="main{% if wide %} main--wide{% endif %}{% if not signed_in %} main--auth{% endif %}" tabindex="-1">
@@ -35,9 +35,9 @@
   {% block aside %}{% endblock %}
 </main>
 {% if savebar %}
-<div class="savebar2">
-  <span class="savebar2__n">{{ f.messages.save_bar.changed }}</span>
-  <span class="savebar2__acts"><button class="btn btn--ghost" type="button">{{ f.messages.save_bar.discard }}</button><button class="btn btn--primary" type="submit" form="messages-form">{{ f.messages.save_bar.save }}</button></span>
+<div class="savebar2" role="region" aria-label="{{ savebar.count }}">
+  <p class="savebar2__n"><span>{{ savebar.count }}:</span>{% for l in savebar.links %}<span class="savebar2__item"><a href="{{ l.href }}">{{ l.label }}</a>{% if not loop.last %},{% endif %}</span>{% endfor %}</p>
+  <span class="savebar2__acts"><button class="btn btn--ghost" type="submit" form="{{ savebar.form }}" name="discard" value="1">{{ savebar.discard }}</button><button class="btn btn--primary" type="submit" form="{{ savebar.form }}">{{ savebar.save }}</button></span>
 </div>
 {% endif %}
 {% if signed_in %}

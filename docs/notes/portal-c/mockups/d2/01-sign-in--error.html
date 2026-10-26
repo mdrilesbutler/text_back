@@ -11,13 +11,15 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell shell--auth">
 <header class="hd">
-  <span class="hd__brand"><span class="hd__mark" aria-hidden="true"></span>TextBack</span>
+  <span class="hd__brand">TextBack</span>
 </header>
 <main id="main" class="main main--auth" tabindex="-1">
   <div class="col">
     <div class="slot" role="status" id="status"></div>
 <div class="auth2">
-  <div class="ph">
+<div class="errsum" role="alert" tabindex="-1" id="focus">
+  <ul class="errsum__list"><li><a href="#mobile"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l10 18H2z"/><path d="M12 9v5M12 17.5v.5"/></svg><span>Enter your mobile as 10 digits, like 704 555 0123.</span></a></li></ul>
+</div>  <div class="ph">
     <p class="eyebrow">Owner settings</p>
     <h1>Sign in</h1>
     <p class="ph__intro">Enter your mobile number. We text a six-digit code to the mobile on file for this business. No password.</p>
@@ -25,7 +27,7 @@
   <form class="auth2__form" method="post" action="/client/login" novalidate>
     <div class="field">
       <label class="field__label" for="mobile">Your mobile number</label>
-      <input class="input input--tel" id="focus" name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="10 digits" value="" aria-invalid="true" aria-describedby="mobile-error">
+      <input class="input input--tel" id="mobile" name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="10 digits" value="980 555 01" aria-invalid="true" aria-describedby="mobile-error">
 <p class="field-error" id="mobile-error"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l10 18H2z"/><path d="M12 9v5M12 17.5v.5"/></svg><span>Enter your mobile as 10 digits, like 704 555 0123.</span></p>    </div>
     <button class="btn btn--primary btn--block" type="submit">Text me a code</button>
   </form>

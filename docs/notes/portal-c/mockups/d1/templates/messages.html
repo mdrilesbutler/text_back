@@ -2,21 +2,23 @@
 {% set page_id = 'messages' %}{% set title = fx.messages.title %}{% set current_nav = 'Messages' %}
 {% block content %}
 {% set m = fx.messages %}
+{% set ex = m.example %}
 {% set dirty_keys = ['intro', 'prompt_location'] if dirty else [] %}
+{% set here = m.cards[edit_open].step if edit_open else ('' if focus == 'example' else 'missed_call') %}
 <div class="msg-layout">
 <div class="msg-list">
   <div class="page-head">
     <h1>{{ m.title }}</h1>
     <p class="lead">{{ m.intro }}</p>
-    <p class="page-head__meta">{{ ui.icon('info') }}<span>{{ m.meta }}</span></p>
-    <p class="page-head__meta page-head__meta--phone">{{ ui.icon('messages') }}<a class="tap" href="#example">{{ m.example.title }}</a></p>
+    <p class="page-head__meta">{{ ui.icon('info') }}<span>{{ m.meta }} <a class="tap page-head__ex" href="#example">{{ ex.title }}</a></span></p>
+    {% if m.network_notice_shown %}<p class="page-head__meta page-head__meta--notice">{{ ui.icon('clock') }}<span>{{ ex.network_notice_hint }}</span></p>{% endif %}
   </div>
   <nav class="jump" aria-label="{{ m.jump_label }}">
     <ul class="jump__list">
-      {% for c in m.jump_chips if c.anchor in jump_five %}<li><a class="jump__link" href="#{{ c.anchor }}">{{ c.label }}</a></li>{% endfor %}
+      {% for c in m.jump_chips if c.anchor in jump_five %}<li><a class="jump__link" href="#{{ c.anchor }}"{% if c.anchor == here %} aria-current="location"{% endif %}>{{ c.label }}</a></li>{% endfor %}
     </ul>
   </nav>
-  {% if m.network_notice_shown %}{{ ui.notice('warning', m.network_notice, 'alert', cls='msg-notice') }}{% endif %}
+  <form id="messages-form" method="post" action="/client/messages">
   <ol class="spine">
     {% for step in m.steps if not step.get('collapsed') %}
     {% set main_keys, opt_keys = ordered(step) %}
@@ -24,17 +26,14 @@
       <div class="node__head"><h2 tabindex="-1">{{ step.heading }}</h2><p class="node__blurb">{{ step.blurb }}</p></div>
       <div class="cards">
         {% for k in main_keys %}
-        {% set card = m.cards[k] %}
-        {% if focus == 'dirty' and k in dirty_keys and loop.first and step.id == 'missed_call' %}<span id="focus"></span>{% endif %}
-        {{ ui.msg_card(card, m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys), focus=(focus == 'editor' and edit_open == k)) }}
+        {{ ui.msg_card(m.cards[k], m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys), focus=(focus == 'editor' and edit_open == k)) }}
         {% endfor %}
         {% if opt_keys %}
         <p class="eyebrow cards__eyebrow">{{ step.optional_eyebrow }}</p>
         {% for k in opt_keys %}
-        {% set card = m.cards[k] %}
         {% if k in branch_of and m.cards[branch_of[k]].switch.state == 'off' %}
         {% else %}
-        {{ ui.msg_card(card, m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys)) }}
+        {{ ui.msg_card(m.cards[k], m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys)) }}
         {% endif %}
         {% endfor %}
         {% endif %}
@@ -42,11 +41,10 @@
     {% endcall %}
     {% endfor %}
     {% for step in m.steps if step.get('collapsed') %}
-    {% call ui.node('icon', step_icons[step.id], id=step.id) %}
+    {% call ui.node('icon', step_icons[step.id], id=step.id, cls='node--anytime') %}
       <details class="anytime">
         <summary class="anytime__summary">
-          <h2 tabindex="-1">{{ step.heading }}</h2>
-          <p class="node__blurb">{{ step.blurb }}</p>
+          <span class="anytime__text"><h2 tabindex="-1">{{ step.heading }}</h2><span class="node__blurb">{{ step.blurb }}</span></span>
           {{ ui.icon('chevron', 'icon anytime__chev') }}
         </summary>
         <div class="cards">
@@ -56,21 +54,17 @@
     {% endcall %}
     {% endfor %}
   </ol>
+  </form>
   {% set sb = m.save_bar %}
-  <div class="savebar{% if dirty %} savebar--on{% endif %}" data-state="{{ 'dirty' if dirty else 'clean' }}">
-    <p class="savebar__status">{{ sb.changed if dirty else sb.nojs }}</p>
-    <div class="savebar__actions">
-      {% if dirty %}<button class="btn btn--ghost" type="button">{{ sb.discard }}</button>{% endif %}
-      <button class="btn btn--primary" type="submit">{{ sb.save }}</button>
-    </div>
-  </div>
+  {{ ui.savebar(dirty, sb.changed, sb.save, sb.discard, 'messages-form') }}
 </div>
-{% set ex = m.example %}
-<section class="rail" id="example" aria-labelledby="rail-title"{% if focus == 'example' %} data-focus{% endif %}>
+<section class="rail" id="example" aria-labelledby="rail-title">
   <div class="rail__head">
     <h2 class="rail__title" id="rail-title"{% if focus == 'example' %} tabindex="-1"{% endif %}>{{ ex.title }}</h2>
-    <label class="rail__show" for="scenario">{{ ex.show_label }}</label>
-    <span class="select"><select class="select__input" id="scenario">{% for s in ex.scenarios %}<option{% if s == ex.scenario %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>{{ ui.icon('chevron', 'icon select__icon') }}</span>
+    <form class="rail__pick" method="get" action="/client/messages">
+      <label class="rail__show" for="scenario">{{ ex.show_label }}</label>
+      <span class="select"><select class="select__input" id="scenario" name="scenario">{% for s in ex.scenarios %}<option value="{{ s }}"{% if s == ex.scenario %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>{{ ui.icon('chevron', 'icon select__icon') }}</span>
+    </form>
   </div>
   <div class="phone"{% if focus == 'example' %} id="focus"{% endif %}>
     <div class="phone__screen">
@@ -78,23 +72,21 @@
         <span class="phone__avatar" aria-hidden="true">{{ meta.business_name[0] }}</span>
         <div class="phone__who"><p class="phone__name">{{ meta.business_name }}</p><p class="phone__sub">{{ ex.phone_sub }}</p></div>
       </div>
-      <div class="phone__log log" tabindex="0">
+      <p class="phone__tag"><span class="extag">{{ fx.home.example_tag }}</span>{{ ex.foot }}</p>
+      <div class="phone__log log" tabindex="0" aria-label="{{ ex.title }}">
         {% for b in ex.bubbles %}
         {% if b.side == 'event' %}
-        <span class="tpill{% if loop.first %} tpill--missed{% elif b.text.startswith('Booked') %} tpill--booked{% endif %}">{% if not loop.first and b.text.startswith('Booked') %}{{ ui.icon('check') }}{% endif %}{{ b.text }}</span>
+        <span class="tpill{% if loop.first %} tpill--missed{% elif b.text.startswith('Booked') %} tpill--booked{% endif %}">{{ b.text }}</span>
+        {% elif b.side == 'textback' %}
+        {{ ui.bubble(b.text, ex, notice=b.network_notice is defined and b.network_notice, links=b.links if b.links is defined else None) }}
         {% else %}
-        <div class="sms sms--{{ b.side }}">
-          <span class="sms__badge">{{ ex.badges[b.side] }}</span>
-          <div class="sms__bubble"><p>{{ b.text }}</p>
-            {% if b.links is defined %}<ul class="sms__links">{% for l in b.links %}<li><button class="sms__linkbtn" type="button" aria-expanded="false">{{ l.label }}</button></li>{% endfor %}</ul>{% endif %}
-          </div>
-        </div>
+        <div class="sms sms--{{ b.side }}"><div class="sms__bubble"><span class="vh">{{ ex.badges[b.side] }}: </span><p>{{ b.text }}</p></div></div>
         {% endif %}
         {% endfor %}
       </div>
     </div>
   </div>
-  <p class="phone__foot">{{ ex.foot }}</p>
+  <p class="phone__foot">{{ ex.network_notice_hint }}</p>
   <a class="rail__back" href="#main">{{ ui.icon('arrow-left') }}{{ ex.back }}</a>
 </section>
 </div>

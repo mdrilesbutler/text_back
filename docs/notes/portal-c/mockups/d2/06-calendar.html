@@ -11,12 +11,12 @@
 <a class="skip" href="#main">Skip to content</a>
 <div class="shell">
 <header class="hd">
-  <a class="hd__brand" href="/client"><span class="hd__mark" aria-hidden="true"></span>TextBack</a>
+  <a class="hd__brand" href="/client">TextBack</a>
   <span class="hd__sep" aria-hidden="true"></span>
   <details class="acct">
     <summary class="acct__sum"><span class="hd__biz">Oak &amp; Pine Tree Care</span><span class="vh">, Account</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
     <div class="acct__panel" id="menu">
-      <p class="acct__who">Signed in with 980 555 0123</p>
+      <p class="acct__who">Signed in as 980 555 0123</p>
       <a class="acct__item" href="/client/account">Account</a>
       <form method="post" action="/client/logout"><button class="acct__item" type="submit">Sign out</button></form>
     </div>
@@ -34,16 +34,14 @@
   <div class="sec__head"><h2 class="sec__title" id="conn-h">Google Calendar</h2></div>
   <div class="row row--state" id="cal-state">
     <span class="row__label">No calendar yet</span>
-    <span class="state state--needs"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring"/></svg><span class="state__word">Not connected</span></span>
-    <span class="row__hint row__hint--ink">Without a calendar the assistant can&#39;t check free times or book jobs. Connect the Google account that owns your business calendar.</span>
-  </div>
+    <span class="state state--needs"><svg class="state__g" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9" class="g-ring g-ring--needs"/><path d="M10 5.5v5.5M10 14.2v.3" class="g-mark"/></svg><span class="state__word">Needs you</span></span>
+<span class="row__hint row__hint--ink">Without a calendar the assistant can&#39;t check free times or book jobs. Connect the Google account that owns your business calendar.</span>  </div>
   <div class="acts">
       <button class="btn btn--primary btn--block-phone" type="submit" form="connect-form">Connect Google Calendar</button>
   </div>
-  <form id="connect-form" method="post" action="/client/calendar/connect"></form>
-  <details class="asks2" open>
+<form id="connect-form" method="post" action="/client/calendar/connect"></form>  <details class="asks2" open>
     <summary class="asks2__sum"><span>What Google will ask:</span><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></summary>
-    <ol class="steps-list asks2__list"><li>You pick the Google account that owns your business calendar.</li><li>Google asks you to let TextBack see and edit your calendars.</li><li>TextBack only checks free times and adds appointments. Nothing else in that account is read.</li><li>Afterwards you choose which calendar it uses.</li></ol>
+    <ol class="steps-list asks2__list"><li>You pick the Google account that owns your business calendar.</li><li>Google asks you to let TextBack see and edit your calendars.</li><li>TextBack only checks free times and adds appointments. TextBack sees your calendars only.</li><li>Afterwards you choose which calendar it uses.</li></ol>
   </details>
 </section>
 
@@ -53,7 +51,7 @@
   <ol class="ledger">
 <li class="row row--slim"><span class="row__value row__value--left tnum">Tue, Oct 27 · 8:00–9:00 AM</span></li><li class="row row--slim"><span class="row__value row__value--left tnum">Tue, Oct 27 · 9:00–10:00 AM</span></li><li class="row row--slim"><span class="row__value row__value--left tnum">Tue, Oct 27 · 10:00–11:00 AM</span></li>  </ol>
   <p class="sec__note">Checked just now · next 14 days · working hours Mon–Fri, 8 AM–5 PM</p>
-  <div class="acts acts--tight"><button class="btn btn--secondary" type="button">Check free times</button></div>
+  <form class="acts acts--tight" method="post" action="/client/calendar/check"><button class="btn btn--secondary" type="submit">Check free times</button></form>
 </section>
   </div>
 </main>
