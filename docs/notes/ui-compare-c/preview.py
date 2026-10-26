@@ -154,6 +154,130 @@ def seed() -> None:
 
 
 seed()
+
+
+# --- Preview only: a busy business (TEXT_BACK_PREVIEW_FULL=1). ---------------------------------------
+# Twenty callers today through the real pipeline (forwarded calls, real replies, real bookings on the stub
+# calendar), forwarding fully checked, texting approved, and a connected Google calendar shown for the
+# owner. Every seeded caller, count and calendar card carries the Example tag.
+FULL = os.environ.get("TEXT_BACK_PREVIEW_FULL") == "1"
+
+FULL_CALLERS = [
+    # name, job, address, outcome, extra
+    ("Tom Alvarez", "Oak removal, leaning toward the garage", "1907 Laurel Ave, Charlotte", "book", "Tuesday at 9"),
+    ("Grace Kim", "Hedge trimming", "54 Wren Ct, Mint Hill", "book", "Wednesday at 1pm"),
+    ("Luis Ortega", "Storm limb on the roof", None, "danger", None),
+    ("Hannah Brooks", "Pine removal", "720 Sharon Rd, Charlotte", "book", "Friday at 3pm"),
+    ("Derek Patel", "Crown thinning on two maples", "16 Elm Row, Pineville", "texting", None),
+    ("Sofia Rossi", "Stump grinding", "3301 Park Rd, Charlotte", "book", "Thursday at 2pm"),
+    ("Ben Carter", "Quote for land clearing", "Hwy 51 lot, Matthews", "book", "Tuesday at 1pm"),
+    ("Aisha Johnson", None, None, "waiting", None),
+    ("Kevin Nguyen", "Dead ash tree", "905 Queens Rd, Charlotte", "book", "Wednesday at 9"),
+    ("Rachel Green", "Trim over the driveway", "27 Cedar St, Huntersville", "stop", None),
+    ("Omar Haddad", "Two pines by the fence", "412 Oak Hollow Dr, Indian Trail", "book", "Friday at 10"),
+    ("Emily Chen", "Cabling a split oak", None, "texting", None),
+    ("Jake Morrison", "Emergency removal, tree on the shed", "6 Bramble Way, Matthews", "book", "Tuesday at 3pm"),
+    ("Nina Petrova", "Palm trimming", "118 Lakeview Dr, Cornelius", "book", "Thursday at 4pm"),
+    ("Chris Owens", "Price for grinding three stumps", None, "person", None),
+    ("Maya Singh", "Removal of a dead dogwood", "77 Rosewood Ln, Charlotte", "book", "Monday at 11"),
+    ("Paul Becker", None, None, "waiting", None),
+]
+
+
+def seed_full() -> None:
+    if store.setting("preview_full_seeded"):
+        return
+    now = datetime.now(timezone.utc)
+    local = now.astimezone(ZoneInfo(TZ))
+    start = local.replace(hour=7, minute=40, second=0, microsecond=0)
+    if start >= local:
+        start = local - timedelta(hours=1)
+    span = max((local - start).total_seconds() - 900, 600)
+    n = 0
+    last = {}
+    def step(t, kind, **params):
+        CLOCK[0] = t
+        inbox.submit_event(state=state, kind=kind, params=params)
+        for _ in range(3):
+            worker.run_once(state)
+    def sms(phone, t, body):
+        nonlocal n; n += 1
+        step(t, "sms", message_sid=f"SMfull{n}", from_number=phone, to_number=TEXTING, body=body)
+    for i, (name, job, address, outcome, when) in enumerate(FULL_CALLERS):
+        phone = f"+1980555{1200 + i:04d}"
+        EXAMPLES[phone] = name
+        t = (start + timedelta(seconds=span * i / len(FULL_CALLERS))).astimezone(timezone.utc)
+        step(t, "voice", call_sid=f"CAfull{i}", call_status="ringing", from_number=phone, to_number=TEXTING,
+             forwarded_from=BUSINESS_LINE)
+        t2 = t + timedelta(minutes=2)
+        if outcome == "waiting":
+            pass
+        elif outcome == "stop":
+            sms(phone, t2, job); sms(phone, t2 + timedelta(minutes=3), "STOP")
+        elif outcome == "person":
+            sms(phone, t2, job); sms(phone, t2 + timedelta(minutes=2), "Can you have someone call me instead?")
+        elif outcome == "danger":
+            sms(phone, t2, "A branch came down on a power line by our house")
+        elif outcome == "texting":
+            sms(phone, t2, job)
+            if address:
+                sms(phone, t2 + timedelta(minutes=2), address)
+        else:  # book
+            sms(phone, t2, job); sms(phone, t2 + timedelta(minutes=2), address)
+            sms(phone, t2 + timedelta(minutes=4), when); sms(phone, t2 + timedelta(minutes=6), name)
+        store.set_conversation_field(phone, "name", name)
+        last[phone] = CLOCK[0]
+    CLOCK[0] = None
+    # Booking confirmations are queued by the worker on the real clock; date them to their conversation
+    # so every caller's "Last activity" is the time of that customer's own texts.
+    with store.transaction():
+        for phone, t in last.items():
+            store.conn.execute("UPDATE sms_outbox SET created_at=? WHERE phone=? AND created_at>?",
+                               ((t + timedelta(minutes=1)).isoformat(), phone, now.isoformat()))
+            store.conn.execute("UPDATE outcome_events SET occurred_at=? WHERE lead_id=? AND occurred_at>?",
+                               ((t + timedelta(minutes=1)).isoformat(), phone, now.isoformat()))
+    from text_back.portal_forwarding import save_manual_ticks
+    save_manual_ticks(store, {"answered_no_text": True, "deactivation_saved": True}, now)
+    store.set_setting("texting_approval_state", "approved", now=now)
+    store.set_setting("preview_full_seeded", now.isoformat(), now=now)
+
+
+if FULL:
+    seed_full()
+    state.preview_example_phones = set(EXAMPLES)
+    state.preview_example_setup = {"forwarding", "approval", "calendar"}
+    # Show the owner's calendar as connected (no Google call is ever made): bookings stay on the stub,
+    # the portal reads status, picker and free times from this stand-in.
+    import json as _json
+    from text_back import client_settings as _cs, portal_status as _ps
+
+    class _ShownCalendar:
+        provider_name = "google"
+        calendar_id = "owner@example.com"
+
+        def __init__(self, real):
+            self._real = real
+
+        def __getattr__(self, name):
+            return getattr(self._real, name)
+
+        def busy_intervals(self, time_min, time_max):
+            out = []
+            for row in store.conn.execute("SELECT start, end FROM appointments"):
+                a = datetime.fromisoformat(row[0]); b = datetime.fromisoformat(row[1]) if row[1] else a + timedelta(hours=1)
+                out.append((a.astimezone(timezone.utc), b.astimezone(timezone.utc)))
+            return out
+
+    state.calendar = _ShownCalendar(state.calendar)
+    store.set_setting("calendar_choices", _json.dumps([
+        {"id": "owner@example.com", "summary": "Oak & Pine jobs", "primary": True},
+        {"id": "crew@example.com", "summary": "Crew schedule"}]))
+    store.set_setting("google_calendar_id", "owner@example.com")
+
+    def _shown_status(st):
+        return {"provider": "google", "status": "ready", "calendar_id": "owner@example.com", "can_connect": True}
+    _cs.calendar_status = _shown_status
+    _ps.calendar_status = _shown_status
 state.preview_example_sessions = {store.setting("preview_example_session")} - {None}
 
 PAGE = """<!doctype html><html lang=en><head><meta charset=utf-8>
