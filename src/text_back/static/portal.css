@@ -2017,3 +2017,7 @@
   /* One focus ring on the code field: the whole-field outline; the active cell only changes colour. */
   :where(.js) .otp .otp__cells i { box-shadow: none; }
 }
+@layer app {
+  /* Example tags are labels, never full-width bars, wherever a grid places them. */
+  .extag { justify-self: start; align-self: center; width: max-content; max-width: 100%; }
+}
