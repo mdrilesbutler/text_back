@@ -159,7 +159,7 @@ def test_connected_state_names_the_calendar_and_offers_change(tmp_path, monkeypa
     remember(state)
     card = pc.status_card(state)
     assert card["state_word"] == "Connected" and card["title"] == "Google Calendar"
-    assert card["body"] == "Bookings go here: Tree jobs."
+    assert card["body"] == "Bookings go here: Tree jobs. Connected as owner@example.test."
     assert card["calendar_name"] == "Tree jobs"
     assert labels(card) == ["Use a different calendar", "Reconnect Google Calendar"]
     assert card["buttons"][0]["action"] == "pick" and card["buttons"][1]["action"] == "connect"
@@ -363,3 +363,10 @@ def test_page_context_combines_the_cards_the_picker_and_the_consent_note(tmp_pat
     assert context["picker"] is None
     assert context["consent_note"] == pc.CONSENT_NOTE
     assert "(1) You pick the Google account that owns your business calendar." in context["consent_note"]
+
+
+def test_connected_card_names_the_account_from_the_main_calendar(monkeypatch):
+    from text_back import portal_calendar as pc
+    state = type("S", (), {})()
+    monkeypatch.setattr(pc, "connected_account", lambda st: "owner@example.com")
+    assert "Connected as owner@example.com." in pc.BODY_CONNECTED_AS.format(name="Jobs", account=pc.connected_account(state))

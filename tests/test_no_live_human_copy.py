@@ -56,3 +56,12 @@ def test_booking_error_keeps_the_customer_in_the_text_thread():
     copy = policy.booking_error_sms().lower()
     assert "no booking was made" in copy
     assert "call" not in copy
+
+
+def test_default_handoff_acks_promise_only_the_business_not_a_named_person():
+    # Hand-off details go to the configured operator destination, not necessarily the owner,
+    # so the standard wording must not promise that "the owner" personally follows up.
+    from text_back.messages import DEFAULT_TEMPLATES
+    for key in ("handoff_ack", "handoff_ack_safety"):
+        text = DEFAULT_TEMPLATES[key].lower()
+        assert "the owner" not in text and "we'll follow up" in text, key

@@ -107,7 +107,7 @@
       {
         "title": "Calendar",
         "state": "Needs you",
-        "detail": "No calendar yet. Nothing can be booked until you connect one.",
+        "detail": "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see.",
         "button": {
           "label": "Connect calendar",
           "href": "/client/calendar"
@@ -164,7 +164,7 @@
       {
         "name": "Dana Whitfield",
         "example": "Example",
-        "status": "Booked",
+        "status": "Booked on test calendar",
         "last_activity": "Mon, Oct 26, 9:12 AM",
         "last_text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte.",
         "number_ending": "0141"
@@ -174,7 +174,7 @@
         "example": "Example",
         "status": "Assistant stepped back",
         "last_activity": "Mon, Oct 26, 11:48 AM",
-        "last_text": "Got it—automated scheduling is paused. The owner will follow up with you directly.",
+        "last_text": "Got it. Automated scheduling is paused, and we'll follow up with you directly.",
         "number_ending": "0177"
       },
       {
@@ -188,14 +188,16 @@
     ],
     "callers_empty": "No callers this week. They appear here after the next missed call.",
     "status_order": [
-      "Booked",
+      "Booked on test calendar",
       "Texting",
       "Waiting for a reply",
       "Assistant stepped back",
       "No reply",
-      "Asked us to stop"
+      "Asked us to stop",
+      "Booked"
     ],
-    "example_tag": "Example"
+    "example_tag": "Example",
+    "week_counts_example": "Example numbers"
   },
   "messages": {
     "title": "Your messages",
@@ -422,15 +424,15 @@
         "badge": "Standard wording",
         "wording": [
           {
-            "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
+            "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
           }
         ],
         "default_wording": [
           {
-            "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
+            "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
           }
         ],
-        "preview": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.",
+        "preview": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
         "optout_added": null,
         "cost": {
           "line": "1 text · 94 characters",
@@ -566,15 +568,15 @@
         "badge": "Standard wording",
         "wording": [
           {
-            "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
+            "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
           }
         ],
         "default_wording": [
           {
-            "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
+            "text": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
           }
         ],
-        "preview": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm.",
+        "preview": "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
         "optout_added": null,
         "cost": {
           "line": "1 text · 86 characters",
@@ -951,21 +953,21 @@
         "badge": "Standard wording",
         "wording": [
           {
-            "text": "Got it—automated scheduling is paused. The owner will follow up with you directly."
+            "text": "Got it. Automated scheduling is paused, and we'll follow up with you directly."
           }
         ],
         "default_wording": [
           {
-            "text": "Got it—automated scheduling is paused. The owner will follow up with you directly."
+            "text": "Got it. Automated scheduling is paused, and we'll follow up with you directly."
           }
         ],
-        "preview": "Got it—automated scheduling is paused. The owner will follow up with you directly.",
+        "preview": "Got it. Automated scheduling is paused, and we'll follow up with you directly.",
         "optout_added": null,
         "cost": {
-          "line": "2 texts · 82 characters",
-          "texts": 2,
-          "characters": 82,
-          "amber": "Billed as 2 texts. The \"—\" symbol makes each text hold only 70 characters. Use \"-\" instead.",
+          "line": "1 text · 78 characters",
+          "texts": 1,
+          "characters": 78,
+          "amber": null,
           "limit_note": null
         },
         "chips": [
@@ -987,20 +989,20 @@
         "badge": "Standard wording",
         "wording": [
           {
-            "text": "Automated scheduling is paused. The owner will follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
+            "text": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
           }
         ],
         "default_wording": [
           {
-            "text": "Automated scheduling is paused. The owner will follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
+            "text": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now."
           }
         ],
-        "preview": "Automated scheduling is paused. The owner will follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.",
+        "preview": "Automated scheduling is paused. We'll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.",
         "optout_added": null,
         "cost": {
-          "line": "1 text · 134 characters",
+          "line": "1 text · 125 characters",
           "texts": 1,
-          "characters": 134,
+          "characters": 125,
           "amber": null,
           "limit_note": null
         },
@@ -1242,7 +1244,8 @@
         {
           "side": "textback",
           "key": "intro",
-          "text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out."
+          "text": "Hey, this is Oak & Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.",
+          "network_notice": true
         },
         {
           "side": "customer",
@@ -1251,7 +1254,8 @@
         {
           "side": "textback",
           "key": "prompt_location",
-          "text": "What's the address for the job?"
+          "text": "What's the address for the job?",
+          "network_notice": true
         },
         {
           "side": "customer",
@@ -1260,7 +1264,8 @@
         {
           "side": "textback",
           "key": "prompt_preferred_time",
-          "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
+          "text": "What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.",
+          "network_notice": true
         },
         {
           "side": "customer",
@@ -1269,29 +1274,12 @@
         {
           "side": "textback",
           "key": "prompt_name",
-          "text": "What name should we put the appointment under?"
+          "text": "What name should we put the appointment under?",
+          "network_notice": true
         },
         {
           "side": "customer",
           "text": "Dana"
-        },
-        {
-          "side": "textback",
-          "key": "prompt_phone",
-          "text": "Is this the best number to reach you? Reply YES, or send a different number."
-        },
-        {
-          "side": "customer",
-          "text": "YES"
-        },
-        {
-          "side": "textback",
-          "key": "prompt_email",
-          "text": "What's your email? We'll send a calendar invite. Reply SKIP if you'd rather not."
-        },
-        {
-          "side": "customer",
-          "text": "dana@example.com"
         },
         {
           "side": "event",
@@ -1300,7 +1288,7 @@
         {
           "side": "textback",
           "key": "booking_confirmation",
-          "text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant. A calendar invite is on its way to dana@example.com.",
+          "text": "Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak & Pine Tree Care's scheduling assistant.",
           "links": [
             {
               "label": "Add to Google Calendar ›",
@@ -1314,11 +1302,14 @@
               "label": "Add to iCal ›",
               "href": "https://hermes-cloud.tailefb1a4.ts.net:8443/a/k7q2-ref/i"
             }
-          ]
+          ],
+          "network_notice": true
         }
       ],
       "foot": "Example conversation · nothing is sent · names made up",
-      "back": "Back to editing"
+      "back": "Back to editing",
+      "network_notice_marker": "Network notice",
+      "network_notice_hint": "While texting approval is pending, each text also starts with a short network notice. The text counts include it."
     },
     "save_bar": {
       "changed": "2 texts changed",
@@ -1331,7 +1322,7 @@
       "rule": "Appears only with unsaved changes and never covers the field being edited."
     },
     "toasts": {
-      "saved": "Saved. Changed: Question 2: the address.",
+      "saved": "Saved. You changed “Question 2: the address”.",
       "saved_reset": "Saved. Back to standard wording: Question 2: the address.",
       "saved_none": "Saved. No wording changed.",
       "switched_on": "Best phone number switched on",
@@ -1990,7 +1981,7 @@
     "toast_dismiss": "Dismiss",
     "toast_position": "Under the header, never over the page title or intro.",
     "toasts": {
-      "messages": "Saved. Changed: Question 2: the address.",
+      "messages": "Saved. You changed “Question 2: the address”.",
       "schedule": "Saved. Applies now, including customers mid-conversation; reminders already scheduled keep their time.",
       "phone": "Saved.",
       "keep_mobile": "Kept your current mobile.",

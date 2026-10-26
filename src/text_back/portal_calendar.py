@@ -32,6 +32,7 @@ HORIZON_DAYS = 14
 WORD_CONNECTED = "Connected"
 TITLE_GOOGLE = "Google Calendar"
 BODY_CONNECTED = "Bookings go here: {name}."
+BODY_CONNECTED_AS = "Bookings go here: {name}. Connected as {account}."
 BTN_CHANGE = "Use a different calendar"
 BTN_RECONNECT = "Reconnect Google Calendar"
 WORD_NOT_CONNECTED = "Not connected"
@@ -73,7 +74,7 @@ AVAIL_UNREACHABLE = "Couldn't reach Google Calendar. Try again in a minute."
 AVAIL_RECONNECT_FIRST = "Reconnect the calendar first."
 
 DECK_STRINGS: tuple[str, ...] = (
-    WORD_CONNECTED, TITLE_GOOGLE, BODY_CONNECTED, BTN_CHANGE, BTN_RECONNECT,
+    WORD_CONNECTED, TITLE_GOOGLE, BODY_CONNECTED, BODY_CONNECTED_AS, BTN_CHANGE, BTN_RECONNECT,
     WORD_NOT_CONNECTED, TITLE_NOT_CONNECTED, BODY_NOT_CONNECTED, BTN_CONNECT, BTN_CONNECT_BUSY,
     BODY_NO_CONNECT, BTN_SUPPORT, WORD_RECONNECT, BODY_RECONNECT,
     WORD_UNREADABLE, BODY_UNREADABLE, CONSENT_NOTE,
@@ -137,6 +138,15 @@ def calendar_name(state, view: dict | None = None) -> str:
     return current or PROVIDER_NAMES.get(view["provider"], view["provider"].title())
 
 
+def connected_account(state) -> str:
+    """The connected Google account: the id of its main (primary) calendar, which Google sets to the
+    account's address. Empty when the picker list has not been fetched yet."""
+    for entry in _settings().calendar_choices(state):
+        if entry.get("primary") and "@" in str(entry.get("id", "")):
+            return str(entry["id"])
+    return ""
+
+
 def status_card(state) -> dict:
     """state_word / title / body / buttons for the connection card. Every state has a next step."""
     view = _settings().calendar_status(state)
@@ -156,7 +166,9 @@ def status_card(state) -> dict:
             card["buttons"] = _support_button(state)
 
     if status == "ready":
-        card.update(state_word=WORD_CONNECTED, title=TITLE_GOOGLE, body=BODY_CONNECTED.format(name=name))
+        account = connected_account(state)
+        body = BODY_CONNECTED_AS.format(name=name, account=account) if account else BODY_CONNECTED.format(name=name)
+        card.update(state_word=WORD_CONNECTED, title=TITLE_GOOGLE, body=body, account=account)
         card["buttons"] = [{"label": BTN_CHANGE, "action": "pick", "kind": "secondary"}]
         if can_connect:
             card["buttons"].append(_connect_button(BTN_RECONNECT, "secondary"))

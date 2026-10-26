@@ -46,7 +46,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     "prompt_location": "What's the address or location for the job?",
     "prompt_preferred_time": (
         "What day and time works best? "
-        "For example: Wednesday at 2, tomorrow at 10am, or Oct 22 at 4pm."
+        "For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm."
     ),
     "prompt_name": "What name should we put the appointment under?",
     "prompt_phone": "Is this the best number to reach you? Reply YES, or send a different number.",
@@ -56,7 +56,7 @@ DEFAULT_TEMPLATES: dict[str, str] = {
     "fields": "service, location, preferred_time, name",
     "preferred_time_reprompt": (
         "Please send a day and a time, like Wednesday at 2, tomorrow at 10am, "
-        "or Oct 22 at 4pm."
+        "or Friday at 4pm."
     ),
     "slot_unavailable": (
         "That time is unavailable. Please send another day and time, "
@@ -71,12 +71,11 @@ DEFAULT_TEMPLATES: dict[str, str] = {
         "This is {business_name}'s scheduling assistant. {invite_line} {calendar_links}"
     ),
     "handoff_ack": (
-        "Got it—automated scheduling is paused. The owner will follow up "
-        "with you directly."
+        "Got it. Automated scheduling is paused, and we'll follow up with you directly."
     ),
     "handoff_ack_safety": (
-        "Automated scheduling is paused. The owner will follow up with you "
-        "as soon as possible. If anyone is in immediate danger, call 911 now."
+        "Automated scheduling is paused. We'll follow up with you as soon as possible. "
+        "If anyone is in immediate danger, call 911 now."
     ),
     "opt_in": (
         "You're subscribed to {business_name}'s scheduling texts. "

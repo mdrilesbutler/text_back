@@ -60,7 +60,7 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | home_setup_heading | Setup | section heading |
 | home_cards | Calendar / Call forwarding / Texting approval | the three card titles |
 | home_state_words | Done / Needs you / Waiting on phone companies | card state word (the last one for texting approval only) |
-| home_calendar_detail | Bookings go on [calendar name]. / No calendar yet. Nothing can be booked until you connect one. / Google disconnected the calendar. Bookings are paused until you reconnect. | Calendar card: connected / not connected / reconnect needed |
+| home_calendar_detail | Bookings go on [calendar name]. / No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see. / Google disconnected the calendar. Bookings are paused until you reconnect. | Calendar card: connected / not connected / reconnect needed |
 | home_calendar_button | Connect calendar / Reconnect / Open Calendar | the one button |
 | home_forwarding_detail | A forwarded call reached TextBack on [Fri, Oct 23, 2:40 PM]. / [N] of 5 checks done. | Forwarding card: done / not done |
 | home_forwarding_button | Finish forwarding / Open Phone | the one button |
@@ -71,7 +71,7 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | home_callers_heading | This week's callers | section heading |
 | home_callers_empty | No callers this week. They appear here after the next missed call. | empty state |
 | home_callers_columns | Customer / Status / Last activity / Last text | columns; Last activity is always a full date like "Fri, Oct 23, 2:40 PM" |
-| home_caller_status | Booked / Texting / Waiting for a reply / Assistant stepped back / No reply / Asked us to stop | status pill, in that order of states |
+| home_caller_status | Booked / Booked on test calendar / Texting / Waiting for a reply / Assistant stepped back / No reply / Asked us to stop | status pill, in that order of states |
 | home_example_tag | Example | tag on every seeded caller in the preview harness |
 
 ## 4. Messages (`/client/messages`)
@@ -190,7 +190,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 | savebar_actions | Save / Saving… / Discard | primary / while posting / ghost |
 | savebar_not_saved | Not saved · [N] texts changed | after a rejected save |
 | savebar_nojs | Saves every text at once | without JavaScript |
-| toast_saved | Saved. Changed: [card titles]. / Saved. Back to standard wording: [card titles]. / Saved. No wording changed. | toast under the header, never over the title; a switch reads "[card title] switched on" |
+| toast_saved | Saved. You changed “[card titles]”. / Saved. Back to standard wording: “[card titles]”. / Saved. No wording changed. | toast under the header, never over the title; a switch reads "[card title] switched on" |
 | toast_discarded | Changes discarded. / Undo | toast / its action |
 | error_summary | Not saved. "[card title]" needs a change: [reason] Go to that text | top of the list; the last three words are a link |
 | error_summary_kept | Your other edits are still here. Nothing was saved yet. | second line |
@@ -245,7 +245,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 |---|---|---|
 | calendar_title | Calendar | page heading |
 | calendar_intro | The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation. | intro line |
-| cal_connected | Connected / Google Calendar / Bookings go here: [calendar name]. | state word / title / body |
+| cal_connected | Connected / Google Calendar / Bookings go here: [calendar name]. / Bookings go here: [calendar name]. Connected as [account]. | state word / title / body without and with the account (the account is the address of the main calendar in the picker list; left out when unknown) |
 | cal_connected_buttons | Use a different calendar / Reconnect Google Calendar | secondary buttons (the first opens the picker) |
 | cal_not_connected | Not connected / No calendar yet / Without a calendar the assistant can't check free times or book jobs. Connect the Google account that owns your business calendar. | state word / title / body |
 | cal_connect | Connect Google Calendar / Opening Google… | primary when the Google web client is configured / while posting |
