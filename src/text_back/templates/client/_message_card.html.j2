@@ -56,7 +56,7 @@
       <p class=msg__receipt>{% if c.optout_required %}<span class=msg__added data-optout-note{% if not c.suffix %} hidden{% endif %}>STOP line added for you</span>{% endif %}<span class=msg__meter data-count>{{ c.count }}</span></p>
       <p class=msg__was data-was{% if not c.text_dirty %} hidden{% endif %}><span class=msg__was-k>Was:</span> <span data-was-text>{{ c.was }}</span></p>
       <div class=msg__bill data-bill{% if not c.bill %} hidden{% endif %}>{{ icon("triangle-alert") }}<p data-bill-text>{{ c.bill }}</p>
-        {%- if editable %}<button type=submit class="btn btn--ghost msg__fix" name=fix value={{ c.key }} data-fix{% if not c.fix %} hidden{% endif %}><span data-fix-label>{{ c.fix }}</span><span class=vh> {{ c.title }}</span></button>{% endif -%}
+        {%- if editable %}<button type=submit class="btn btn--ghost msg__fix" name=fix value={{ c.key }} data-fix data-symbol="{{ c.fix.split(' ')[1] if c.fix else '' }}"{% if not c.fix %} hidden{% endif %}><span class=msg__fix-js data-fix-label>{{ c.fix }}</span><span class=msg__fix-nojs>{{ c.fix }} and save</span><span class=vh> {{ c.title }}</span></button>{% endif -%}
       </div>
     </div>
     {% if editable %}

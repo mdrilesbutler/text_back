@@ -232,7 +232,9 @@ def sms_parts(text: str) -> tuple[int, int, bool]:
     if all(ch in GSM_BASIC or ch in GSM_EXTENDED for ch in text):
         units = sum(2 if ch in GSM_EXTENDED else 1 for ch in text)
         return len(text), (1 if units <= 160 else math.ceil(units / 153)), True
-    return len(text), (1 if len(text) <= 70 else math.ceil(len(text) / 67)), False
+    # UCS-2: the network counts UTF-16 units, so an emoji takes two (portal.js uses text.length).
+    units = len(text.encode("utf-16-le")) // 2
+    return units, (1 if units <= 70 else math.ceil(units / 67)), False
 
 
 # The network notice a text carries until texting approval clears: 24 characters, two of them the brackets
@@ -260,6 +262,34 @@ def bill_label(text: str) -> str:
     symbol = _first_symbol(text)
     instead = f"Use “{_PLAIN[symbol]}” instead." if symbol in _PLAIN else "Use a plain letter instead."
     return f"Billed as {parts} texts. The “{symbol}” symbol makes each text hold only 70 characters. {instead}"
+
+
+def _own_words(template: str) -> str:
+    """A template's own wording: what the owner typed, without the details filled in."""
+    return re.sub(r"\{[^{}]*\}", "", template)
+
+
+def bill_info(key: str, templates: dict[str, str], values: dict[str, str], notice: bool) -> tuple[str, str]:
+    """(billing line, fix label) for one card. The fix only ever changes the card's own wording: a symbol that
+    comes from the business name or the opt-out line is named where it is, with no button."""
+    body, suffix = preview_parts(key, templates, values)
+    preview = " ".join(part for part in (body, suffix) if part)
+    billed = NOTICE_MODEL + preview if notice and key != "opt_out_suffix" else preview
+    _, parts, plain = sms_parts(billed)
+    if parts < 2:
+        return "", ""
+    if plain:
+        return f"Billed as {parts} texts. Customers still see one message.", ""
+    own = _first_symbol(_own_words(templates[key]))
+    if own:
+        instead = f"Use “{_PLAIN[own]}” instead." if own in _PLAIN else "Use a plain letter instead."
+        line = f"Billed as {parts} texts. The “{own}” symbol makes each text hold only 70 characters. {instead}"
+        return line, (f"Replace {own} with {_PLAIN[own]}" if own in _PLAIN else "")
+    for where, text in (("Your business name", values.get("business_name", "")), ("Your opt-out line", suffix)):
+        symbol = _first_symbol(text or "")
+        if symbol:
+            return f"Billed as {parts} texts. {where} has a {symbol}, which makes each text hold only 70 characters.", ""
+    return bill_label(billed), ""
 
 
 def fix_label(text: str) -> str:
@@ -368,7 +398,7 @@ def friendly_reason(error: str, key: str | None) -> str:
         return REASON_NO_BOOKING
     if "reply STOP" in error:
         return REASON_STOP
-    if "unbalanced" in error or "placeholders must look like" in error:
+    if "unbalanced" in error or "placeholders must look like" in error or "unknown insert" in error:
         return REASON_BAD_INSERT
     extra = re.search(r"unsupported placeholder\(s\) (.+?); allowed", error)
     if extra and key:
@@ -533,7 +563,7 @@ def rail_scenarios(state, now: datetime) -> tuple[Scenario, ...]:
                 rows.append(Item("neutral", PILL_NO_REPLY))
             elif bubble.key == "followup_2":
                 rows.append(Item("neutral", PILL_STILL_NO_REPLY))
-            body, links = split_links(bubble.text)
+            body, links = split_links(bubble.text, str(state.public_base_url))
             rows.append(Item("textback", body, key=bubble.key or "", links=links))
             if bubble.key == "booking_error":
                 rows.append(Item("neutral", PILL_NO_BOOKING))
@@ -579,7 +609,7 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
         value = values.get(key) or default
         body, suffix = preview_parts(key, templates, sample)
         preview = " ".join(part for part in (body, suffix) if part)
-        words, links = split_links(body)
+        words, links = split_links(body, str(state.public_base_url))
         billed = NOTICE_MODEL + preview if notice and key != "opt_out_suffix" else preview
         parent = BRANCH_OF.get(key)
         trigger = TRIGGERS.get(key, "")
@@ -591,9 +621,10 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
             destination=channel_line if key in DESTINATION_KEYS and not chat else "",
             default=default, saved=saved, value=value, length=len(value), custom=bool(values.get(key)),
             saved_custom=_norm(current.templates[key]) != _norm(DEFAULT_TEMPLATES[key]),
-            body=words, links=links, suffix=suffix, was=split_links(preview_text(key, saved_templates, sample))[0],
-            count=count_label(preview, notice and key != "opt_out_suffix"), bill=bill_label(billed),
-            fix=fix_label(billed), segments=sms_parts(billed)[1],
+            body=words, links=links, suffix=suffix, was=split_links(preview_text(key, saved_templates, sample), str(state.public_base_url))[0],
+            count=count_label(preview, notice and key != "opt_out_suffix"),
+            bill=bill_info(key, templates, sample, notice)[0], fix=bill_info(key, templates, sample, notice)[1],
+            segments=sms_parts(billed)[1],
             optout_required=key in OPT_OUT_REQUIRED, optional=optional, switch_label=switch_label,
             asked=optional in asked, asked_saved=optional in asked_saved,
             branch=key in BRANCH_KEYS, hidden=bool(parent and OPTIONAL_QUESTIONS.get(parent) and
@@ -638,6 +669,19 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
         "tb_data": {"sample": sample, "invite": {"invite_line": INVITE_LINE, "invited_email": SAMPLE_EMAIL}, "labels": {label: name for label, name in _LABEL_NAMES.items()},
                     "gsm": GSM_BASIC, "ext": GSM_EXTENDED, "notice": notice} if editable else None,
     }
+
+
+_BRACKETS = re.compile(r"\[([^\[\]]*)\]")
+
+
+def unknown_insert(submitted: dict[str, str]) -> str:
+    """'' when every [ … ] in the submitted texts is a known insert label (any case or spacing); otherwise a
+    validator-style error naming the first text with one, which friendly_reason words as REASON_BAD_INSERT."""
+    for key in FIELD_KEYS:
+        for match in _BRACKETS.finditer(submitted.get(key, "") or ""):
+            if " ".join(match.group(1).lower().split()) not in _LABEL_KEYS:
+                return f"{key} has an unknown insert"
+    return ""
 
 
 def read_form(form) -> tuple[dict[str, str], dict[str, str], set[str]]:

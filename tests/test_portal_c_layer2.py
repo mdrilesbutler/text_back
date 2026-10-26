@@ -145,17 +145,18 @@ def test_replace_the_dash_is_one_tap_and_saves_without_javascript(tmp_path, monk
     intro = card(page, "intro")
     assert "—" in DEFAULT_TEMPLATES["intro"]
     assert "The “—” symbol makes each text hold only 70 characters. Use “-” instead." in html.unescape(intro)
-    assert re.search(r'<button type=submit class="btn btn--ghost msg__fix" name=fix value=intro data-fix>'
-                     r"<span data-fix-label>Replace — with -</span><span class=vh> First text after a missed call</span>",
+    assert re.search(r'<button type=submit class="btn btn--ghost msg__fix" name=fix value=intro data-fix data-symbol="—">'
+                     r"<span class=msg__fix-js data-fix-label>Replace — with -</span><span class=msg__fix-nojs>Replace — with - and save</span>"
+                     r"<span class=vh> First text after a missed call</span>",
                      intro)
-    assert "data-fix hidden" in card(page, "prompt_name")
+    assert "data-symbol=\"\" hidden" in card(page, "prompt_name")
     saved = client.post("/client/messages", data={"csrf": csrf, "fix": "intro", "prompt_name": "Your name?"}).text
     written = json.loads(path.read_text())
     assert written["intro"] == DEFAULT_TEMPLATES["intro"].replace("—", "-") and written["prompt_name"] == "Your name?"
     intro = card(saved, "intro")
     assert "—" not in re.search(r"<p data-preview=intro>.*?</p>", intro).group(0)
     assert "—" not in re.search(r"<textarea .*?</textarea>", intro, re.S).group(0)
-    assert "data-fix hidden" in intro  # nothing left to replace
+    assert "data-symbol=\"\" hidden" in intro  # nothing left to replace
     assert "Saved. You changed “First text after a missed call”, “Question 4: the name”." in html.unescape(saved)
 
 
