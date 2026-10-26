@@ -300,7 +300,7 @@ def main():
             shared_states(tab, report)
             # Sign out so this width's session never shows up as "another device" on the next width's Account page.
             tab.go("/client/account")
-            tab.page.locator("form[action^='/client/logout'] button[type=submit]").first.click()
+            tab.page.locator("form[action^='/client/logout'] button[type=submit]:visible").first.click()
             tab.page.wait_for_load_state("networkidle")
             tab.ctx.close()
         if args.private:
