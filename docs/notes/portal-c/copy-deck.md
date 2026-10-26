@@ -59,6 +59,7 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | home_status_working | Working: missed calls get a text within a minute. | first line, every setup card Done |
 | home_status_not_yet | Not working yet: 1 step left. / Not working yet: [N] steps left. | first line otherwise |
 | home_status_waiting | Set up on your side. Waiting on the phone companies to approve texting. / Set up on your side. Waiting on FluxWorks to connect your calendar. / Set up on your side. Waiting on FluxWorks and the phone companies. | first line when nothing needs the owner: only texting approval pending / only the calendar waits on FluxWorks / both (P3) |
+| home_example_note | This preview mixes example calls with real settings. | under the first line, only when a counted setup card is harness example data |
 | home_setup_heading | Setup | section heading |
 | home_cards | Calendar / Call forwarding / Texting approval | the three card titles |
 | home_state_words | Done / Needs you / Waiting on phone companies / Waiting on FluxWorks | card state word (Waiting on phone companies for texting approval only; Waiting on FluxWorks for a calendar FluxWorks must connect, P3); only Needs you counts as a step left |

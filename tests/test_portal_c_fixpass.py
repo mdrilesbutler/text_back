@@ -225,13 +225,15 @@ def test_p1_default_texts_have_no_possessive_and_no_em_dash_and_pass_every_rule(
     assert "Arborists's" not in pm.preview_text("intro", dict(DEFAULT_TEMPLATES), {"business_name": "Arborists"})
 
 
-def test_p2_the_first_line_skips_example_cards_and_carries_no_tag(tmp_path, monkeypatch):
+def test_p2_the_first_line_counts_every_card_and_notes_example_data(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
+    page = client.get("/client/home").text
+    assert "data-example-note" not in page  # production never flags examples
     client.app.state.preview_example_setup = {"forwarding", "approval"}
     page = client.get("/client/home").text
     line = re.search(r"<p class=status-line data-status-line>(.*?)</p>", page).group(1)
-    assert line == "Set up on your side. Waiting on FluxWorks to connect your calendar." and "extag" not in line
-    assert page.count("<span class=extag>Example</span>") == 2  # the two example cards keep their own tag
+    assert line == "Not working yet: 1 step left." and "extag" not in line  # the example forwarding card still counts
+    assert "This preview mixes example calls with real settings." in page
 
 
 def test_p3_a_calendar_fluxworks_connects_waits_and_offers_support(tmp_path, monkeypatch):

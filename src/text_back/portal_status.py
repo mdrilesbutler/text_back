@@ -116,10 +116,13 @@ def node_kind(state_word: str) -> str:
 
 
 def counted(items: list[dict]) -> list[dict]:
-    """The cards the first line reads: never the ones the preview harness flagged as example data (P2), so the
-    line needs no Example tag. All of them when every card is an example."""
-    real = [i for i in items if not i.get("example")]
-    return real or items
+    """The cards the first line reads: every setup card on the page, so the first line can never
+    contradict a card below it. When any of them is harness example data, the page says so under
+    the line (EXAMPLE_NOTE); production never flags examples."""
+    return list(items)
+
+
+EXAMPLE_NOTE = "This preview mixes example calls with real settings."
 
 
 def headline_kind(items: list[dict]) -> str:

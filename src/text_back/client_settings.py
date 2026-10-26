@@ -200,10 +200,11 @@ def _home_page(request: Request, state, session):
     for item in items:
         item["node"] = portal_status.node_kind(item["state_word"])
         item.setdefault("example", False)
-    first_line = portal_status.counted(items)  # never the harness-flagged example cards (P2)
+    first_line = portal_status.counted(items)
+    example_note = portal_status.EXAMPLE_NOTE if any(i.get("example") for i in first_line) else ""
     return render(request, "client/home.html.j2", **shell(state, session, title="Home", nav="home"),
                   headline=portal_status.headline(first_line), headline_node=portal_status.headline_kind(first_line),
-                  setup=items, week=portal_status.this_week(state, now), stepped_back=portal_status.STATUS_STEPPED_BACK)
+                  example_note=example_note, setup=items, week=portal_status.this_week(state, now), stepped_back=portal_status.STATUS_STEPPED_BACK)
 
 
 def portal_messages_discarded() -> str:

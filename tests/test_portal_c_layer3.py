@@ -136,14 +136,14 @@ def test_account_and_sign_in_say_this_device_and_take_the_notes_from_the_view(tm
     assert "On. This device" not in (TEMPLATES / "account.html.j2").read_text()
 
 
-def test_home_headline_never_counts_example_cards_and_carries_no_tag(tmp_path, monkeypatch):
-    # P2 (product call): the first line counts only the cards that are not harness-flagged examples.
+def test_home_headline_counts_every_card_so_it_never_contradicts_one(tmp_path, monkeypatch):
     client, csrf = signed_in(tmp_path, monkeypatch)
     state = client.app.state
     line = lambda: re.search(r"<p class=status-line data-status-line>.*?</p>", client.get("/client/home").text).group(0)
     assert line() == "<p class=status-line data-status-line>Not working yet: 1 step left.</p>"  # forwarding
-    state.preview_example_setup = {"forwarding"}  # that "Needs you" card is example data now
-    assert "extag" not in line() and "Not working yet" not in line()
+    state.preview_example_setup = {"forwarding"}
+    assert line() == "<p class=status-line data-status-line>Not working yet: 1 step left.</p>"
     items = [dict(key="calendar", state_word="Needs you", example=True), dict(key="forwarding", state_word="Done", example=False),
              dict(key="approval", state_word="Waiting on phone companies", example=False)]
-    assert portal_status.headline(portal_status.counted(items)) == portal_status.HEADLINE_WAITING_PHONE
+    assert portal_status.headline(portal_status.counted(items)) == "Not working yet: 1 step left."
+

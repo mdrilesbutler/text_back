@@ -10,6 +10,7 @@
 <ol class=spine>
   {% call node(headline_node, cls="node--status") %}
     <p class=status-line data-status-line>{{ headline }}</p>
+    {% if example_note %}<p class=status-note data-example-note><span class=extag>Example</span> {{ example_note }}</p>{% endif %}
   {% endcall %}
   {% call node("icon", "sliders-horizontal", attrs="data-setup-head") %}
     <div class=node__head><h2>Setup</h2></div>

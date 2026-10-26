@@ -162,17 +162,17 @@ def sign_in(tab, log=None, shoot=False, error_states=None):
     resp = tab.go("/client/login")
     if shoot: log["01-sign-in"] = tab.page_record("01-sign-in", resp)
     p.fill("input[name=mobile]", OWNER)
-    p.click("form[action='/client/login'] button[type=submit]"); tab.settle()
+    p.click("form[action^='/client/login'] button[type=submit]"); tab.settle()
     assert "/client/verify" in p.url, f"sign-in did not reach Enter code: {p.url} {p.inner_text('main')[:200]}"
     if shoot: log["02-enter-code"] = tab.page_record("02-enter-code")
     code = tab.code()
     if error_states is not None:
         wrong = f"{(int(code[0]) + 1) % 10}{code[1:]}"
         p.fill("input[name=code]", wrong)
-        p.click("form[action='/client/verify'] button[type=submit]"); tab.settle()
+        p.click("form[action^='/client/verify'] button[type=submit]"); tab.settle()
         tab.state(error_states, "enter-code", "error", top=True)
     p.fill("input[name=code]", code)
-    p.click("form[action='/client/verify'] button[type=submit]"); tab.settle()
+    p.click("form[action^='/client/verify'] button[type=submit]"); tab.settle()
     assert "/client/verify" not in p.url and "/client/login" not in p.url, f"sign-in failed: {p.url}"
     return p.url
 
@@ -238,7 +238,7 @@ def private_auth_states(tab, report):
     p = tab.page
     tab.go("/client/login")
     p.fill("input[name=mobile]", "555 01")
-    p.click("form[action='/client/login'] button[type=submit]"); tab.settle()
+    p.click("form[action^='/client/login'] button[type=submit]"); tab.settle()
     tab.state(report, "sign-in", "error", top=True)
     sign_in(tab, error_states=report)
 
@@ -255,7 +255,7 @@ def private_phone_states(tab, report):
     tab.state(report, "phone", "confirm-new-mobile", top=True)
     p.click("[data-keep]"); tab.settle()
     tab.go("/client/calendar")
-    p.click("form[action='/client/calendar'] input[value=check] ~ button"); tab.settle()
+    p.click("form[action^='/client/calendar'] input[value=check] ~ button"); tab.settle()
     tab.state(report, "calendar", "not-connected-free-times", "#availability", 0.12)
 
 
@@ -265,7 +265,7 @@ def private_rename_state(tab, report):
     p.fill("#business_name", NEW_NAME[tab.view]); tab.save("phone-form")
     assert p.locator("[data-rename-offer]").count(), "no rename offer after a new business name"
     tab.state(report, "phone", "rename-offer", top=True)
-    p.click("form[action='/client/phone/rename-texts'] button[value=update]"); tab.settle()
+    p.click("form[action^='/client/phone/rename-texts'] button[value=update]"); tab.settle()
 
 
 def connected_states(tab, report):
@@ -274,7 +274,7 @@ def connected_states(tab, report):
     tab.state(report, "calendar", "connected", top=True)
     p.click("summary.picker__summary"); p.wait_for_timeout(200)
     tab.state(report, "calendar", "connected-picker", "#connection", 0.08)
-    p.click("form[action='/client/calendar'] input[value=check] ~ button"); tab.settle()
+    p.click("form[action^='/client/calendar'] input[value=check] ~ button"); tab.settle()
     tab.state(report, "calendar", "connected-free-times", "#availability", 0.12)
 
 
