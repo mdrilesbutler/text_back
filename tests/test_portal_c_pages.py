@@ -222,7 +222,7 @@ def test_any_time_shows_the_warning_and_the_one_tap_hours_save_nothing(tmp_path,
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     page = text_of(client.get("/client/schedule"))
     assert "Customers can be offered times like 1 AM. Set your hours." in page
-    assert "Use Mon–Fri, <span class=nw>8 AM–5 PM</span>" in page  # a time range never breaks across lines
+    assert "Use <span class=nw>Mon–Fri</span>, <span class=nw>8 AM–5 PM</span>" in page  # ranges never break across lines
     filled = client.post("/client/schedule", data=schedule_form(csrf, suggest_hours="1")).text
     assert client.app.state.store.setting("working_hours") is None  # filled in, not saved
     assert "name=hours_mode value=set checked" in filled and "id=open_mon name=open_mon value=1" in filled
@@ -347,5 +347,8 @@ def test_calendar_check_lists_free_times_inside_working_hours_on_the_test_calend
     card = re.search(r'<li class="node node--icon" id=availability>.*?\n</li>', result, re.S).group(0)
     assert "Test calendar, not yours" in card and "These times are not from your calendar." in card
     slots = [re.sub(r"<[^>]+>", "", li) for li in re.findall(r'<li class="slot tnum">(.*?)</li>', card)]
-    # Finish item: start times only, one row per day, so 30-minute steps never read as overlapping appointments.
-    assert slots == ["Tue, Oct 20 · starts at 9:00, 9:30, 10:00 AM"]
+    # Round 3: up to three non-overlapping start–end ranges inside the hours (Tue 9–12 holds exactly three).
+    assert slots == ["Tue, Oct 20 · 9:00–10:00 AM", "Tue, Oct 20 · 10:00–11:00 AM", "Tue, Oct 20 · 11:00 AM–12:00 PM"]
+    rows = re.findall(r'<li class="slot tnum">(.*?)</li>', card)
+    assert all("<span class=nw>" in row and "–" in re.findall(r"<span class=nw>([^<]*)</span>", row)[-1] for row in rows)
+    assert "first three" not in card and "starts at" not in card  # never promises three, never the old start lists

@@ -32,6 +32,8 @@
       <div class="phone__log log" tabindex=0 role=group aria-label="Example messages" data-rail-log>
       {% for s in scenarios %}<ol class=thread data-scenario={{ s.id }} aria-label="{{ s.label }}">{% for it in s.thread %}{{ thread_row(it, business_name) }}{% endfor %}</ol>{% endfor %}
       </div>
+      {#- Round-3 fix 2: shown by portal.js on desktop while more of the thread is below the fade. #}
+      <p class=rail__more aria-hidden=true data-rail-more>{{ icon("chevron-down") }}Scroll for the rest</p>
     </div>
   </div>
   {% if notice %}<p class=phone__foot>Each text in this example also starts with the network notice.</p>{% endif %}

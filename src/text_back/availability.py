@@ -5,8 +5,10 @@ periods for the coming two weeks through the provider's ``busy_intervals``
 and asks this module for the first few starts that
 - begin on a step boundary after ``now`` (never ``now`` itself),
 - fit the appointment length inside the owner's working hours
-  (``working_hours.slot_within_hours``, the same rule booking enforces), and
-- do not overlap any busy period.
+  (``working_hours.slot_within_hours``, the same rule booking enforces),
+- do not overlap any busy period, and
+- do not overlap each other: after a free slot the search resumes at its end,
+  so consecutive free times step by the appointment length.
 
 Candidates advance in UTC so a daylight-saving change on the way never
 produces a wall-clock time that does not exist; results are returned in the
@@ -44,7 +46,7 @@ def _ceil_to_step(local: datetime, step_minutes: int) -> datetime:
 def next_free_slots(busy: Iterable[tuple[datetime, datetime]], now: datetime, duration_minutes: int,
                     working_hours: dict | None, tz_name, *, count: int = 3, step_minutes: int = 30,
                     horizon_days: int = 14) -> list[datetime]:
-    """Up to ``count`` aware start times in the business zone, earliest first."""
+    """Up to ``count`` aware, non-overlapping start times in the business zone, earliest first."""
     if duration_minutes <= 0 or count <= 0 or step_minutes <= 0:
         return []
     zone = _zone(tz_name)
@@ -64,6 +66,8 @@ def next_free_slots(busy: Iterable[tuple[datetime, datetime]], now: datetime, du
         end = cursor + length
         if slot_within_hours(cursor, end, working_hours, zone) and not any(cursor < b_end and end > b_start for b_start, b_end in periods):
             out.append(cursor.astimezone(zone))
+            cursor = end  # the next free time starts when this one ends: listed times never overlap
+            continue
         cursor += step
     return out
 

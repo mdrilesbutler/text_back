@@ -26,7 +26,7 @@
 <span class="pill state state--{{ kind }}{{ ' pill--success' if kind == 'done' else (' pill--warning' if kind == 'needs' else '') }}">{{ word }}</span>
 {%- endmacro %}
 
-{#- The phone header as the save bar (mockup d1 round 3): what changed (a disclosure listing links to each
+{#- The header as the save bar, at every width (mockup d1 round 3; desktop since the final-panel round 3): what changed (a disclosure listing links to each
     changed item), Discard and Save, both posting the page's form through form=. portal.js draws the same
     nodes for a form marked data-topsave. t: {"form", "changed", "save", "names": [(href, label)]}. -#}
 {% macro topsave_bar(t) -%}

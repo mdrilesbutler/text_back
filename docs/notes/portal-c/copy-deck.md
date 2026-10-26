@@ -192,6 +192,7 @@ Destination label, from settings. Never promise the owner gets these unless that
 | rail_pill_details_sent | Customer's details sent to [destination label, short form] | thread pill after the divider ("…sent to FluxWorks") |
 | rail_foot | Nothing is sent · names made up | caption right under the title "Example conversation", so "Example" appears once (fix pass) |
 | rail_back | Back to editing | link |
+| rail_more | Scroll for the rest | desktop only: small label in the faded bottom edge of the example phone while more of the thread is below; hidden at the end and without JavaScript (round 3) |
 
 Every TextBack bubble in the rail comes from running the real product code on the scripted customer
 replies, so the thread can never show a step-back or a time reading the product would not make.
@@ -233,7 +234,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 | schedule_intro | The timing rules the assistant follows when it books. Reset puts a rule back to its default. | intro line |
 | card_appointments | Appointments / How long each booking blocks on your calendar, and which time zone it uses. | card title / subtitle |
 | duration | Appointment length / minutes | field label / unit after the field |
-| duration_chips | 30 min / 45 min / 60 min / 90 min / 120 min / Custom | quick picks; the chip matching the field is selected, any other value selects none and shows Custom |
+| duration_chips | 30 min / 45 min / 60 min / 90 min / 120 min / Custom | quick picks; the chip matching the field is selected, any other value selects Custom. With JavaScript the minutes field shows only while Custom is selected (choosing Custom reveals and focuses it); without JavaScript both show (round 3) |
 | duration_hint | Used for new bookings. 15 to 480 minutes, in steps of 5. / Default: [60] minutes | hint / default line |
 | duration_applies | Applies right away, including customers mid-conversation. | under the field, before saving |
 | duration_error | Appointment length must be 15 to 480 minutes, in steps of 5. / You tapped one length and typed another. Pick one: tap a length, or tap Custom and type the minutes. | error / without JavaScript, a tapped chip and a typed number that disagree (m36) |
@@ -262,7 +263,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 | schedule_reset | Reset / Reset and save | per-rule ghost button; accessible name "Reset [rule]"; with JavaScript it resets in place and waits for Save; without it "Reset and save"; hidden while the rule is at its default (m11) |
 | schedule_save | Save | primary |
 | schedule_toast | Saved. You changed “[rule]”. / Saved. | toast naming only what changed, then each changed rule's own note word for word (duration_applies, timezone_applies, hours_applies, quiet_applies, reminder_consequence; with several rules "[rule]: [note]"); no note for the waiting time; "Saved." when nothing changed (fix pass m10) |
-| schedule_unsaved | 1 rule changed: [rule] / [N] rules changed | sticky bar above the nav while unsaved |
+| schedule_unsaved | 1 rule changed: [rule] / [N] rules changed | the header save bar while unsaved (every width; round 3), repeated in flow at the end of the form |
 | hours_day_words | Open / Closed | word beside each day switch |
 | hours_any_note | Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it. | under the Use Mon–Fri button |
 | hours_applies | Applies right away to times the assistant offers. Bookings already made stay as they are. | under the hours, before saving |
@@ -289,8 +290,8 @@ replies, so the thread can never show a step-back or a time reading the product 
 | cal_toast_picked | Saved. The assistant now books on [calendar name]. | toast |
 | cal_errors | Google didn't give TextBack calendar access. Try connecting again. / Connecting a calendar isn't set up for this account yet. | notices |
 | avail_title | Next free times on [calendar name] / Test calendar, not yours | availability card title: connected / nothing connected |
-| avail_intro | The first three free start times for a [60]-minute appointment in the next 14 days, inside your working hours. / Shows how the check works. These times are not from your calendar. | card intro: connected / test (fix pass: the length is said once here) |
-| avail_row | [Mon, Oct 19] · starts at [1:30, 2:00, 2:30 PM] | one row per day of free start times; never ranges, so 30-minute steps never read as overlapping (fix pass) |
+| avail_intro | The next free times for a [60]-minute appointment in the next 14 days, inside your working hours. / Shows how the check works. These times are not from your calendar. | card intro: connected / test; lists as many free times as exist, up to three, so it never promises three (round 3) |
+| avail_row | [Mon, Oct 26] · [3:30–4:30 PM] | one row per free time, up to three, as a start–end range that never breaks across lines; the times never overlap (each starts when the one before ends) and all lie inside working hours (round 3) |
 | avail_button | Check free times / Checking… | button / while posting |
 | avail_caption | Checked just now · next 14 days · working hours [Mon–Fri, 8 AM–5 PM] | under results |
 | avail_empty | No free [60]-minute time in the next 14 days inside your working hours. | empty result |
@@ -306,18 +307,18 @@ replies, so the thread can never show a step-back or a time reading the product 
 | phone_title | Phone | page heading |
 | phone_intro | Your business name, the numbers TextBack uses, and call forwarding. | intro line |
 | card_business | Business | card title |
-| business_name | Phone & business / Business details / Business name / Used in every text. The first text is shown below. / In the first text / Save business details | Phone page h1 / first section (its own form: name, first-text preview, HELP number) / label / hint / preview eyebrow / that form's Save |
+| business_name | Phone & business / Business details / Business name / Used in the texts that name your business, like the first text and the booking confirmation. / In the first text / Save business details | Phone page h1 / first section (its own form: name, first-text preview, HELP number) / label / hint / preview eyebrow / that form's Save |
 | business_name_error | Enter a business name of 1 to 60 characters. / A business name can't use curly or angle brackets. Take them out. | error / the name has { } < or > (M7) |
 | business_name_symbol | This name has a [symbol], which makes each text hold only 70 characters. | amber line under the field, live while typing, when the name has a symbol outside the plain text alphabet (M7) |
 | rename_offer | 2 texts still say “[old name]”. Update them to the new name? / Update them / Leave them / 1 text still says “[old name]”. Update it to the new name? / Update it / Leave it / Updated [N] texts. / Kept the texts as they are. / Kept the text as it is. | offer inside the save notice / buttons / one-text offer and buttons (m18) / notices after each choice (m17) |
-| card_numbers | Numbers / This is the number customers call. TextBack never changes it. | card title / subtitle (m31) |
-| business_line | Your business number / The number customers call. Calls you don't answer forward from here to the texting number. | label / hint |
+| card_numbers | Numbers / Three numbers: the one customers call, the one TextBack texts from, and your own mobile. | card title / subtitle (round-3 fix: the old subtitle moved to the business number's hint) |
+| business_line | Your business number / This is the number customers call. TextBack never changes it. Calls you don't answer forward from here to the texting number. | label / hint (m31's sentence lives here since round 3) |
 | business_line_errors | Enter your business number as 10 digits, area code first, or leave it blank. / Your business number and the texting number can't be the same. | errors |
 | texting_number | Texting number / Set up by FluxWorks. It can't be changed here. / Not assigned yet. FluxWorks sets this up for you. | read-only row / note under it, exactly this / when no number is on the account |
 | owner_mobile | Your mobile / Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it. | label / hint |
 | owner_mobile_error | Enter your mobile as 10 digits, area code first. | error under the field; the page also shows an error summary (multi-field form) |
 | phone_error_summary | Not saved. 1 thing needs a change: | error summary heading on Phone, one link per field |
-| phone_unsaved | 1 change: [field label] / [N] changes | sticky bar above the nav while unsaved |
+| phone_unsaved | 1 change: [field label] / [N] changes | the header save bar while unsaved (every width; round 3), repeated in flow at the end of the form |
 | phone_toast | Saved. You changed “[field label]”. / Checks start again because the business number changed. | toast naming what changed / added when the business number changed and was set before (m15) |
 | owner_mobile_status | This is the number that signs you in. / Save to text a code to [new number]. | status line: unchanged / changed |
 | help_number | Number in the HELP reply / Shown when a customer texts HELP. Leave blank to show [texting number]. Customers are never transferred to it; the assistant handles the texting. | label (tagged Optional) / hint |
@@ -394,7 +395,7 @@ replies, so the thread can never show a step-back or a time reading the product 
 | foot | TextBack by FluxWorks | sidebar foot |
 | skip_link | Skip to content | first focusable |
 | toast_dismiss | Dismiss | toast close, accessible name |
-| unsaved_bar | 1 text changed / [N] texts changed / Unsaved changes | sticky bar: Messages counts texts; other pages say Unsaved changes |
+| unsaved_bar | 1 text changed / [N] texts changed / Unsaved changes | header save bar (every width; nothing floats at the bottom, round 3): Messages counts texts; other pages say Unsaved changes |
 | unsaved_leave | Leave this page? Your changes aren't saved. | browser prompt on navigation with unsaved changes |
 | error_generic | Something went wrong on our side. Nothing was saved. Try again. | notice |
 | error_offline | You're offline. Nothing was saved. Try again when you're back online. | notice |

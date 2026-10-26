@@ -325,7 +325,7 @@ def test_a_page_with_unsaved_changes_turns_the_header_into_the_save_bar(tmp_path
     assert ('<button type=submit class="btn btn--ghost" name=discard value=1 form=schedule-form formnovalidate '
             'data-topsave-discard>Discard</button>') in bar
     assert '<button type=submit class="btn btn--primary" form=schedule-form>Save</button>' in bar
-    # The brand and the menu stay in the markup (CSS hides them below 1024 px); the bottom nav stays.
+    # The brand and the menu stay in the markup (CSS hides both below 1024 px, the menu only on desktop); the nav stays.
     assert "<a class=brand" in header and "<details class=menu" in header
     assert "<nav class=nav aria-label=Pages>" in page
 

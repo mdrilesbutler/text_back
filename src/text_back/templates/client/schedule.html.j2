@@ -37,7 +37,6 @@
     <div class="card card--form">
       <div class=field id=rule-duration data-change-label="Appointment length">
         <label class=field__label for=appointment_duration_custom>Appointment length</label>
-        <div class=inline-field><input class="input input--num tnum" id=appointment_duration_custom name=appointment_duration_custom type=number inputmode=numeric min=15 max=480 step=5 value="{{ values.appointment_duration_minutes }}" aria-describedby="duration-hint{{ ' appointment_duration_minutes-error' if errors.get('appointment_duration_minutes') else '' }}"{% if errors.get("appointment_duration_minutes") %} aria-invalid=true{% endif %} data-duration-number><span class=unit>minutes</span></div>
         <fieldset class=pill-group id=appointment_duration_minutes>
           <legend class=vh>Appointment length</legend>
           <div class=pill-radios>
@@ -45,6 +44,7 @@
             <input class=vh-input type=radio name=appointment_duration_minutes id=dur-custom value=custom{% if duration_custom %} checked{% endif %} data-duration-chip><label class=pill-radio for=dur-custom>Custom</label>
           </div>
         </fieldset>
+        <div class=inline-field><input class="input input--num tnum" id=appointment_duration_custom name=appointment_duration_custom type=number inputmode=numeric min=15 max=480 step=5 value="{{ values.appointment_duration_minutes }}" aria-describedby="duration-hint{{ ' appointment_duration_minutes-error' if errors.get('appointment_duration_minutes') else '' }}"{% if errors.get("appointment_duration_minutes") %} aria-invalid=true{% endif %} data-duration-number><span class=unit>minutes</span></div>
         <p class=field-help id=duration-hint>{{ consequences.appointment_duration_minutes }}</p>
         {{ err("appointment_duration_minutes") }}
         <p class=applies>Once saved: {{ applies.appointment_duration_minutes }}</p>

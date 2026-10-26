@@ -57,12 +57,13 @@ _NOWRAP = re.compile(
     r"(\b\d{1,2}(?::\d{2})?\s?[AP]M\s?[–-]\s?\d{1,2}(?::\d{2})?\s?[AP]M\b"
     r"|\b\d{1,2}(?::\d{2})?[–-]\d{1,2}(?::\d{2})?\s?[AP]M\b"
     r"|\(\d{3}\) \d{3}-\d{4}"
+    r"|\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)–(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b"
     r"|\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)(?:day|sday|nesday|rsday|urday)?, (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}\b"
     r"|\b\d{1,2}:\d{2}(?:\s?[AP]M)?(?: [A-Z]{3}\b)?)")
 
 
 def nw(text: str) -> Markup:
-    """Escape ``text`` and wrap every (980) 555-0123, "Mon, Oct 26" and "9:12 AM" in span.nw (no line break inside)."""
+    """Escape ``text`` and wrap every (980) 555-0123, "Mon, Oct 26", "Mon–Fri" and "9:12 AM" in span.nw (no line break inside)."""
     return Markup("").join(Markup("<span class=nw>{}</span>").format(part) if index % 2 else escape(part)
                            for index, part in enumerate(_NOWRAP.split(str(text))) if part)
 

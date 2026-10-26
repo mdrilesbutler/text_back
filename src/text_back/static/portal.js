@@ -232,11 +232,11 @@ function initJump() {
 // ---------------------------------------------------------------- unsaved changes (one form at a time)
 // A form marked data-track-changes compares every named control with what the page loaded. Its resting Save
 // ([data-rest-save], aria-disabled so it still posts without JS) turns on while something differs and the line
-// beside it says so. A form also marked data-topsave turns the header into its save bar below 1024 px: what
+// beside it says so. A form also marked data-topsave turns the header into its save bar at every width: what
 // changed (links to [data-change-label] holders), Discard and Save. Count words come from the form:
 // data-changed-one ("1 rule changed") and data-changed-many ("{n} rules changed"); default "Unsaved changes".
-// The desktop bar for the same form ([data-savebar][data-form=<id>]) follows too: in flow with "No unsaved
-// changes" at rest, sticky with the count, the changed items as links and Discard while something differs.
+// The form-end bar for the same form ([data-savebar][data-form=<id>]) follows too, always in flow: "No unsaved
+// changes" at rest; the count, the changed items as links and Discard while something differs.
 // A form the server answered with unsaved values (data-dirty-initial, a rejected save) keeps the server's
 // header and bar; its Discard reloads the saved page.
 const fieldValue = el => (el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value);
@@ -710,8 +710,21 @@ function initRail(form) {
   let ringed = null;
   const activate = () => { rail.dataset.active = select.value; };
   const clear = () => { if (ringed) delete ringed.dataset.current; ringed = null; };
+  // "Scroll for the rest" (CSS shows it while the log carries data-more): more than the 16px of padding that
+  // clears the 32px fade is still below. Never set when the log does not scroll (phones, the in-flow rail).
+  const more = () => {
+    const scrolls = getComputedStyle(log).overflowY !== 'visible';
+    log.toggleAttribute('data-more', scrolls && log.scrollHeight - log.clientHeight - log.scrollTop > 16);
+  };
   activate();
-  select.addEventListener('change', () => { activate(); clear(); log.scrollTop = 0; });
+  select.addEventListener('change', () => { activate(); clear(); log.scrollTop = 0; more(); });
+  log.addEventListener('scroll', more, { passive: true });
+  if ('ResizeObserver' in window) {
+    const seen = new ResizeObserver(more);
+    seen.observe(log);
+    for (const thread of $$('.thread', log)) seen.observe(thread);
+  }
+  more();
   if (!form) return;
   form.addEventListener('focusin', e => {
     if (!WIDE.matches) return;
@@ -746,15 +759,21 @@ function initSchedule() {
   const number = $('[data-duration-number]');
   if (number) {
     const chips = $$('[data-duration-chip]');
+    // The chip follows the typed value at once (CSS keeps the field shown while it has focus, so it never
+    // hides under the cursor at "60").
     number.addEventListener('input', () => {
       const match = chips.find(c => c.value === number.value.trim());
       (match || chips.find(c => c.value === 'custom')).checked = true;
     });
+    // CSS shows the minutes field only while Custom is chosen: choosing it reveals the field and moves focus in.
     for (const chip of chips) chip.addEventListener('change', () => {
       if (chip.checked && chip.value !== 'custom') {
         number.value = chip.value;
         number.dispatchEvent(new Event('change', { bubbles: true }));
-      } else if (chip.checked) focusField(number);
+      } else if (chip.checked) {
+        number.focus();
+        number.select();
+      }
     });
   }
   const suggest = $('[data-suggest-hours]');

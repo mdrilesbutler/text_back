@@ -275,7 +275,8 @@ def test_availability_respects_working_hours(tmp_path, monkeypatch):
     assert result["slots"][0] == "Mon, Oct 19 · 8:00–9:00 AM"
     assert all(start.astimezone(EASTERN).hour >= 8 for start in result["starts"])
     card = pc.availability_card(state, result)
-    assert card["slots"] == ["Mon, Oct 19 · 8:00–9:00 AM", "Mon, Oct 19 · 8:30–9:30 AM", "Mon, Oct 19 · 9:00–10:00 AM"]
+    # Round 3: three non-overlapping ranges, each starting when the one before ends.
+    assert card["slots"] == ["Mon, Oct 19 · 8:00–9:00 AM", "Mon, Oct 19 · 9:00–10:00 AM", "Mon, Oct 19 · 10:00–11:00 AM"]
     assert card["caption"] == "Checked just now · next 14 days · working hours Mon–Fri 8:00 AM–5:00 PM"
     assert card["note"] == "" and card["empty"] == ""
     # The card filters on the saved hours even when handed starts outside them.
@@ -303,7 +304,7 @@ def test_stub_check_uses_the_stub_busy_list_and_the_appointment_length(tmp_path,
     # NOW is Monday 11:00 EDT; the stub is busy 11:30–12:30.
     state.calendar.busy.append((NOW + timedelta(minutes=30), NOW + timedelta(minutes=90)))
     result = pc.check_availability(state, NOW)
-    assert result["slots"] == ["Mon, Oct 19 · 12:30–1:30 PM", "Mon, Oct 19 · 1:00–2:00 PM", "Mon, Oct 19 · 1:30–2:30 PM"]
+    assert result["slots"] == ["Mon, Oct 19 · 12:30–1:30 PM", "Mon, Oct 19 · 1:30–2:30 PM", "Mon, Oct 19 · 2:30–3:30 PM"]
     assert result["duration"] == 60
     # Events the stub already holds count as busy too.
     state.calendar.events["evt-1"] = {"start": NOW + timedelta(minutes=90), "end": NOW + timedelta(minutes=150), "conversation_id": "c"}
@@ -312,7 +313,8 @@ def test_stub_check_uses_the_stub_busy_list_and_the_appointment_length(tmp_path,
     state.store.set_setting("appointment_duration_minutes", "90", now=NOW)
     client_settings.apply_scheduling(state)
     result = pc.check_availability(state, NOW)
-    assert result["slots"][0] == "Mon, Oct 19 · 12:30–2:00 PM" and result["duration"] == 90
+    assert result["slots"] == ["Mon, Oct 19 · 12:30–2:00 PM", "Mon, Oct 19 · 2:00–3:30 PM", "Mon, Oct 19 · 3:30–5:00 PM"]
+    assert result["duration"] == 90  # steps by the appointment length, and the last one still ends by 5 PM
     card = pc.availability_card(state, result)
     assert card["intro"] == "Shows how the check works. These times are not from your calendar."
     assert state.store.conn.execute("SELECT count(*) FROM outcome_events").fetchone()[0] == 0
@@ -338,7 +340,7 @@ def test_ready_google_check_reads_busy_intervals_and_fails_closed(tmp_path, monk
     set_hours(state)
     result = pc.check_availability(state, NOW)
     assert result["error"] == ""
-    assert result["slots"] == ["Mon, Oct 19 · 12:30–1:30 PM", "Mon, Oct 19 · 1:00–2:00 PM", "Mon, Oct 19 · 1:30–2:30 PM"]
+    assert result["slots"] == ["Mon, Oct 19 · 12:30–1:30 PM", "Mon, Oct 19 · 1:30–2:30 PM", "Mon, Oct 19 · 2:30–3:30 PM"]
     request = transport.requests[-1]
     assert request.url.endswith("/freeBusy")
     body = json.loads(request.body)
@@ -346,7 +348,7 @@ def test_ready_google_check_reads_busy_intervals_and_fails_closed(tmp_path, monk
     assert body["timeMin"] == "2026-10-19T15:00:00Z" and body["timeMax"] == "2026-11-02T15:00:00Z"
     card = pc.availability_card(state, result)
     assert card["title"] == "Next free times on Tree jobs"
-    assert card["intro"] == ("The first three free start times for a 60-minute appointment in the next 14 days, "
+    assert card["intro"] == ("The next free times for a 60-minute appointment in the next 14 days, "
                              "inside your working hours.")
     assert card["caption"] == "Checked just now · next 14 days · working hours Mon–Fri 8:00 AM–5:00 PM"
 

@@ -1,8 +1,8 @@
 {#- Signed-in shell (candidate C, mockup d1). Header: TextBack, then the business name as the Account menu
     trigger (wraps to two lines, never cut short; on a phone the open menu pushes the page down). Nav: five
     tabs, a bottom bar on phones and a sticky sidebar with Account on desktop. While a form has unsaved
-    changes the header becomes that form's save bar below 1024 px (`topsave` from the server, or portal.js
-    for a form marked data-track-changes data-topsave); the bottom nav stays. The in-flow #notice slot
+    changes the header becomes that form's save bar at every width (`topsave` from the server, or portal.js
+    for a form marked data-track-changes data-topsave); the bottom nav and the desktop sidebar stay. The in-flow #notice slot
     (role=status) sits between the header and the page's h1; every save notice renders there (never a
     floating toast) and an error never does. -#}
 {% extends "client/_document.html.j2" %}

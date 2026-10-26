@@ -2021,3 +2021,41 @@
   /* Example tags are labels, never full-width bars, wherever a grid places them. */
   .extag { justify-self: start; align-self: center; width: max-content; max-width: 100%; }
 }
+@layer app {
+  /* Round-3 fix 1: one save bar pattern at every width. While a form has unsaved changes the sticky header
+     becomes its save bar (count, the changed items behind a disclosure, Discard, Save via form=); nothing
+     floats at the bottom of the page. On desktop TextBack stays at the left, the business-name menu steps aside
+     (Account is in the sidebar) and the count lines up just right of the brand. */
+  .topbar--dirty { background: var(--bg); box-shadow: inset 0 -2px 0 var(--warning-fg); }
+  .topbar--dirty .topsave { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); width: 100%; min-width: 0; }
+  @media (min-width: 1024px) {
+    .topbar--dirty > .menu { display: none; }
+    .topbar--dirty .topsave { flex: 1 1 0; width: auto; margin-left: var(--space-8); }
+    .topsave__actions { gap: var(--space-2); }
+    /* The form-end bar stays in flow while dirty: what changed, Discard and Save, never over the next card. */
+    .savebar--on, .savebar[data-state="dirty"] { position: static; inset: auto; z-index: auto; max-width: var(--measure); max-height: none; margin-top: var(--space-8);
+      padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-lg);
+      background: var(--raised); box-shadow: none; animation: none; flex-wrap: wrap; }
+    html, html.has-jump { scroll-padding-bottom: var(--space-4); }  /* no bottom chrome to clear on desktop */
+  }
+
+  /* Round-3 fix 2: the desktop example rail. Its scrolled thread fades over its last 32px, so the bubble at the
+     bottom edge reads as running under the fade, never as cut; scroll-padding keeps a bubble brought into view
+     clear of it. "Scroll for the rest" sits in the fade while more of the thread is below (portal.js). */
+  .rail__more { display: none; }
+  @media (min-width: 1024px) {
+    .phone__screen { position: relative; }
+    .phone__log { padding-bottom: 3rem; scroll-padding-block: 16px 3rem;
+      -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); }
+    .phone__screen:has(.phone__log[data-more]) .rail__more { display: flex; }
+    .rail__more { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); align-items: center; gap: 4px; margin: 0;
+      padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); pointer-events: none;
+      font: var(--fw-semibold) var(--fs-caption)/1rem var(--font-body); color: var(--text-muted); white-space: nowrap; }
+    .rail__more .icon { font-size: 14px; }
+  }
+  @container msglayout (width < 50rem) { .rail .rail__more { display: none; } }
+
+  /* Round-3 fix 5: with JavaScript the minutes field (under the chips, in DOM and focus order) shows only
+     while Custom is chosen; without JavaScript both show. */
+  :where(.js) #rule-duration:has(#dur-custom:not(:checked)) > .inline-field:not(:focus-within) { display: none; }
+}

@@ -61,7 +61,7 @@
     <div class=node__head><h2 tabindex=-1 id=avail-title>{{ availability.title }}</h2>{% if calendar_example|default(false) %}<span class=extag>Example</span>{% endif %}<p class=node__blurb>{{ availability.intro }}</p></div>
     <section class=card aria-labelledby=avail-title data-availability>
       {% if availability.starts %}
-      <ul class=slots data-slots>{% for row in availability.rows %}<li class="slot tnum">{{ icon("calendar") }}<span>{{ row|nw }}</span></li>{% endfor %}</ul>
+      <ul class=slots data-slots>{% for slot in availability.slots %}<li class="slot tnum">{{ icon("calendar") }}<span>{{ slot|nw }}</span></li>{% endfor %}</ul>
       {% endif %}
       {% if availability.empty %}<p class=empty__body>{{ availability.empty }}</p>{% endif %}
       {% if availability.error %}<p class=field-error>{{ icon("circle-alert") }}<span>{{ availability.error }}</span></p>{% endif %}

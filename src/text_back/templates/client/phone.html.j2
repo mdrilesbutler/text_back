@@ -3,7 +3,7 @@
     line, the texting number as read-only text, your mobile with the two-step change), Call forwarding
     (carrier picker; every carrier's codes are rendered and CSS shows the chosen one live) and the five
     checks with the shared glyph set, the manual ticks posting with the same Save. One save bar names what
-    changed; below 1024 px the header becomes it. -#}
+    changed; while unsaved the header becomes it at every width. -#}
 {% extends "client/base.html.j2" %}
 {% from "client/_macros.html.j2" import icon, csrf_input, field_error, node, state_pill %}
 {% from "client/_form_errors.html.j2" import field_summary %}
@@ -43,7 +43,7 @@
     </div>
   {% endcall %}
   {% call node("icon", "phone", attrs="id=numbers") %}
-    <div class=node__head><h2 tabindex=-1>Numbers</h2><p class=node__blurb>This is the number customers call. TextBack never changes it.</p></div>
+    <div class=node__head><h2 tabindex=-1>Numbers</h2><p class=node__blurb>Three numbers: the one customers call, the one TextBack texts from, and your own mobile.</p></div>
     <div class="card card--form">
       <div class=field data-change-label="Your business number" id=rule-business_line>
         <label class=field__label for=business_line>Your business number</label>

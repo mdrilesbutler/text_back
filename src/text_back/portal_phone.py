@@ -499,9 +499,9 @@ def page_context(state, values: dict | None = None, errors: dict | None = None, 
         "manual_label": MANUAL_LABEL,
         "intro": INTRO,
         "hints": {
-            "business_name": "Used in every text. The first text is shown below.",
-            "business_line": ("The number customers call. Calls you don't answer forward from here to the "
-                              "texting number."),
+            "business_name": "Used in the texts that name your business, like the first text and the booking confirmation.",
+            "business_line": ("This is the number customers call. TextBack never changes it. Calls you don't answer "
+                              "forward from here to the texting number."),
             "owner_mobile": ("Sign-in codes come to this number. If you change it, we text a code to the new "
                              "number and nothing changes until you enter it."),
             "business_contact": (f"Shown when a customer texts HELP. Leave blank to show {formatted or 'the texting number'}. "

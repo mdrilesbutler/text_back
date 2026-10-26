@@ -70,9 +70,9 @@ ERR_NO_ACCESS = "Google didn't give TextBack calendar access. Try connecting aga
 ERR_NOT_SET_UP = "Connecting a calendar isn't set up for this account yet."
 AVAIL_TITLE = "Next free times on {name}"
 AVAIL_TITLE_TEST = "Test calendar, not yours"
-AVAIL_INTRO = "The first three free start times for a {n}-minute appointment in the next 14 days, inside your working hours."
-# One row per day: the start times only, so rows never seem to overlap (the length is said once, above).
-AVAIL_ROW = "{day} · starts at {times}"
+AVAIL_INTRO = "The next free times for a {n}-minute appointment in the next 14 days, inside your working hours."
+# Up to three rows, one free time each as a range ("Mon, Oct 26 · 3:30–4:30 PM"); they never overlap
+# (availability.next_free_slots steps by the appointment length after each one).
 AVAIL_INTRO_TEST = "Shows how the check works. These times are not from your calendar."
 AVAIL_BUTTON = "Check free times"
 AVAIL_BUTTON_BUSY = "Checking…"
@@ -240,24 +240,6 @@ def _within_hours(state, starts) -> list[datetime]:
     return kept
 
 
-def start_rows(starts: list[datetime], tz_name: str) -> list[str]:
-    """'Mon, Oct 19 · starts at 1:30, 2:00, 2:30 PM': one row per day, AM/PM said once when shared."""
-    from text_back.portal_dates import clock, day
-
-    rows: list[tuple[str, list[str]]] = []
-    for start in starts:
-        label = day(start, tz_name)
-        if not rows or rows[-1][0] != label:
-            rows.append((label, []))
-        rows[-1][1].append(clock(start, tz_name))
-    out = []
-    for label, clocks in rows:
-        suffixes = {c[-2:] for c in clocks}
-        shown = [c[:-3] for c in clocks[:-1]] + [clocks[-1]] if len(suffixes) == 1 else clocks
-        out.append(AVAIL_ROW.format(day=label, times=", ".join(shown)))
-    return out
-
-
 def availability_card(state, result: dict | None) -> dict:
     """What the free-times card shows: title, intro, the button or its replacement, and the result."""
     view = _settings().calendar_status(state)
@@ -280,7 +262,6 @@ def availability_card(state, result: dict | None) -> dict:
         "checked": checked, "duration": duration,
         "slots": [availability.format_slot(start, duration) for start in starts],
         "starts": starts,  # the datetimes behind ``slots``; templates format them with the `when` filter
-        "rows": start_rows(starts, str(getattr(state, "timezone_name", "UTC") or "UTC")),
         "empty": AVAIL_EMPTY.format(n=duration) if checked and not starts else "",
         "error": str(result.get("error") or ""),
         "caption": AVAIL_CAPTION.format(hours=wh.describe(hours)) if checked else "",
@@ -294,7 +275,7 @@ def _stub_busy(calendar, time_min: datetime, time_max: datetime) -> list[tuple[d
 
 
 def check_availability(state, now: datetime) -> dict:
-    """A busy read over the next HORIZON_DAYS reduced to the next three free starts inside working hours.
+    """A busy read over the next HORIZON_DAYS reduced to up to three non-overlapping free times inside working hours.
 
     Provider failures come back as ``error`` text, never as an exception; a
     paused connection is refused before any network call (fail closed).
