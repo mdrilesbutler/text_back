@@ -2,14 +2,13 @@
     "Keep my current mobile" is a POST (a state change is never a GET). -#}
 {% extends "client/base.html.j2" %}
 {% from "client/_macros.html.j2" import otp, button, csrf_input, stepper %}
-{% block page_class %}confirm{% endblock %}
 {% block content %}
-<header class=page-head>
+<div class=page-head>
   <h1>Confirm your new mobile</h1>
   {{ stepper() }}
-  <p class=lead id=confirm-help>{{ confirm_intro }}</p>
-</header>
-<div class=page__body>
+  <p class=lead id=confirm-help>{{ confirm_intro|nw }}</p>
+</div>
+<div class="card card--form confirm">
   <form method=post action=/client/phone/confirm id=confirm-form>
     {{ csrf_input(csrf) }}
     <div class=field>

@@ -1,112 +1,116 @@
-{#- Phone (portal_phone.page_context): business name, numbers (the texting number is read-only text, never a
-    field), the HELP number, the carrier with its forwarding codes, and the five forwarding checks. -#}
+{#- Phone & business (mockup d1 round 3, one form after the panel docked two save scopes): Business details
+    (name, the first text right under it, updating as the name is typed, the HELP number), Numbers (business
+    line, the texting number as read-only text, your mobile with the two-step change), Call forwarding
+    (carrier picker; every carrier's codes are rendered and CSS shows the chosen one live) and the five
+    checks with the shared glyph set, the manual ticks posting with the same Save. One save bar names what
+    changed; below 1024 px the header becomes it. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, field_error, button, notice as notice_box %}
+{% from "client/_macros.html.j2" import icon, csrf_input, field_error, node, state_pill %}
 {% from "client/_form_errors.html.j2" import field_summary %}
-{% block page_class %}phone{% endblock %}
+{% from "client/_message_card.html.j2" import bubble %}
 {% macro described(key) -%}aria-describedby="{{ key }}-help{{ (' ' ~ key ~ '-error') if errors.get(key) else '' }}"{% if errors.get(key) %} aria-invalid=true{% endif %}{%- endmacro %}
 {% macro err(key) -%}{% if errors.get(key) %}{{ field_error(key ~ "-error", errors[key]) }}{% endif %}{%- endmacro %}
 {% block content %}
-<header class=page-head>
-  <h1>Phone</h1>
-  <p class=lead>Your business name, the numbers TextBack uses, and call forwarding.</p>
-</header>
+<div class=page-head><h1>{{ title_text }}</h1><p class=lead>{{ intro }}</p></div>
 {% if summary %}{{ field_summary(summary) }}{% endif %}
-{% if page_error %}{{ notice_box("danger", page_error) }}{% endif %}
-{% if rename_offer %}
-<form method=post action=/client/phone/rename-texts class="card card--offer" data-rename-offer>
+{% if page_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ page_error }}</p></div></div>{% endif %}
+<form method=post action=/client/phone id=phone-form data-track-changes data-topsave data-changed-one="1 change" data-changed-many="{n} changes" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
   {{ csrf_input(csrf) }}
-  <p class=notice__text>Saved. Business name is now “{{ rename_offer.new_name }}”. {{ rename_offer.text }}</p>
-  <div class=actions>
-    <button type=submit class="btn btn--primary" name=action value=update>{{ rename_offer.accept }}</button>
-    <button type=submit class="btn btn--secondary" name=action value=leave>{{ rename_offer.decline }}</button>
-  </div>
-</form>
-{% endif %}
-<form method=post action=/client/phone class=page__body id=phone-form>
-  {{ csrf_input(csrf) }}
-  <section class="card card--form" aria-labelledby=business-title>
-    <h2 class=card__title id=business-title>Business</h2>
-    <div class=field>
-      <label class=field__label for=business_name>Business name</label>
-      <p class=field-help id=business_name-help>{{ hints.business_name }}</p>
-      <input class=input id=business_name name=business_name required maxlength=60 autocomplete=organization autocorrect=off value="{{ display.business_name }}" {{ described("business_name") }}>
-      {{ err("business_name") }}
-      <div class="well field-preview">
-        <p class="eyebrow eyebrow--muted">In the first text</p>
-        <div class="sms sms--textback"><p class=sms__bubble data-name-preview data-template="{{ name_template }}">{{ name_preview }}</p></div>
+  <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
+  <input type=hidden name=checks_in_form value=1>
+  <ol class=spine>
+  {% call node("icon", "store", attrs="id=business") %}
+    <div class=node__head><h2 tabindex=-1>Business details</h2></div>
+    <div class="card card--form">
+      <div class=field data-change-label="Business name" id=rule-business_name>
+        <label class=field__label for=business_name>Business name</label>
+        <input class=input id=business_name name=business_name type=text required maxlength=60 autocomplete=organization autocorrect=off value="{{ display.business_name }}" {{ described("business_name") }}>
+        <p class=field-help id=business_name-help>{{ hints.business_name }}</p>
+        {{ err("business_name") }}
+      </div>
+      <div class=field-preview>
+        <p class=eyebrow>In the first text</p>
+        <div class="sms sms--textback"><span class=sms__who data-name-who>{{ business_name }}</span><div class=sms__bubble><p data-name-preview data-template="{{ name_template }}" data-suffix="{{ name_suffix }}" data-saved-name="{{ business_name }}">{{ name_preview }}{% if name_suffix %} <span class=sms__suffix>{{ name_suffix }}</span>{% endif %}</p></div></div>
+      </div>
+      <div class=field data-change-label="Number in the HELP reply" id=rule-business_contact>
+        <label class=field__label for=business_contact>Number in the HELP reply <span class=tag>Optional</span></label>
+        <input class="input input--tel tnum" id=business_contact name=business_contact type=tel inputmode=tel autocomplete=off maxlength=24 value="{{ display.business_contact }}" {{ described("business_contact") }}>
+        <p class=field-help id=business_contact-help>{{ hints.business_contact|nw }}</p>
+        {{ err("business_contact") }}
       </div>
     </div>
-  </section>
-  <section class="card card--form" aria-labelledby=numbers-title>
-    <h2 class=card__title id=numbers-title>Numbers</h2>
-    <p class=card__sub>Your business number never changes. Customers keep calling it.</p>
-    <div class=field>
-      <label class=field__label for=business_line>Your business number</label>
-      <p class=field-help id=business_line-help>{{ hints.business_line }}</p>
-      <input class="input input--tel tnum" id=business_line name=business_line type=tel inputmode=tel autocomplete=off maxlength=24 value="{{ display.business_line }}" {{ described("business_line") }}>
-      {{ err("business_line") }}
-    </div>
-    <div class=field data-texting-number>
-      <p class=field__label>Texting number</p>
-      {% if texting_number %}<p class="tnum nowrap">{{ texting_number }}</p>{% endif %}
-      <p class=field-help>{{ texting_note }}</p>
-    </div>
-    <div class=field>
-      <label class=field__label for=owner_mobile>Your mobile</label>
-      <p class=field-help id=owner_mobile-help>{{ hints.owner_mobile }}</p>
-      <input class="input input--tel tnum" id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 autocomplete=tel value="{{ display.owner_mobile }}" {{ described("owner_mobile") }}>
-      {{ err("owner_mobile") }}
-      <p class=field-help data-mobile-status>This is the number that signs you in.</p>
-    </div>
-    <div class=field>
-      <label class=field__label for=business_contact>Number in the HELP reply <span class=tag>Optional</span></label>
-      <p class=field-help id=business_contact-help>{{ hints.business_contact }}</p>
-      <input class="input input--tel tnum" id=business_contact name=business_contact type=tel inputmode=tel autocomplete=off maxlength=24 value="{{ display.business_contact }}" {{ described("business_contact") }}>
-      {{ err("business_contact") }}
-    </div>
-  </section>
-  <section class="card card--form" aria-labelledby=forwarding-title>
-    <h2 class=card__title id=forwarding-title>Call forwarding</h2>
-    <p class=card__sub>{{ forwarding_intro }}</p>
-    <p class="notice notice--warning" data-forward-all-warning>{{ forward_all_warning }}</p>
-    <fieldset class=field id=carrier>
-      <legend class=field__label>Your carrier</legend>
-      <div class=pill-radios>
-      {% for key, name in carriers %}<input class=vh-input type=radio name=carrier id=carrier-{{ key }} value={{ key }}{% if carrier == key %} checked{% endif %}><label class=pill-radio for=carrier-{{ key }}>{{ name }}</label>{% endfor %}
+  {% endcall %}
+  {% call node("icon", "phone", attrs="id=numbers") %}
+    <div class=node__head><h2 tabindex=-1>Numbers</h2><p class=node__blurb>Your business number never changes. Customers keep calling it.</p></div>
+    <div class="card card--form">
+      <div class=field data-change-label="Your business number" id=rule-business_line>
+        <label class=field__label for=business_line>Your business number</label>
+        <input class="input input--tel tnum" id=business_line name=business_line type=tel inputmode=tel autocomplete=off maxlength=24 value="{{ display.business_line }}" {{ described("business_line") }}>
+        <p class=field-help id=business_line-help>{{ hints.business_line }}</p>
+        {{ err("business_line") }}
       </div>
-      {{ err("carrier") }}
-    </fieldset>
-    <div class=codes data-codes>
-      {% if codes.enable or codes.disable %}
-      {% for heading, rows in (("Turn forwarding on", codes.enable), ("Turn it off", codes.disable)) %}{% if rows %}
-      <h3 class=codes__heading>{{ heading }}</h3>
-      <dl class=codes__list>{% for label, code in rows %}<div class=code-row><dt>{{ label }}</dt><dd><code class=tnum>{{ code }}</code><button type=button class="btn btn--ghost" data-copy="{{ code }}" hidden>Copy<span class=vh> {{ label }} code</span></button></dd></div>{% endfor %}</dl>
-      {% endif %}{% endfor %}
-      {% endif %}
-      {% if codes.steps %}<p class=field-help>{{ codes.steps }}</p>{% endif %}
-      {% if codes.note %}<p class=field-help>{{ codes.note }}</p>{% endif %}
-      {% if codes.unverified %}<p class="notice notice--warning">{{ codes.unverified }}</p>{% endif %}
+      <div class=ro data-texting-number>
+        <p class=field__label>Texting number</p>
+        {% if texting_number %}<p class="ro__value tnum">{{ texting_number|nw }}</p>{% endif %}
+        <p class=field-help>{{ texting_note }}</p>
+      </div>
+      <div class=field data-change-label="Your mobile" id=rule-owner_mobile>
+        <label class=field__label for=owner_mobile>Your mobile</label>
+        <input class="input input--tel tnum" id=owner_mobile name=owner_mobile type=tel inputmode=tel required maxlength=24 autocomplete=tel value="{{ display.owner_mobile }}" data-saved-mobile="{{ values_saved_mobile }}" {{ described("owner_mobile") }}>
+        {{ err("owner_mobile") }}
+        <p class=field-help id=owner_mobile-help>{{ hints.owner_mobile }} <span data-mobile-status>This is the number that signs you in.</span></p>
+      </div>
     </div>
-  </section>
-  <div class=actions>{{ button("Save", block="block-phone", loading="Saving…") }}</div>
-</form>
-<form method=post action=/client/phone/checks class=card id=checks aria-labelledby=checks-title data-checklist>
-  {{ csrf_input(csrf) }}
-  <h2 class=card__title id=checks-title>Is forwarding working?</h2>
-  <p class=card__sub data-checks-progress>{% if checklist.all_done %}All 5 done. Forwarding works.{% else %}{{ checklist.done_count }} of 5 done{% endif %}</p>
-  <ol class=checks>
-  {% for s in checklist.steps %}
-    <li class="check check--{{ s.state }}" data-check={{ s.n }}>
-      <p class=check__label>{{ s.label }}</p>
-      <p class=check__state>{{ s.state_word }}</p>
-      <p class=check__evidence>{{ s.evidence }}</p>
-      {% if s.manual %}<label class=check__tick for={{ s.name }}><input type=checkbox class=checkbox id={{ s.name }} name={{ s.name }} value=1{% if s.state == "you_checked" %} checked{% endif %}><span class=vh>{{ s.label }}</span></label>{% endif %}
-      {% if s.code %}<p class=field-help>Keep it where you'll find it: <code class=tnum>{{ s.code }}</code>.</p>{% endif %}
-    </li>
+  {% endcall %}
+  {% call node("icon", "arrow-right", attrs="id=forwarding") %}
+    <div class=node__head><h2 tabindex=-1>Call forwarding</h2><p class=node__blurb>{{ forwarding_intro }}</p></div>
+    <div class="notice notice--warning" data-forward-all-warning>{{ icon("triangle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ forward_all_warning }}</p></div></div>
+    <div class="card card--form carrier-card" data-change-label="Your carrier" id=rule-carrier>
+      <fieldset class=field id=carrier>
+        <legend class=field__label>Your carrier</legend>
+        <div class=pill-radios>
+        {% for key, name in carriers %}<input class=vh-input type=radio name=carrier id=carrier-{{ key }} value={{ key }}{% if carrier == key %} checked{% endif %}><label class=pill-radio for=carrier-{{ key }}>{{ name }}</label>{% endfor %}
+        </div>
+        {{ err("carrier") }}
+      </fieldset>
+      <p class="field-help codes-none" data-codes-none>{{ "Pick your carrier to see the codes." if has_number else "The codes fill in once FluxWorks assigns your texting number." }}</p>
+      {% for c in all_codes %}
+      <div class=codes-wrap data-codes={{ c.key }}>
+        {% if c.steps %}<p class=status__detail>{{ c.steps|nw }}</p>{% endif %}
+        {% for heading, rows in (("Turn forwarding on", c.enable), ("Turn it off", c.disable)) if rows %}
+        <h3 class=card__title>{{ heading }}</h3>
+        <ol class=codes>
+          {% for label, code in rows %}<li class=code><span class=code__label>{{ label }}</span><code class=code__val>{{ code|dial }}</code><button type=button class="btn btn--secondary" data-copy="{{ code }}" hidden>{{ icon("copy") }}<span data-copy-label>Copy</span><span class=vh> {{ label }} code</span></button></li>{% endfor %}
+        </ol>
+        {% if loop.first and c.note %}<p class=field-help>{{ c.note }}</p>{% endif %}
+        {% endfor %}
+        {% if not (c.enable or c.disable) and c.note and c.key != "other" %}<p class=field-help>{{ c.note }}</p>{% endif %}
+        {% if c.unverified %}<div class="notice notice--warning">{{ icon("triangle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ c.unverified }}</p></div></div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% endcall %}
+  {% call node("icon", "circle-help", attrs="id=checks") %}
+    <div class=node__head><h2 tabindex=-1>Is forwarding working?</h2><p class=checks__progress data-checks-progress>{{ "All 5 done. Forwarding works." if checklist.all_done else checklist.done_count ~ " of 5 done" }}</p></div>
+  {% endcall %}
+  {% for s in check_rows %}
+  {% call node(s.kind, attrs="data-check=" ~ s.n) %}
+    <div class="card check check--{{ s.state }}"{% if s.manual %} data-change-label="{{ s.label }}" id=rule-check-{{ s.n }}{% endif %}>
+      <h3 class=check__title><span class="check__n tnum">{{ s.n }}</span>{{ s.label }}</h3>
+      <p class=check__state>{{ state_pill(s.kind, s.state_word) }}{% if s.example %}<span class=extag>Example</span>{% endif %}</p>
+      <p class="{{ 'check__ev tnum' if s.state == 'done' else 'field-help' }}">{{ s.evidence|nw }}</p>
+      {% if s.manual %}<label class=switch-row for={{ s.name }}><span class=switch-row__text>{{ manual_label }}</span><input type=checkbox class=checkbox id={{ s.name }} name={{ s.name }} value=1{% if s.ticked %} checked{% endif %}></label>{% endif %}
+    </div>
+  {% endcall %}
   {% endfor %}
+  <li class="spine__label spine__label--foot"><p class=field-help data-evidence-note>{{ evidence_note }}</p></li>
   </ol>
-  <p class=field-help>{{ evidence_note }}</p>
-  {{ button("Save checks", variant="secondary", block="block-phone", loading="Saving…") }}
 </form>
+<div class="savebar{{ ' savebar--on' if dirty else '' }}" data-state={{ "dirty" if dirty else "clean" }} data-savebar data-form=phone-form>
+  <p class=savebar__status role=status data-savebar-status data-clean="No unsaved changes">{% if dirty %}<span class=savebar__count>{{ dirty.changed }}</span><span class=savebar__names>: {% for href, title in dirty.names %}<a href="{{ href }}">{{ title }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% else %}No unsaved changes{% endif %}</p>
+  <div class=savebar__actions>
+    <button type=submit class="btn btn--ghost" name=discard value=1 form=phone-form formnovalidate data-savebar-discard{% if not dirty %} hidden{% endif %}>Discard</button>
+    <button type=submit class="btn btn--primary" form=phone-form name=save value=1 data-rest-save data-loading="Saving…">Save</button>
+  </div>
+</div>
 {% endblock %}

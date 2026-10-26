@@ -36,10 +36,10 @@ LABELS = {
     "carrier": "Your carrier",
 }
 ERR_NAME = f"Enter a business name of 1 to {NAME_MAX} characters."
-ERR_LINE = "Enter your business number as 10 digits, like 704 555 0123, or leave it blank."
+ERR_LINE = "Enter your business number as 10 digits, area code first, or leave it blank."
 ERR_SAME = "Your business number and the texting number can't be the same."
-ERR_MOBILE = "Enter your mobile as 10 digits, like 704 555 0123."
-ERR_CONTACT = "Enter the phone number as 10 digits, like 704 555 0123, or leave it blank."
+ERR_MOBILE = "Enter your mobile as 10 digits, area code first."
+ERR_CONTACT = "Enter the phone number as 10 digits, area code first, or leave it blank."
 ERR_CARRIER = "Pick a carrier from the list."
 CARRIER_PROMPT = "Pick your carrier to see the codes."
 NOTHING_TO_CHECK = "Enter a number to check."
@@ -47,6 +47,12 @@ LINE_FORMAT_OK = "Format looks right: {n}. This checks the digits only, not that
 MOBILE_UNCHANGED = "This is the number that signs you in."
 MOBILE_CHANGED = "Save to text a code to {n}."
 SAVED = "Saved."
+SAVED_CHANGED = "Saved. You changed “{labels}”."
+TITLE = "Phone & business"
+INTRO = "Your business name, the numbers TextBack uses, and call forwarding."
+CHANGED_ONE, CHANGED_MANY = "1 change", "{n} changes"
+MANUAL_LABEL = "I checked this"
+CHECKS_PROGRESS, CHECKS_COMPLETE = "{n} of 5 done", "All 5 done. Forwarding works."
 SAVED_CONFIRM_MOBILE = "Saved. Now confirm your new mobile."
 NEW_MOBILE_SAVED = "Saved. Sign-in codes now go to {n}."
 KEPT = "Kept your current mobile."
@@ -59,7 +65,6 @@ FORWARDING_INTRO = ("Forward the calls you don't answer to your texting number. 
                     "the same, and answered calls still reach you.")
 FORWARD_ALL_WARNING = ("Only forward busy and unanswered calls. Forwarding every call stops answered calls "
                        "from reaching you.")
-EVIDENCE_NOTE = "Checks 1, 2 and 4 tick themselves from real calls TextBack recorded. Checks 3 and 5 are yours."
 RENAME_ACCEPT = "Update them"
 RENAME_DECLINE = "Leave them"
 CONFIRM_INTRO = ("We texted a six-digit code to {n}. Enter it to move sign-in to that number. It expires in "
@@ -283,9 +288,10 @@ def rename_in_texts(templates: dict[str, str], old_name: str, new_name: str) -> 
 
 
 def rename_offer_text(count: int, old_name: str) -> str:
+    """Deck rename_offer: the offer inside the save notice."""
     if count == 1:
-        return f'Update 1 text that still says "{old_name}"'
-    return f'Update {count} texts that still say "{old_name}"'
+        return f"1 text still says “{old_name}”. Update it to the new name?"
+    return f"{count} texts still say “{old_name}”. Update them to the new name?"
 
 
 def rename_done_text(count: int) -> str:
@@ -360,6 +366,8 @@ def checklist_context(state, now: datetime, carrier: str = "") -> dict:
         key = MANUAL_CHECKS.get(step["n"])
         step["name"] = f"check_{key}" if key else ""
         step["code"] = code if step["n"] == 5 else ""
+        if step["n"] == 5:
+            step["evidence"] = portal_forwarding.CHECK_5_HINT.format(code=code) if code else CARRIER_PROMPT
     return result
 
 
@@ -372,6 +380,34 @@ def save_checklist(state, form, now: datetime) -> None:
         if ticked != bool(current.get(key)):
             changes[key] = ticked
     portal_forwarding.save_manual_ticks(state.store, changes, now)
+
+
+def changed_labels(before: dict, after: dict, ticks_before: dict, ticks_after: dict) -> list[str]:
+    """The field labels (and manual check names) whose saved value differs, in page order."""
+    labels = [LABELS[key] for key in ("business_name", "business_contact", "business_line", "owner_mobile", "carrier")
+              if (before.get(key) or "") != (after.get(key) or "")]
+    labels += [portal_forwarding.LABELS[n] for n, key in MANUAL_CHECKS.items()
+               if bool(ticks_before.get(key)) != bool(ticks_after.get(key))]
+    return labels
+
+
+def saved_notice(labels: list[str]) -> str:
+    return SAVED_CHANGED.format(labels="”, “".join(labels)) if labels else SAVED
+
+
+def forwarding_example(state) -> bool:
+    """The preview harness flags forwarding as example data; production never does."""
+    return "forwarding" in (getattr(state, "preview_example_setup", ()) or ())
+
+
+def check_rows(checklist: dict, example: bool) -> list[dict]:
+    """The five checks as spine nodes: the shared glyph set (done tick, dashed tick for the owner's own tick,
+    plain ring for not yet) and the Example tag on the evidence checks while the harness flags forwarding."""
+    rows = []
+    for step in checklist["steps"]:
+        kind = {"done": "done", "you_checked": "manual"}.get(step["state"], "todo")
+        rows.append({**step, "kind": kind, "example": example and not step["manual"]})
+    return rows
 
 
 # --- page -----------------------------------------------------------------------
@@ -398,14 +434,19 @@ def page_context(state, values: dict | None = None, errors: dict | None = None, 
         "rename": rename,
         "carriers": CARRIERS, "carrier": carrier,
         "codes": forwarding_codes(carrier, texting),
+        # Every carrier's codes, so the picker shows the chosen one live (CSS :has) before saving.
+        "all_codes": [forwarding_codes(key, texting) for key, _ in CARRIERS],
         "has_number": bool(national_digits(texting)),
         "forwarding_intro": FORWARDING_INTRO,
         "forward_all_warning": FORWARD_ALL_WARNING,
-        "evidence_note": EVIDENCE_NOTE,
+        "evidence_note": (portal_forwarding.EVIDENCE_NOTE_PREVIEW if forwarding_example(state)
+                          else portal_forwarding.EVIDENCE_NOTE),
         "checklist": checklist_context(state, now, carrier),
+        "check_rows": check_rows(checklist_context(state, now, carrier), forwarding_example(state)),
+        "manual_label": MANUAL_LABEL,
+        "intro": INTRO,
         "hints": {
-            "business_name": ('Used in every text, for example "Hey, sorry we missed your call—this is '
-                              f'{state.business_name}\'s scheduling assistant."'),
+            "business_name": "Used in every text. The first text is shown below.",
             "business_line": ("The number customers call. Calls you don't answer forward from here to the "
                               "texting number."),
             "owner_mobile": ("Sign-in codes come to this number. If you change it, we text a code to the new "

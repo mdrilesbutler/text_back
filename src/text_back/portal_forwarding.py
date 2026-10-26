@@ -24,6 +24,16 @@ LABELS = {  # copy deck, section 7 (check_1..check_5)
 }
 
 
+NO_CALL_YET = ("No forwarded call recorded yet. From another phone, call your business number and let it ring out. "
+               "Calls made straight to the texting number don't count.")
+CHECK_3_HINT = ("Answer a call to your business number, then confirm no text arrived. TextBack can't see answered "
+                "calls, so this one is yours to tick.")
+CHECK_4_DONE = "The text went to the caller's number, not your business number or the texting number."
+CHECK_5_HINT = "Keep it where you'll find it: {code}."
+EVIDENCE_NOTE = "Checks 1, 2 and 4 tick from calls TextBack recorded."
+EVIDENCE_NOTE_PREVIEW = "In this preview, checks 1, 2 and 4 come from example calls."
+
+
 def _digits(number: str | None) -> str:
     return "".join(ch for ch in (number or "") if ch.isdigit())[-10:]
 
@@ -113,16 +123,17 @@ def checklist(state, now: datetime) -> dict:
     call = forwarded_call(store, business_line)
     ticks = manual_ticks(store)
 
-    def step(n, state_key, evidence):
+    def step(n, state_key, evidence, at=None):
         return {"n": n, "label": LABELS[n], "state": state_key, "state_word": STATE_WORDS[state_key],
-                "manual": n in MANUAL, "evidence": evidence}
+                "manual": n in MANUAL, "evidence": evidence, "at": at}
 
     steps = []
     if call:
-        steps.append(step(1, DONE, f"A forwarded call came in {when(call['at'], tz, now)} from a caller ending {_last4(call['caller'])[1:]}."))
+        steps.append(step(1, DONE, f"{when(call['at'], tz, now, relative=False)} from a number ending {_last4(call['caller'])[1:]}",
+                          at=call["at"]))
         count, first_at = texts_sent_for(store, call)
         if count == 1:
-            steps.append(step(2, DONE, f"Sent {when(first_at, tz, now)}."))
+            steps.append(step(2, DONE, f"Sent {when(first_at, tz, now, relative=False)}"))
         elif count > 1:
             steps.append(step(2, NOT_YET, f"{count} texts went out for one call. Check that the number isn't forwarded twice."))
         else:
@@ -131,19 +142,17 @@ def checklist(state, now: datetime) -> dict:
         if not _digits(business_line):
             steps.append(step(1, NOT_YET, "Enter your business number first."))
         else:
-            steps.append(step(1, NOT_YET, "No forwarded call recorded yet. Call your business number from another phone and let it ring."))
+            steps.append(step(1, NOT_YET, NO_CALL_YET))
         steps.append(step(2, NOT_YET, "Waits for check 1."))
-    steps.append(step(3, YOU_CHECKED if ticks.get(MANUAL[3]) else NOT_YET,
-                      f"Ticked {when(ticks[MANUAL[3]], tz, now)}." if ticks.get(MANUAL[3]) else "Call again and answer it. No text should go out."))
+    steps.append(step(3, YOU_CHECKED if ticks.get(MANUAL[3]) else NOT_YET, CHECK_3_HINT))
     if call:
         caller_ok = _digits(call["caller"]) not in {_digits(business_line), _digits(texting)}
         steps.append(step(4, DONE if caller_ok else NOT_YET,
-                          f"The text went to the caller's number ending {_last4(call['caller'])[1:]}, not your business number or the texting number."
-                          if caller_ok else "The call came in as your own number. Ask your carrier about caller ID on forwarded calls."))
+                          CHECK_4_DONE if caller_ok else "The call came in as your own number. Ask your carrier about caller ID on forwarded calls."))
     else:
         steps.append(step(4, NOT_YET, "Enter your business number first." if not _digits(business_line) else "Waits for check 1."))
-    steps.append(step(5, YOU_CHECKED if ticks.get(MANUAL[5]) else NOT_YET,
-                      f"Ticked {when(ticks[MANUAL[5]], tz, now)}." if ticks.get(MANUAL[5]) else "Write the turn-off code down somewhere you'll find it."))
+    # The hint names the carrier's turn-off code once one is picked (portal_phone.checklist_context).
+    steps.append(step(5, YOU_CHECKED if ticks.get(MANUAL[5]) else NOT_YET, CHECK_5_HINT))
     done = sum(1 for s in steps if s["state"] in (DONE, YOU_CHECKED))
     return {"steps": steps, "done_count": done, "total": len(steps), "all_done": done == len(steps),
             "state_word": "Done" if done == len(steps) else "Needs you"}

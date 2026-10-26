@@ -102,7 +102,7 @@ def test_manual_steps_say_you_checked_this_and_persist(tmp_path):
     save_manual_ticks(state.store, {"answered_no_text": True, "deactivation_saved": False}, NOW)
     result = checklist(state, NOW)
     assert _words(result)[2] == (3, "You checked this") and _words(result)[4] == (5, "Not yet")
-    assert "Today" in result["steps"][2]["evidence"]
+    assert result["steps"][2]["evidence"].startswith("Answer a call to your business number")  # the deck's hint; the pill says it is ticked
     save_manual_ticks(state.store, {"answered_no_text": False}, NOW)
     assert _words(checklist(state, NOW))[2] == (3, "Not yet")
 

@@ -67,6 +67,19 @@ def nw(text: str) -> Markup:
 
 ENV.filters["nw"] = nw
 
+
+def dial(code: str) -> str:
+    """Group the 10-digit number inside a dial code for reading: *717045550100 -> *71 704 555 0100.
+    Copy buttons carry the code as dialled (data-copy), never this form."""
+    match = re.fullmatch(r"([*#]+\d*?[*#]*1?)(\d{10})((?:\*\*\d+)?#?)", code or "")
+    if not match:
+        return code
+    pre, num, post = match.groups()
+    return f"{pre} {num[:3]} {num[3:6]} {num[6:]}{(' ' + post) if post.startswith('**') else post}"
+
+
+ENV.filters["dial"] = dial
+
 # The add-to-calendar links in a TextBack bubble: a short label on screen, the full link in title.
 LINK_LABELS = {"g": "Add to Google Calendar ›", "o": "Add to Outlook ›", "i": "Add to iCal ›", "": "Calendar links page ›"}
 _CAL_LINK = re.compile(r"(?:\b(?:Google|Outlook|iCal) )?(https?://\S+?/a/[\w-]+?(?:/([goi]))?)(?=[\s.,;!?]*(?:\s|$))")
@@ -87,20 +100,30 @@ def sms_links(text: str) -> Markup:
 
 ENV.filters["sms_links"] = sms_links
 
-_ADD_TO_CALENDAR = re.compile(r"\s*\bAdd to calendar:\s*", re.IGNORECASE)
+_LEAD_IN = re.compile(r"\bAdd to calendar:\s*$", re.IGNORECASE)
+_SPACE_BEFORE_PUNCT = re.compile(r"\s+([.,;!?])")
 
 
-def split_links(text: str) -> tuple[str, tuple[tuple[str, str], ...]]:
-    """(bubble words, ((label, url), ...)): every /a/<ref>/g|o|i link (and the provider word before it) is
-    taken out of the words and returned as its label, so a bubble shows "Add to Google Calendar ›" under the
-    text and never a raw link. "Add to calendar:" goes with them when it only introduced the links.
-    portal.js splitLinks() does the same for live previews."""
-    links = tuple((LINK_LABELS[m.group(2) or ""], m.group(1)) for m in _CAL_LINK.finditer(text))
-    if not links:
+def calendar_link_pattern(base_url: str) -> re.Pattern:
+    """TextBack's own calendar links only: the public base URL, /a/<rowid>-<12 hex>, then /g, /o or /i (or
+    nothing for the links page), with the provider word that may come before it. portal.js builds the same."""
+    base = re.escape(str(base_url or "").rstrip("/"))
+    return re.compile(rf"(?:\b(?:Google|Outlook|iCal) )?({base}/a/\d+-[0-9a-f]{{12}}(?:/([goi]))?)(?![\w/-])")
+
+
+def split_links(text: str, base_url: str) -> tuple[str, tuple[tuple[str, str], ...]]:
+    """(bubble words, ((label, url), ...)): TextBack's own calendar links (calendar_link_pattern) come out of
+    the words and show as labels; every other URL stays in the words as typed. "Add to calendar:" goes with
+    them only when it directly precedes the first link. portal.js splitLinks() does the same."""
+    pattern = calendar_link_pattern(base_url)
+    matches = list(pattern.finditer(text))
+    if not matches:
         return text, ()
-    body = _CAL_LINK.sub(" ", text)
-    body = _ADD_TO_CALENDAR.sub(" ", body)
-    return " ".join(body.split()), links
+    links = tuple((LINK_LABELS[m.group(2) or ""], m.group(1)) for m in matches)
+    head = text[:matches[0].start()]
+    head = _LEAD_IN.sub("", head)
+    body = head + pattern.sub(" ", text[matches[0].start():])
+    return _SPACE_BEFORE_PUNCT.sub(r"\1", " ".join(body.split())), links
 
 
 def _when(value, tz_name: str, now=None, relative: bool = True) -> str:

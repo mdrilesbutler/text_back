@@ -33,7 +33,7 @@
     <p class=nav__foot>TextBack by FluxWorks</p>
   </nav>
   <main class=page id=main tabindex=-1>
-    <div class=status-slot id=notice role=status>{% if notice %}{% include "client/_notice.html.j2" %}{% endif %}</div>
+    <div class=status-slot id=notice role=status>{% if notice or (notice_offer is defined and notice_offer) %}{% include "client/_notice.html.j2" %}{% endif %}</div>
     {% block content %}{% endblock %}
   </main>
 </div>

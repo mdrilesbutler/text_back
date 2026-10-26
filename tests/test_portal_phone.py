@@ -91,13 +91,13 @@ def test_validation_refuses_bad_input_with_the_exact_reason(tmp_path, monkeypatc
     assert errors_for(business_name="") == {"business_name": "Enter a business name of 1 to 60 characters."}
     assert errors_for(business_name="x" * 61) == {"business_name": portal_phone.ERR_NAME}
     assert errors_for(business_line="nope") == {
-        "business_line": "Enter your business number as 10 digits, like 704 555 0123, or leave it blank."}
+        "business_line": "Enter your business number as 10 digits, area code first, or leave it blank."}
     assert errors_for(business_line="(980) 555-0177") == {
         "business_line": "Your business number and the texting number can't be the same."}
-    assert errors_for(owner_mobile="") == {"owner_mobile": "Enter your mobile as 10 digits, like 704 555 0123."}
+    assert errors_for(owner_mobile="") == {"owner_mobile": "Enter your mobile as 10 digits, area code first."}
     assert errors_for(owner_mobile="call me") == {"owner_mobile": portal_phone.ERR_MOBILE}
     assert errors_for(business_contact="call me") == {
-        "business_contact": "Enter the phone number as 10 digits, like 704 555 0123, or leave it blank."}
+        "business_contact": "Enter the phone number as 10 digits, area code first, or leave it blank."}
     assert errors_for(carrier="sprint") == {"carrier": "Pick a carrier from the list."}
     # The first error follows the field order on the page.
     both = errors_for(business_name="", carrier="sprint")
@@ -247,13 +247,13 @@ def test_rename_offer_counts_texts_that_still_say_the_old_name():
     # The offer carries the deck's words and the count.
     offer = portal_phone.rename_offer(templates, old, new)
     assert offer["count"] == 2 and offer["keys"] == ["missed_call_intro", "booking_confirmation"]
-    assert offer["text"] == 'Update 2 texts that still say "Oak & Pine Tree Care"'
+    assert offer["text"] == "2 texts still say “Oak & Pine Tree Care”. Update them to the new name?"
     assert offer["accept"] == "Update them" and offer["decline"] == "Leave them"
     assert offer["done"] == "Updated 2 texts."
     assert portal_phone.rename_offer(templates, old, old) is None  # the name did not change
     assert portal_phone.rename_offer({"followup_sms": "no name here"}, old, new) is None
     one = portal_phone.rename_offer({"k": f"Thanks from {old}."}, old, new)
-    assert one["text"] == 'Update 1 text that still says "Oak & Pine Tree Care"' and one["done"] == "Updated 1 text."
+    assert one["text"] == "1 text still says “Oak & Pine Tree Care”. Update it to the new name?" and one["done"] == "Updated 1 text."
 
 
 # --- carrier codes ---------------------------------------------------------------------
@@ -350,7 +350,7 @@ def test_owner_facing_strings_carry_no_vendor_or_repository_names():
             assert not re.search(r"signalwire|twilio|text_back", text, re.I), text
     assert portal_phone.FORWARD_ALL_WARNING == (
         "Only forward busy and unanswered calls. Forwarding every call stops answered calls from reaching you.")
-    assert portal_phone.EVIDENCE_NOTE == (
-        "Checks 1, 2 and 4 tick themselves from real calls TextBack recorded. Checks 3 and 5 are yours.")
+    from text_back import portal_forwarding
+    assert portal_forwarding.EVIDENCE_NOTE == "Checks 1, 2 and 4 tick from calls TextBack recorded."
     assert portal_phone.SAVED == "Saved."
     assert portal_phone.LABELS["business_contact"] == "Number in the HELP reply"

@@ -54,7 +54,7 @@ def test_forwarding_card_is_done_only_from_forwarded_evidence(tmp_path):
     _missed(state, "CA1", "+19805550141", NOW - timedelta(hours=5), forwarded_from=BUSINESS)
     save_manual_ticks(state.store, {"answered_no_text": True, "deactivation_saved": True}, NOW)
     card = next(i for i in setup_items(state, NOW) if i["key"] == "forwarding")
-    assert card["state_word"] == "Done" and "Today, 9:40 AM" in card["detail"]
+    assert card["state_word"] == "Done" and card["detail"] == "A forwarded call reached TextBack on Mon, Oct 26, 9:40 AM."
 
 
 def test_week_counts_and_rows_share_one_window(tmp_path):
