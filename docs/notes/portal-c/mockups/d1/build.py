@@ -31,7 +31,11 @@ if FX["messages"]["cards"]["prompt_email"]["switch"]["state"] == "off":
     assert "invite is on its way" not in FX["messages"]["cards"]["booking_confirmation"]["preview"]
 
 
-NUM = re.compile(r"\(\d{3}\) \d{3}-\d{4}")
+# Kept on one line wherever they appear in visible text: phone numbers, dates and clock times.
+NUM = re.compile(
+    r"\(\d{3}\) \d{3}-\d{4}"
+    r"|\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)(?:day|sday|nesday|rsday|urday)?, (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}\b"
+    r"|\b\d{1,2}:\d{2}(?:\s?[AP]M)?(?: [A-Z]{3}\b)?")
 
 
 def keep_numbers_whole(html):
@@ -45,7 +49,7 @@ def keep_numbers_whole(html):
                 skip += -1 if chunk.startswith("</") else 1
             out.append(chunk)
         else:
-            out.append(chunk if skip else NUM.sub(lambda m: f'<span class="num">{m.group(0)}</span>', chunk))
+            out.append(chunk if skip else NUM.sub(lambda m: f'<span class="nw">{m.group(0)}</span>', chunk))
     return "".join(out)
 
 
@@ -95,7 +99,7 @@ def base_ctx():
         # state flags, all off by default
         "menu_open": False, "banner": None, "dirty": False, "edit_open": None, "focus": None,
         "error": False, "any_time": False, "custom": False, "cal_state": FX["calendar"]["state"],
-        "invalid_mobile": False, "dialog": False, "rename_offer": False, "saved": False,
+        "invalid_mobile": False, "dialog": False, "rename_offer": False, "saved": False, "hours_edit": False, "dirty_form": None,
     }
 
 
@@ -113,9 +117,9 @@ PAGES = [
     ("04-messages--saved-toast", "messages.html", {"banner": M["toasts"]["saved"], "focus": "banner"}),
     ("04-messages--example-booked", "messages.html", {"focus": "example"}),
     ("05-schedule", "schedule.html", {}),
-    ("05-schedule--hours-grid", "schedule.html", {"focus": "hours"}),
+    ("05-schedule--hours-grid", "schedule.html", {"focus": "hours", "dirty": True, "hours_edit": True}),
     ("05-schedule--any-time-warning", "schedule.html", {"any_time": True, "focus": "hours"}),
-    ("05-schedule--custom-length", "schedule.html", {"custom": True, "focus": "duration"}),
+    ("05-schedule--custom-length", "schedule.html", {"custom": True, "focus": "duration", "dirty": True}),
     ("05-schedule--saved-toast", "schedule.html", {"banner": S["toast"], "focus": "banner", "saved": True}),
     ("05-schedule--unsaved-bar", "schedule.html", {"dirty": True, "focus": "duration"}),
     ("06-calendar", "calendar.html", {"cal_state": "not_connected_with_connect"}),
@@ -123,9 +127,9 @@ PAGES = [
     ("06-calendar--not-connected-no-connect", "calendar.html", {"cal_state": "not_connected_without_connect", "focus": "connection"}),
     ("07-phone", "phone.html", {}),
     ("07-phone--carrier-verizon", "phone.html", {"focus": "codes"}),
-    ("07-phone--invalid-mobile", "phone.html", {"invalid_mobile": True, "focus": "mobile"}),
+    ("07-phone--invalid-mobile", "phone.html", {"invalid_mobile": True, "focus": "mobile", "dirty": True, "dirty_form": "phone"}),
     ("07-phone--saved-toast", "phone.html", {"banner": P["toast"], "focus": "banner"}),
-    ("07-phone--unsaved-bar", "phone.html", {"dirty": True, "focus": "business"}),
+    ("07-phone--unsaved-bar", "phone.html", {"dirty": True, "dirty_form": "business", "focus": "business"}),
     ("07-phone--rename-offer", "phone.html", {"rename_offer": True, "focus": "banner"}),
     ("07-phone--confirm-mobile", "confirm_mobile.html", {}),
     ("07-phone--keep-mobile-toast", "phone.html", {"banner": P["confirm_mobile"]["toast_kept"], "focus": "banner"}),

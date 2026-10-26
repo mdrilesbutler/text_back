@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% set page_id = 'schedule' %}{% set title = fx.schedule.title %}{% set current_nav = 'Schedule' %}
+{% set save_form = 'schedule-form' %}{% set save_changed = fx.schedule.unsaved_one %}{% set save_label = fx.schedule.save %}
+{% set save_names = [('#hours', fx.schedule.hours.title)] if hours_edit else [('#duration', fx.schedule.appointments.duration.label)] %}
 {% block content %}
 {% set s = fx.schedule %}
 <div class="page-head"><h1>{{ s.title }}</h1><p class="lead">{{ s.intro }}</p></div>
@@ -10,8 +12,9 @@
     <div class="node__head"><h2>{{ a.title }}</h2><p class="node__blurb">{{ a.subtitle }}</p></div>
     <div class="card card--form">
       {% set d = a.duration %}
-      {% set dval = d.variant_custom.value if custom else (s.dirty_value if dirty else (s.saved_value if saved else d.value)) %}
-      {% set dchip = d.variant_custom.selected_chip if custom else ((d.chips | selectattr('value', 'equalto', s.dirty_value) | map(attribute='label') | first) if dirty else ((d.chips | selectattr('value', 'equalto', s.saved_value) | map(attribute='label') | first) if saved else d.selected_chip)) %}
+      {% set dur_dirty = dirty and not custom and not hours_edit %}
+      {% set dval = d.variant_custom.value if custom else (s.dirty_value if dur_dirty else (s.saved_value if saved else d.value)) %}
+      {% set dchip = d.variant_custom.selected_chip if custom else ((d.chips | selectattr('value', 'equalto', s.dirty_value) | map(attribute='label') | first) if dur_dirty else ((d.chips | selectattr('value', 'equalto', s.saved_value) | map(attribute='label') | first) if saved else d.selected_chip)) %}
       <div class="field">
         <label class="field__label" for="duration">{{ d.label }}</label>
         <div class="inline-field"><input class="input input--num tnum" id="duration" name="duration" type="number" inputmode="numeric" min="15" max="480" step="5" value="{{ dval }}"><span class="unit">{{ d.unit }}</span></div>
@@ -24,19 +27,21 @@
           </div>
         </fieldset>
         <p class="field-help">{{ d.hint }}</p>
+        <p class="applies">{{ d.applies }}</p>
       </div>
       {{ ui.rule_foot(d.default_line, s.reset, d.label, 'duration') }}
       {% set tz = a.timezone %}
       <div class="field">
         {{ ui.select('timezone', tz.value_label, [tz.value_label], label=tz.label) }}
         <p class="field-help">{{ tz.hint }}</p>
+        <p class="applies">{{ tz.applies }}</p>
       </div>
       {{ ui.rule_foot(tz.default_line, s.reset, tz.label, 'timezone') }}
     </div>
   {% endcall %}
   {% set hh = s.hours %}
   {% set mode = hh.variant_any_time.mode if any_time else hh.mode %}
-  {% call ui.node('icon', 'sun', focus=(focus == 'hours')) %}
+  {% call ui.node('icon', 'sun', id='hours', focus=(focus == 'hours')) %}
     <div class="node__head"><h2>{{ hh.title }}</h2><p class="node__blurb">{{ hh.subtitle }}</p></div>
     <div class="card card--form">
       <fieldset class="choice-list">
@@ -57,19 +62,22 @@
       <fieldset class="hours">
         <legend class="vh">{{ hh.title }}</legend>
         {% for row in hh.grid %}
-        <div class="hrow{% if not row.open %} hrow--closed{% endif %}">
-          <label class="hrow__day"><input class="switch" type="checkbox" role="switch" name="open_{{ loop.index }}" value="on"{% if row.open %} checked{% endif %}><span class="vh">{{ row.accessible.switch }}</span><span class="hrow__name" aria-hidden="true">{{ row.day }}</span><span class="hrow__word" aria-hidden="true">{{ hh.day_on if row.open else hh.day_off }}</span></label>
-          {% if row.open %}
+        {% set edited = hours_edit and row.day == hh.edit_example.day %}
+        {% set is_open = row.open or edited %}
+        <div class="hrow{% if not is_open %} hrow--closed{% endif %}{% if edited %} hrow--edited{% endif %}">
+          <label class="hrow__day"><input class="switch" type="checkbox" role="switch" name="open_{{ loop.index }}" value="on"{% if is_open %} checked{% endif %}><span class="vh">{{ row.accessible.switch }}</span><span class="hrow__name" aria-hidden="true">{{ row.day }}</span><span class="hrow__word" aria-hidden="true">{{ hh.day_on if is_open else hh.day_off }}</span></label>
+          {% if is_open %}
           <div class="hrow__times">
-            {{ ui.select('opens_' ~ loop.index, row.opens, [row.opens], vh_label=row.accessible.opens) }}
+            {{ ui.select('opens_' ~ loop.index, hh.edit_example.opens if edited else row.opens, [hh.edit_example.opens if edited else row.opens], vh_label=row.accessible.opens) }}
             <span class="hrow__dash" aria-hidden="true">–</span>
-            {{ ui.select('closes_' ~ loop.index, row.closes, [row.closes], vh_label=row.accessible.closes) }}
+            {{ ui.select('closes_' ~ loop.index, hh.edit_example.closes if edited else row.closes, [hh.edit_example.closes if edited else row.closes], vh_label=row.accessible.closes) }}
           </div>
           {% endif %}
         </div>
         {% endfor %}
       </fieldset>
       {% endif %}
+      <p class="applies">{{ hh.applies }}</p>
       {{ ui.rule_foot(hh.default_line, s.reset, hh.title, 'hours') }}
     </div>
   {% endcall %}
@@ -89,6 +97,7 @@
         </div>
       </fieldset>
       {% else %}<p class="field-help">{{ q.switch_note_off }}</p>{% endif %}
+      <p class="applies">{{ q.applies }}</p>
       {{ ui.rule_foot(q.default_line, s.reset, q.title, 'quiet') }}
     </div>
   {% endcall %}
@@ -108,5 +117,5 @@
   {% endcall %}
 </ol>
 </form>
-{{ ui.savebar(dirty, s.unsaved_one, s.save, fx.messages.save_bar.discard, 'schedule-form', fx.messages.save_bar.clean, [('#duration', s.appointments.duration.label)] if dirty else []) }}
+{{ ui.savebar(dirty, s.unsaved_one, s.save, fx.messages.save_bar.discard, 'schedule-form', fx.messages.save_bar.clean, save_names) }}
 {% endblock %}

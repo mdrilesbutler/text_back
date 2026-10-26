@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% set page_id = 'messages' %}{% set title = fx.messages.title %}{% set current_nav = 'Messages' %}
+{% set save_form = 'messages-form' %}{% set save_changed = fx.messages.save_bar.changed %}{% set save_label = fx.messages.save_bar.save %}
+{% set save_names = [] %}{% for k in fx.messages.unsaved['keys'] %}{% set _ = save_names.append(('#card-' ~ k, fx.messages.cards[k].title)) %}{% endfor %}
 {% block content %}
 {% set m = fx.messages %}
 {% set ex = m.example %}
@@ -13,6 +15,13 @@
     <p class="page-head__meta">{{ ui.icon('info') }}<span>{{ m.meta }} <a class="tap page-head__ex" href="#example">{{ ex.title }}</a></span></p>
     {% if m.network_notice_shown %}<p class="page-head__meta page-head__meta--notice">{{ ui.icon('clock') }}<span>{{ m.network_notice }}</span></p>{% endif %}
   </div>
+  {# Phone (< 640 px): one sticky 44 px control. Wider: the chip row. #}
+  <details class="jumpmenu">
+    <summary class="jumpmenu__summary"><span class="jumpmenu__label" data-lead="{{ m.jump_menu.lead }}">{{ m.jump_menu.nojs }}</span>{{ ui.icon('chevron', 'icon jumpmenu__chev') }}</summary>
+    <ul class="jumpmenu__list" aria-label="{{ m.jump_label }}">
+      {% for c in m.jump_chips if c.anchor in jump_five %}<li><a class="jumpmenu__link" href="#{{ c.anchor }}"{% if c.anchor == here %} aria-current="location"{% endif %}>{{ c.label }}</a></li>{% endfor %}
+    </ul>
+  </details>
   <nav class="jump" aria-label="{{ m.jump_label }}">
     <ul class="jump__list">
       {% for c in m.jump_chips if c.anchor in jump_five %}<li><a class="jump__link" href="#{{ c.anchor }}"{% if c.anchor == here %} aria-current="location"{% endif %}>{{ c.label }}</a></li>{% endfor %}
@@ -26,14 +35,14 @@
       <div class="node__head"><h2 tabindex="-1">{{ step.heading }}</h2><p class="node__blurb">{{ step.blurb }}</p></div>
       <div class="cards">
         {% for k in main_keys %}
-        {{ ui.msg_card(m.cards[k], m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys), focus=(focus == 'editor' and edit_open == k)) }}
+        {{ ui.msg_card(m.cards[k], m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys), focus=(focus == 'editor' and edit_open == k), biz=meta.business_name) }}
         {% endfor %}
         {% if opt_keys %}
         <p class="eyebrow cards__eyebrow">{{ step.optional_eyebrow }}</p>
         {% for k in opt_keys %}
         {% if k in branch_of and m.cards[branch_of[k]].switch.state == 'off' %}
         {% else %}
-        {{ ui.msg_card(m.cards[k], m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys)) }}
+        {{ ui.msg_card(m.cards[k], m, open=(edit_open == k), dirty=(k in dirty_keys), branch=(k in branch_keys), biz=meta.business_name) }}
         {% endif %}
         {% endfor %}
         {% endif %}
@@ -49,7 +58,7 @@
           {{ ui.icon('chevron', 'icon anytime__chev') }}
         </summary>
         <div class="cards">
-          {% for k in step['keys'] %}{{ ui.msg_card(m.cards[k], m) }}{% endfor %}
+          {% for k in step['keys'] %}{{ ui.msg_card(m.cards[k], m, biz=meta.business_name) }}{% endfor %}
         </div>
       </details>
     {% endcall %}
@@ -68,7 +77,7 @@
       <span class="select"><select class="select__input" id="scenario" name="scenario">{% for s in ex.scenarios %}<option value="{{ s }}"{% if s == ex.scenario %} selected{% endif %}>{{ s }}</option>{% endfor %}</select>{{ ui.icon('chevron', 'icon select__icon') }}</span>
     </form>
   </div>
-  <div class="phone"{% if focus == 'example' %} id="focus"{% endif %}>
+  <div class="phone">
     <div class="phone__screen">
       <div class="phone__head">
         <div class="phone__who"><p class="phone__name">{{ meta.business_name }}</p><p class="phone__sub">{{ ex.phone_sub }}</p></div>
@@ -77,10 +86,10 @@
       <div class="phone__log log" tabindex="0" aria-label="{{ ex.title }}">
         {% for b in ex.bubbles %}
         {% if b.side == 'event' %}
-        <span class="tpill{% if loop.first %} tpill--missed{% elif b.text.startswith('Booked') %} tpill--booked{% endif %}">{{ b.text }}</span>
+        <span class="tpill{% if loop.first %} tpill--missed{% elif b.text.startswith('Booked') %} tpill--booked{% endif %}"{% if focus == 'example' and b.text.startswith('Booked') %} id="focus"{% endif %}>{{ b.text }}</span>
         {% elif b.side == 'textback' %}
         {% set dr = m.unsaved.drafts[b.key] if dirty and b.key is defined and b.key in m.unsaved.drafts else None %}
-        {{ ui.bubble(dr.preview if dr else b.text, ex, links=b.links if b.links is defined else None) }}
+        {{ ui.bubble(dr.preview if dr else b.text, ex, links=b.links if b.links is defined else None, who=meta.business_name) }}
         {% else %}
         {{ ui.customer(b.text, ex) }}
         {% endif %}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Phone · Oak &amp; Pine Tree Care · TextBack</title>
+<title>Phone &amp; business · Oak &amp; Pine Tree Care · TextBack</title>
 <link rel="stylesheet" href="../_assets/portal.css">
 <link rel="stylesheet" href="d1.css">
 <script src="d1.js" defer></script>
@@ -46,7 +46,7 @@
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Service</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
+        <p class="menu__who">Signed in as <span class="nw">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -66,16 +66,16 @@
 <div class="notice notice--success page-offer" id="focus">
   <svg class="icon notice__icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>
   <div class="notice__body"><p class="notice__text">Saved. You changed “Business name”.</p>  <p class="notice__text">2 texts still say “Oak &amp; Pine Tree Care”. Update them to the new name?</p>
-  <div class="actions"><button class="btn btn--secondary" type="submit" form="phone-form" name="rename" value="update">Update them</button><button class="btn btn--ghost" type="submit" form="phone-form" name="rename" value="leave">Leave them</button></div>
+  <div class="actions"><button class="btn btn--secondary" type="submit" form="business-form" name="rename" value="update">Update them</button><button class="btn btn--ghost" type="submit" form="business-form" name="rename" value="leave">Leave them</button></div>
 </div>
 </div>
-<div class="page-head"><h1>Phone</h1><p class="lead">Your business name, the numbers TextBack uses, and call forwarding.</p></div>
-<form id="phone-form" method="post" action="/client/phone">
-<ol class="spine">
+<div class="page-head"><h1>Phone &amp; business</h1><p class="lead">Your business name, the numbers TextBack uses, and call forwarding.</p></div>
+<form id="business-form" method="post" action="/client/business">
+<ol class="spine spine--part">
 <li class="node node--icon">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-store"/></svg></span>
   <div class="node__body">
-        <div class="node__head"><h2>Business</h2></div>
+        <div class="node__head"><h2>Business details</h2></div>
     <div class="card card--form">
       <div class="field">
         <label class="field__label" for="bname">Business name</label>
@@ -85,15 +85,31 @@
       <div class="field-preview">
         <p class="eyebrow">In the first text</p>
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
   </div>
 </div>
 
       </div>
+      <div class="field">
+        <label class="field__label" for="hnum">Number in the HELP reply <span class="tag">Optional</span></label>
+        <input class="input input--tel" id="hnum" name="help_number" type="tel" inputmode="numeric" value="(704) 555-0123" aria-describedby="hnum-help">
+        <p class="field-help" id="hnum-help">Shown when a customer texts HELP. Leave blank to show <span class="nw">(704) 555-0100</span>. Customers are never transferred to it; the assistant handles the texting.</p>
+      </div>
+      <div class="savebar savebar--inline" data-state="clean" data-form="business-form">
+  <p class="savebar__status" role="status">No unsaved changes</p>
+  <div class="savebar__actions">
+    <button class="btn btn--primary" type="submit" form="business-form" aria-disabled="true">Save business details</button>
+  </div>
+</div>
+
     </div>
 
   </div>
 </li>
+</ol>
+</form>
+<form id="phone-form" method="post" action="/client/phone">
+<ol class="spine spine--part">
 <li class="node node--icon">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg></span>
   <div class="node__body">
@@ -106,18 +122,13 @@
       </div>
       <div class="ro">
         <p class="field__label">Texting number</p>
-        <p class="ro__value tnum"><span class="num">(704) 555-0100</span></p>
+        <p class="ro__value tnum"><span class="nw">(704) 555-0100</span></p>
         <p class="field-help">Set up by FluxWorks. It can&#39;t be changed here.</p>
       </div>
       <div class="field">
         <label class="field__label" for="omobile">Your mobile</label>
         <input class="input input--tel" id="omobile" name="owner_mobile" type="tel" inputmode="numeric" autocomplete="tel" value="(980) 555-0123" aria-describedby="omobile-help">
         <p class="field-help" id="omobile-help">Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it. This is the number that signs you in.</p>
-      </div>
-      <div class="field">
-        <label class="field__label" for="hnum">Number in the HELP reply <span class="tag">Optional</span></label>
-        <input class="input input--tel" id="hnum" name="help_number" type="tel" inputmode="numeric" value="(704) 555-0123" aria-describedby="hnum-help">
-        <p class="field-help" id="hnum-help">Shown when a customer texts HELP. Leave blank to show <span class="num">(704) 555-0100</span>. Customers are never transferred to it; the assistant handles the texting.</p>
       </div>
     </div>
 
@@ -157,14 +168,20 @@
 
   </div>
 </li>
-  <li class="spine__label"><h2>Is forwarding working?</h2><p class="checks__progress">3 of 5 done</p></li>
+<li class="node node--icon" id="checks">
+  <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-question"/></svg></span>
+  <div class="node__body">
+        <div class="node__head"><h2>Is forwarding working?</h2><p class="checks__progress">3 of 5 done</p></div>
+
+  </div>
+</li>
 <li class="node node--done">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg></span>
   <div class="node__body">
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">1</span>A call to your business number reached TextBack</h3>
       <p class="check__state"><span class="pill state state--done pill--success">Done</span><span class="extag">Example</span></p>
-<p class="check__ev tnum">Mon, Oct 26, 9:12 AM from a number ending 0141</p>
+<p class="check__ev tnum"><span class="nw">Mon, Oct 26</span>, <span class="nw">9:12 AM</span> from a number ending 0141</p>
     </div>
 
   </div>
@@ -175,7 +192,7 @@
         <div class="card check">
       <h3 class="check__title"><span class="check__n tnum">2</span>Exactly one text went out</h3>
       <p class="check__state"><span class="pill state state--done pill--success">Done</span><span class="extag">Example</span></p>
-<p class="check__ev tnum">Sent Mon, Oct 26, 9:12 AM</p>
+<p class="check__ev tnum">Sent <span class="nw">Mon, Oct 26</span>, <span class="nw">9:12 AM</span></p>
     </div>
 
   </div>
@@ -218,10 +235,10 @@
   <li class="spine__label spine__label--foot"><p class="field-help">In this preview, checks 1, 2 and 4 come from example calls.</p></li>
 </ol>
 </form>
-<div class="savebar" data-state="clean">
+<div class="savebar" data-state="clean" data-form="phone-form">
   <p class="savebar__status" role="status">No unsaved changes</p>
   <div class="savebar__actions">
-    <button class="btn btn--primary" type="submit" form="phone-form">Save</button>
+    <button class="btn btn--primary" type="submit" form="phone-form" aria-disabled="true">Save</button>
   </div>
 </div>
 

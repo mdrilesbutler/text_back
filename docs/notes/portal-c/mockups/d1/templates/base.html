@@ -1,6 +1,6 @@
 {% import "_macros.html" as ui %}
 <!doctype html>
-<html lang="en"{% if page_id == 'messages' and not dirty %} class="has-jump"{% endif %}>
+<html lang="en"{% if page_id == 'messages' %} class="has-jump"{% endif %}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -14,7 +14,7 @@
 {% include "_sprite.html" %}
 <a class="skip" href="#main">{{ shell.skip_link }}</a>
 <div class="shell">
-  <header class="topbar">
+  <header class="topbar{% if dirty %} topbar--dirty{% endif %}">
     <a class="brand" href="/client">{{ ui.icon('phone', 'icon brand__icon') }}{{ shell.header.product }}</a>
     <details class="menu"{% if menu_open %} open{% endif %}>
       <summary class="menu__trigger{% if current_nav == 'Account' %} menu__trigger--current{% endif %}"><span class="menu__biz">{{ fx.phone.new_business_name if rename_offer else shell.header.business_name }}</span>{{ ui.icon('chevron', 'icon menu__chev') }}<span class="vh">{{ shell.header.menu_trigger }}{% if current_nav == 'Account' %}, {{ shell.header.current_page }}{% endif %}</span></summary>
@@ -24,6 +24,7 @@
         <form method="post" action="/client/logout"><button class="menu__item" type="submit">{{ ui.icon('arrow-left') }}{{ shell.account_menu['items'][1] }}</button></form>
       </div>
     </details>
+    {% if dirty %}{{ ui.topsave(save_changed, save_names, save_label, fx.messages.save_bar.discard, save_form, fx.messages.save_bar.changed_toggle_hint) }}{% endif %}
   </header>
   <nav class="nav" aria-label="{{ shell.nav.accessible_name }}">
     {% for item in shell.nav['items'] %}

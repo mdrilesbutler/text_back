@@ -37,7 +37,8 @@
   "toast_signed_out_everywhere": "Signed out everywhere.",
   "foot": "TextBack by FluxWorks",
   "subtitle": "Sign in to TextBack",
-  "step_label": "Sign in"
+  "step_label": "Sign in",
+  "error_value": "980 555 01"
  },
  "enter_code": {
   "eyebrow": "Oak & Pine Tree Care",
@@ -1230,8 +1231,8 @@
    "next_heading": "What happens next",
    "next_steps": [
     "TextBack stops texting this customer.",
-    "Their details go to FluxWorks.",
-    "FluxWorks passes them to you, and you follow up. The text promises the customer someone will."
+    "Their name, number and message go to FluxWorks.",
+    "FluxWorks passes them to you. You follow up; the text promised the customer someone would."
    ]
   },
   "example": {
@@ -1341,7 +1342,8 @@
    "not_saved": "Not saved · 2 texts changed",
    "nojs": "Saves every text at once",
    "rule": "Appears only with unsaved changes and never covers the field being edited.",
-   "clean": "No unsaved changes"
+   "clean": "No unsaved changes",
+   "changed_toggle_hint": "Show what changed"
   },
   "toasts": {
    "saved": "Saved. You changed “Question 2: the address”.",
@@ -1402,6 +1404,10 @@
      }
     }
    }
+  },
+  "jump_menu": {
+   "lead": "Jump to:",
+   "nojs": "Jump to a step"
   }
  },
  "schedule": {
@@ -1447,7 +1453,8 @@
     "variant_custom": {
      "value": 50,
      "selected_chip": "Custom"
-    }
+    },
+    "applies": "Applies right away, including customers mid-conversation."
    },
    "timezone": {
     "label": "Time zone",
@@ -1455,7 +1462,8 @@
     "value_label": "Eastern (New York)",
     "hint": "Used for working hours, quiet hours and the times in texts.",
     "default_line": "Default: Eastern (New York)",
-    "error": "Pick a time zone from the list."
+    "error": "Pick a time zone from the list.",
+    "applies": "Applies right away to the times in texts."
    }
   },
   "hours": {
@@ -1564,7 +1572,13 @@
    ],
    "corrupt": "Your saved working hours couldn't be read, so every time counts as open until you save again.",
    "day_on": "Open",
-   "day_off": "Closed"
+   "day_off": "Closed",
+   "applies": "Applies right away to times the assistant offers. Bookings already made stay as they are.",
+   "edit_example": {
+    "day": "Saturday",
+    "opens": "8:00 AM",
+    "closes": "12:00 PM"
+   }
   },
   "quiet": {
    "title": "Quiet hours",
@@ -1578,7 +1592,8 @@
    "switch_note": "Texts may go out at any hour.",
    "default_line": "Default: 9:00 PM–8:00 AM",
    "error": "Pick quiet hours from the list.",
-   "switch_note_off": "Off. Texts may go out at any hour."
+   "switch_note_off": "Off. Texts may go out at any hour.",
+   "applies": "Applies right away to reminders not yet sent."
   },
   "reminders": {
    "title": "Reminders",
@@ -1613,7 +1628,8 @@
   "unsaved_one": "1 rule changed",
   "dirty_field": "duration",
   "dirty_value": 90,
-  "saved_value": 90
+  "saved_value": 90,
+  "unsaved_hours": "1 rule changed"
  },
  "calendar": {
   "title": "Calendar",
@@ -1668,8 +1684,7 @@
    "asks_heading": "What Google will ask:",
    "asks": [
     "You pick the Google account that owns your business calendar.",
-    "Google asks you to let TextBack see and edit your calendars.",
-    "TextBack only checks free times and adds appointments. TextBack sees your calendars only.",
+    "Google asks you to let TextBack see and edit your calendars. TextBack uses this only to find free times and add bookings.",
     "Afterwards you choose which calendar it uses."
    ],
    "asks_open": true,
@@ -1725,10 +1740,10 @@
   }
  },
  "phone": {
-  "title": "Phone",
+  "title": "Phone & business",
   "intro": "Your business name, the numbers TextBack uses, and call forwarding.",
   "business": {
-   "title": "Business",
+   "title": "Business details",
    "name": {
     "label": "Business name",
     "value": "Oak & Pine Tree Care",
@@ -1744,7 +1759,8 @@
     "toast": "Updated 2 texts.",
     "new_name": "Oak & Pine Tree Service",
     "old_name": "Oak & Pine Tree Care"
-   }
+   },
+   "save": "Save business details"
   },
   "numbers": {
    "title": "Numbers",
@@ -1783,7 +1799,8 @@
    },
    "save": "Save",
    "toast": "Saved.",
-   "toast_confirm_next": "Saved. Now confirm your new mobile."
+   "toast_confirm_next": "Saved. Now confirm your new mobile.",
+   "unsaved_one": "1 change"
   },
   "confirm_mobile": {
    "title": "Confirm your new mobile",
@@ -2037,7 +2054,8 @@
    {
     "label": "Another device",
     "line": "Another device · last used Fri, Oct 23, 5:30 PM",
-    "current": false
+    "current": false,
+    "example": true
    }
   ],
   "devices_empty": "Only this phone is signed in.",

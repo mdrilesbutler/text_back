@@ -46,7 +46,7 @@
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
+        <p class="menu__who">Signed in as <span class="nw">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -70,6 +70,11 @@
     <p class="lead">The texts customers get after a missed call, in the order they get them. Tap Edit wording to change one. Changes start with the next missed call after you save.</p>
     <p class="page-head__meta"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg><span>Green bubbles are what customers see. The job, address, time and names are made-up examples. <a class="tap page-head__ex" href="#example">Example conversation</a></span></p>
 <p class="page-head__meta page-head__meta--notice"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg><span>Until phone companies approve your business for texting, the network adds a short notice to the start of each text. Customers see it before your wording. The text counts here include it.</span></p>  </div>
+  <details class="jumpmenu">
+    <summary class="jumpmenu__summary"><span class="jumpmenu__label" data-lead="Jump to:">Jump to a step</span><svg class="icon jumpmenu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></summary>
+    <ul class="jumpmenu__list" aria-label="On this page">
+<li><a class="jumpmenu__link" href="#missed_call">Missed call</a></li><li><a class="jumpmenu__link" href="#questions" aria-current="location">Questions</a></li><li><a class="jumpmenu__link" href="#booking">Booking</a></li><li><a class="jumpmenu__link" href="#no_reply">No reply</a></li><li><a class="jumpmenu__link" href="#steps_back">Steps back</a></li>    </ul>
+  </details>
   <nav class="jump" aria-label="On this page">
     <ul class="jump__list">
 <li><a class="jump__link" href="#missed_call">Missed call</a></li><li><a class="jump__link" href="#questions" aria-current="location">Questions</a></li><li><a class="jump__link" href="#booking">Booking</a></li><li><a class="jump__link" href="#no_reply">No reply</a></li><li><a class="jump__link" href="#steps_back">Steps back</a></li>    </ul>
@@ -239,10 +244,10 @@
 <p class="msg__when">Sent instead of moving on when the reply isn&#39;t a day and time.</p>    </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Sometime next week</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Sometime next week</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Please send a day and a time, like Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</p>
   </div>
 </div>
 
@@ -310,7 +315,7 @@
       </div>
     </div>
     <label class="switch-row msg__switch"><span class="switch-row__text">Also ask for the best phone number</span><input class="switch" type="checkbox" role="switch" name="prompt_phone_on" value="on"></label>
-<p class="msg__off">Off. Customers skip this question.</p>  </div>
+<p class="msg__offq">Is this the best number to reach you? Reply YES, or send a different number.</p><p class="msg__off">Off. Customers skip this question.</p>  </div>
 </article>
 
         <article class="qset qset--off" id="card-prompt_email">
@@ -323,7 +328,7 @@
       </div>
     </div>
     <label class="switch-row msg__switch"><span class="switch-row__text">Also ask for an email address</span><input class="switch" type="checkbox" role="switch" name="prompt_email_on" value="on"></label>
-<p class="msg__off">Off. Customers skip this question.</p>  </div>
+<p class="msg__offq">What&#39;s your email? We&#39;ll send a calendar invite. Reply SKIP if you&#39;d rather not.</p><p class="msg__off">Off. Customers skip this question.</p>  </div>
 </article>
 
       </div>
@@ -346,10 +351,10 @@
 <p class="msg__when">Sent when your calendar shows that time busy.</p>    </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Wednesday at 10</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Wednesday at 10</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>That time is unavailable. Please send another day and time, like Thursday at 4.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>That time is unavailable. Please send another day and time, like Thursday at 4.</p>
   </div>
 </div>
 
@@ -383,7 +388,7 @@
 <p class="msg__when">Sent only after the appointment is on your calendar.</p>    </div>
     <div class="msg__preview">
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant.</p>
+  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Booked: Tree trimming on <span class="nw">Thursday, Oct 29</span> at <span class="nw">10:00 AM EDT</span> at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant.</p>
 <ul class="sms__links"><li><button class="sms__linkbtn" type="button" aria-expanded="false">Add to Google Calendar ›</button></li><li><button class="sms__linkbtn" type="button" aria-expanded="false">Add to Outlook ›</button></li><li><button class="sms__linkbtn" type="button" aria-expanded="false">Add to iCal ›</button></li></ul>  </div>
 </div>
 
@@ -419,10 +424,10 @@
 <p class="msg__when">Sent if the appointment couldn&#39;t be added to your calendar. It tells the customer no booking was made.</p>    </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Thursday at 10</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Thursday at 10</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>We couldn&#39;t confirm that appointment. No booking was made. Please send another date and time and we&#39;ll try again.</p>
   </div>
 </div>
 
@@ -543,15 +548,15 @@
       </div>
 <p class="msg__when">Sent when the customer asks for the owner or the assistant can&#39;t help.</p><p class="msg__rule"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg><span>This text must tell the customer someone will follow up. Don&#39;t ask them to call, and don&#39;t say they&#39;ll be put through to someone.</span></p>      <div class="next">
         <p class="next__title">What happens next</p>
-        <ol class="next__steps"><li>TextBack stops texting this customer.</li><li>Their details go to FluxWorks.</li><li>FluxWorks passes them to you, and you follow up. The text promises the customer someone will.</li></ol>
+        <ol class="next__steps"><li>TextBack stops texting this customer.</li><li>Their name, number and message go to FluxWorks.</li><li>FluxWorks passes them to you. You follow up; the text promised the customer someone would.</li></ol>
       </div>
     </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Can I just talk to the owner?</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Can I just talk to the owner?</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</p>
   </div>
 </div>
 
@@ -584,15 +589,15 @@
       </div>
 <p class="msg__when">Sent when a text mentions danger.</p><p class="msg__rule"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-info"/></svg><span>Must tell people to call 911 if anyone is in danger, and must say someone will follow up.</span></p>      <div class="next">
         <p class="next__title">What happens next</p>
-        <ol class="next__steps"><li>TextBack stops texting this customer.</li><li>Their details go to FluxWorks.</li><li>FluxWorks passes them to you, and you follow up. The text promises the customer someone will.</li></ol>
+        <ol class="next__steps"><li>TextBack stops texting this customer.</li><li>Their name, number and message go to FluxWorks.</li><li>FluxWorks passes them to you. You follow up; the text promised the customer someone would.</li></ol>
       </div>
     </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>A big limb just came down on the power line by our house</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>A big limb just came down on the power line by our house</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Automated scheduling is paused. We&#39;ll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Automated scheduling is paused. We&#39;ll follow up with you as soon as possible. If anyone is in immediate danger, call 911 now.</p>
   </div>
 </div>
 
@@ -639,10 +644,10 @@
 <p class="msg__when">Sent when a customer texts START.</p>    </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>START</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>START</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>You&#39;re subscribed to Oak &amp; Pine Tree Care&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>You&#39;re subscribed to Oak &amp; Pine Tree Care&#39;s scheduling texts. Msg &amp; data rates may apply. Reply HELP for help or STOP to opt out.</p>
   </div>
 </div>
 
@@ -675,10 +680,10 @@
 <p class="msg__when">Sent when a customer texts HELP. The number it shows is set on the Phone page.</p>    </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>HELP</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>HELP</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on. Contact: <span class="num">(704) 555-0123</span>. Msg &amp; data rates may apply. Reply STOP to opt out.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Oak &amp; Pine Tree Care&#39;s scheduling assistant. Reply with the job type, location, and a time that works. Anything we can&#39;t handle by text, the owner follows up on. Contact: <span class="nw">(704) 555-0123</span>. Msg &amp; data rates may apply. Reply STOP to opt out.</p>
   </div>
 </div>
 
@@ -713,10 +718,10 @@
 <p class="msg__when">Sent once when a customer texts STOP. Nothing follows it.</p>    </div>
     <div class="msg__preview">
       <p class="msg__trigger">When the customer sends something like</p>
-      <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>STOP</p></div></div>
+      <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>STOP</p></div></div>
 
       <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>You are unsubscribed and will not receive more automated texts. Reply UNSTOP only if you want scheduling messages again. STOP request recorded.</p>
   </div>
 </div>
 
@@ -778,10 +783,10 @@
 </li>
   </ol>
   </form>
-  <div class="savebar" data-state="clean">
+  <div class="savebar" data-state="clean" data-form="messages-form">
   <p class="savebar__status" role="status">No unsaved changes</p>
   <div class="savebar__actions">
-    <button class="btn btn--primary" type="submit" form="messages-form">Save</button>
+    <button class="btn btn--primary" type="submit" form="messages-form" aria-disabled="true">Save</button>
   </div>
 </div>
 
@@ -803,36 +808,36 @@
       <div class="phone__log log" tabindex="0" aria-label="Example conversation">
         <span class="tpill tpill--missed">Missed call · just now</span>
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
   </div>
 </div>
 
-        <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Tree trimming</p></div></div>
+        <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Tree trimming</p></div></div>
 
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>What&#39;s the address for the job?</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>What&#39;s the address for the job?</p>
   </div>
 </div>
 
-        <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>412 Maple St, Charlotte</p></div></div>
+        <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>412 Maple St, Charlotte</p></div></div>
 
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>What day and time works best? For example: Wednesday at 2, tomorrow at 10am, or Friday at 4pm.</p>
   </div>
 </div>
 
-        <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Thursday at 10</p></div></div>
+        <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Thursday at 10</p></div></div>
 
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>What name should we put the appointment under?</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>What name should we put the appointment under?</p>
   </div>
 </div>
 
-        <div class="sms sms--customer"><div class="sms__bubble"><span class="vh">Customer: </span><p>Dana</p></div></div>
+        <div class="sms sms--customer"><span class="sms__who">Customer</span><div class="sms__bubble"><p>Dana</p></div></div>
 
         <span class="tpill tpill--booked">Booked · on the test calendar</span>
         <div class="sms sms--textback">
-  <div class="sms__bubble"><span class="vh">TextBack: </span><p>Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant.</p>
+<span class="sms__who">Oak &amp; Pine Tree Care</span>  <div class="sms__bubble"><p>Booked: Tree trimming on <span class="nw">Thursday, Oct 29</span> at <span class="nw">10:00 AM EDT</span> at 412 Maple St, Charlotte. This is Oak &amp; Pine Tree Care&#39;s scheduling assistant.</p>
 <ul class="sms__links"><li><button class="sms__linkbtn" type="button" aria-expanded="false">Add to Google Calendar ›</button></li><li><button class="sms__linkbtn" type="button" aria-expanded="false">Add to Outlook ›</button></li><li><button class="sms__linkbtn" type="button" aria-expanded="false">Add to iCal ›</button></li></ul>  </div>
 </div>
 

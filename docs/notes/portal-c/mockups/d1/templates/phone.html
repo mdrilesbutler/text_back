@@ -2,36 +2,53 @@
 {% set page_id = 'phone' %}{% set title = fx.phone.title %}{% set current_nav = 'Phone' %}
 {% set p = fx.phone %}
 {% set n = p.numbers %}
+{% set b = p.business %}
+{# What the phone header's save bar says and submits while something is unsaved. #}
+{% set save_form = 'business-form' if dirty_form == 'business' else 'phone-form' %}
+{% set save_changed = p.unsaved_one %}
+{% set save_names = [('#bname', b.name.label)] if dirty_form == 'business' else [('#omobile', n.owner_mobile.label)] %}
+{% set save_label = b.save if dirty_form == 'business' else n.save %}
 {% block summary %}
 {% if invalid_mobile %}{{ ui.error_summary(p.error_summary, [('#omobile', n.owner_mobile.error)], focus=False) }}{% endif %}
 {% if rename_offer %}
 {# One notice: the save and the offer it leads to. #}
-{% set ro = p.business.rename_offer %}
+{% set ro = b.rename_offer %}
 {% call ui.notice('success', p.toast, 'check', cls='page-offer', id='focus') %}
   <p class="notice__text">{{ ro.offer }}</p>
-  <div class="actions"><button class="btn btn--secondary" type="submit" form="phone-form" name="rename" value="update">{{ ro['update'] }}</button><button class="btn btn--ghost" type="submit" form="phone-form" name="rename" value="leave">{{ ro.leave }}</button></div>
+  <div class="actions"><button class="btn btn--secondary" type="submit" form="business-form" name="rename" value="update">{{ ro['update'] }}</button><button class="btn btn--ghost" type="submit" form="business-form" name="rename" value="leave">{{ ro.leave }}</button></div>
 {% endcall %}
 {% endif %}
 {% endblock %}
 {% block content %}
 <div class="page-head"><h1>{{ p.title }}</h1><p class="lead">{{ p.intro }}</p></div>
-<form id="phone-form" method="post" action="/client/phone">
-<ol class="spine">
-  {% set b = p.business %}
+{# Form 1: business details, with its own Save. #}
+<form id="business-form" method="post" action="/client/business">
+<ol class="spine spine--part">
   {% call ui.node('icon', 'store', focus=(focus == 'business')) %}
     <div class="node__head"><h2>{{ b.title }}</h2></div>
     <div class="card card--form">
       <div class="field">
         <label class="field__label" for="bname">{{ b.name.label }}</label>
-        <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" maxlength="60" value="{{ p.new_business_name if (dirty or rename_offer) else b.name.value }}" aria-describedby="bname-help">
+        <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" maxlength="60" value="{{ p.new_business_name if ((dirty and dirty_form == 'business') or rename_offer) else b.name.value }}" aria-describedby="bname-help">
         <p class="field-help" id="bname-help">{{ b.name.hint }}</p>
       </div>
       <div class="field-preview">
         <p class="eyebrow">{{ b.name.preview_eyebrow }}</p>
-        {{ ui.bubble(b.name.preview, fx.messages.example) }}
+        {{ ui.bubble(b.name.preview, fx.messages.example, who=meta.business_name) }}
       </div>
+      <div class="field">
+        <label class="field__label" for="hnum">{{ n.help_number.label }} <span class="tag">{{ n.help_number.tag }}</span></label>
+        <input class="input input--tel" id="hnum" name="help_number" type="tel" inputmode="numeric" value="{{ n.help_number.value }}" aria-describedby="hnum-help">
+        <p class="field-help" id="hnum-help">{{ n.help_number.hint }}</p>
+      </div>
+      {{ ui.savebar(dirty and dirty_form == 'business', p.unsaved_one, b.save, fx.messages.save_bar.discard, 'business-form', fx.messages.save_bar.clean, [('#bname', b.name.label)], inline=True) }}
     </div>
   {% endcall %}
+</ol>
+</form>
+{# Form 2: numbers, call forwarding and the checks, with one Save at the end. #}
+<form id="phone-form" method="post" action="/client/phone">
+<ol class="spine spine--part">
   {% call ui.node('icon', 'phone') %}
     <div class="node__head"><h2>{{ n.title }}</h2><p class="node__blurb">{{ n.subtitle }}</p></div>
     <div class="card card--form">
@@ -50,11 +67,6 @@
         <input class="input input--tel" id="omobile" name="owner_mobile" type="tel" inputmode="numeric" autocomplete="tel" value="{{ n.owner_mobile.invalid_entry if invalid_mobile else n.owner_mobile.value }}"{% if invalid_mobile %} aria-invalid="true" aria-describedby="omobile-error omobile-help"{% else %} aria-describedby="omobile-help"{% endif %}>
         {% if invalid_mobile %}{{ ui.field_error(n.owner_mobile.error, 'omobile-error') }}{% endif %}
         <p class="field-help" id="omobile-help">{{ n.owner_mobile.hint }}{% if not invalid_mobile %} {{ n.owner_mobile.status_unchanged }}{% endif %}</p>
-      </div>
-      <div class="field">
-        <label class="field__label" for="hnum">{{ n.help_number.label }} <span class="tag">{{ n.help_number.tag }}</span></label>
-        <input class="input input--tel" id="hnum" name="help_number" type="tel" inputmode="numeric" value="{{ n.help_number.value }}" aria-describedby="hnum-help">
-        <p class="field-help" id="hnum-help">{{ n.help_number.hint }}</p>
       </div>
     </div>
   {% endcall %}
@@ -89,7 +101,9 @@
     </div>
   {% endcall %}
   {% set k = p.checks %}
-  <li class="spine__label"><h2>{{ k.heading }}</h2><p class="checks__progress">{{ k.progress }}</p></li>
+  {% call ui.node('icon', 'question', id='checks') %}
+    <div class="node__head"><h2>{{ k.heading }}</h2><p class="checks__progress">{{ k.progress }}</p></div>
+  {% endcall %}
   {% for item in k['items'] %}
   {% set kind = 'done' if item.state == 'Done' else ('manual' if item.manual is defined and item.state == item.manual_state else 'todo') %}
   {% call ui.node(kind) %}
@@ -107,5 +121,5 @@
   <li class="spine__label spine__label--foot"><p class="field-help">{{ k.evidence_note_preview if k.preview else k.evidence_note }}</p></li>
 </ol>
 </form>
-{{ ui.savebar(dirty, p.unsaved_one, n.save, fx.messages.save_bar.discard, 'phone-form', fx.messages.save_bar.clean, [('#bname', b.name.label)] if dirty else []) }}
+{{ ui.savebar(dirty and dirty_form == 'phone', n.unsaved_one, n.save, fx.messages.save_bar.discard, 'phone-form', fx.messages.save_bar.clean, [('#omobile', n.owner_mobile.label)]) }}
 {% endblock %}

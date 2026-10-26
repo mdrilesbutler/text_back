@@ -10,13 +10,13 @@
   {% endcall %}
   {% call ui.node('icon', 'device') %}
     <div class="node__head"><h2>{{ a.devices_title }}</h2></div>
-    <form class="card" method="post" action="/client/account">
+    <form class="card" id="account-form" method="post" action="/client/account">
       <ul class="devices">
-        {% for d in a.devices %}<li class="device{% if d.current %} device--current{% endif %}">{{ ui.icon('device') }}<span class="tnum">{{ d.line }}</span></li>{% endfor %}
+        {% for d in a.devices %}<li class="device{% if d.current %} device--current{% endif %}">{{ ui.icon('device') }}<span class="tnum">{{ d.line }}{% if d.example is defined and meta.preview %} <span class="extag">{{ fx.home.example_tag }}</span>{% endif %}</span></li>{% endfor %}
       </ul>
       <label class="switch-row"><span class="switch-row__text">{{ a.remember.switch }}</span><input class="switch" type="checkbox" role="switch" name="remember" value="on"{% if a.remember.state == 'on' %} checked{% endif %}></label>
       <p class="field-help">{{ a.remember.note_on if a.remember.state == 'on' else a.remember.note_off }}</p>
-      <div class="actions"><button class="btn btn--secondary" type="submit">{{ a.remember_save }}</button></div>
+      <div class="actions actions--rest"><button class="btn btn--primary" type="submit" form="account-form" aria-disabled="true">{{ a.remember_save }}</button><span class="savebar__rest">{{ fx.messages.save_bar.clean }}</span></div>
     </form>
   {% endcall %}
   {% call ui.node('icon', 'arrow-left') %}

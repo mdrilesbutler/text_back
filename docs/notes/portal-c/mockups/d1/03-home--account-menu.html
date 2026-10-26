@@ -46,7 +46,7 @@
     <details class="menu" open>
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel" id="focus">
-        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
+        <p class="menu__who">Signed in as <span class="nw">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -72,7 +72,13 @@
 
   </div>
 </li>
-  <li class="spine__label"><h2>Setup</h2></li>
+<li class="node node--icon">
+  <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-sliders"/></svg></span>
+  <div class="node__body">
+        <div class="node__head"><h2>Setup</h2></div>
+
+  </div>
+</li>
 <li class="node node--needs">
   <span class="node__dot" aria-hidden="true"><b class="node__bang">!</b></span>
   <div class="node__body">
@@ -108,7 +114,7 @@
   <div class="node__body">
         <div class="node__head">
       <div class="node__title"><h2>This week</h2><span class="extag">Example numbers</span></div>
-      <p class="node__blurb">Since Mon, Oct 26. The counts and the list below cover the same days.</p>
+      <p class="node__blurb">Since <span class="nw">Mon, Oct 26</span>. The counts and the list below cover the same days.</p>
     </div>
     <dl class="counts">
 <div class="counts__item"><dt>Missed calls</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Customers texted</dt><dd class="tnum">3</dd></div><div class="counts__item"><dt>Booked</dt><dd class="tnum">1</dd></div><div class="counts__item"><dt>Stepped back</dt><dd class="tnum">1</dd></div>    </dl>
@@ -123,19 +129,19 @@
       <li class="caller">
         <p class="caller__who"><span class="caller__name">Dana Whitfield</span> <span class="extag">Example</span></p>
         <p class="caller__status">Booked on test calendar</p>
-        <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum">Mon, Oct 26, 9:12 AM</span></p>
-        <p class="caller__text"><span class="caller__k">Last text</span> Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St, Charlotte.</p>
+        <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum"><span class="nw">Mon, Oct 26</span>, <span class="nw">9:12 AM</span></span></p>
+        <p class="caller__text"><span class="caller__k">Last text</span> Booked: Tree trimming on <span class="nw">Thursday, Oct 29</span> at <span class="nw">10:00 AM EDT</span> at 412 Maple St, Charlotte.</p>
       </li>
       <li class="caller">
         <p class="caller__who"><span class="caller__name">Marcus Lee</span> <span class="extag">Example</span></p>
         <p class="caller__status">Assistant stepped back</p>
-        <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum">Mon, Oct 26, 11:48 AM</span></p>
+        <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum"><span class="nw">Mon, Oct 26</span>, <span class="nw">11:48 AM</span></span></p>
         <p class="caller__text"><span class="caller__k">Last text</span> Got it. Automated scheduling is paused, and we&#39;ll follow up with you directly.</p>
       </li>
       <li class="caller">
         <p class="caller__who"><span class="caller__name">Priya Natarajan</span> <span class="extag">Example</span></p>
         <p class="caller__status">Waiting for a reply</p>
-        <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum">Mon, Oct 26, 1:55 PM</span></p>
+        <p class="caller__when"><span class="caller__k">Last activity</span> <span class="tnum"><span class="nw">Mon, Oct 26</span>, <span class="nw">1:55 PM</span></span></p>
         <p class="caller__text"><span class="caller__k">Last text</span> Hey, this is Oak &amp; Pine Tree Care. Sorry we missed your call. What do you need done? Reply STOP to opt out.</p>
       </li>
     </ol>

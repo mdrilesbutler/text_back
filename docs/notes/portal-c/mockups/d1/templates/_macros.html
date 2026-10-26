@@ -61,32 +61,48 @@
 {# The Save bar: in flow at the end of its form while nothing changed ("No unsaved changes"); while there
    are unsaved changes it sits fixed just above the bottom nav on a phone and sticks on desktop.
    names: (href, title) pairs for the changed items, shown as links where there is room. #}
-{% macro savebar(dirty, changed, save, discard, form_id, clean, names=[]) %}
-<div class="savebar{% if dirty %} savebar--on{% endif %}" data-state="{{ 'dirty' if dirty else 'clean' }}"{% if dirty %} id="focus"{% endif %}>
+{% macro savebar(dirty, changed, save, discard, form_id, clean, names=[], inline=False) %}
+<div class="savebar{% if dirty %} savebar--on{% endif %}{% if inline %} savebar--inline{% endif %}" data-state="{{ 'dirty' if dirty else 'clean' }}" data-form="{{ form_id }}">
   <p class="savebar__status" role="status">{% if dirty %}<span class="savebar__count">{{ changed }}</span>{% if names %}<span class="savebar__names">: {% for href, t in names %}<a href="{{ href }}">{{ t }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}{% else %}{{ clean }}{% endif %}</p>
   <div class="savebar__actions">
     {% if dirty %}<button class="btn btn--ghost" type="submit" name="discard" value="1" form="{{ form_id }}" formnovalidate>{{ discard }}</button>{% endif %}
+    {# Resting: visibly disabled; aria-disabled (not disabled) so the form still posts without JS; d1.js re-enables it on the first edit. #}
+    <button class="btn btn--primary" type="submit" form="{{ form_id }}"{% if not dirty %} aria-disabled="true"{% endif %}>{{ save }}</button>
+  </div>
+</div>
+{% endmacro %}
+
+{# The phone header turned into the save bar while a form has unsaved changes (below 1024 px). #}
+{% macro topsave(changed, names, save, discard, form_id, hint) %}
+<div class="topsave">
+  <details class="topsave__changes">
+    <summary class="topsave__summary"><span class="topsave__count">{{ changed }}</span><span class="vh">. {{ hint }}</span>{{ icon('chevron', 'icon topsave__chev') }}</summary>
+    <ul class="topsave__list">{% for href, t in names %}<li><a href="{{ href }}">{{ t }}</a></li>{% endfor %}</ul>
+  </details>
+  <div class="topsave__actions">
+    <button class="btn btn--ghost" type="submit" name="discard" value="1" form="{{ form_id }}" formnovalidate>{{ discard }}</button>
     <button class="btn btn--primary" type="submit" form="{{ form_id }}">{{ save }}</button>
   </div>
 </div>
 {% endmacro %}
 
 {# A TextBack bubble shows only the text the customer gets; the network notice is explained once, outside. #}
-{% macro bubble(text, ex, links=None, extra_cls="") %}
+{% macro bubble(text, ex, links=None, extra_cls="", who=None) %}
 <div class="sms sms--textback{% if extra_cls %} {{ extra_cls }}{% endif %}">
-  <div class="sms__bubble"><span class="vh">{{ ex.badges.textback }}: </span><p>{{ text }}</p>
+  {% if who %}<span class="sms__who">{{ who }}</span>{% endif %}
+  <div class="sms__bubble">{% if not who %}<span class="vh">{{ ex.badges.textback }}: </span>{% endif %}<p>{{ text }}</p>
     {% if links %}<ul class="sms__links">{% for l in links %}<li><button class="sms__linkbtn" type="button" aria-expanded="false">{{ l.label }}</button></li>{% endfor %}</ul>{% endif %}
   </div>
 </div>
 {% endmacro %}
-{% macro customer(text, ex) %}
-<div class="sms sms--customer"><div class="sms__bubble"><span class="vh">{{ ex.badges.customer }}: </span><p>{{ text }}</p></div></div>
+{% macro customer(text, ex, labelled=True) %}
+<div class="sms sms--customer">{% if labelled %}<span class="sms__who">{{ ex.badges.customer }}</span>{% endif %}<div class="sms__bubble">{% if not labelled %}<span class="vh">{{ ex.badges.customer }}: </span>{% endif %}<p>{{ text }}</p></div></div>
 {% endmacro %}
 
 {# One customer-text card, candidate A's anatomy: head → (customer reply that triggers it) → bubble →
    receipt → foot with the editor. Wording rules live inside the editor, except on the cards where the
    assistant steps back: there the rules and "What happens next" stay in view. #}
-{% macro msg_card(card, m, open=False, dirty=False, branch=False, focus=False) %}
+{% macro msg_card(card, m, open=False, dirty=False, branch=False, focus=False, biz=None) %}
 {% set off = card.switch is defined and card.switch.state == 'off' %}
 {% set ed = m.editor %}
 {% set draft = m.unsaved.drafts[card.key] if dirty and card.key in m.unsaved.drafts else None %}
@@ -114,7 +130,7 @@
     </div>
     {% if card.switch is defined %}
     <label class="switch-row msg__switch"><span class="switch-row__text">{{ card.switch.label }}</span><input class="switch" type="checkbox" role="switch" name="{{ card.key }}_on" value="on"{% if card.switch.state == 'on' %} checked{% endif %}></label>
-    {% if off %}<p class="msg__off">{{ card.switch.note }}</p>{% endif %}
+    {% if off %}<p class="msg__offq">{{ card.preview }}</p><p class="msg__off">{{ card.switch.note }}</p>{% endif %}
     {% endif %}
     {% if not off %}
     <div class="msg__preview">
@@ -122,7 +138,7 @@
       <p class="msg__trigger">{{ m.trigger_label }}</p>
       {{ customer(card.trigger, m.example) }}
       {% endif %}
-      {{ bubble(draft.preview if draft else card.preview, m.example, links=card.preview_links if card.preview_links is defined else None) }}
+      {{ bubble(draft.preview if draft else card.preview, m.example, links=card.preview_links if card.preview_links is defined else None, who=biz if card.trigger is defined else None) }}
       <p class="msg__receipt">{% if card.optout_added %}<span class="msg__added">{{ card.optout_added }}</span>{% endif %}<span class="msg__meter">{{ cost.line }}</span></p>
       {% if draft %}<p class="msg__was"><span class="msg__was-k">{{ m.unsaved.was }}</span> {{ card.preview }}</p>{% endif %}
       {% if cost.amber %}

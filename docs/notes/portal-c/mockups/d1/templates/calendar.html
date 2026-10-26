@@ -49,7 +49,7 @@
     <div class="node__head"><h2>{{ av.title }}</h2><p class="node__blurb">{{ av.intro }}</p></div>
     <form class="card" method="post" action="/client/calendar/availability">
       {% if av.results is defined %}
-      <ol class="slots">{% for r in av.results %}<li class="slot tnum">{{ ui.icon('calendar') }}{{ r.label }}</li>{% endfor %}</ol>
+      <ol class="slots">{% for r in av.results %}<li class="slot tnum">{{ ui.icon("calendar") }}<span>{{ r.label }}</span></li>{% endfor %}</ol>
       <p class="field-help">{{ av.caption }}</p>
       {% endif %}
       <div class="actions"><button class="btn btn--secondary" type="submit">{{ av.button }}</button></div>

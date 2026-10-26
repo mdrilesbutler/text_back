@@ -46,7 +46,7 @@
     <details class="menu">
       <summary class="menu__trigger"><span class="menu__biz">Oak &amp; Pine Tree Care</span><svg class="icon menu__chev" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg><span class="vh">Account</span></summary>
       <div class="menu__panel">
-        <p class="menu__who">Signed in as <span class="num">(980) 555-0123</span></p>
+        <p class="menu__who">Signed in as <span class="nw">(980) 555-0123</span></p>
         <a class="menu__item" href="/client/account"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-person"/></svg>Account</a>
         <form method="post" action="/client/logout"><button class="menu__item" type="submit"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg>Sign out</button></form>
       </div>
@@ -86,18 +86,20 @@
           </div>
         </fieldset>
         <p class="field-help">Used for new bookings. 15 to 480 minutes, in steps of 5.</p>
+        <p class="applies">Applies right away, including customers mid-conversation.</p>
       </div>
       <div class="rule-foot"><p class="default">Default: 60 minutes</p><button class="btn btn--ghost" type="submit" name="reset" value="duration">Reset<span class="vh"> Appointment length</span></button></div>
       <div class="field">
         <label class="field__label" for="timezone">Time zone</label><span class="select"><select class="select__input" id="timezone" name="timezone"><option value="Eastern (New York)" selected>Eastern (New York)</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
         <p class="field-help">Used for working hours, quiet hours and the times in texts.</p>
+        <p class="applies">Applies right away to the times in texts.</p>
       </div>
       <div class="rule-foot"><p class="default">Default: Eastern (New York)</p><button class="btn btn--ghost" type="submit" name="reset" value="timezone">Reset<span class="vh"> Time zone</span></button></div>
     </div>
 
   </div>
 </li>
-<li class="node node--icon">
+<li class="node node--icon" id="hours">
   <span class="node__dot" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></span>
   <div class="node__body" id="focus">
         <div class="node__head"><h2>Working hours</h2><p class="node__blurb">When the assistant may book a job.</p></div>
@@ -116,6 +118,7 @@
         <p class="field-help">Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it.</p>
 </div>
 </div>
+      <p class="applies">Applies right away to times the assistant offers. Bookings already made stay as they are.</p>
       <div class="rule-foot"><p class="default">Default: Any day, any time</p><button class="btn btn--ghost" type="submit" name="reset" value="hours">Reset<span class="vh"> Working hours</span></button></div>
     </div>
 
@@ -135,7 +138,8 @@
           <label class="vh" for="quiet_to">and</label><span class="select"><select class="select__input" id="quiet_to" name="quiet_to"><option value="8:00 AM" selected>8:00 AM</option></select><svg class="icon select__icon" aria-hidden="true" focusable="false"><use href="#i-chevron"/></svg></span>
         </div>
       </fieldset>
-      <div class="rule-foot"><p class="default">Default: 9:00 PM–8:00 AM</p><button class="btn btn--ghost" type="submit" name="reset" value="quiet">Reset<span class="vh"> Quiet hours</span></button></div>
+      <p class="applies">Applies right away to reminders not yet sent.</p>
+      <div class="rule-foot"><p class="default">Default: <span class="nw">9:00 PM</span>–<span class="nw">8:00 AM</span></p><button class="btn btn--ghost" type="submit" name="reset" value="quiet">Reset<span class="vh"> Quiet hours</span></button></div>
     </div>
 
   </div>
@@ -164,10 +168,10 @@
 </li>
 </ol>
 </form>
-<div class="savebar" data-state="clean">
+<div class="savebar" data-state="clean" data-form="schedule-form">
   <p class="savebar__status" role="status">No unsaved changes</p>
   <div class="savebar__actions">
-    <button class="btn btn--primary" type="submit" form="schedule-form">Save</button>
+    <button class="btn btn--primary" type="submit" form="schedule-form" aria-disabled="true">Save</button>
   </div>
 </div>
 

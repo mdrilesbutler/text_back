@@ -17,7 +17,6 @@
   /* Focus moved by Tab or a jump link never lands under the sticky chrome (2.4.11, with 4px for the ring). */
   html { scroll-padding-top: calc(var(--header-h) + 4px); scroll-padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem); }
   html.has-jump { scroll-padding-top: calc(var(--header-h) + var(--jump-h) + 4px); }
-  html:has(body[data-dirty]) { scroll-padding-bottom: calc(2 * var(--tabbar-h) + env(safe-area-inset-bottom) + 1rem); }
   @media (min-width: 1024px) { html, html.has-jump { scroll-padding-top: calc(var(--header-h) + 4px); scroll-padding-bottom: 6rem; } }
   /* FluxWorks rule 1: a white page. The stone well is kept for the phone frame only. */
   body, .shell, .page { background: var(--bg); }
@@ -54,9 +53,10 @@
     .nav { grid-template-columns: repeat(5, minmax(0, 1fr)); height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
     .nav__item { min-height: var(--tabbar-h); gap: 1px; border-radius: 0; font-size: 0.75rem; line-height: 0.875rem; }
     .nav__icon { width: 2.75rem; height: 1.625rem; font-size: 1.375rem; }
-    /* While there are unsaved changes the Save bar sits just above the nav (56 + 56 + 56 = 168 of chrome); the
-       Messages jump chips step aside so the budget holds. */
-    body[data-dirty] .jump { display: none; }
+    /* While there are unsaved changes the header becomes the save bar; the jump control and the nav stay
+       (56 + 44 + 56 = 156 of chrome on Messages, 112 elsewhere). The in-page bar is for desktop only. */
+    .savebar--on { display: none; }
+    .topbar--dirty > .brand, .topbar--dirty > .menu { display: none; }
     .nav__item--wide { display: none; }       /* Account lives behind the business name on a phone */
   }
   @media (min-width: 1024px) {
@@ -195,8 +195,9 @@
   .chip, .pill-radio, .btn--secondary { --_line: var(--line-input); border-color: var(--line-input); }
   .anytime__chev { border-color: var(--line-input); }
   /* A card scrolled to stops below the header and the chips, with room to breathe. */
-  .has-jump .qset, .has-jump .node { scroll-margin-top: 12px; }
-  @media (min-width: 1024px) { .has-jump .qset, .has-jump .node { scroll-margin-top: var(--space-4); } }
+  /* Total stop below the sticky chrome = header + 44 + 12: html scroll-padding gives header + 44 + 4, cards and headings add 8. */
+  .has-jump :is(.qset, .node, h2, h3) { scroll-margin-top: 8px; }
+  @media (min-width: 1024px) { .has-jump :is(.qset, .node, h2, h3) { scroll-margin-top: var(--space-4); } }
   /* No tinted band and no sender label: the bubble sits straight on the card (the sender stays for screen readers). */
   .msg__preview { margin-inline: 0; padding: 0 0 var(--space-3); background: none; border: 0; }
   .msg__foot { border-top: 1px solid var(--line); }
@@ -370,7 +371,53 @@
 
   /* ---------------------------------------------------------------- shared */
   .card__title { font-size: var(--fs-heading); }
-  .num { white-space: nowrap; }
+  /* ---- header as save bar (below 1024 px, only while a form has unsaved changes) ---- */
+  .topsave { display: none; }
+  @media (max-width: 1023.98px) {
+    .topbar--dirty { background: var(--bg); box-shadow: inset 0 -2px 0 var(--warning-fg); }
+    .topbar--dirty .topsave { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); width: 100%; min-width: 0; }
+  }
+  .topsave__changes { position: relative; min-width: 0; }
+  .topsave__summary { display: flex; align-items: center; gap: 6px; min-height: var(--tap); padding-left: 16px; position: relative; list-style: none; cursor: pointer;
+    font: var(--fw-semibold) var(--fs-small)/1.125rem var(--font-body); color: var(--text-ink); }
+  .topsave__summary::-webkit-details-marker { display: none; }
+  .topsave__summary::before { content: ""; position: absolute; left: 0; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--warning-fg); }
+  .topsave__count { text-decoration: underline; text-decoration-color: var(--line-input); text-underline-offset: 3px; }
+  .topsave__chev { flex: none; font-size: var(--icon-sm); color: var(--text-muted); }
+  .topsave__changes[open] .topsave__chev { transform: rotate(180deg); }
+  .topsave__list { position: absolute; left: 0; top: 100%; z-index: var(--z-popover); min-width: 15rem; margin: 0; padding: var(--space-2); list-style: none;
+    background: var(--raised); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); }
+  .topsave__list a { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--space-2); color: var(--accent); font-weight: 600; }
+  .topsave__actions { display: flex; flex: none; gap: var(--space-1); }
+  .topsave__actions .btn { padding-inline: var(--space-3); }
+  /* ---- Messages: one "Jump to" control on phones, the chip row from 640 px ---- */
+  .jumpmenu { display: none; }
+  @media (max-width: 639.98px) {
+    .jump { display: none; }
+    .jumpmenu { display: block; position: sticky; top: var(--header-h); z-index: var(--z-sticky); margin: 0 calc(-1 * var(--gutter)); background: var(--bg); box-shadow: 0 1px 0 var(--line); }
+  }
+  .jumpmenu__summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); height: var(--jump-h); padding: 0 var(--gutter); list-style: none; cursor: pointer;
+    font: var(--fw-semibold) var(--fs-label)/1.25rem var(--font-body); color: var(--text-ink); }
+  .jumpmenu__summary::-webkit-details-marker { display: none; }
+  .jumpmenu__chev { font-size: var(--icon-md); color: var(--accent); }
+  .jumpmenu[open] .jumpmenu__chev { transform: rotate(180deg); }
+  .jumpmenu__list { position: absolute; left: 0; right: 0; top: 100%; margin: 0; padding: var(--space-1) 0; list-style: none; background: var(--bg); border-bottom: 1px solid var(--line); box-shadow: var(--shadow-pop); }
+  .jumpmenu__link { display: flex; align-items: center; min-height: var(--tap); padding: 0 var(--gutter); color: var(--text-ink); font-weight: 500; }
+  .jumpmenu__link[aria-current="location"] { color: var(--accent); font-weight: 700; box-shadow: inset 4px 0 0 var(--accent-fill); }
+  /* ---- resting Save: visibly off until something changes ---- */
+  .btn--primary[aria-disabled="true"] { --_bg: var(--sunken); --_bg-hover: var(--sunken); --_fg: var(--text-muted); --_line: var(--line-strong); color: var(--text-muted); border-color: var(--line-strong); cursor: not-allowed; }
+  .savebar.savebar--inline[data-state] { margin-top: var(--space-2); padding-left: 0; }
+  .spine--part + * { margin-top: 0; }
+  form + form > .spine--part { margin-top: var(--space-8); }
+  /* speaker labels on conversation bubbles */
+  .sms__who { padding: 0 4px; font: var(--fw-semibold) var(--fs-caption)/1rem var(--font-body); color: var(--text-muted); }
+  .sms--textback .sms__who { color: var(--accent); }
+  .msg__offq { margin-bottom: var(--space-1); font-size: var(--fs-small); line-height: var(--lh-small); color: var(--text-muted); font-style: italic; }
+  .actions--rest { align-items: center; }
+  .savebar__rest { font-size: var(--fs-small); color: var(--text-muted); }
+  .applies { font: var(--fw-medium) var(--fs-small)/var(--lh-small) var(--font-body); color: var(--text-ink); }
+  .field .applies { margin-top: var(--space-1); }
+  .nw { white-space: nowrap; }
   .auth__sub { margin-top: calc(-1 * var(--space-1)); font: var(--fw-semibold) var(--fs-lead)/var(--lh-lead) var(--font-body); color: var(--text-ink); }
   .notice__text { text-wrap: pretty; }
   .toast { align-items: center; padding-right: var(--space-2); }

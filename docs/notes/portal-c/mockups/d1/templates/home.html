@@ -8,7 +8,9 @@
   {% call ui.node('done' if working else 'needs', cls='node--status') %}
     <p class="status-line">{{ h.status }}</p>
   {% endcall %}
-  <li class="spine__label"><h2>{{ h.setup_heading }}</h2></li>
+  {% call ui.node('icon', 'sliders') %}
+    <div class="node__head"><h2>{{ h.setup_heading }}</h2></div>
+  {% endcall %}
   {% for c in h.setup %}
   {% set word_kind = 'done' if c.state == 'Done' else ('needs' if c.state == 'Needs you' else 'waiting') %}
   {% call ui.node(word_kind) %}
