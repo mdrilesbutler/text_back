@@ -258,3 +258,11 @@ def test_every_visible_form_control_has_a_name_and_lives_in_a_form(tmp_path, mon
             assert depth == 1, (tag, attrs[:120])
             if tag != "button" or "name=" in attrs:
                 assert "name=" in attrs, (tag, attrs[:120])
+
+
+def test_cookies_follow_the_public_url_unless_a_harness_overrides(tmp_path):
+    from types import SimpleNamespace
+    from text_back.client_portal import _secure
+    assert _secure(SimpleNamespace(public_base_url="https://x.example")) is True
+    assert _secure(SimpleNamespace(public_base_url="http://x.example")) is False
+    assert _secure(SimpleNamespace(public_base_url="https://x.example", cookie_secure=False)) is False

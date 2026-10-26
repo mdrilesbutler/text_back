@@ -38,8 +38,7 @@ os.environ.update({
     "TEXT_BACK_OWNER_MOBILE": OWNER,
     "TEXT_BACK_MESSAGES_FILE": str(messages),
     "TEXT_BACK_TIMEZONE": TZ,
-    "TEXT_BACK_HANDOFF_DELIVERY_CHANNEL": os.environ.get("TEXT_BACK_HANDOFF_DELIVERY_CHANNEL", "log"),
-    "TEXT_BACK_HANDOFF_DESTINATION": os.environ.get("TEXT_BACK_HANDOFF_DESTINATION", "operator"),
+    "TEXT_BACK_HANDOFF_DESTINATION": "operator",
 })
 for key in list(os.environ):
     if key.endswith("_API_KEY"):
@@ -50,6 +49,21 @@ import uvicorn  # noqa: E402
 from text_back import inbox, worker  # noqa: E402
 from text_back.app import create_app  # noqa: E402
 from text_back.telecom import FakeTelecom  # noqa: E402
+
+
+class PreviewChatTransport:
+    """Stands in for the production chat channel (Telegram) without any network: alerts are kept
+    in memory. The portal words the steps-back cards from the channel name, so the preview shows
+    what a production client sees."""
+
+    channel_name = "telegram"
+
+    def __init__(self):
+        self.delivered = []
+
+    def deliver(self, alert):
+        self.delivered.append(alert)
+        return f"preview-{len(self.delivered):04d}"
 
 
 class TimedTelecom(FakeTelecom):
@@ -66,9 +80,11 @@ CLOCK = [None]
 telecom = TimedTelecom()
 app = create_app(db_path=str(DATA / "preview.db"), telecom=telecom, public_base_url=PUBLIC,
                  business_name="Oak & Pine Tree Care", timezone_name=TZ,
-                 now_provider=lambda: CLOCK[0] or datetime.now(timezone.utc))
+                 now_provider=lambda: CLOCK[0] or datetime.now(timezone.utc),
+                 delivery_transport=PreviewChatTransport(), handoff_destination="operator")
 state = app.state
 state.business_number = TEXTING
+state.cookie_secure = False  # served over plain http on the tailnet; links keep the https host
 store = state.store
 
 EXAMPLES = {"+19805550141": "Dana Whitfield", "+19805550177": "Marcus Lee", "+19805550192": "Priya Natarajan"}

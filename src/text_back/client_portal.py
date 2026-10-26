@@ -100,6 +100,11 @@ def normalize_mobile(raw: str) -> str | None:
 
 
 def _secure(state) -> bool:
+    # A preview harness may serve plain http while its links keep the production https host;
+    # it sets cookie_secure=False. Production never sets it, so cookies follow the public URL.
+    override = getattr(state, "cookie_secure", None)
+    if override is not None:
+        return bool(override)
     return str(state.public_base_url).lower().startswith("https://")
 
 
