@@ -174,6 +174,7 @@ def create_app(
     app.state.wiring_mode = wiring_mode
     app.state.business_name = business_name.strip()
     app.state.business_contact = config.business_contact
+    app.state.support_contact = config.support_contact  # FluxWorks number the portal offers to text; "" hides the button
     app.state.messages = MessageSource(config.messages_file or None)  # fails closed on a bad file at boot
     app.state.owner_mobile = config.owner_mobile
     app.state.timezone_name = timezone_name
