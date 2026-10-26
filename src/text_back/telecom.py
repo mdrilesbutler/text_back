@@ -83,6 +83,57 @@ class SignalWireTelecom:
             f"{self.project_id}/Messages"
         )
 
+    @property
+    def registry_url(self) -> str:
+        return f"{self.space_url}/api/relay/rest/registry/beta"
+
+    def registry_status(self) -> dict[str, str | None]:
+        """Read-only view of the texting-approval stages for the owner portal.
+
+        Three GETs (brands, campaigns, the campaign's numbers), never a POST:
+        submitting is scripts/registration.py's job and costs money. Returns
+        ``{"brand", "campaign", "numbers"}`` as lowercased registry words or
+        None when nothing is filed; the number reported is the configured
+        sender when it is listed. Raises TelecomError on any failure, redacted.
+        """
+        request_client = self.client or httpx.Client()
+        close_client = self.client is None
+        try:
+            brands = self._registry_get(request_client, "/brands")
+            campaigns = self._registry_get(request_client, "/campaigns")
+            numbers: list[dict] = []
+            campaign_id = campaigns[0].get("id") if campaigns else None
+            if campaign_id:
+                numbers = self._registry_get(request_client, f"/campaigns/{campaign_id}/numbers")
+        finally:
+            if close_client:
+                request_client.close()
+        mine = [n for n in numbers if (n.get("phone_number") or {}).get("number") == self.allowed_from_number]
+        number = (mine or numbers or [{}])[0]
+        return {
+            "brand": _state_word(brands[0]) if brands else None,
+            "campaign": _state_word(campaigns[0]) if campaigns else None,
+            "numbers": _state_word(number) if numbers else None,
+        }
+
+    def _registry_get(self, request_client: httpx.Client, path: str) -> list[dict]:
+        try:
+            response = request_client.get(
+                self.registry_url + path,
+                auth=httpx.BasicAuth(self.project_id, self.api_token),
+                timeout=self.timeout_seconds,
+            )
+        except httpx.RequestError as exc:
+            raise TelecomError(f"SignalWire registry request failed ({type(exc).__name__})") from None
+        if not response.is_success:
+            raise TelecomError(f"SignalWire registry request returned HTTP {response.status_code}")
+        try:
+            payload = response.json()
+        except ValueError:
+            raise TelecomError("SignalWire registry response was not valid JSON") from None
+        records = payload.get("data", []) if isinstance(payload, dict) else payload
+        return [item for item in records if isinstance(item, dict)] if isinstance(records, list) else []
+
     def send_sms(self, *, to: str, body: str, from_number: str, kind: str) -> str:
         return self.send_sms_with_callback(to=to, body=body, from_number=from_number, kind=kind)
 
@@ -126,3 +177,11 @@ class SignalWireTelecom:
         if not isinstance(message_id, str) or not message_id:
             raise AmbiguousSmsError("SignalWire SMS response did not include a message ID")
         return message_id
+
+
+def _state_word(record: dict) -> str | None:
+    state = record.get("state")
+    if state is None:
+        return None
+    text = str(state).strip().lower()
+    return text or None
