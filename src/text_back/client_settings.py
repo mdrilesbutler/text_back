@@ -294,7 +294,8 @@ def _calendar_page(request: Request, state, session, *, result=None, notice: str
     context = portal_calendar.page_context(state, result)
     support = str(getattr(state, "support_contact", "") or "").strip()
     return render(request, "client/calendar.html.j2", **shell(state, session, title="Calendar", nav="calendar", notice=notice),
-                  **context, page_error=error, picker_error=picker_error, support_contact=support)
+                  **context, page_error=error, picker_error=picker_error, support_contact=support,
+                  calendar_example="calendar" in (getattr(state, "preview_example_setup", None) or ()))
 
 
 def _phone_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", page_error: str = "",

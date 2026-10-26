@@ -57,7 +57,7 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 |---|---|---|
 | home_title | Home | page heading |
 | home_status_working | Working: missed calls get a text within a minute. | first line, every setup card Done |
-| home_status_not_yet | Not working yet: 1 step left. / Not working yet: [N] steps left. | first line otherwise |
+| home_status_not_yet | Not working yet: 1 step for you. / Not working yet: [N] steps for you, [M] waiting on others. | first line otherwise |
 | home_status_waiting | Set up on your side. Waiting on the phone companies to approve texting. / Set up on your side. Waiting on FluxWorks to connect your calendar. / Set up on your side. Waiting on FluxWorks and the phone companies. | first line when nothing needs the owner: only texting approval pending / only the calendar waits on FluxWorks / both (P3) |
 | home_example_note | This preview mixes example calls with real settings. | under the first line, only when a counted setup card is harness example data |
 | home_setup_heading | Setup | section heading |
@@ -106,7 +106,7 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | key | text | where |
 |---|---|---|
 | intro | First text after a missed call / (no when-line) | title / the step blurb already says when it is sent |
-| prompt_service | Question 1: the job / Asked as soon as the customer replies. | title / when |
+| prompt_service | Question 1: the job / Sent only if the customer’s first reply is blank, like a photo with no words. Usually that first reply already says what the job is. | title / when |
 | prompt_location | Question 2: the address / Asked once the job is known. | title / when |
 | prompt_preferred_time | Question 3: day and time / Asked once the address is known. Examples in everyday words help: Wednesday at 2, tomorrow at 10am. | title / when |
 | preferred_time_reprompt | If the time couldn't be understood / Sent instead of moving on when the reply isn't a day and time. | title / when (branch card) |
@@ -202,6 +202,8 @@ replies, so the thread can never show a step-back or a time reading the product 
 |---|---|---|
 | savebar_changed | 1 text changed / [N] texts changed: [card title], [card title] / 1 setting changed / [N] settings changed / [N] changes / No unsaved changes / Show what changed | unsaved count (a question switch is a setting; texts and settings together read "[N] changes", m29) / resting state beside a visibly disabled Save / hidden hint on the count toggle |
 | link_note | Each label is a link. The text count includes the full links. | under a bubble whose calendar links show as labels |
+| applies_prefix | Once saved: | before each Applies line under a Schedule rule (not in the saved notice) |
+| verify_wrong_number | Wrong number? Enter it again | link on the Enter code page, back to sign-in |
 | draft_was | Was: [saved wording] | under an unsaved draft bubble |
 | savebar_actions | Save / Saving… / Discard | primary / while posting / ghost |
 | savebar_not_saved | Not saved · [N] texts changed | after a rejected save |

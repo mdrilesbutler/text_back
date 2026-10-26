@@ -93,7 +93,7 @@
     </div>
   {% endcall %}
   {% call node("icon", "circle-help", attrs="id=checks") %}
-    <div class=node__head><h2 tabindex=-1>Is forwarding working?</h2><p class=checks__progress data-checks-progress>{{ "All 5 done. Forwarding works." if checklist.all_done else checklist.done_count ~ " of 5 done" }}</p></div>
+    <div class=node__head><h2 tabindex=-1>Is forwarding working?</h2><p class=checks__progress data-checks-progress>{{ "All 5 done. Forwarding works." if checklist.all_done else checklist.done_count ~ " of 5 done" }}{% if check_rows|selectattr("example")|list %} <span class=extag>Example</span>{% endif %}</p></div>
   {% endcall %}
   {% for s in check_rows %}
   {% call node(s.kind, attrs="data-check=" ~ s.n) %}

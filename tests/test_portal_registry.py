@@ -206,7 +206,7 @@ def test_headline_counts_needs_you_approval_as_a_step_and_couldnt_check_as_waiti
     from text_back.portal_status import headline
 
     done = [dict(key="calendar", state_word="Done"), dict(key="forwarding", state_word="Done")]
-    assert headline(done + [dict(key="approval", state_word="Needs you")]) == "Not working yet: 1 step left."
+    assert headline(done + [dict(key="approval", state_word="Needs you")]) == "Not working yet: 1 step for you."
     assert headline(done + [dict(key="approval", state_word="Couldn't check")]) == \
         "Set up on your side. Waiting on the phone companies to approve texting."
 

@@ -232,7 +232,7 @@ def test_p2_the_first_line_counts_every_card_and_notes_example_data(tmp_path, mo
     client.app.state.preview_example_setup = {"forwarding", "approval"}
     page = client.get("/client/home").text
     line = re.search(r"<p class=status-line data-status-line>(.*?)</p>", page).group(1)
-    assert line == "Not working yet: 1 step left." and "extag" not in line  # the example forwarding card still counts
+    assert line == "Not working yet: 1 step for you, 2 waiting on others." and "extag" not in line  # the example forwarding card still counts
     assert "This preview mixes example calls with real settings." in page
 
 
@@ -243,7 +243,7 @@ def test_p3_a_calendar_fluxworks_connects_waits_and_offers_support(tmp_path, mon
     card = re.search(r'<li class="node node--waiting" data-setup=calendar>.*?\n</li>', home, re.S).group(0)
     assert "Waiting on FluxWorks" in card and "FluxWorks connects your calendar for you." in card
     assert '<a class="btn btn--secondary setup__btn" href="sms:+17045550199">Text FluxWorks support</a>' in card
-    assert "Not working yet: 1 step left." in home  # forwarding only; the calendar is not the owner's step
+    assert "Not working yet: 1 step for you, 2 waiting on others." in home  # forwarding only; the calendar is not the owner's step
     calendar = text(client.get("/client/calendar"))
     node = re.search(r'<li class="node node--waiting" id=connection>.*?\n</li>', calendar, re.S).group(0)
     assert "Waiting on FluxWorks" in node and 'href="sms:+17045550199" data-support>Text FluxWorks support</a>' in node

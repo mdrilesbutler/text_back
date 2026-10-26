@@ -111,7 +111,7 @@ REASON_TOO_LONG = f"Shorten it to {MAX_TEMPLATE_CHARS} characters or fewer."
 # key -> (card title, when-line). followup_1/2 when-lines carry the live reminder delays (when_line).
 MESSAGES: dict[str, tuple[str, str]] = {
     "intro": ("First text after a missed call", ""),  # the step blurb already says when it is sent
-    "prompt_service": ("Question 1: the job", "Asked as soon as the customer replies."),
+    "prompt_service": ("Question 1: the job", "Sent only if the customer's first reply is blank, like a photo with no words. Usually that first reply already says what the job is."),
     "prompt_location": ("Question 2: the address", "Asked once the job is known."),
     "prompt_preferred_time": ("Question 3: day and time",
                               "Asked once the address is known. Examples in everyday words help: Wednesday at 2, tomorrow at 10am."),

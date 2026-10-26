@@ -298,6 +298,10 @@ def main():
             log["link_status"] = {l: tab.ctx.request.get(BASE + l, max_redirects=0).status
                                   for l in sorted(discovered) if not l.startswith("/client/logout")}
             shared_states(tab, report)
+            # Sign out so this width's session never shows up as "another device" on the next width's Account page.
+            tab.go("/client/account")
+            tab.page.locator("form[action^='/client/logout'] button[type=submit]").first.click()
+            tab.page.wait_for_load_state("networkidle")
             tab.ctx.close()
         if args.private:
             tabs = {v: Tab(browser, v, args.private.rstrip("/")) for v in VIEWS}

@@ -36,7 +36,7 @@ def test_headline_says_working_only_when_nothing_needs_the_owner(tmp_path):
     items = setup_items(state, NOW)
     # P3: with no way to connect from the portal the calendar waits on FluxWorks and is not a step left.
     assert [i["state_word"] for i in items] == ["Waiting on FluxWorks", "Needs you", "Waiting on phone companies"]
-    assert headline(items) == "Not working yet: 1 step left."
+    assert headline(items) == "Not working yet: 1 step for you, 2 waiting on others."
     assert items[0]["detail"] == "FluxWorks connects your calendar for you." and items[0]["action_href"] is None
     assert items[1]["action_label"] == "Finish forwarding"
     assert items[1]["detail"] == "0 of 5 checks done."
@@ -48,7 +48,7 @@ def test_headline_waits_on_phone_companies_when_only_approval_is_pending(tmp_pat
                        dict(key="approval", state_word="Waiting on phone companies")]
     assert headline(forwarding_done) == "Set up on your side. Waiting on the phone companies to approve texting."
     assert headline([dict(state_word="Done")] * 3) == "Working: missed calls get a text within a minute."
-    assert headline([dict(state_word="Needs you"), dict(state_word="Done"), dict(state_word="Done")]) == "Not working yet: 1 step left."
+    assert headline([dict(state_word="Needs you"), dict(state_word="Done"), dict(state_word="Done")]) == "Not working yet: 1 step for you."
 
 
 def test_forwarding_card_is_done_only_from_forwarded_evidence(tmp_path):
@@ -117,3 +117,11 @@ def test_this_week_still_counts_a_stamp_written_with_another_offset(tmp_path):
                                evidence_id="CA-w", metadata={}, occurred_at=stamp)
     week = this_week(state, NOW)
     assert week["counts"]["missed_calls"] == 1 and [r["phone"] for r in week["rows"]] == ["+19805550160"]
+
+
+def test_home_summaries_drop_calendar_links_but_keep_the_words():
+    from text_back.portal_status import _snippet
+    text = ("Booked: Tree trimming on Thursday, Oct 29 at 10:00 AM EDT at 412 Maple St. "
+            "Add to calendar: Google https://x.example/a/1-abc/g Outlook https://x.example/a/1-abc/o iCal https://x.example/a/1-abc/i")
+    out = _snippet(text)
+    assert "http" not in out and out.startswith("Booked: Tree trimming") and "412 Maple St." in out and not out.endswith("…")

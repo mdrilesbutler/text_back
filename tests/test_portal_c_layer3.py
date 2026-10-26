@@ -44,7 +44,7 @@ def test_schedule_is_one_form_on_the_spine_with_applies_lines_and_a_reset_per_ru
                      ("reminders", "Reminders")]
     shown = html.unescape(page)
     for line in ps.APPLIES.values():
-        assert f"<p class=applies>{line}</p>" in shown, line  # before saving, under its field
+        assert f"<p class=applies>Once saved: {line}</p>" in shown, line  # before saving, under its field
     # m11: "Reset" with JavaScript, "Reset and save" without; hidden while the rule is at its default.
     resets = re.findall(r'<button type=submit class="btn btn--ghost rule-foot__reset" name=reset value=(\w+) '
                         r'data-reset-values="[^"]*" hidden><span class=msg__reset-js>Reset</span>'
@@ -140,10 +140,10 @@ def test_home_headline_counts_every_card_so_it_never_contradicts_one(tmp_path, m
     client, csrf = signed_in(tmp_path, monkeypatch)
     state = client.app.state
     line = lambda: re.search(r"<p class=status-line data-status-line>.*?</p>", client.get("/client/home").text).group(0)
-    assert line() == "<p class=status-line data-status-line>Not working yet: 1 step left.</p>"  # forwarding
+    assert line() == "<p class=status-line data-status-line>Not working yet: 1 step for you, 2 waiting on others.</p>"  # forwarding
     state.preview_example_setup = {"forwarding"}
-    assert line() == "<p class=status-line data-status-line>Not working yet: 1 step left.</p>"
+    assert line() == "<p class=status-line data-status-line>Not working yet: 1 step for you, 2 waiting on others.</p>"
     items = [dict(key="calendar", state_word="Needs you", example=True), dict(key="forwarding", state_word="Done", example=False),
              dict(key="approval", state_word="Waiting on phone companies", example=False)]
-    assert portal_status.headline(portal_status.counted(items)) == "Not working yet: 1 step left."
+    assert portal_status.headline(portal_status.counted(items)) == "Not working yet: 1 step for you, 1 waiting on others."
 

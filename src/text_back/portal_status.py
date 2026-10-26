@@ -142,7 +142,9 @@ def headline(items: list[dict]) -> str:
     needs_you = [i for i in items if i["state_word"] == "Needs you"]
     if needs_you:
         n = len(needs_you)
-        return f"Not working yet: {n} step{'s' if n != 1 else ''} left."
+        others = sum(1 for i in items if i["state_word"] not in ("Needs you", "Done"))
+        mine = f"Not working yet: {n} step{'s' if n != 1 else ''} for you"
+        return f"{mine}, {others} waiting on others." if others else f"{mine}."
     waiting = [i for i in items if i["state_word"] != "Done"]
     on_fluxworks = any(i["state_word"] == WAITING_FLUXWORKS for i in waiting)
     on_phone = any(i["state_word"] != WAITING_FLUXWORKS for i in waiting)
@@ -173,8 +175,12 @@ def caller_status(store, phone: str, *, test_calendar: bool = False) -> str:
     return STATUS_WAITING
 
 
+_LINK = re.compile(r"(?:Add to calendar:\s*)?(?:Google|Outlook|iCal)?\s*https?://\S+", re.I)
+
+
 def _snippet(text: str) -> str:
-    flat = " ".join(str(text or "").split())
+    # Calendar links are long and mean nothing in a one-line summary; the words around them stay.
+    flat = " ".join(_LINK.sub(" ", str(text or "")).split())
     if len(flat) <= SNIPPET_MAX:
         return flat
     cut = flat[: SNIPPET_MAX - 1]

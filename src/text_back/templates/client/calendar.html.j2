@@ -15,7 +15,7 @@
 {% if page_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ page_error }}</p></div></div>{% endif %}
 <ol class=spine>
   {% call node(kind, attrs="id=connection") %}
-    <div class=node__head><h2 tabindex=-1 id=status-title>{{ card.title }}</h2></div>
+    <div class=node__head><h2 tabindex=-1 id=status-title>{{ card.title }}</h2>{% if calendar_example|default(false) %}<span class=extag>Example</span>{% endif %}</div>
     <section class="card status status--{{ card.kind }}" data-status={{ card.status }} aria-labelledby=status-title>
       {{ state_pill(kind, card.state_word) }}
       <p class=status__detail>{{ card.body|nw }}</p>
@@ -58,7 +58,7 @@
     {% elif picker_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ picker_error }}</p></div></div>{% endif %}
   {% endcall %}
   {% call node("icon", "clock", attrs="id=availability") %}
-    <div class=node__head><h2 tabindex=-1 id=avail-title>{{ availability.title }}</h2><p class=node__blurb>{{ availability.intro }}</p></div>
+    <div class=node__head><h2 tabindex=-1 id=avail-title>{{ availability.title }}</h2>{% if calendar_example|default(false) %}<span class=extag>Example</span>{% endif %}<p class=node__blurb>{{ availability.intro }}</p></div>
     <section class=card aria-labelledby=avail-title data-availability>
       {% if availability.starts %}
       <ul class=slots data-slots>{% for row in availability.rows %}<li class="slot tnum">{{ icon("calendar") }}<span>{{ row|nw }}</span></li>{% endfor %}</ul>

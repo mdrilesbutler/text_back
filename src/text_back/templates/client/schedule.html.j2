@@ -47,14 +47,14 @@
         </fieldset>
         <p class=field-help id=duration-hint>{{ consequences.appointment_duration_minutes }}</p>
         {{ err("appointment_duration_minutes") }}
-        <p class=applies>{{ applies.appointment_duration_minutes }}</p>
+        <p class=applies>Once saved: {{ applies.appointment_duration_minutes }}</p>
       </div>
       {{ rule_foot("appointment_duration_minutes", defaults.appointment_duration_minutes) }}
       <div class=field id=rule-timezone data-change-label="Time zone">
         {{ select("timezone", timezone_options, values.timezone, label="Time zone", describedby="timezone-hint") }}
         <p class=field-help id=timezone-hint>{{ consequences.timezone }}</p>
         {{ err("timezone") }}
-        <p class=applies>{{ applies.timezone }}</p>
+        <p class=applies>Once saved: {{ applies.timezone }}</p>
       </div>
       {{ rule_foot("timezone", defaults.timezone) }}
     </div>
@@ -96,7 +96,7 @@
         </div>
         {% endfor %}
       </fieldset>
-      <p class=applies>{{ applies.working_hours }}</p>
+      <p class=applies>Once saved: {{ applies.working_hours }}</p>
       {{ rule_foot("working_hours", defaults.working_hours) }}
     </div>
   {% endcall %}
@@ -117,7 +117,7 @@
       </fieldset>
       <p class="field-help quiet-off">Off. Texts may go out at any hour.</p>
       {{ err("quiet_hours") }}
-      <p class=applies>{{ applies.quiet_hours }}</p>
+      <p class=applies>Once saved: {{ applies.quiet_hours }}</p>
       {{ rule_foot("quiet_hours", defaults.quiet_hours) }}
     </div>
   {% endcall %}

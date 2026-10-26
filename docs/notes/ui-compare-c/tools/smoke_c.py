@@ -80,7 +80,7 @@ def run(tab):
     # 1. Messages: prompt_location wording
     tab.go("/client/messages")
     p.click("#card-prompt_location summary.editor__summary")
-    text = f"What's the street address for the job? ({v} {RUN})"
+    text = {"desktop": "What's the street address for the job?", "phone": "What's the address where we'll work?"}[v]  # realistic wording, distinct per width
     p.fill("#w-prompt_location", text)
     used = tab.save("messages-form"); f = tab.shot("messages-wording"); note = tab.notice()
     tab.go("/client/messages")

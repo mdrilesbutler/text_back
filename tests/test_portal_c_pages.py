@@ -87,7 +87,7 @@ def test_home_empty_week_and_setup_cards_go_to_the_fix(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     client.app.state.store.set_setting("texting_approval_state", "waiting")
     page = text_of(client.get("/client/home"))
-    assert '<p class=status-line data-status-line>Not working yet: 1 step left.</p>' in page  # P3: calendar waits on FluxWorks
+    assert '<p class=status-line data-status-line>Not working yet: 1 step for you, 2 waiting on others.</p>' in page  # P3: calendar waits on FluxWorks
     assert "No callers this week. They appear here after the next missed call." in page
     cards = {key: node(page, f"data-setup={key}") for key in ("calendar", "forwarding", "approval")}
     assert "Waiting on FluxWorks" in cards["calendar"] and "FluxWorks connects your calendar for you." in cards["calendar"]

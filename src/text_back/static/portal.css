@@ -2013,3 +2013,7 @@
 @layer app {
   .status-note { margin-top: var(--space-2); color: var(--text-muted); display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
 }
+@layer app {
+  /* One focus ring on the code field: the whole-field outline; the active cell only changes colour. */
+  :where(.js) .otp .otp__cells i { box-shadow: none; }
+}
