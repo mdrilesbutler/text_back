@@ -1,0 +1,43 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set A = f.account %}
+{% block content %}
+<div class="ph">
+  <h1>{{ A.title }}</h1>
+</div>
+
+<section class="sec" aria-labelledby="signed-h">
+  <div class="sec__head"><h2 class="sec__title" id="signed-h">{{ A.title }}</h2></div>
+  <div class="ledger">
+    <div class="row"><span class="row__label">{{ A.signed_in }}</span></div>
+    <a class="row row--link row--go" href="{{ A.change_mobile_link.href }}"><span class="row__hint row__hint--ink">{{ A.change_mobile }}</span><span class="row__act">{{ A.change_mobile_link.text }}{{ I.ic('chevr') }}</span></a>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="dev-h">
+  <div class="sec__head"><h2 class="sec__title" id="dev-h">{{ A.devices_title }}</h2></div>
+  <ul class="ledger">
+    {% for d in A.devices %}
+    <li class="row row--slim"><span class="row__value row__value--left tnum">{{ d.line }}</span></li>
+    {% endfor %}
+  </ul>
+  <label class="switch-row"><span class="switch-row__text">{{ A.remember.switch }}</span><input class="switch" type="checkbox" role="switch" name="remember"{% if A.remember.state == 'on' %} checked{% endif %}></label>
+  <p class="switch-row__note">{{ A.remember.note_on if A.remember.state == 'on' else A.remember.note_off }}</p>
+  <div class="acts">
+    <form method="post" action="/client/logout-all"><button class="btn btn--secondary" type="submit">{{ A.signout_everywhere.button }}</button></form>
+  </div>
+  {% if dialog %}
+  <div class="confirm" role="group" aria-labelledby="confirm-text" {{ fid('confirm') }}>
+    <p id="confirm-text">{{ A.signout_everywhere.dialog }}</p>
+    <div class="confirm__acts">
+      <form method="post" action="/client/logout-all"><button class="btn btn--primary" type="submit">{{ A.signout_everywhere.confirm }}</button></form>
+      <button class="btn btn--secondary" type="button">{{ A.signout_everywhere.cancel }}</button>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<div class="acts acts--signout">
+  <form method="post" action="/client/logout"><button class="btn btn--secondary btn--block-phone" type="submit">{{ A.signout }}</button></form>
+</div>
+{% endblock %}

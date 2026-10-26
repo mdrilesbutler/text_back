@@ -1,0 +1,21 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set s = f.sign_in %}
+{% block content %}
+<div class="auth2">
+  <div class="ph">
+    <p class="eyebrow">{{ s.eyebrow }}</p>
+    <h1>{{ s.title }}</h1>
+    <p class="ph__intro">{{ s.intro }}</p>
+  </div>
+  <form class="auth2__form" method="post" action="/client/login" novalidate>
+    <div class="field">
+      <label class="field__label" for="mobile">{{ s.mobile_label }}</label>
+      <input class="input input--tel" {{ fid('mobile') }} name="mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="{{ s.mobile_placeholder }}" value="{{ s.mobile_value }}"{% if error %} aria-invalid="true" aria-describedby="mobile-error"{% endif %}>
+      {% if error %}<p class="field-error" id="mobile-error">{{ I.ic('warn') }}<span>{{ s.mobile_error }}</span></p>{% endif %}
+    </div>
+    <button class="btn btn--primary btn--block" type="submit">{{ s.submit }}</button>
+  </form>
+  <p class="auth2__foot">{{ s.foot }}</p>
+</div>
+{% endblock %}

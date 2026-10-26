@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% set page_id = 'home' %}{% set title = fx.home.title %}{% set current_nav = 'Home' %}
+{% block content %}
+{% set h = fx.home %}
+<div class="page-head"><h1>{{ h.title }}</h1></div>
+<ol class="spine">
+  {% call ui.node('missed', 'missed') %}
+    <p class="status-line">{{ h.status }}</p>
+  {% endcall %}
+  <li class="spine__label"><h2>{{ h.setup_heading }}</h2></li>
+  {% for c in h.setup %}
+  {% set kind = 'done' if c.state == 'Done' else 'todo' %}
+  {% set word_kind = 'done' if c.state == 'Done' else ('needs' if c.state == 'Needs you' else 'waiting') %}
+  {% call ui.node(kind) %}
+    <div class="setup setup--{{ word_kind }}">
+      <div class="setup__head"><h3 class="setup__title">{{ c.title }}</h3>{{ ui.state(word_kind, c.state) }}</div>
+      <p class="setup__detail">{{ c.detail }}</p>
+      {% if c.button %}<a class="btn btn--secondary setup__btn" href="{{ c.button.href }}">{{ c.button.label }}</a>{% endif %}
+    </div>
+  {% endcall %}
+  {% endfor %}
+  {% call ui.node('icon', 'calendar') %}
+    <div class="node__head"><h2>{{ h.week_heading }}</h2><p class="node__blurb">{{ h.week_caption }}</p></div>
+    <dl class="counts">
+      {% for k in h.week_counts %}<div><dt>{{ k.label }}</dt><dd class="tnum">{{ k.value }}</dd></div>{% endfor %}
+    </dl>
+  {% endcall %}
+  {% call ui.node('icon', 'person') %}
+    <div class="node__head"><h2>{{ h.callers_heading }}</h2></div>
+    {% if h.callers %}
+    <ol class="callers">
+      {% for r in h.callers %}
+      <li class="caller">
+        <p class="caller__who"><span class="caller__name">{{ r.name }}</span><span class="extag">{{ r.example }}</span></p>
+        <span class="pill caller__pill{% if r.status == 'Booked' %} pill--success{% endif %}">{{ r.status }}</span>
+        <p class="caller__when"><span class="caller__k">{{ h.callers_columns[2] }}</span> <span class="tnum">{{ r.last_activity }}</span></p>
+        <p class="caller__text"><span class="caller__k">{{ h.callers_columns[3] }}</span> {{ r.last_text }}</p>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="empty"><p class="empty__body">{{ h.callers_empty }}</p></div>
+    {% endif %}
+  {% endcall %}
+</ol>
+{% endblock %}

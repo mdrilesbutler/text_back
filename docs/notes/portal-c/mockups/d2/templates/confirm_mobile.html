@@ -1,0 +1,28 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set C = f.phone.confirm_mobile %}
+{% block content %}
+<div class="ph" {{ fid('confirm') }}>
+  <h1>{{ C.title }}</h1>
+  <ol class="stepper">
+    {% for s in C.steps %}
+    <li class="stepper__step stepper__step--{{ s.state }}"><span class="stepper__dot">{% if s.state == 'done' %}{{ I.ic('check') }}{% else %}{{ loop.index }}{% endif %}</span><span class="stepper__label">{{ s.label }}</span></li>
+    {% endfor %}
+  </ol>
+  <p class="ph__intro">{{ C.intro }}</p>
+</div>
+<form class="auth2__form" method="post" action="/client/phone/confirm" novalidate>
+  <div class="field">
+    <label class="field__label" for="code">{{ C.code_label }}</label>
+    <div class="otp" data-filled="0">
+      <span class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <input class="otp__input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*">
+    </div>
+  </div>
+  <div class="acts acts--tight">
+    <button class="btn btn--primary btn--block-phone" type="submit">{{ C.submit }}</button>
+    <button class="btn btn--secondary btn--block-phone" type="submit" formaction="/client/phone/keep">{{ C.keep }}</button>
+  </div>
+  <p class="resend"><span>{{ C.resend_text }}</span><button class="btn btn--ghost" type="submit" formaction="/client/phone/resend">{{ C.resend }}</button></p>
+</form>
+{% endblock %}

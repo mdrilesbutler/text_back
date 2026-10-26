@@ -1,0 +1,107 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set S = f.schedule %}
+{% set D = S.appointments.duration %}
+{% set Z = S.appointments.timezone %}
+{% set H = S.hours %}
+{% set Q = S.quiet %}
+{% set R = S.reminders %}
+{% set length_value = D.variant_custom.value if custom else D.value %}
+{% set selected_chip = D.variant_custom.selected_chip if custom else D.selected_chip %}
+{% set hours_mode = H.variant_any_time.mode if any_time else H.mode %}
+
+{% macro defline(text, reset_name) -%}
+<div class="frow__def"><span>{{ text }}</span><button class="btn btn--ghost" type="button"><span class="vh">{{ S.reset }} {{ reset_name }}: </span>{{ S.reset }}</button></div>
+{%- endmacro %}
+
+{% block content %}
+<div class="ph">
+  <h1>{{ S.title }}</h1>
+  <p class="ph__intro">{{ S.intro }}</p>
+</div>
+<form method="post" action="/client/schedule">
+
+<section class="sec" aria-labelledby="appt-h">
+  <div class="sec__head"><h2 class="sec__title" id="appt-h">{{ S.appointments.title }}</h2></div>
+  <p class="sec__blurb">{{ S.appointments.subtitle }}</p>
+  <div class="frow" {{ fid('length') }}>
+    <span class="field__label" id="length-label">{{ D.label }}</span>
+    <fieldset class="pill-radios" aria-labelledby="length-label">
+      {% for ch in D.chips %}
+      <input class="vh-input" type="radio" name="length_pick" id="pick-{{ loop.index }}"{% if ch.label == selected_chip %} checked{% endif %}><label class="pill-radio" for="pick-{{ loop.index }}">{{ ch.label }}</label>
+      {% endfor %}
+    </fieldset>
+    <div class="frow__inline"><input class="input tnum" id="length" name="length" type="number" inputmode="numeric" min="15" max="480" step="5" value="{{ length_value }}" aria-labelledby="length-label" aria-describedby="length-hint"><span class="frow__unit">{{ D.unit }}</span></div>
+    <p class="field-help" id="length-hint">{{ D.hint }}</p>
+    {{ defline(D.default_line, D.label) }}
+  </div>
+  <div class="frow">
+    <label class="field__label" for="tz">{{ Z.label }}</label>
+    <span class="select"><select class="select__input" id="tz" name="timezone" aria-describedby="tz-hint"><option value="{{ Z.value }}" selected>{{ Z.value_label }}</option></select>{{ I.ic('chev', 'select__icon') }}</span>
+    <p class="field-help" id="tz-hint">{{ Z.hint }}</p>
+    {{ defline(Z.default_line, Z.label) }}
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="hours-h" {{ fid('hours') }}>
+  <div class="sec__head"><h2 class="sec__title" id="hours-h">{{ H.title }}</h2></div>
+  <p class="sec__blurb">{{ H.subtitle }}</p>
+  {% if any_time %}
+  <div class="notice notice--warning notice--inflow" {{ fid('hours-warning') }}>{{ I.ic('warn', 'notice__icon') }}<div class="notice__body"><p class="notice__text">{{ H.variant_any_time.warning }}</p><p><button class="btn btn--secondary" type="button">{{ H.variant_any_time.button }}</button></p></div></div>
+  {% endif %}
+  <fieldset>
+    <legend class="vh">{{ H.title }}</legend>
+    {% for opt in H.mode_options %}
+    <label class="optrow"><input class="radio" type="radio" name="hours_mode" value="{{ loop.index0 }}"{% if opt == hours_mode %} checked{% endif %}><span class="optrow__text">{{ opt }}</span>{% if opt == hours_mode %}<span class="optrow__hint">{{ H.hint_any if loop.first else H.hint_set }}</span>{% endif %}</label>
+    {% endfor %}
+  </fieldset>
+  <ol class="ledger hours{% if any_time %} hours--off{% endif %}">
+    {% for d in H.grid %}
+    <li class="hrow{% if not d.open %} hrow--closed{% endif %}">
+      <label class="hrow__day"><input class="switch" type="checkbox" role="switch" name="open_{{ d.day|lower }}" aria-label="{{ d.accessible.switch }}"{% if d.open %} checked{% endif %}><span>{{ d.day }}</span></label>
+      {% if d.open %}
+      <span class="hrow__times">
+        <span class="select"><select class="select__input" aria-label="{{ d.accessible.opens }}"><option selected>{{ d.opens }}</option></select>{{ I.ic('chev', 'select__icon') }}</span>
+        <span class="hrow__dash" aria-hidden="true">–</span>
+        <span class="select"><select class="select__input" aria-label="{{ d.accessible.closes }}"><option selected>{{ d.closes }}</option></select>{{ I.ic('chev', 'select__icon') }}</span>
+      </span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  <div class="frow frow--bare">{{ defline(H.default_line, H.title) }}</div>
+</section>
+
+<section class="sec" aria-labelledby="quiet-h">
+  <div class="sec__head"><h2 class="sec__title" id="quiet-h">{{ Q.title }}</h2></div>
+  <p class="sec__blurb">{{ Q.subtitle }}</p>
+  <fieldset class="frow">
+    <legend class="field__label">{{ Q.legend }}</legend>
+    <div class="hrow__times">
+      <span class="select"><select class="select__input" aria-label="{{ Q.legend }}"><option selected>{{ Q.from }}</option></select>{{ I.ic('chev', 'select__icon') }}</span>
+      <span class="hrow__dash">{{ Q.between }}</span>
+      <span class="select"><select class="select__input" aria-label="{{ Q.between }}"><option selected>{{ Q.to }}</option></select>{{ I.ic('chev', 'select__icon') }}</span>
+    </div>
+  </fieldset>
+  <label class="switch-row"><span class="switch-row__text">{{ Q.switch }}</span><input class="switch" type="checkbox" role="switch" name="no_quiet"{% if Q.switch_state == 'on' %} checked{% endif %}></label>
+  <p class="switch-row__note">{{ Q.switch_note }}</p>
+  <div class="frow frow--bare">{{ defline(Q.default_line, Q.title) }}</div>
+</section>
+
+<section class="sec" aria-labelledby="rem-h">
+  <div class="sec__head"><h2 class="sec__title" id="rem-h">{{ R.title }}</h2></div>
+  <p class="sec__blurb">{{ R.subtitle }}</p>
+  {% for key, rule in [('first', R.first), ('last', R.last), ('stop', R.stop)] %}
+  <div class="frow">
+    <label class="field__label" for="rem-{{ key }}">{{ rule.label }}</label>
+    <span class="select select--narrow"><select class="select__input" id="rem-{{ key }}"{% if rule.hint %} aria-describedby="rem-{{ key }}-hint"{% endif %}><option selected>{{ rule.value }}</option></select>{{ I.ic('chev', 'select__icon') }}</span>
+    {% if rule.hint %}<p class="field-help" id="rem-{{ key }}-hint">{{ rule.hint }}</p>{% endif %}
+    {{ defline(rule.default_line, rule.label) }}
+  </div>
+  {% endfor %}
+  <p class="sec__note">{{ R.consequence }}</p>
+</section>
+
+<div class="acts"><button class="btn btn--primary btn--block-phone" type="submit">{{ S.save }}</button></div>
+</form>
+{% endblock %}

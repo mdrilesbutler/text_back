@@ -1,0 +1,26 @@
+{% import "_macros.html" as ui %}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ title }} · {{ meta.product }}</title>
+<link rel="stylesheet" href="../_assets/portal.css">
+<link rel="stylesheet" href="d1.css">
+</head>
+<body data-page="{{ page_id }}">
+{% include "_sprite.html" %}
+<a class="skip" href="#main">{{ shell.skip_link }}</a>
+<header class="topbar topbar--auth"><span class="brand">{{ ui.icon('missed', 'icon brand__icon') }}{{ fx.sign_in.product }}</span></header>
+<main class="page auth" id="main" tabindex="-1">
+  <div class="auth__card">
+    <ol class="stepper">
+      <li class="stepper__step stepper__step--{{ 'current' if step == 1 else 'done' }}"><span class="stepper__dot">{% if step == 1 %}1{% else %}{{ ui.icon('check') }}{% endif %}</span><span class="stepper__label">{{ fx.sign_in.title }}</span></li>
+      <li class="stepper__step{% if step == 2 %} stepper__step--current{% endif %}"><span class="stepper__dot">2</span><span class="stepper__label">{{ fx.enter_code.title }}</span></li>
+    </ol>
+    {% block content %}{% endblock %}
+    <p class="auth__foot">{{ fx.sign_in.foot }}</p>
+  </div>
+</main>
+</body>
+</html>

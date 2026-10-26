@@ -1,0 +1,24 @@
+{% extends "_auth.html" %}
+{% set page_id = 'enter-code' %}{% set title = fx.enter_code.title %}{% set step = 2 %}
+{% block content %}
+{% set s = fx.enter_code %}
+<div class="auth__head">
+  <p class="eyebrow">{{ s.eyebrow }}</p>
+  <h1>{{ s.title }}</h1>
+  <p class="lead">{{ s.intro }}</p>
+</div>
+<form class="auth__form" method="post" action="/client/verify">
+  <div class="field">
+    <label class="field__label" for="code">{{ s.code_label }}</label>
+    <div class="otp" data-filled="0">
+      <div class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <input class="otp__input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"{% if error %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
+    </div>
+    {% if error %}{{ ui.field_error(s.code_error, 'code-error') }}{% endif %}
+  </div>
+  <label class="switch-row"><span class="switch-row__text">{{ s.remember_switch }}</span><input class="switch" type="checkbox" role="switch" name="remember" checked></label>
+  <p class="field-help">{{ s.remember_note }}</p>
+  <button class="btn btn--primary btn--lg btn--block" type="submit">{{ s.submit }}</button>
+</form>
+<a class="auth__link" href="/client/login">{{ s.resend }}</a>
+{% endblock %}

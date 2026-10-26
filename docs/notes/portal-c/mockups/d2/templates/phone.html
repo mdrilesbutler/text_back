@@ -1,0 +1,112 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set P = f.phone %}
+{% set N = P.numbers %}
+{% set FW = P.forwarding %}
+{% set K = P.checks %}
+{% set carrier = (FW.carriers | selectattr('selected') | first) %}
+{% set suffix = f.messages.cards.opt_out_suffix.preview %}
+{% set first_text = P.business.name.preview %}
+{% block content %}
+<div class="ph">
+  <h1>{{ P.title }}</h1>
+  <p class="ph__intro">{{ P.intro }}</p>
+</div>
+<form method="post" action="/client/phone" novalidate>
+
+<section class="sec" aria-labelledby="biz-h">
+  <div class="sec__head"><h2 class="sec__title" id="biz-h">{{ P.business.title }}</h2></div>
+  <div class="frow">
+    <label class="field__label" for="bname">{{ P.business.name.label }}</label>
+    <input class="input" id="bname" name="business_name" type="text" autocomplete="organization" autocorrect="off" value="{{ P.business.name.value }}" aria-describedby="bname-hint">
+    <p class="field-help" id="bname-hint">{{ P.business.name.hint }}</p>
+    <div class="frow__preview">
+      <p class="chips-head">{{ P.business.name.preview_eyebrow }}</p>
+      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">{% if first_text.endswith(' ' + suffix) %}{{ first_text[:-(suffix|length) - 1] }} <span class="sms__suffix">{{ suffix }}</span>{% else %}{{ first_text }}{% endif %}</span></span>
+    </div>
+  </div>
+</section>
+
+<section class="sec" aria-labelledby="num-h">
+  <div class="sec__head"><h2 class="sec__title" id="num-h">{{ N.title }}</h2></div>
+  <p class="sec__blurb">{{ N.subtitle }}</p>
+  <div class="frow">
+    <label class="field__label" for="bline">{{ N.business_line.label }}</label>
+    <input class="input input--tel" id="bline" name="business_line" type="tel" inputmode="tel" autocomplete="tel" value="{{ N.business_line.value }}" aria-describedby="bline-hint">
+    <p class="field-help" id="bline-hint">{{ N.business_line.hint }}</p>
+  </div>
+  <div class="row row--ro">
+    <span class="row__label">{{ N.texting_number.label }}</span>
+    <span class="row__value">{{ N.texting_number.value }}</span>
+    <span class="row__hint">{{ N.texting_number.note }}</span>
+  </div>
+  <div class="frow">
+    <label class="field__label" for="owner-mobile">{{ N.owner_mobile.label }}</label>
+    <input class="input input--tel" {{ fid('owner-mobile') }} name="owner_mobile" type="tel" inputmode="tel" autocomplete="tel" value="{{ N.owner_mobile.invalid_entry if invalid_mobile else N.owner_mobile.value }}" aria-describedby="om-hint{% if invalid_mobile %} om-error{% endif %}"{% if invalid_mobile %} aria-invalid="true"{% endif %}>
+    {% if invalid_mobile %}<p class="field-error" id="om-error">{{ I.ic('warn') }}<span>{{ N.owner_mobile.error }}</span></p>{% endif %}
+    <p class="field-help" id="om-hint">{{ N.owner_mobile.hint }}</p>
+    <p class="frow__status">{{ N.owner_mobile.status_unchanged }}</p>
+  </div>
+  <div class="frow">
+    <label class="field__label" for="helpnum">{{ N.help_number.label }} <span class="tag">{{ N.help_number.tag }}</span></label>
+    <input class="input input--tel" id="helpnum" name="help_number" type="tel" inputmode="tel" value="{{ N.help_number.value }}" aria-describedby="help-hint">
+    <p class="field-help" id="help-hint">{{ N.help_number.hint }}</p>
+  </div>
+  <div class="acts"><button class="btn btn--primary btn--block-phone" type="submit">{{ N.save }}</button></div>
+</section>
+</form>
+
+<section class="sec" id="forwarding" aria-labelledby="fwd-h">
+  <div class="sec__head"><h2 class="sec__title" id="fwd-h">{{ FW.heading }}</h2></div>
+  <p class="sec__blurb">{{ FW.intro }}</p>
+  <div class="notice notice--warning notice--inflow">{{ I.ic('warn', 'notice__icon') }}<div class="notice__body"><p class="notice__text">{{ FW.warning }}</p></div></div>
+  <fieldset class="frow">
+    <legend class="field__label">{{ FW.carrier_legend }}</legend>
+    <div class="pill-radios">
+      {% for c in FW.carriers %}
+      <input class="vh-input" type="radio" name="carrier" id="car-{{ loop.index }}"{% if c.selected %} checked{% endif %}><label class="pill-radio" for="car-{{ loop.index }}">{{ c.name }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+  <div class="codes" {{ fid('codes') }}>
+    {% if carrier.note %}<p class="sec__note">{{ carrier.note }}</p>{% endif %}
+    {% if carrier.steps %}<p class="sec__note">{{ carrier.steps }}</p>{% endif %}
+    {% if carrier.unverified %}<div class="notice notice--warning notice--inflow">{{ I.ic('warn', 'notice__icon') }}<div class="notice__body"><p class="notice__text">{{ carrier.unverified }}</p></div></div>{% endif %}
+    {% for heading, rows in [(FW.codes_headings.on, carrier.turn_on), (FW.codes_headings.off, carrier.turn_off)] %}
+    {% if rows %}
+    <h3 class="codes__h">{{ heading }}</h3>
+    <ul class="ledger">
+      {% for r in rows %}
+      <li class="crow"><span class="crow__l">{{ r.label }}</span><code class="crow__c">{{ r.code }}</code><button class="btn btn--ghost" type="button">{{ I.ic('copy') }}<span class="vh">{{ FW["copy"] }} {{ r.label }}: </span>{{ FW["copy"] }}</button></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endfor %}
+  </div>
+</section>
+
+<form method="post" action="/client/phone/checks">
+<section class="sec" aria-labelledby="checks-h" {{ fid('checks') }}>
+  <div class="sec__head"><h2 class="sec__title" id="checks-h">{{ K.heading }}</h2><span class="sec__aside">{{ K.progress }}</span></div>
+  <ol class="ledger">
+    {% for c in K["items"] %}
+    <li class="check">
+      <span class="check__n" aria-hidden="true">{{ c.n }}</span>
+      <span class="check__step">{{ c.step }}</span>
+      {{ I.st(kind(c.state), c.state) }}
+      {% if c.manual %}
+      <span class="check__ev">{{ c.hint }}</span>
+      <label class="manual"><input type="checkbox" name="check_{{ c.n }}"><span>{{ c.manual_state }}</span></label>
+      {% elif c.state == 'Done' %}
+      <span class="check__ev check__ev--done">{{ c.evidence }}</span>
+      {% else %}
+      <span class="check__ev">{{ c.not_yet }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  <p class="sec__note">{{ K.evidence_note }}</p>
+  <div class="acts"><button class="btn btn--secondary" type="submit">{{ K.save }}</button></div>
+</section>
+</form>
+{% endblock %}

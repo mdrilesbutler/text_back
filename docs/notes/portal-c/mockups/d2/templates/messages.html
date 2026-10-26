@@ -1,0 +1,122 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set M = f.messages %}
+{% set E = M.editor %}
+
+{% macro card(c) %}
+<details class="mrow{% if c.branch %} mrow--branch{% endif %}" {{ fid('m-' ~ c.key) }}{% if c.open %} open{% endif %}>
+  <summary class="mrow__sum">
+    <span class="mrow__l">
+      <span class="mrow__head"><span class="mrow__title">{% if c.branch %}{{ I.ic('branch') }}{% endif %}{{ c.title }}</span><span class="badge badge--{{ c.badge_cls }}">{{ c.badge }}</span></span>
+      <span class="mrow__when">{{ c.when }}</span>
+      <span class="mrow__edit">{{ E.open }}{{ I.ic('chev') }}</span>
+    </span>
+    <span class="mrow__r">
+      <span class="sms sms--textback mrow__sms"><span class="sms__bubble">{{ c.preview_main }}{% if c.preview_suffix %} <span class="sms__suffix">{{ c.preview_suffix }}</span>{% endif %}{% if c.preview_links %}<span class="sms__links">{% for l in c.preview_links %}<span class="sms__linklabel">{{ l.label }}</span>{% endfor %}</span>{% endif %}</span></span>
+      <span class="mrow__receipt"{% if c.cost.amber %} data-warn{% endif %}>{% if c.optout_added %}<span class="mrow__added">{{ c.optout_added }}</span>{% endif %}<span>{{ c.cost.line }}</span></span>
+      {% if c.cost.amber %}<span class="mrow__bill">{{ I.ic('bill') }}<span>{{ c.cost.amber }}</span></span>{% endif %}
+    </span>
+  </summary>
+  <div class="mrow__body">
+    <p class="vh" id="w-{{ c.key }}-label">{{ c.title }}</p>
+    <div class="wbox" role="textbox" aria-multiline="true" contenteditable="true" aria-labelledby="w-{{ c.key }}-label" aria-describedby="w-{{ c.key }}-par">{% for p in c.wording %}{% if p.text is defined %}{{ p.text }}{% else %}<span class="ins" contenteditable="false">{{ p.insert }}</span>{% endif %}{% endfor %}</div>
+    <p class="mrow__par" id="w-{{ c.key }}-par">{{ E.paragraph_rule }}</p>
+    {% if c.chips %}
+    <div class="chipset" role="group" aria-label="{{ E.chips_label }}">
+      <p class="chips-head" aria-hidden="true">{{ E.chips_label }}</p>
+      <div class="chips">{% for ch in c.chips %}<button class="chip" type="button">{{ I.ic('plus') }}<span class="vh">{{ E.chips_label }}: </span>{{ ch }}</button>{% endfor %}</div>
+    </div>
+    {% else %}
+    <p class="mrow__par">{{ c.chips_note }}</p>
+    {% endif %}
+    {% for r in c.rules %}<p class="mrow__rule">{{ I.ic('rule') }}<span>{{ r }}</span></p>{% endfor %}
+    {% if c.destination_line %}<p class="mrow__dest">{{ c.destination_line }}</p>{% endif %}
+    <div class="mrow__foot">
+      <span class="mrow__receipt mrow__receipt--foot"{% if c.cost.amber %} data-warn{% endif %}>{{ c.cost.line }}</span>
+      {% if c.reset %}<button class="btn btn--ghost" type="button"><span class="vh">{{ c.reset }} {{ c.title }}: </span>{{ c.reset }}</button>{% endif %}
+    </div>
+  </div>
+</details>
+{% endmacro %}
+
+{% block content %}
+<div class="ph">
+  <h1>{{ M.title }}</h1>
+  <p class="ph__intro">{{ M.intro }}</p>
+  <p class="ph__meta">{{ M.meta }}</p>
+</div>
+
+<nav class="jumpbar" aria-label="{{ M.jump_label }}">
+  <div class="jumpbar__scroll">
+    <ul class="jumpbar__list">
+      {% for j in m.jump %}<li><a href="#{{ j.anchor }}"{% if loop.first %} aria-current="true"{% endif %}><span>{{ j.label }}</span></a></li>{% endfor %}
+    </ul>
+  </div>
+</nav>
+
+{% if M.network_notice_shown %}
+<div class="notice notice--info notice--inflow">{{ I.ic('info', 'notice__icon') }}<div class="notice__body"><p class="notice__text">{{ M.network_notice }}</p></div></div>
+{% endif %}
+
+<form id="messages-form" method="post" action="/client/messages">
+{% for s in m.steps %}
+  {% if s.collapsed %}
+  <details class="sec sec--details" id="{{ s.id }}">
+    <summary class="sec__head sec__head--sum"><h2 class="sec__title">{{ s.heading }}</h2><span class="sec__blurb sec__blurb--inline">{{ s.blurb }}</span>{{ I.ic('chev', 'sec__chev') }}</summary>
+    <div class="ledger">{% for c in s.cards %}{{ card(c) }}{% endfor %}</div>
+  </details>
+  {% else %}
+  <section class="sec" id="{{ s.id }}" aria-labelledby="{{ s.id }}-h">
+    <div class="sec__head"><h2 class="sec__title" id="{{ s.id }}-h" tabindex="-1">{{ s.heading }}</h2></div>
+    <p class="sec__blurb">{{ s.blurb }}</p>
+    <div class="ledger">{% for c in s.cards %}{{ card(c) }}{% endfor %}</div>
+    {% if s.optional_cards %}
+    <div class="sec sec--sub">
+      <div class="sec__head"><h3 class="sec__title">{{ s.optional_eyebrow }}</h3></div>
+      <div class="ledger">
+      {% for c in s.optional_cards %}
+        {% if c.switch %}
+        <label class="switch-row"><span class="switch-row__text">{{ c.switch.label }}</span><input class="switch" type="checkbox" role="switch" name="ask_{{ c.key }}"{% if c.switch.state == 'on' %} checked{% endif %}></label>
+        <p class="switch-row__note">{{ c.switch.note }}</p>
+        {% endif %}
+        {{ card(c) }}
+      {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+{% endfor %}
+</form>
+{% endblock %}
+
+{% block aside %}
+{% set X = M.example %}
+<aside class="rail" {{ fid('example') }} aria-labelledby="rail-h">
+  <div class="rail__head">
+    <h2 class="rail__title" id="rail-h">{{ X.title }}</h2>
+    <label class="rail__show"><span>{{ X.show_label }}</span><span class="select"><select class="select__input">{% for sc in X.scenarios %}<option{% if sc == X.scenario %} selected{% endif %}>{{ sc }}</option>{% endfor %}</select>{{ I.ic('chev', 'select__icon') }}</span></label>
+  </div>
+  <div class="phone">
+    <div class="phone__screen">
+      <div class="phone__head"><span class="phone__avatar" aria-hidden="true">{{ f.meta.business_name[0] }}</span><span class="phone__who"><span class="phone__name">{{ f.meta.business_name }}</span><span class="phone__sub">{{ X.phone_sub }}</span></span></div>
+      <div class="phone__log" tabindex="0">
+        <div class="thread thread--on">
+        {% for b in m.bubbles %}
+          {% if b.side == 'event' %}
+          <span class="tpill{% if b.pill == 'missed' %} tpill--missed{% elif b.pill == 'booked' %} tpill--booked{% endif %}">{{ b.text }}</span>
+          {% else %}
+          <div class="sms{% if b.side == 'textback' %} sms--textback{% endif %}">
+            <span class="sms__badge">{{ X.badges[b.side] }}</span>
+            <span class="sms__bubble">{{ b.text }}{% if b.links %}<span class="sms__links">{% for l in b.links %}<button class="sms__linkbtn" type="button" aria-expanded="false">{{ l.label }}</button>{% endfor %}</span>{% endif %}</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="phone__foot">{{ X.foot }}</p>
+  <a class="rail__back" href="#main">{{ I.ic('back') }}{{ X.back }}</a>
+</aside>
+{% endblock %}

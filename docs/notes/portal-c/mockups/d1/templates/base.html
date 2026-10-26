@@ -1,0 +1,42 @@
+{% import "_macros.html" as ui %}
+{% set m = fx.messages %}
+<!doctype html>
+<html lang="en"{% if page_id == 'messages' %} class="has-jump"{% endif %}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ title }} · {{ meta.business_name }} · {{ meta.product }}</title>
+<link rel="stylesheet" href="../_assets/portal.css">
+<link rel="stylesheet" href="d1.css">
+</head>
+<body data-page="{{ page_id }}"{% if dirty %} data-dirty{% endif %}>
+{% include "_sprite.html" %}
+<a class="skip" href="#main">{{ shell.skip_link }}</a>
+<div class="shell">
+  <header class="topbar">
+    <a class="brand" href="/client">{{ ui.icon('missed', 'icon brand__icon') }}{{ shell.header.product }}</a>
+    <details class="menu"{% if menu_open %} open{% endif %}>
+      <summary class="menu__trigger"><span class="menu__biz">{{ shell.header.business_name }}</span>{{ ui.icon('chevron', 'icon menu__chev') }}<span class="vh">{{ shell.header.menu_trigger }}</span></summary>
+      <div class="menu__panel"{% if focus == 'menu' %} id="focus"{% endif %}>
+        <p class="menu__who">{{ shell.account_menu.signed_in }}</p>
+        <a class="menu__item" href="/client/account">{{ ui.icon('person') }}{{ shell.account_menu['items'][0] }}</a>
+        <form method="post" action="/client/logout"><button class="menu__item" type="submit">{{ ui.icon('arrow-left') }}{{ shell.account_menu['items'][1] }}</button></form>
+      </div>
+    </details>
+  </header>
+  <nav class="nav" aria-label="{{ shell.nav.accessible_name }}">
+    {% for item in shell.nav['items'] %}
+    <a class="nav__item" href="{{ item.href }}"{% if item.label == current_nav %} aria-current="page"{% endif %}><span class="nav__icon">{{ ui.icon(nav_icons[item.label]) }}</span><span>{{ item.label }}</span></a>
+    {% endfor %}
+    <p class="nav__foot">{{ shell.foot }}</p>
+  </nav>
+  <main class="page" id="main" tabindex="-1">
+    <div class="status-slot" role="status" id="status">
+      {%- if banner %}{{ ui.notice('success', banner, 'check', dismiss=fx.shared.toast_dismiss, id='focus' if focus == 'banner' else None) }}{% endif -%}
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+  {% block after %}{% endblock %}
+</div>
+</body>
+</html>

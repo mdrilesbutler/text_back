@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set page_id = 'phone' %}{% set title = fx.phone.confirm_mobile.title %}{% set current_nav = 'Phone' %}
+{% block content %}
+{% set c = fx.phone.confirm_mobile %}
+<div class="page-head">
+  <h1>{{ c.title }}</h1>
+  <ol class="stepper">
+    {% for s in c.steps %}<li class="stepper__step stepper__step--{{ s.state }}"><span class="stepper__dot">{% if s.state == 'done' %}{{ ui.icon('check') }}{% else %}{{ loop.index }}{% endif %}</span><span class="stepper__label">{{ s.label }}</span></li>{% endfor %}
+  </ol>
+  <p class="lead">{{ c.intro }}</p>
+</div>
+<form class="card card--form confirm" method="post" action="/client/phone/confirm" id="focus">
+  <div class="field">
+    <label class="field__label" for="code">{{ c.code_label }}</label>
+    <div class="otp" data-filled="0">
+      <div class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <input class="otp__input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+    </div>
+  </div>
+  <div class="actions"><button class="btn btn--primary btn--lg" type="submit">{{ c.submit }}</button><button class="btn btn--secondary btn--lg" type="submit" name="keep" value="1">{{ c.keep }}</button></div>
+  <p class="resend"><span>{{ c.resend_text }}</span><button class="btn btn--ghost" type="button">{{ c.resend }}</button></p>
+</form>
+{% endblock %}

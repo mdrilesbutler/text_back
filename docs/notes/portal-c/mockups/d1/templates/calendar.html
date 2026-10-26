@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set page_id = 'calendar' %}{% set title = fx.calendar.title %}{% set current_nav = 'Calendar' %}
+{% block content %}
+{% set c = fx.calendar %}
+{% set st = c[cal_state] %}
+{% set connected = cal_state == 'connected' %}
+<div class="page-head"><h1>{{ c.title }}</h1><p class="lead">{{ c.intro }}</p></div>
+<ol class="spine">
+  {% call ui.node('done' if connected else 'todo', focus=(focus == 'connection')) %}
+    <div class="node__head"><h2>{{ st.card_title }}</h2></div>
+    <div class="card status">
+      {{ ui.state('done' if connected else 'todo', st.state_word) }}
+      <p class="status__detail">{{ st.body }}</p>
+      {% if connected %}
+      <div class="actions">{% for b in st.buttons %}<button class="btn btn--secondary" type="button">{{ b }}</button>{% endfor %}</div>
+      {% elif cal_state == 'not_connected_with_connect' %}
+      <form method="post" action="/client/calendar/connect"><button class="btn btn--primary" type="submit">{{ st.button }}</button></form>
+      <details class="asks"{% if st.asks_open %} open{% endif %}>
+        <summary class="asks__summary"><span class="field__label">{{ st.asks_heading }}</span>{{ ui.icon('chevron', 'icon asks__chev') }}</summary>
+        <ol class="steps-list">{% for a in st.asks %}<li>{{ a }}</li>{% endfor %}</ol>
+      </details>
+      {% else %}
+      <p class="status__detail">{{ st.no_connect_body }}</p>
+      <a class="btn btn--primary" href="{{ st.button_href }}">{{ st.button }}</a>
+      {% endif %}
+    </div>
+    {% if connected %}
+    {% set p = st.picker %}
+    <fieldset class="card choice-list">
+      <legend class="choice-list__legend">{{ p.legend }}</legend>
+      <p class="field-help">{{ p.hint }}</p>
+      <div class="choice-list__items">
+        {% for o in p.options %}
+        <label class="choice"><input class="radio" type="radio" name="calendar"{% if o.in_use %} checked{% endif %}><span class="choice__text"><span class="choice__name">{{ o.name }}</span>{% if o.main is defined %}<span class="choice__meta">{{ o.main }}</span>{% endif %}</span>{% if o.in_use %}<span class="pill pill--success">{{ p.in_use_pill }}</span>{% endif %}</label>
+        {% endfor %}
+      </div>
+      <div class="actions"><button class="btn btn--secondary" type="submit">{{ p.button }}</button></div>
+    </fieldset>
+    {% endif %}
+  {% endcall %}
+  {% if st.availability is defined %}
+  {% set av = st.availability %}
+  {% call ui.node('icon', 'clock') %}
+    <div class="node__head"><h2>{{ av.title }}</h2><p class="node__blurb">{{ av.intro }}</p></div>
+    <div class="card">
+      {% if av.results is defined %}
+      <ol class="slots">{% for r in av.results %}<li class="slot tnum">{{ ui.icon('calendar') }}{{ r.label }}</li>{% endfor %}</ol>
+      <p class="field-help">{{ av.caption }}</p>
+      {% endif %}
+      <div class="actions"><button class="btn btn--secondary" type="button">{{ av.button }}</button></div>
+    </div>
+  {% endcall %}
+  {% endif %}
+</ol>
+{% endblock %}

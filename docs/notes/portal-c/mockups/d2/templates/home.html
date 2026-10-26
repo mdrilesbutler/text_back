@@ -1,0 +1,62 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set h = f.home %}
+{% block content %}
+<div class="ph">
+  <h1>{{ h.title }}</h1>
+  <p class="verdict">{{ h.status }}</p>
+</div>
+
+<section class="sec" aria-labelledby="setup-h">
+  <div class="sec__head"><h2 class="sec__title" id="setup-h">{{ h.setup_heading }}</h2></div>
+  <ol class="ledger">
+    {% for c in h.setup %}
+    <li>
+      {% if c.button %}
+      <a class="row row--task row--link" href="{{ c.button.href }}">
+        <span class="row__label">{{ c.title }}</span>
+        {{ I.st(kind(c.state), c.state) }}
+        <span class="row__hint">{{ c.detail }}</span>
+        <span class="row__act">{{ c.button.label }}{{ I.ic('chevr') }}</span>
+      </a>
+      {% else %}
+      <div class="row row--task">
+        <span class="row__label">{{ c.title }}</span>
+        {{ I.st(kind(c.state), c.state) }}
+        <span class="row__hint">{{ c.detail }}</span>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="sec" aria-labelledby="week-h">
+  <div class="sec__head"><h2 class="sec__title" id="week-h">{{ h.week_heading }}</h2></div>
+  <p class="sec__blurb">{{ h.week_caption }}</p>
+  <ul class="stats">
+    {% for s in h.week_counts %}
+    <li class="stat"><span class="stat__n">{{ s.value }}</span><span class="stat__l">{{ s.label }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="sec" aria-labelledby="callers-h">
+  <div class="sec__head"><h2 class="sec__title" id="callers-h">{{ h.callers_heading }}</h2></div>
+  {% if h.callers %}
+  <div class="cols" aria-hidden="true">{% for col in h.callers_columns %}<span>{{ col }}</span>{% endfor %}</div>
+  <ol class="ledger">
+    {% for c in h.callers %}
+    <li class="row row--caller">
+      <span class="row__name">{{ c.name }} <span class="xtag">{{ c.example }}</span></span>
+      <span class="cstat{% if c.status == h.status_order[0] %} cstat--booked{% endif %}">{{ c.status }}</span>
+      <span class="row__when">{{ c.last_activity }}</span>
+      <q class="row__last">{{ c.last_text }}</q>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="empty2">{{ h.callers_empty }}</p>
+  {% endif %}
+</section>
+{% endblock %}

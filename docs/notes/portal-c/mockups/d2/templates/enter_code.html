@@ -1,0 +1,29 @@
+{% extends "_base.html" %}
+{% import "_icons.html" as I %}
+{% set s = f.enter_code %}
+{% block content %}
+<div class="auth2">
+  <div class="ph">
+    <p class="eyebrow">{{ s.eyebrow }}</p>
+    <h1>{{ s.title }}</h1>
+    <p class="ph__intro">{{ s.intro }}</p>
+  </div>
+  <form class="auth2__form" method="post" action="/client/verify" novalidate>
+    <div class="field">
+      <label class="field__label" for="code">{{ s.code_label }}</label>
+      <div class="otp" data-filled="0">
+        <span class="otp__cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <input class="otp__input" {{ fid('code') }} name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*"{% if error %} aria-invalid="true" aria-describedby="code-error"{% endif %}>
+      </div>
+      {% if error %}<p class="field-error" id="code-error">{{ I.ic('warn') }}<span>{{ s.code_error }}</span></p>{% endif %}
+    </div>
+    <div class="switch-block">
+      <label class="switch-row"><span class="switch-row__text">{{ s.remember_switch }}</span><input class="switch" type="checkbox" role="switch" name="remember" checked></label>
+      <p class="switch-row__note">{{ s.remember_note }}</p>
+    </div>
+    <button class="btn btn--primary btn--block" type="submit">{{ s.submit }}</button>
+  </form>
+  <a class="auth2__link" href="/client/login">{{ s.resend }}</a>
+  <p class="auth2__foot">{{ s.foot }}</p>
+</div>
+{% endblock %}
