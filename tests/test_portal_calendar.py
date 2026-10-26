@@ -161,11 +161,12 @@ def test_connected_state_names_the_calendar_and_offers_reconnect(tmp_path, monke
     remember(state)
     card = pc.status_card(state)
     assert card["state_word"] == "Connected" and card["title"] == "Google Calendar"
-    # No "Connected as": the account's address is not stored. The picker replaces "Use a different calendar".
-    assert card["body"] == "Bookings go here: Tree jobs."
-    assert card["calendar_name"] == "Tree jobs"
-    assert labels(card) == ["Reconnect Google Calendar"]
-    assert card["buttons"][0]["action"] == "connect" and card["buttons"][0]["kind"] == "secondary"
+    # The account comes from the main calendar's id (layer-5 review: the spec requires it).
+    assert card["body"] == "Bookings go here: Tree jobs. Connected as owner@example.test."
+    assert card["calendar_name"] == "Tree jobs" and card["account"] == "owner@example.test"
+    assert labels(card) == ["Use a different calendar", "Reconnect Google Calendar"]
+    assert card["buttons"][0]["action"] == "pick" and card["buttons"][1] == {
+        "label": "Reconnect Google Calendar", "action": "connect", "kind": "link", "busy_label": "Opening Google…"}
 
     context = pc.page_context(state)
     picker = context["picker"]
@@ -359,9 +360,21 @@ def test_ready_google_check_reads_busy_intervals_and_fails_closed(tmp_path, monk
 def test_page_context_combines_the_cards_the_picker_and_the_consent_note(tmp_path, monkeypatch):
     state = build(tmp_path, monkeypatch)
     context = pc.page_context(state)
-    assert set(context) == {"card", "availability", "picker", "consent_note"}
+    assert set(context) == {"card", "availability", "picker", "consent_note", "consent_heading", "consent_steps"}
     assert context["card"]["state_word"] == "Not connected"
     assert context["availability"]["title"] == "Test calendar, not yours"
     assert context["picker"] is None
     assert context["consent_note"] == pc.CONSENT_NOTE
     assert "(1) You pick the Google account that owns your business calendar." in context["consent_note"]
+
+
+def test_connected_card_leaves_the_account_out_when_it_is_unknown(tmp_path, monkeypatch):
+    state, _, _ = google_state(tmp_path, monkeypatch)
+    remember(state)
+    monkeypatch.setattr(pc, "connected_account", lambda st: "")
+    assert pc.status_card(state)["body"] == "Bookings go here: Tree jobs."
+
+
+def test_consent_steps_are_the_deck_note_as_a_list():
+    joined = " ".join(f"({i}) {step}" for i, step in enumerate(pc.CONSENT_STEPS, 1))
+    assert pc.CONSENT_NOTE == f"{pc.CONSENT_HEADING} {joined}"

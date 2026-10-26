@@ -89,10 +89,20 @@ DECK_STRINGS: tuple[str, ...] = (
 # Reused from the Schedule page (deck section 5): shown under the free times while hours are "any time".
 ANY_TIME_NOTE = "Customers can be offered times like 1 AM. Set your hours."
 
-# Sentences the deck has no row for yet (reported as Open; keep short and plain).
+# Sentences the deck has no row for yet (reported as Open; keep short and plain). The connected card's
+# account line and "Use a different calendar" came back with the layer-5 review (the spec requires them);
+# the deck rows cal_connected / cal_connected_buttons still need them restored.
 BODY_MANAGED = "Set up by FluxWorks. It can't be changed here."
 NO_CHECK = "Checking free times isn't available for this calendar yet."
-OPEN_STRINGS: tuple[str, ...] = (BODY_MANAGED, NO_CHECK)
+BODY_CONNECTED_AS = "Bookings go here: {name}. Connected as {account}."
+BTN_CHANGE = "Use a different calendar"
+OPEN_STRINGS: tuple[str, ...] = (BODY_MANAGED, NO_CHECK, BODY_CONNECTED_AS, BTN_CHANGE)
+# The consent note as the list the page shows (deck cal_asks): heading, then the numbered steps.
+CONSENT_HEADING = "What Google will ask:"
+CONSENT_STEPS = ("You pick the Google account that owns your business calendar.",
+                 "Google asks you to let TextBack see and edit your calendars. TextBack uses this only to find free "
+                 "times and add bookings.",
+                 "Afterwards you choose which calendar it uses.")
 
 PROVIDER_NAMES = {"google": "Google Calendar", "microsoft": "Outlook / Microsoft 365", "icloud": "iCloud"}
 
@@ -140,6 +150,15 @@ def calendar_name(state, view: dict | None = None) -> str:
     return current or PROVIDER_NAMES.get(view["provider"], view["provider"].title())
 
 
+def connected_account(state) -> str:
+    """The connected Google account: the id of its main (primary) calendar, which Google sets to the
+    account's address. Empty when the picker list has not been fetched yet (the line is then left out)."""
+    for entry in _settings().calendar_choices(state):
+        if entry.get("primary") and "@" in str(entry.get("id", "")):
+            return str(entry["id"])
+    return ""
+
+
 def status_card(state) -> dict:
     """state_word / title / body / buttons for the connection card. Every state has a next step."""
     view = _settings().calendar_status(state)
@@ -159,10 +178,13 @@ def status_card(state) -> dict:
             card["buttons"] = _support_button(state)
 
     if status == "ready":
-        # No "Connected as": the account's address is not stored. The picker below replaces "Use a different calendar".
-        card.update(state_word=WORD_CONNECTED, title=TITLE_GOOGLE, body=BODY_CONNECTED.format(name=name))
+        account = connected_account(state)
+        body = BODY_CONNECTED_AS.format(name=name, account=account) if account else BODY_CONNECTED.format(name=name)
+        card.update(state_word=WORD_CONNECTED, title=TITLE_GOOGLE, body=body, account=account)
+        # "Use a different calendar" opens the picker; Reconnect stays a link-styled post.
+        card["buttons"] = [{"label": BTN_CHANGE, "action": "pick", "kind": "secondary"}]
         if can_connect:
-            card["buttons"] = [_connect_button(BTN_RECONNECT, "secondary")]
+            card["buttons"].append(_connect_button(BTN_RECONNECT, "link"))
     elif status == "reauth_required":
         card.update(state_word=WORD_RECONNECT, title=TITLE_GOOGLE, kind="err")
         not_connected_next_step(BODY_RECONNECT, BTN_RECONNECT, "primary")
@@ -280,4 +302,5 @@ def page_context(state, result: dict | None = None) -> dict:
         "availability": availability_card(state, result),
         "picker": picker(state, view),
         "consent_note": CONSENT_NOTE,
+        "consent_heading": CONSENT_HEADING, "consent_steps": CONSENT_STEPS,
     }

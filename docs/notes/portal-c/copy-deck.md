@@ -366,8 +366,8 @@ replies, so the thread can never show a step-back or a time reading the product 
 | account_title | Account | page heading |
 | account_signed_in | Signed in as [owner mobile as (980) 555-0123] | first line |
 | account_change_mobile | To change the mobile that signs you in, open Phone. | note; "Phone" is a link |
-| account_devices | Remembered devices / This phone · signed in [Fri, Oct 23] · stays signed in until [Nov 22] / Another device · last used [Thu, Oct 22] / Only this phone is signed in. / Example | card title / this device row / other row / empty state / tag on seeded device rows in the preview |
-| account_remember | Remember this phone for 30 days / On. This phone stays signed in for 30 days. / Off. This phone signs out after 12 hours. | switch / under it on / under it off |
+| account_devices | Remembered devices / This device · signed in [Fri, Oct 23] · stays signed in until [Nov 22] / Another device · last used [Thu, Oct 22] / Only this device is signed in. / Example | card title / this device row / other row / empty state / tag on seeded device rows in the preview |
+| account_remember | Remember this device for 30 days / On. This device stays signed in for 30 days. / Off. This device signs out after 12 hours. | switch / under it on / under it off |
 | account_signout_everywhere | Sign out everywhere / Sign out of every device? You'll need a new code on each one. / Sign out everywhere / Stay signed in | secondary button / confirm dialog / dialog actions |
 | account_signout | Sign out | button |
 | account_toast_everywhere | Signed out everywhere. | toast on the sign-in page |
