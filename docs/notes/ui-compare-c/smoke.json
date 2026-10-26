@@ -1,0 +1,134 @@
+[
+ {
+  "view": "desktop",
+  "check": "messages prompt_location persists",
+  "result": "PASS",
+  "detail": "save='[data-savebar] button[data-rest-save][form=messages-form]' notice='Saved. You changed \u201cQuestion 2: the address\u201d.' shot=save-01-messages-wording-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "appointment length 90 persists",
+  "result": "PASS",
+  "detail": "before=60 after=90 notice='Saved. You changed \u201cAppointment length\u201d. Applies right away, including customers mid-conversation.' shot=save-02-schedule-length-90-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "business name save shows the rename offer",
+  "result": "PASS",
+  "detail": "notice='Saved. You changed \u201cBusiness name\u201d. 1 text still says \u201cOak & Pine Tree Care\u201d. Update it to the new name? Update it Leave it' shot=save-03-business-name-rename-offer-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "Update them rewrites the texts",
+  "result": "PASS",
+  "detail": "notice='Updated 1 text.' intro='Hey, this is Oak & Pine Tree Service. Sorry we missed your call. What do you need done?' shot=save-04-rename-texts-updated-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "business name persists",
+  "result": "PASS",
+  "detail": "Oak & Pine Tree Service"
+ },
+ {
+  "view": "desktop",
+  "check": "HELP number persists",
+  "result": "PASS",
+  "detail": "got='(704) 555-0188' notice='Saved. You changed \u201cNumber in the HELP reply\u201d.' shot=save-05-help-number-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "forwarding manual tick persists",
+  "result": "PASS",
+  "detail": "check_answered_no_text notice='Saved. You changed \u201cAn answered call sent no text\u201d.' shot=save-06-forwarding-tick-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "owner-mobile change opens the confirm step",
+  "result": "PASS",
+  "detail": "h1='Confirm your new mobile' shot=save-07-owner-mobile-confirm-step-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "Keep my current mobile keeps it",
+  "result": "PASS",
+  "detail": "mobile='(980) 555-0123' notice='Kept your current mobile.' shot=save-08-keep-current-mobile-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "remember toggle persists",
+  "result": "PASS",
+  "detail": "was=False now=True notice='Saved. This device now stays signed in for 30 days.' shot=save-09-account-remember-desktop.png"
+ },
+ {
+  "view": "desktop",
+  "check": "no console errors during the checks",
+  "result": "PASS",
+  "detail": ""
+ },
+ {
+  "view": "phone",
+  "check": "messages prompt_location persists",
+  "result": "PASS",
+  "detail": "save='.topsave button[type=submit][form=messages-form]:not([name=discard])' notice='Saved. You changed \u201cQuestion 2: the address\u201d.' shot=save-01-messages-wording-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "appointment length 90 persists",
+  "result": "PASS",
+  "detail": "before=60 after=90 notice='Saved. You changed \u201cAppointment length\u201d. Applies right away, including customers mid-conversation.' shot=save-02-schedule-length-90-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "business name save shows the rename offer",
+  "result": "PASS",
+  "detail": "notice='Saved. You changed \u201cBusiness name\u201d. 1 text still says \u201cOak & Pine Tree Care\u201d. Update it to the new name? Update it Leave it' shot=save-03-business-name-rename-offer-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "Update them rewrites the texts",
+  "result": "PASS",
+  "detail": "notice='Updated 1 text.' intro='Hey, this is Oak & Pine Arborists. Sorry we missed your call. What do you need done?' shot=save-04-rename-texts-updated-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "business name persists",
+  "result": "PASS",
+  "detail": "Oak & Pine Arborists"
+ },
+ {
+  "view": "phone",
+  "check": "HELP number persists",
+  "result": "PASS",
+  "detail": "got='(704) 555-0187' notice='Saved. You changed \u201cNumber in the HELP reply\u201d.' shot=save-05-help-number-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "forwarding manual tick persists",
+  "result": "PASS",
+  "detail": "check_answered_no_text notice='Saved. You changed \u201cAn answered call sent no text\u201d.' shot=save-06-forwarding-tick-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "owner-mobile change opens the confirm step",
+  "result": "PASS",
+  "detail": "h1='Confirm your new mobile' shot=save-07-owner-mobile-confirm-step-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "Keep my current mobile keeps it",
+  "result": "PASS",
+  "detail": "mobile='(980) 555-0123' notice='Kept your current mobile.' shot=save-08-keep-current-mobile-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "remember toggle persists",
+  "result": "PASS",
+  "detail": "was=False now=True notice='Saved. This device now stays signed in for 30 days.' shot=save-09-account-remember-phone.png"
+ },
+ {
+  "view": "phone",
+  "check": "no console errors during the checks",
+  "result": "PASS",
+  "detail": ""
+ }
+]
