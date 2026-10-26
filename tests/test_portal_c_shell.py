@@ -91,7 +91,7 @@ def test_every_page_sends_headers_csp_and_own_assets_only(tmp_path, monkeypatch)
     sign_in(client, telecom)
     for url in PAGES:
         assert_portal_page(client.get(url))
-    csrf = csrf_of(client.get("/client/home").text)
+    csrf = csrf_of(client.get("/client/account").text)
     assert_portal_page(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "owner_mobile": "980 555 0199"}))
     for url in ("/client/messages", "/client/schedule", "/client/calendar", "/client/phone", "/client/phone/checks",
                 "/client/phone/keep", "/client/phone/confirm", "/client/phone/rename-texts", "/client/account/remember",
@@ -107,13 +107,12 @@ def test_every_post_form_carries_the_csrf_token(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     pages = [client.get(url).text for url in PAGES]
-    csrf = csrf_of(pages[0])
+    csrf = csrf_of(client.get("/client/account").text)
     pages.append(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "owner_mobile": "980 555 0199"}).text)
     pages.append(client.post("/client/account/signout-everywhere", data={"csrf": csrf}).text)
     actions = set()
     for page in pages:
-        forms = re.findall(r"<form method=post .*?</form>", page, re.S)
-        assert forms
+        forms = re.findall(r"<form method=post .*?</form>", page, re.S)  # Home has none since round 4 (no menu)
         for form in forms:
             assert f"name=csrf value='{csrf}'" in form, form[:160]
             actions.add(re.search(r'action="?([^\s>"#]+)', form).group(1))  # F6: the check posts to …#availability
@@ -125,19 +124,20 @@ def test_every_post_form_carries_the_csrf_token(tmp_path, monkeypatch):
             "/client/account/signout-everywhere"} <= actions
 
 
-def test_header_business_name_wraps_and_is_the_account_menu(tmp_path, monkeypatch):
+def test_header_business_name_wraps_under_textback_beside_the_account_button(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    csrf = csrf_of(client.get("/client/home").text)
+    csrf = csrf_of(client.get("/client/account").text)
     client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine's Tree Care of the Carolinas, Inc.",
                                        "owner_mobile": OWNER})
     page = client.get("/client/home").text
     header = re.search(r"<header class=topbar data-topbar>.*?</header>", page, re.S).group(0)
-    trigger = re.search(r"<summary class=\"menu__trigger\">.*?</summary>", header, re.S).group(0)
-    assert "<span class=menu__biz>Oak &amp; Pine&#39;s Tree Care of the Carolinas, Inc.</span>" in trigger
-    assert "<span class=vh>Account</span>" in trigger
+    brand = re.search(r"<a class=brand href=/client/home>.*?</a>", header, re.S).group(0)
+    assert "<span class=brand__biz>Oak &amp; Pine&#39;s Tree Care of the Carolinas, Inc.</span>" in brand
+    assert "<span class=acct__label>Account</span>" in header and "<a class=acct href=/client/account>" in header
     assert "ellipsis" not in header and "truncate" not in header and "text-overflow" not in header
-    assert "Signed in as <span class=nw>(980) 555-0123</span>" in header and "href=/client/account>" in header
+    # "Signed in as" moved from the retired header menu to the Account page (round 4).
+    assert "Signed in as <span class=nw>(980) 555-0123</span>" in client.get("/client/account").text
 
 
 def test_notice_slot_sits_between_the_header_and_the_h1_on_every_page(tmp_path, monkeypatch):

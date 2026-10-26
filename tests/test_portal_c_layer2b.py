@@ -25,7 +25,7 @@ REF = "https://example.test/a/1-5aecf44f8989"
 def signed_in(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    return client, path, csrf_of(client.get("/client/home").text)
+    return client, path, csrf_of(client.get("/client/account").text)
 
 
 def card(page, key):

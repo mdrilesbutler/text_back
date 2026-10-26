@@ -112,28 +112,6 @@ function initTheme() {
   });
 }
 
-// ---------------------------------------------------------------- account menu
-function initMenu() {
-  const menu = $('[data-menu]');
-  if (!menu) return;
-  const summary = $('summary', menu);
-  const close = refocus => {
-    if (!menu.open) return;
-    menu.open = false;
-    if (refocus) summary.focus();
-  };
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape' || !menu.open) return;
-    e.stopImmediatePropagation();
-    close(menu.contains(document.activeElement));
-  });
-  document.addEventListener('click', e => { if (!menu.contains(e.target)) close(false); });
-  // A null relatedTarget is a click outside, which the click handler covers.
-  menu.addEventListener('focusout', e => {
-    if (e.relatedTarget && !menu.contains(e.relatedTarget)) close(false);
-  });
-}
-
 // ---------------------------------------------------------------- notices (in flow, never floating)
 // Every notice lives in the #notice slot between the header and the h1. The slot is role=status, so
 // writing into it is announced; a notice never carries a role of its own and never times out.
@@ -174,14 +152,18 @@ function initNotices() {
   }
 }
 
-// ---------------------------------------------------------------- jump to a step (Messages)
-// The step on screen is marked current in the chip row (from 640 px) and named in the phone "Jump to"
-// control, whose summary then reads "Jump to: <step>"; picking a step closes it.
+// ---------------------------------------------------------------- sections: the grid and the sticky "Jump to"
+// Messages, Schedule and Phone & business open with their sections as a grid of one-tap buttons
+// ([data-stepgrid]). Below 1024 px the compact "Jump to" bar ([data-jumpbar], a 0-height sticky strip, so showing
+// it never moves the page) appears only once the grid has scrolled away under the header; without JavaScript it
+// stays in flow under the grid. The section on screen is marked in both and named in the bar ("Jump to:
+// Booking"); every change is announced to the page as a `tb:step` event (the example rail follows it).
 function initJump() {
-  const chipList = $('.jump__list');
+  const grid = $('[data-stepgrid]');
+  const bar = $('[data-jumpbar]');
   const menu = $('[data-jumpmenu]');
   const label = menu && $('.jumpmenu__label', menu);
-  const links = $$('.jump__link, .jumpmenu__link');
+  const links = $$('.stepgrid__link, .jumpmenu__link');
   const steps = [...new Set(links.map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean))];
   menu?.addEventListener('click', e => { if (e.target.closest('.jumpmenu__link')) menu.open = false; });
   // Escape closes the open jump menu and gives focus back to its summary (F9).
@@ -190,18 +172,40 @@ function initJump() {
     menu.open = false;
     $('summary', menu).focus();
   });
-  // A jump moves focus to the step's heading (tabindex=-1), so the next Tab starts there (F5).
+  // A jump moves focus to the section's heading (tabindex=-1), so the next Tab starts there (F5).
   for (const a of links) a.addEventListener('click', () => {
     const heading = $('h2', document.getElementById(a.getAttribute('href').slice(1)) || document.body);
     if (heading) requestAnimationFrame(() => heading.focus({ preventScroll: true }));
   });
   if (!steps.length) return;
-  // The step on screen is the last one whose top has passed the line under the sticky chrome; at the very end of
-  // the page, the last step. Measured on scroll (one frame at a time) and again when scrolling ends (m23).
   const topbar = $('[data-topbar]');
+  // The bar shows once the grid's last row has gone up under the header (and never while the grid is on screen).
+  if (grid && bar && 'IntersectionObserver' in window) {
+    bar.hidden = true;
+    let seen = null;
+    const watch = () => {
+      seen?.disconnect();
+      const top = Math.round(topbar?.getBoundingClientRect().height || 0);
+      seen = new IntersectionObserver(([entry]) => {
+        const gone = !entry.isIntersecting && entry.boundingClientRect.top < top + 1;
+        bar.hidden = !gone;
+        if (!gone && menu) menu.open = false;
+        if (!frame) frame = requestAnimationFrame(mark);
+      }, { rootMargin: `-${top}px 0px 0px 0px` });
+      seen.observe(grid);
+    };
+    watch();
+    if (topbar && 'ResizeObserver' in window) new ResizeObserver(watch).observe(topbar);
+  }
+  // The section on screen is the last one whose top has passed the line under the sticky chrome; at the very end
+  // of the page, the last one that has come into view. Measured on scroll (one frame at a time) and again when
+  // scrolling ends (m23).
+  // The bar counts whenever it can show (below 1024 px), hidden or not: a jump from the grid lands where the bar
+  // is about to appear, and scroll-padding already leaves its room.
+  let barHeight = 44;
   const current = () => {
-    const chrome = (topbar?.getBoundingClientRect().bottom || 0) + Math.max(
-      ...[menu, chipList?.parentElement].filter(Boolean).map(x => (getComputedStyle(x).position === 'sticky' ? x.offsetHeight : 0)), 0);
+    if (bar && !bar.hidden && menu?.offsetHeight) barHeight = menu.offsetHeight;
+    const chrome = (topbar?.getBoundingClientRect().bottom || 0) + (bar && getComputedStyle(bar).display !== 'none' ? barHeight : 0);
     const line = chrome + 24;
     if (innerHeight + scrollY >= document.documentElement.scrollHeight - 2) {
       return [...steps].reverse().find(s => s.getBoundingClientRect().top < innerHeight) || steps[0];
@@ -209,24 +213,94 @@ function initJump() {
     return [...steps].reverse().find(s => s.getBoundingClientRect().top <= line) || steps[0];
   };
   let frame = 0;
+  let last = '';
   const mark = () => {
     frame = 0;
-    const current_ = current();
-    if (!current_) return;
+    const now = current();
+    if (!now) return;
     for (const a of links) {
-      const on = a.getAttribute('href') === `#${current_.id}`;
+      const on = a.getAttribute('href') === `#${now.id}`;
       if (on) a.setAttribute('aria-current', 'location'); else a.removeAttribute('aria-current');
       if (on && label && a.classList.contains('jumpmenu__link')) label.textContent = `${label.dataset.lead} ${a.textContent}`;
-      if (on && chipList && a.classList.contains('jump__link')) {
-        const bar = chipList.parentElement;
-        if (a.offsetLeft < bar.scrollLeft || a.offsetLeft + a.offsetWidth > bar.scrollLeft + bar.clientWidth) bar.scrollLeft = a.offsetLeft - 16;
-      }
+    }
+    if (now.id !== last) {
+      last = now.id;
+      document.dispatchEvent(new CustomEvent('tb:step', { detail: { id: now.id, node: now } }));
     }
   };
   addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(mark); }, { passive: true });
   addEventListener('scrollend', mark);
   addEventListener('resize', () => { if (!frame) frame = requestAnimationFrame(mark); });
   mark();
+}
+
+// ---------------------------------------------------------------- links into a closed disclosure
+// A link to something inside a closed <details> (a changed text in the save bar, an error link, a jump, or the
+// page loaded at #card-…) opens every disclosure around it first, so the browser scrolls to a visible target.
+function openAround(target) {
+  for (let d = target?.closest('details'); d; d = d.parentElement?.closest('details')) d.open = true;
+}
+function initDisclosureLinks() {
+  const fromHash = () => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    const target = id && document.getElementById(id);
+    if (target && target.closest('details:not([open])')) {
+      openAround(target);
+      requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
+    }
+  };
+  document.addEventListener('click', e => {
+    const link = e.target.closest?.('a[href^="#"]');
+    const id = link && decodeURIComponent(link.getAttribute('href').slice(1));
+    const target = id && document.getElementById(id);
+    if (target) openAround(target);
+  }, true);
+  addEventListener('hashchange', fromHash);
+  fromHash();
+}
+
+// ---------------------------------------------------------------- Messages: the branch disclosures' count
+// "If the answer is unclear · 2 texts" counts the branch texts a customer can get now: a switched-off question's
+// re-ask (hidden by CSS) is left out, and the titles under the summary follow it.
+function initBranchCounts() {
+  const all = $$('details[data-branches]');
+  if (!all.length) return;
+  const shown = card => getComputedStyle(card).display !== 'none';
+  const sync = () => {
+    for (const d of all) {
+      const live = $$('article[data-card]', d).filter(shown);
+      const count = $('[data-branch-count]', d);
+      if (count) count.textContent = plural(live.length, 'text');
+      const titles = $('.branches__titles', d);
+      if (titles) titles.textContent = live.map(c => c.dataset.changeLabel).join(' · ');
+    }
+  };
+  document.addEventListener('change', e => { if (e.target.closest?.('.switch')) requestAnimationFrame(sync); });
+}
+
+// ---------------------------------------------------------------- the bottom tab bar steps aside (phones)
+// Below 1024 px the tab bar hides while the page scrolls down and comes back on any scroll up, at the top and at
+// the end of the page, and whenever one of its links has focus. Instant under reduced motion (CSS). Without
+// JavaScript it stays put; every page ends with room for it either way.
+function initNavHide() {
+  const nav = $('.nav');
+  if (!nav) return;
+  const PHONE = matchMedia('(max-width: 1023.98px)');
+  let lastY = scrollY;
+  let frame = 0;
+  const show = () => nav.removeAttribute('data-away');
+  const update = () => {
+    frame = 0;
+    const y = scrollY;
+    const end = document.documentElement.scrollHeight - innerHeight - 2;
+    if (!PHONE.matches || y <= 8 || y >= end || nav.contains(document.activeElement)) show();
+    else if (y > lastY + 4) nav.setAttribute('data-away', '');
+    else if (y < lastY - 4) show();
+    lastY = y;
+  };
+  addEventListener('scroll', () => { if (!frame) frame = requestAnimationFrame(update); }, { passive: true });
+  addEventListener('resize', update);
+  nav.addEventListener('focusin', show);
 }
 
 // ---------------------------------------------------------------- unsaved changes (one form at a time)
@@ -700,8 +774,11 @@ function initErrorFocus() {
 }
 
 // ---------------------------------------------------------------- the example conversation
-// The select switches the thread drawn (data-active). On desktop, editing a card brings its bubble into
-// view inside the rail's own scroll (never the page) and rings it.
+// The select switches the thread drawn (data-active). Where the rail scrolls its own thread (desktop), it follows
+// the page: when a step comes on screen (the `tb:step` event from initJump) or a card's editor opens or gets
+// focus, the rail scrolls so that step's first bubble sits at its top (switching to an example that has the step
+// when the one shown doesn't), smoothly unless reduced motion is asked for. The bubble of the card being edited
+// keeps its ring. "More below. Scroll the conversation." shows under the frame while more of the thread is below.
 function initRail(form) {
   const rail = $('[data-rail]');
   if (!rail) return;
@@ -710,11 +787,11 @@ function initRail(form) {
   let ringed = null;
   const activate = () => { rail.dataset.active = select.value; };
   const clear = () => { if (ringed) delete ringed.dataset.current; ringed = null; };
-  // "Scroll for the rest" (CSS shows it while the log carries data-more): more than the 16px of padding that
-  // clears the 32px fade is still below. Never set when the log does not scroll (phones, the in-flow rail).
+  const scrolls = () => getComputedStyle(log).overflowY !== 'visible';
+  // More than the 16px of padding that clears the fade is still below. Never set when the log does not scroll
+  // (phones, the in-flow rail).
   const more = () => {
-    const scrolls = getComputedStyle(log).overflowY !== 'visible';
-    log.toggleAttribute('data-more', scrolls && log.scrollHeight - log.clientHeight - log.scrollTop > 16);
+    log.toggleAttribute('data-more', scrolls() && log.scrollHeight - log.clientHeight - log.scrollTop > 16);
   };
   activate();
   select.addEventListener('change', () => { activate(); clear(); log.scrollTop = 0; more(); });
@@ -726,26 +803,60 @@ function initRail(form) {
   }
   more();
   if (!form) return;
-  form.addEventListener('focusin', e => {
-    if (!WIDE.matches) return;
-    const card = e.target.closest('article[data-card]');
-    if (!card) return;
-    const key = card.dataset.card;
-    let p = $(`.thread[data-scenario="${rail.dataset.active}"] [data-preview="${key}"]`, rail);
+  const thread = () => $(`.thread[data-scenario="${rail.dataset.active}"]`, rail);
+  const rowOf = p => p.closest('li') || p.closest('.sms');
+  const topOf = row => row.getBoundingClientRect().top - log.getBoundingClientRect().top + log.scrollTop
+    - parseFloat(getComputedStyle(log).paddingTop || '0');
+  const keysOf = step => $$('article[data-card]', step).map(card => card.dataset.card);
+  // The first TextBack bubble for any of `keys` in the thread shown, else in the first example that has one.
+  const firstBubble = keys => {
+    const find = within => keys.map(k => $$(`[data-preview="${k}"]`, within)).flat()
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))[0];
+    let p = find(thread() || log);
     if (!p) {
-      p = $(`[data-preview="${key}"]`, log);
-      if (!p) { clear(); return; }
+      p = find(log);
+      if (!p) return null;
       select.value = p.closest('.thread').dataset.scenario;
       activate();
+      more();
     }
+    return p;
+  };
+  const go = top => log.scrollTo({ top: Math.max(0, top), behavior: REDUCED.matches ? 'auto' : 'smooth' });
+  // A step came on screen: its first bubble goes to the top of the rail.
+  const followStep = step => {
+    if (!scrolls() || !step) return;
+    const p = firstBubble(keysOf(step));
+    if (p) go(topOf(rowOf(p)));
+  };
+  document.addEventListener('tb:step', e => followStep(e.detail?.node));
+  // Editing a card: its step's first bubble at the top, unless that leaves the card's own bubble out of view;
+  // then the card's bubble goes to the top. That bubble keeps its ring while the card is being edited.
+  const followCard = card => {
+    if (!scrolls()) return;
+    const key = card.dataset.card;
+    let p = $(`[data-preview="${key}"]`, thread() || log);
+    if (!p) p = firstBubble([key]);
+    if (!p) { clear(); return; }
     const bubble = p.closest('.sms__bubble');
-    if (bubble === ringed || !bubble.offsetParent) return;
-    clear();
-    bubble.dataset.current = '';
-    ringed = bubble;
-    const top = bubble.offsetTop - (log.clientHeight - bubble.offsetHeight) / 2;
-    log.scrollTo({ top, behavior: REDUCED.matches ? 'auto' : 'smooth' });
+    if (bubble !== ringed) {
+      clear();
+      bubble.dataset.current = '';
+      ringed = bubble;
+    }
+    const step = card.closest('.node');
+    const first = step && firstBubble(keysOf(step));
+    const own = topOf(rowOf(p));
+    const start = first && first.closest('.thread') === p.closest('.thread') ? topOf(rowOf(first)) : own;
+    go(own + bubble.offsetHeight - start <= log.clientHeight - 24 ? start : own);
+  };
+  form.addEventListener('focusin', e => {
+    const card = e.target.closest('article[data-card]');
+    if (card) followCard(card);
   });
+  form.addEventListener('toggle', e => {
+    if (e.target.matches?.('details.editor') && e.target.open) followCard(e.target.closest('article[data-card]'));
+  }, true);
   form.addEventListener('focusout', e => {
     const card = e.target.closest('article[data-card]');
     if (card && !card.contains(e.relatedTarget)) clear();
@@ -933,13 +1044,12 @@ function initKeyboard() {
 }
 
 // ---------------------------------------------------------------- header height (F2)
-// At large text sizes the header wraps to two lines; the sticky jump control and scroll-padding read
-// --header-h, so it follows the header's real height (the menu open on a phone adds its panel, as before).
+// A long business name or large text makes the header taller; the sticky jump bar and scroll-padding read
+// --header-h, so it follows the header's real height.
 function initHeaderHeight() {
   const bar = $('[data-topbar]');
   if (!bar || !('ResizeObserver' in window)) return;
   new ResizeObserver(() => {
-    if (bar.querySelector('.menu[open]')) return;  // the open menu pushes the page; the chrome under it stays put
     root.style.setProperty('--header-h', `${bar.getBoundingClientRect().height}px`);
   }).observe(bar);
 }
@@ -960,7 +1070,7 @@ function initPicker(form = $('[data-picker]'), save = form && $('[data-picker-sa
 // ---------------------------------------------------------------- start
 const messagesForm = $('#messages-form');
 initCards(messagesForm);  // before the tracker, so a restored draft is drawn before it is counted
-for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initSchedule, initScheduleReset, initChangeTracking,
+for (const init of [initTheme, initNotices, initJump, initDisclosureLinks, initBranchCounts, initNavHide, initSwitchNotes, initSchedule, initScheduleReset, initChangeTracking,
   initForms, initTel, initOtp, initPicker, initConfirmInline, initKeyboard, initAvailability, initHeaderHeight]) init();
 initRail(messagesForm);
 initErrorFocus();

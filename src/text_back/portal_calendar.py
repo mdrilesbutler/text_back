@@ -37,7 +37,7 @@ WORD_NOT_CONNECTED = "Not connected"
 TITLE_NOT_CONNECTED = "No calendar yet"
 # Same words as Home's Calendar card; then why connecting matters (with Connect) or who sets it up (without).
 BODY_NOT_CONNECTED = "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see."
-WHY_CONNECT = ("Connect the Google account that owns your business calendar, so the assistant offers your real "
+WHY_CONNECT = ("Connect the Google account that owns your business calendar, so TextBack offers your real "
                "free times and books onto your calendar.")
 BODY_NO_WEB = ("To book onto your own calendar, it has to be connected. Connecting from this page isn't set up "
                "for your account yet. FluxWorks sets this up for you.")
@@ -58,14 +58,14 @@ CONSENT_NOTE = ("What Google will ask: (1) You pick the Google account that owns
                 "(2) Google asks you to let TextBack see and edit your calendars. "
                 "TextBack uses this only to find free times and add bookings. "
                 "(3) Afterwards you choose which calendar it uses.")
-PICKER_LEGEND = "Which calendar should the assistant use?"
+PICKER_LEGEND = "Which calendar should TextBack use?"
 PICKER_HINT = "Free times are checked on this calendar and new appointments are added to it."
 PICKER_MAIN = "(main calendar)"
 PICKER_PILL = "In use"
 PICKER_BUTTON = "Use this calendar"
 PICKER_ERROR = "Pick one of the calendars listed."
 PICKER_ONLY = "This is the only calendar this account can add appointments to."
-TOAST_PICKED = "Saved. The assistant now books on {name}."
+TOAST_PICKED = "Saved. TextBack now books on {name}."
 ERR_NO_ACCESS = "Google didn't give TextBack calendar access. Try connecting again."
 ERR_NOT_SET_UP = "Connecting a calendar isn't set up for this account yet."
 AVAIL_TITLE = "Next free times on {name}"

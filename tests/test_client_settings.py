@@ -159,7 +159,7 @@ def test_without_a_web_client_the_page_explains_and_connect_is_refused(tmp_path,
     sign_in(client, telecom)
     page = client.get("/client/calendar")
     assert "isn't set up for your account yet" in html.unescape(page.text) and "Connect Google Calendar" not in page.text
-    refused = client.post("/client/calendar", data={"csrf": csrf_of(page.text), "action": "connect"})
+    refused = client.post("/client/calendar", data={"csrf": csrf_of(client.get("/client/account").text), "action": "connect"})
     assert "Connecting a calendar isn't set up for this account yet." in html.unescape(refused.text)
     assert client.get("/client/calendar", follow_redirects=False).status_code == 200
     client.cookies.clear()

@@ -19,7 +19,7 @@ CALENDAR_LINK = re.compile(r"https?://\S+?/a/[\w-]+(?:/[goi])?$")
 def signed_in(tmp_path, monkeypatch, **kw):
     client, telecom, clock, path = make(tmp_path, monkeypatch, **kw)
     sign_in(client, telecom)
-    return client, path, csrf_of(client.get("/client/home").text)
+    return client, path, csrf_of(client.get("/client/account").text)
 
 
 def card(page, key):
@@ -37,30 +37,36 @@ def text(fragment):
 def test_cards_follow_the_spine_order_and_start_help_stop_is_collapsed(tmp_path, monkeypatch):
     client, path, csrf = signed_in(tmp_path, monkeypatch)
     page = client.get("/client/messages").text
-    assert re.findall(r"id=card-(\w+) ", page) == list(FIELD_KEYS)
+    # Round 4: each step's main path, then its branch texts (one disclosure); FIELD_KEYS keeps conversation order.
+    assert re.findall(r"id=card-(\w+) ", page) == [
+        "intro", "prompt_service", "prompt_location", "prompt_preferred_time", "prompt_name", "prompt_phone",
+        "prompt_email", "preferred_time_reprompt", "phone_reprompt", "email_reprompt", "booking_confirmation",
+        "slot_unavailable", "booking_error", "followup_1", "followup_2", "handoff_ack", "handoff_ack_safety",
+        "opt_in", "help", "opt_out_ack", "opt_out_suffix"]
+    assert sorted(re.findall(r"id=card-(\w+) ", page)) == sorted(FIELD_KEYS)
     assert FIELD_KEYS[:6] == ("intro", "prompt_service", "prompt_location", "prompt_preferred_time",
                               "preferred_time_reprompt", "prompt_name")
     heads = re.findall(r'<li class="node node--(?:missed|icon)[^"]*" id=(\w+)>\s*<span class=node__dot aria-hidden=true>'
                        r'.*?<h2 tabindex=-1>([^<]+)</h2>', page, re.S)
     assert [(sid, html.unescape(h)) for sid, h in heads] == [
         ("missed_call", "Missed call"), ("questions", "Questions"), ("booking", "Booking"), ("no_reply", "No reply"),
-        ("steps_back", "When the assistant steps back"), ("any_time", "START, HELP and STOP")]
+        ("steps_back", "When TextBack steps back"), ("any_time", "START, HELP and STOP")]
     assert 'class="node node--missed" id=missed_call' in page  # the red missed-call dot opens the spine
     assert re.search(r"<details class=anytime>\s*<summary class=anytime__summary>", page)
     assert "<p class=cards__end><span class=tpill>Texts stop here</span></p>" in page
     assert page.index("Optional questions") < page.index("id=card-prompt_phone")
 
 
-def test_jump_menu_on_phones_and_chips_wider_both_naming_the_five_steps(tmp_path, monkeypatch):
+def test_jump_menu_on_phones_and_the_step_grid_both_naming_the_five_steps(tmp_path, monkeypatch):
     client, path, csrf = signed_in(tmp_path, monkeypatch)
     page = client.get("/client/messages").text
     assert '<html lang=en class="no-js has-jump">' in page  # scroll-padding counts the sticky jump control
     menu = re.search(r"<details class=jumpmenu data-jumpmenu>.*?</details>", page, re.S).group(0)
-    assert "<span class=jumpmenu__label data-lead=\"Jump to:\">Jump to a step</span>" in menu
-    chips = re.search(r'<nav class=jump aria-label="On this page">.*?</nav>', page, re.S).group(0)
+    assert "<span class=jumpmenu__label data-lead=\"Jump to:\">Jump to a section</span>" in menu
+    chips = re.search(r'<nav class=stepgrid aria-label="On this page" data-stepgrid>.*?</nav>', page, re.S).group(0)
     wanted = [("#missed_call", "Missed call"), ("#questions", "Questions"), ("#booking", "Booking"),
               ("#no_reply", "No reply"), ("#steps_back", "Steps back")]
-    for block, cls in ((menu, "jumpmenu__link"), (chips, "jump__link")):
+    for block, cls in ((menu, "jumpmenu__link"), (chips, "stepgrid__link")):
         assert re.findall(rf"<a class={cls} href=(#\w+)(?: aria-current=location)?>([^<]+)</a>", block) == wanted
 
 
@@ -202,7 +208,8 @@ def test_steps_back_cards_show_what_happens_next_only_where_it_is_true(tmp_path,
         assert "<p class=next__title>What happens next</p>" in head
         assert re.findall(r"<li>([^<]+)</li>", re.search(r"<ol class=next__steps>.*?</ol>", head, re.S).group(0)) == \
             [html.escape(s, quote=True).replace("&#x27;", "&#39;") for s in NEXT_STEPS]
-    assert "Must tell people to call 911" in card(page, "handoff_ack_safety").split("What happens next")[0]
+    # Round 4: the wording rule sits in the editor (after What happens next), like every other card's.
+    assert "Must tell people to call 911" in card(page, "handoff_ack_safety").split("What happens next")[1]
     state.delivery_transport = Channel("log")
     c = html.unescape(card(client.get("/client/messages").text, "handoff_ack"))
     assert "These go to a log FluxWorks can read. Nobody is alerted. Ask FluxWorks to set up where these should go." in c

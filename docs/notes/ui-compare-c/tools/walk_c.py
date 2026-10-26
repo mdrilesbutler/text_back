@@ -187,8 +187,9 @@ def open_editor(tab, key):
 def shared_states(tab, report):
     p = tab.page
     tab.go("/client/home")
-    p.click("summary.menu__trigger"); p.wait_for_timeout(250)
-    tab.state(report, "home", "account-menu", top=True)
+    # Round 4: Account is one tap from the header (phone) or the sidebar (desktop); the business-name menu is gone.
+    p.locator("a.acct:visible, a.nav__item--wide:visible").first.click(); tab.settle()
+    tab.state(report, "account", "from-header", top=True)
 
     tab.go("/client/messages")
     open_editor(tab, "prompt_location")

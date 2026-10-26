@@ -1,7 +1,7 @@
 """Schedule page (/client/schedule): the timing rules the engine enforces.
 
 Appointment length, time zone, working hours, quiet hours, reminder delays and
-the waiting time before the assistant stops. Every value is a ``client_settings``
+the waiting time before TextBack stops. Every value is a ``client_settings``
 row over the env default (app.state.defaults). Saving validates everything first
 (exact texts from docs/notes/portal-c/copy-deck.md, section 5), writes all keys
 in one transaction, then rebuilds the live policy through
@@ -83,8 +83,8 @@ CORRUPT_HOURS = "Your saved working hours couldn't be read, so every time counts
 ANY_TIME_WARNING = "Customers can be offered times like 1 AM. Set your hours."
 ANY_TIME_BUTTON = "Use Mon–Fri, 8 AM–5 PM"
 HOURS_HINTS = {
-    "any": "The assistant accepts any time a customer asks for if your calendar is free, including the middle of the night.",
-    "set": "The assistant turns down times outside these hours and asks the customer for another time.",
+    "any": "TextBack accepts any time a customer asks for if your calendar is free, including the middle of the night.",
+    "set": "TextBack turns down times outside these hours and asks the customer for another time.",
 }
 # Reset group -> the rule's label (also the accessible name "Reset <label>").
 LABELS = {
@@ -101,7 +101,7 @@ LABELS = {
 APPLIES = {
     "appointment_duration_minutes": "Applies right away, including customers mid-conversation.",
     "timezone": "Applies right away to the times in texts.",
-    "working_hours": "Applies right away to times the assistant offers. Bookings already made stay as they are.",
+    "working_hours": "Applies right away to times TextBack offers. Bookings already made stay as they are.",
     "quiet_hours": "Applies right away to reminders not yet sent.",
 }
 ANY_TIME_NOTE = "Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it."
@@ -113,7 +113,7 @@ CHANGED_ONE, CHANGED_MANY = "1 rule changed", "{n} rules changed"
 CONSEQUENCES = {
     "appointment_duration_minutes": "Used for new bookings. 15 to 480 minutes, in steps of 5.",
     "timezone": "Used for working hours, quiet hours and the times in texts.",
-    "quiet_hours": ("Reminders and retried texts wait until quiet hours end. Still sent right away: the first text "
+    "quiet_hours": ("Reminders and texts TextBack sends again wait until quiet hours end. Still sent right away: the first text "
                     "after a missed call, replies to a customer who is texting, and the START, HELP and STOP replies."),
     "followup_delay_1": "A reminder that is already scheduled keeps its time. Later reminders use the new delays.",
     "followup_delay_2": "A reminder that is already scheduled keeps its time. Later reminders use the new delays.",

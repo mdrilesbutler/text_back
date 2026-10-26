@@ -4,7 +4,7 @@
     Contract: the form always posts all 21 textareas and both ask_* switches; the hidden name=save submit
     comes first so Enter never triggers Reset or Replace; never `disabled` on a field. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, node %}
+{% from "client/_macros.html.j2" import icon, csrf_input, node, stepnav %}
 {% from "client/_message_card.html.j2" import message_card, error_summary as error_box %}
 {% from "client/_rail.html.j2" import rail as rail_panel %}
 
@@ -16,6 +16,15 @@
   {% for c in st.optional %}{{ message_card(c, editable, max_chars) }}{% endfor %}
   {% endif %}
   {% if st.id == "no_reply" %}<p class=cards__end><span class=tpill>Texts stop here</span></p>{% endif %}
+  {#- Round 4: the step's branch texts in one disclosure; open while one is customized, unsaved or rejected.
+      Its count and titles are the texts a customer can get now (a switched-off question's re-ask is left out;
+      portal.js keeps them in step with the switches). #}
+  {% if st.branches %}
+  <details class=branches data-branches{% if st.branch_open %} open{% endif %}>
+    <summary class=branches__summary><span class=branches__text><span class=branches__head>{{ st.branch_label }} · <span data-branch-count>{{ st.branch_count }}</span></span><span class=branches__titles data-branch-titles>{{ st.branch_titles }}</span></span>{{ icon("chevron-down", "branches__chev") }}</summary>
+    <div class=branches__cards>{% for c in st.branches %}{{ message_card(c, editable, max_chars) }}{% endfor %}</div>
+  </details>
+  {% endif %}
   {#- M8: without JavaScript each step ends with the form's Save (the same form, every text at once). #}
   {% if editable %}<p class=step-save><button type=submit class="btn btn--secondary" name=save value=1>Save every text</button></p>{% endif %}
 </div>
@@ -57,12 +66,8 @@
   </div>
   {% endif %}
   {% if error_summary %}{{ error_box(error_summary) }}{% endif %}
-  {#- Below 640 px one sticky 44 px control; wider, the chip row. portal.js marks the step on screen. #}
-  <details class=jumpmenu data-jumpmenu>
-    <summary class=jumpmenu__summary><span class=jumpmenu__label data-lead="Jump to:">Jump to a step</span>{{ icon("chevron-down", "jumpmenu__chev") }}</summary>
-    <ul class=jumpmenu__list aria-label="On this page">{% for sid, label in jump %}<li><a class=jumpmenu__link href=#{{ sid }}{% if loop.first %} aria-current=location{% endif %}>{{ label }}</a></li>{% endfor %}</ul>
-  </details>
-  <nav class=jump aria-label="On this page"><ul class=jump__list>{% for sid, label in jump %}<li><a class=jump__link href=#{{ sid }}{% if loop.first %} aria-current=location{% endif %}>{{ label }}</a></li>{% endfor %}</ul></nav>
+  {#- The steps as one-tap buttons, then the sticky "Jump to" once they scroll away (stepnav). #}
+  {{ stepnav(jump) }}
   {% if editable %}
   <form method=post action=/client/messages id=messages-form data-track-changes data-topsave data-changed-one="1 text changed" data-changed-many="{n} texts changed" data-save-label=Save{% if topsave %} data-dirty-initial{% endif %}>
     {{ csrf_input(csrf) }}

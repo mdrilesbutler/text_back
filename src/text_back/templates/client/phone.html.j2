@@ -5,7 +5,7 @@
     checks with the shared glyph set, the manual ticks posting with the same Save. One save bar names what
     changed; while unsaved the header becomes it at every width. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, field_error, node, state_pill %}
+{% from "client/_macros.html.j2" import icon, csrf_input, field_error, node, state_pill, stepnav %}
 {% from "client/_form_errors.html.j2" import field_summary %}
 {% from "client/_message_card.html.j2" import bubble %}
 {% macro described(key) -%}aria-describedby="{{ key }}-help{{ (' ' ~ key ~ '-error') if errors.get(key) else '' }}"{% if errors.get(key) %} aria-invalid=true{% endif %}{%- endmacro %}
@@ -13,6 +13,7 @@
 {% block content %}
 <div class=page-head><h1>{{ title_text }}</h1><p class=lead>{{ intro }}</p></div>
 {% if summary %}{{ field_summary(summary) }}{% endif %}
+{{ stepnav((("business", "Business details"), ("numbers", "Numbers"), ("forwarding", "Call forwarding"), ("checks", "Checks"))) }}
 {% if page_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ page_error }}</p></div></div>{% endif %}
 <form method=post action=/client/phone id=phone-form novalidate data-track-changes data-topsave data-changed-one="1 change" data-changed-many="{n} changes" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
   {{ csrf_input(csrf) }}
@@ -33,9 +34,11 @@
       <div class=field-preview>
         <p class=eyebrow>In the first text</p>
         <div class="sms sms--textback"><span class=sms__who data-name-who>{{ business_name }}</span><div class=sms__bubble><p data-name-preview data-template="{{ name_template }}" data-suffix="{{ name_suffix }}" data-saved-name="{{ business_name }}">{{ name_preview }}{% if name_suffix %} <span class=sms__suffix>{{ name_suffix }}</span>{% endif %}</p></div></div>
+        {#- Round 4: the rename offer above is still open and this text keeps the old name, so the preview says so. #}
+        {% if rename_offer and "intro" in rename_offer["keys"] %}<p class="field-help preview-stale" data-rename-stale>{{ rename_stale }}</p>{% endif %}
       </div>
-      <div class=field data-change-label="Number in the HELP reply" id=rule-business_contact>
-        <label class=field__label for=business_contact>Number in the HELP reply <span class=tag>Optional</span></label>
+      <div class=field data-change-label="{{ labels.business_contact }}" id=rule-business_contact>
+        <label class=field__label for=business_contact>{{ labels.business_contact }} <span class=tag>Optional</span></label>
         <input class="input input--tel tnum" id=business_contact name=business_contact type=tel inputmode=tel autocomplete=off maxlength=24 value="{{ display.business_contact }}" {{ described("business_contact") }}>
         <p class=field-help id=business_contact-help>{{ hints.business_contact|nw }}</p>
         {{ err("business_contact") }}

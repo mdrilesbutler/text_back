@@ -38,28 +38,26 @@ def test_shell_has_five_nav_items_with_the_current_page_marked(tmp_path, monkeyp
                           r"</span><span>(\w+)</span></a>", nav, re.S)
         assert [(href, label) for href, _, label in tabs] == list(zip(NAV, LABELS)), url
         assert [href for href, current, _ in tabs if current] == ([url] if url in NAV else []), url
-        # Account: in the desktop sidebar (hidden on a phone, where it sits behind the business name).
+        # Account: in the desktop sidebar (hidden on a phone, where the header's Account button has it).
         wide = re.search(r'<a class="nav__item nav__item--wide" href=/client/account( aria-current=page)?>', nav)
         assert wide and bool(wide.group(1)) == (url == "/client/account"), url
-        trigger = re.search(r"<summary class=\"?menu__trigger[^>]*>.*?</summary>", page, re.S).group(0)
-        assert ("menu__trigger--current" in trigger) == (url == "/client/account"), url
-        assert ("<span class=vh>Account, current page</span>" in trigger) == (url == "/client/account"), url
+        button = re.search(r"<a class=acct href=/client/account( aria-current=page)?>", page)
+        assert button and bool(button.group(1)) == (url == "/client/account"), url
 
 
-def test_business_name_is_the_menu_trigger_and_is_never_cut_short(tmp_path, monkeypatch):
+def test_business_name_sits_under_textback_and_is_never_cut_short(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     long_name = "Oak & Pine's Tree Care and Stump Grinding of the Carolinas, Inc."
     client.app.state.business_name = long_name
     page = client.get("/client/home").text
     header = re.search(r"<header class=topbar data-topbar>.*?</header>", page, re.S).group(0)
-    assert f"<span class=menu__biz>{escape(long_name)}</span>" in header
+    assert f"<span class=brand__biz>{escape(long_name)}</span>" in header
     for word in ("ellipsis", "truncate", "text-overflow", "nowrap", "line-clamp"):
         assert word not in header, word
-    assert "Signed in as <span class=nw>(980) 555-0123</span>" in header
     css = (STATIC / "portal.css").read_text()
-    rule = re.search(r"\.menu__biz \{[^}]*\}", css.split("@layer d1 {", 1)[1]).group(0)
-    assert "overflow-wrap: anywhere" in rule and "ellipsis" not in rule and "nowrap" not in rule
+    rule = re.search(r"\.brand__biz \{[^}]*\}", css.split("Round-4 fixes", 1)[1]).group(0)
+    assert "overflow-wrap: break-word" in rule and "ellipsis" not in rule and "nowrap" not in rule
 
 
 def test_notice_slot_is_role_status_and_sits_between_the_header_and_the_h1(tmp_path, monkeypatch):
@@ -325,8 +323,8 @@ def test_a_page_with_unsaved_changes_turns_the_header_into_the_save_bar(tmp_path
     assert ('<button type=submit class="btn btn--ghost" name=discard value=1 form=schedule-form formnovalidate '
             'data-topsave-discard>Discard</button>') in bar
     assert '<button type=submit class="btn btn--primary" form=schedule-form>Save</button>' in bar
-    # The brand and the menu stay in the markup (CSS hides both below 1024 px, the menu only on desktop); the nav stays.
-    assert "<a class=brand" in header and "<details class=menu" in header
+    # The brand and the Account button stay in the markup (CSS hides both below 1024 px); the nav stays.
+    assert "<a class=brand" in header and "<a class=acct" in header
     assert "<nav class=nav aria-label=Pages>" in page
 
 

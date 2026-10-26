@@ -11,8 +11,9 @@ Conventions
 - Product name on screen: TextBack. Company: FluxWorks. Never the repository name or the carrier vendor.
 - Part 2 word rules apply to every row: approval paperwork is "texting approval", a billed unit is a
   "text", a captured enquiry is "customer details", fill-ins are insert chips with plain labels, no
-  plumbing words, a follow-up text is a "reminder", and the moment the assistant stops is "when the
-  assistant steps back".
+  plumbing words, a follow-up text is a "reminder", and the moment TextBack stops is "when TextBack
+  steps back". Owner-facing copy names the product TextBack, never "the assistant" (round 4); customer texts
+  keep the owner's wording.
 - Customer-facing samples come from the real default texts. None promises a person or the number that
   went unanswered (`tests/test_no_live_human_copy.py`). The word STOP stays mandatory.
 
@@ -73,6 +74,7 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | home_week_heading | This week | section heading |
 | home_week_caption | Since [Mon, Oct 20]. The counts and the list below cover the same days. | under the heading |
 | home_week_counts | Missed calls / Customers texted / Booked / Wants to talk to you | the four count labels (m30) |
+| home_upcoming | Coming up / [Thu, Oct 29 · 10:00–11:00 AM] / [job] · [customer name or …1234] / [address] / Example / No bookings coming up. | section after This week (round 4): the next bookings, soonest first, up to 8; the range uses the stored end, else start + the appointment length; Example on a caller the preview harness flags / empty state |
 | home_callers_heading | This week's callers | section heading |
 | home_callers_empty | No callers this week. They appear here after the next missed call. | empty state |
 | home_callers_columns | Customer / Status / Last activity / Last text | columns; Last activity is always a full date like "Fri, Oct 23, 2:40 PM" |
@@ -91,13 +93,14 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | messages_title | Messages | page heading (matches the nav label) |
 | messages_intro | The texts customers get after a missed call, in order. Changes start with the next missed call. | intro line, two short sentences (fix pass) |
 | messages_meta | Green bubbles are what customers see. The job, address, time and names are made-up examples. | under the intro |
-| messages_jump | On this page: Missed call / Questions / Booking / No reply / Steps back / Jump to: [step] / Jump to a step | chip row from 640 px; below 640 px one sticky 44 px control whose summary reads "Jump to: [current step]" (without JS "Jump to a step") and opens the five steps as links; accessible name "On this page" |
+| messages_jump | On this page: Missed call / Questions / Booking / No reply / Steps back / Jump to: [step] / Jump to a section | the five steps as a wrapped grid of 44 px buttons at the top (`section_grid`, round 4); below 1024 px, once the grid has scrolled away, one sticky 44 px control whose summary reads "Jump to: [current step]" (without JS it stays under the grid and reads "Jump to a section"); accessible name "On this page" |
 | messages_not_enabled | Message editing isn't turned on for your account yet. FluxWorks sets this up for you. / Text FluxWorks support | notice when no messages file is configured / button (sms link) only when a support contact is configured |
 | step_missed | Missed call / A call goes unanswered. Within a minute the caller gets this text. | heading / blurb |
-| step_questions | Questions / Asked one at a time, in this order. The assistant moves on only once it has an answer. | heading / blurb |
-| step_booking | Booking / Once it has the answers, the assistant checks your calendar and books a free time. | heading / blurb |
-| step_no_reply | No reply / If the customer goes quiet, the assistant sends two reminders. Then the texting stops. | heading / blurb |
-| step_steps_back | When the assistant steps back / When a text needs a person, the assistant stops scheduling and passes the customer's details on. | heading / blurb |
+| step_questions | Questions / Asked one at a time, in this order. TextBack moves on only once it has an answer. | heading / blurb |
+| step_booking | Booking / Once it has the answers, TextBack checks your calendar and books a free time. | heading / blurb |
+| step_no_reply | No reply / If the customer goes quiet, TextBack sends two reminders. Then the texting stops. | heading / blurb |
+| step_steps_back | When TextBack steps back / When a text needs a person, TextBack stops scheduling and passes the customer's details on. | heading / blurb |
+| branches | If the answer is unclear · [N] texts / If the time is taken or the calendar fails · [N] texts / If a text mentions danger · 1 text / [titles, · between] | one disclosure per step under its main path (round 4): Questions holds the time, phone and email re-asks, Booking the time-taken and calendar-failed texts, When TextBack steps back the danger text; [N] and the titles count only texts a customer can get now (a switched-off question's re-ask is left out); open while one of them is customized, unsaved or not saved, and whenever a link points inside |
 | step_keywords | START, HELP and STOP / Required by phone companies. Most businesses never change these. | collapsed section heading / blurb |
 | step_optional_eyebrow | Optional questions | eyebrow above the phone and email cards |
 
@@ -119,8 +122,8 @@ Byte-identical for an unknown number and a wrong code; no part of any phone numb
 | booking_confirmation | Booking confirmation / Sent only after the appointment is on your calendar. | title / when |
 | booking_error | When the calendar failed / Sent if the appointment couldn't be added to your calendar. It tells the customer no booking was made. | title / when (branch) |
 | followup_1 | First reminder / Sent [2 hours] after the first text if there's no reply. | title / when (delay from Schedule) |
-| followup_2 | Last reminder / Sent [1 day] after the first reminder. After this the assistant stops texting. | title / when |
-| handoff_ack | Steps-back text / Sent when the customer asks for the owner or the assistant can't help. | title / when; the step heading stays "When the assistant steps back" (fix pass; "Hand-off text" is ruled out by the banned-words rule) |
+| followup_2 | Last reminder / Sent [1 day] after the first reminder. After this TextBack stops texting. | title / when |
+| handoff_ack | Steps-back text / Sent when the customer asks for the owner or TextBack can't help. | title / when; the step heading stays "When TextBack steps back" (fix pass; "Hand-off text" is ruled out by the banned-words rule) |
 | handoff_ack_safety | When someone may be in danger / Sent when a text mentions danger. | title / when |
 | opt_in | Reply to START / Sent when a customer texts START. | title / when |
 | help | Reply to HELP / Sent when a customer texts HELP. The number it shows is set on the Phone page. | title / when |
@@ -188,11 +191,11 @@ Destination label, from settings. Never promise the owner gets these unless that
 | speaker_labels | Customer / [business name] | small visible labels over bubbles in the example conversation and on cards that show a customer reply |
 | trigger_examples | Sometime next week / my cell / dana at gmail / Wednesday at 10 / Thursday at 10 / Can I just talk to the owner? / A big limb just came down on the power line by our house / START / HELP / STOP | customer bubble per card: time re-ask / phone re-ask / email re-ask / time taken / calendar failed / steps back / danger / START / HELP / STOP |
 | rail_pill_booked | Booked · on your calendar / Booked · on the test calendar | thread pill: calendar connected / not connected |
-| rail_divider_steps_back | The assistant steps back here | divider |
+| rail_divider_steps_back | TextBack steps back here | divider |
 | rail_pill_details_sent | Customer's details sent to [destination label, short form] | thread pill after the divider ("…sent to FluxWorks") |
 | rail_foot | Nothing is sent · names made up | caption right under the title "Example conversation", so "Example" appears once (fix pass) |
 | rail_back | Back to editing | link |
-| rail_more | Scroll for the rest | desktop only: small label in the faded bottom edge of the example phone while more of the thread is below; hidden at the end and without JavaScript (round 3) |
+| rail_more | More below. Scroll the conversation. | desktop only: a plain line under the example phone frame (outside its scroll area, never over a bubble) while more of the thread is below; hidden at the end and without JavaScript (round 4; replaces the round-3 pill) |
 
 Every TextBack bubble in the rail comes from running the real product code on the scripted customer
 replies, so the thread can never show a step-back or a time reading the product would not make.
@@ -231,7 +234,8 @@ replies, so the thread can never show a step-back or a time reading the product 
 | key | text | where |
 |---|---|---|
 | schedule_title | Schedule | page heading |
-| schedule_intro | The timing rules the assistant follows when it books. Reset puts a rule back to its default. | intro line |
+| schedule_intro | The timing rules TextBack follows when it books. Reset puts a rule back to its default. | intro line |
+| schedule_sections | Appointments / Working hours / Quiet hours / Reminders / Jump to: [section] / Jump to a section | `section_grid` at the top of Schedule, then the sticky "Jump to" bar (round 4) |
 | card_appointments | Appointments / How long each booking blocks on your calendar, and which time zone it uses. | card title / subtitle |
 | duration | Appointment length / minutes | field label / unit after the field |
 | duration_chips | 30 min / 45 min / 60 min / 90 min / 120 min / Custom | quick picks; the chip matching the field is selected, any other value selects Custom. With JavaScript the minutes field shows only while Custom is selected (choosing Custom reveals and focuses it); without JavaScript both show (round 3) |
@@ -241,20 +245,20 @@ replies, so the thread can never show a step-back or a time reading the product 
 | timezone | Time zone / Used for working hours, quiet hours and the times in texts. / Default: [Eastern (New York)] | label / hint / default line |
 | timezone_applies | Applies right away to the times in texts. | under the field, before saving |
 | timezone_error | Pick a time zone from the list. | error |
-| card_hours | Working hours / When the assistant may book a job. | card title / subtitle |
+| card_hours | Working hours / When TextBack may book a job. | card title / subtitle |
 | hours_mode | Any day, any time / Set hours | the two options |
-| hours_hint | The assistant accepts any time a customer asks for if your calendar is free, including the middle of the night. / The assistant turns down times outside these hours and asks the customer for another time. | hint: any time / set hours |
+| hours_hint | TextBack accepts any time a customer asks for if your calendar is free, including the middle of the night. / TextBack turns down times outside these hours and asks the customer for another time. | hint: any time / set hours |
 | hours_any_warning | Customers can be offered times like 1 AM. Set your hours. / Use Mon–Fri, 8 AM–5 PM | warning while any-time is saved / its one-tap button (fills the grid; still needs Save) |
 | hours_day_controls | Open on [Monday] / [Monday] opening time / [Monday] closing time | accessible names; visible text is the day name |
 | hours_default | Default: Any day, any time | default line |
 | hours_errors | Choose Any day, any time or Set hours. / Set at least one open day, or choose Any day, any time. / Pick times from the list. / [Monday]: opening time must be before closing time. / [Monday]: the hours are shorter than one appointment ([60] minutes). | errors |
 | hours_corrupt | Your saved working hours couldn't be read, so every time counts as open until you save again. | warning |
-| card_quiet | Quiet hours / Reminders and retried texts wait until quiet hours end. Still sent right away: the first text after a missed call, replies to a customer who is texting, and the START, HELP and STOP replies. | card title / subtitle |
+| card_quiet | Quiet hours / Reminders and texts TextBack sends again wait until quiet hours end. Still sent right away: the first text after a missed call, replies to a customer who is texting, and the START, HELP and STOP replies. | card title / subtitle |
 | quiet_controls | Quiet hours / Hold reminders between / and / Off. Texts may go out at any hour. | switch (on = quiet hours apply) / legend / between the selects / under the switch when off |
 | quiet_default | Default: [9:00 PM]–[8:00 AM] | default line |
 | quiet_applies | Applies right away to reminders not yet sent. | under the quiet-hours controls, before saving |
 | quiet_error | Pick quiet hours from the list. / Start and end can't be the same time. To turn quiet hours off, use the switch. | error / equal times with the switch on (M2); Off then On brings back the last custom times |
-| card_reminders | Reminders / Two reminders when a customer never replies to the first text. After that the assistant stops texting. | card title / subtitle |
+| card_reminders | Reminders / Two reminders when a customer never replies to the first text. After that TextBack stops texting. | card title / subtitle |
 | reminder_1 | If there's no reply, send a reminder after / Default: [2 hours] | label / default line |
 | reminder_2 | Send the last reminder after another / Default: [1 day] | label / default line |
 | reminder_stop | Stop waiting for a reply after / Counted from the last reminder. The customer is marked "No reply" on Home. / Default: [2 days] | label / hint / default line |
@@ -266,17 +270,18 @@ replies, so the thread can never show a step-back or a time reading the product 
 | schedule_unsaved | 1 rule changed: [rule] / [N] rules changed | the header save bar while unsaved (every width; round 3), repeated in flow at the end of the form |
 | hours_day_words | Open / Closed | word beside each day switch |
 | hours_any_note | Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it. | under the Use Mon–Fri button |
-| hours_applies | Applies right away to times the assistant offers. Bookings already made stay as they are. | under the hours, before saving |
+| hours_applies | Applies right away to times TextBack offers. Bookings already made stay as they are. | under the hours, before saving |
 
 ## 6. Calendar (`/client/calendar`)
 
 | key | text | where |
 |---|---|---|
 | calendar_title | Calendar | page heading |
-| calendar_intro | The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation. | intro line |
+| calendar_intro | TextBack offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation. | intro line |
+| cal_upcoming | Booked on this calendar / (rows and empty state as home_upcoming) | section under the connection card, only while a calendar is connected (round 4) |
 | cal_connected | Connected / Google Calendar / Bookings go here: [calendar name]. | state word / title / body (no "Connected as": the account is not stored) |
 | cal_connected_buttons | Reconnect Google Calendar | text link under the body; the picker below replaces "Use a different calendar" |
-| cal_not_connected | Not connected / No calendar yet / No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see. / Connect the Google account that owns your business calendar, so the assistant offers your real free times and books onto your calendar. | state word / title / body (same words as Home) / why, above the Connect button |
+| cal_not_connected | Not connected / No calendar yet / No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see. / Connect the Google account that owns your business calendar, so TextBack offers your real free times and books onto your calendar. | state word / title / body (same words as Home) / why, above the Connect button |
 | cal_not_connected_no_web | To book onto your own calendar, it has to be connected. Connecting from this page isn't set up for your account yet. FluxWorks sets this up for you. | second paragraph when there is no Connect button, above Text FluxWorks support |
 | cal_waiting | Waiting on FluxWorks / FluxWorks connects your calendar for you. / Until then, bookings go on a test calendar you can't see. / Text FluxWorks support | not connected and no web client: state word (clock node) / body / second line / sms button only with a support contact (P3; replaces cal_not_connected_no_web on the page) |
 | cal_connect | Connect Google Calendar / Opening Google… | primary when the Google web client is configured / while posting |
@@ -284,10 +289,10 @@ replies, so the thread can never show a step-back or a time reading the product 
 | cal_reconnect | Reconnect needed / Google disconnected the calendar, so bookings are paused until you reconnect. Customers are told no booking was made. | state word / body |
 | cal_unreadable | Couldn't be read / TextBack couldn't read the calendar connection. Bookings are paused until you reconnect. | state word / body |
 | cal_asks | What Google will ask: (1) You pick the Google account that owns your business calendar. (2) Google asks you to let TextBack see and edit your calendars. TextBack uses this only to find free times and add bookings. (3) Afterwards you choose which calendar it uses. | disclosure, open while not connected |
-| cal_picker | Which calendar should the assistant use? / Free times are checked on this calendar and new appointments are added to it. / (main calendar) / In use / Use this calendar | legend / hint / after the main calendar / pill / button |
+| cal_picker | Which calendar should TextBack use? / Free times are checked on this calendar and new appointments are added to it. / (main calendar) / In use / Use this calendar | legend / hint / after the main calendar / pill / button |
 | cal_picker_error | Pick one of the calendars listed. | error |
 | cal_picker_only | This is the only calendar this account can add appointments to. | empty state, one calendar |
-| cal_toast_picked | Saved. The assistant now books on [calendar name]. | toast |
+| cal_toast_picked | Saved. TextBack now books on [calendar name]. | toast |
 | cal_errors | Google didn't give TextBack calendar access. Try connecting again. / Connecting a calendar isn't set up for this account yet. | notices |
 | avail_title | Next free times on [calendar name] / Test calendar, not yours | availability card title: connected / nothing connected |
 | avail_intro | The next free times for a [60]-minute appointment in the next 14 days, inside your working hours. / Shows how the check works. These times are not from your calendar. | card intro: connected / test; lists as many free times as exist, up to three, so it never promises three (round 3) |
@@ -311,17 +316,19 @@ replies, so the thread can never show a step-back or a time reading the product 
 | business_name_error | Enter a business name of 1 to 60 characters. / A business name can't use curly or angle brackets. Take them out. | error / the name has { } < or > (M7) |
 | business_name_symbol | This name has a [symbol], which makes each text hold only 70 characters. | amber line under the field, live while typing, when the name has a symbol outside the plain text alphabet (M7) |
 | rename_offer | 2 texts still say “[old name]”. Update them to the new name? / Update them / Leave them / 1 text still says “[old name]”. Update it to the new name? / Update it / Leave it / Updated [N] texts. / Kept the texts as they are. / Kept the text as it is. | offer inside the save notice / buttons / one-text offer and buttons (m18) / notices after each choice (m17) |
+| rename_stale | This text still says “[old name]”. Update it above. | muted line under the first-text preview while the rename offer is open and the first text keeps the old name (round 4) |
+| phone_sections | Business details / Numbers / Call forwarding / Checks / Jump to: [section] / Jump to a section | `section_grid` at the top of Phone & business, then the sticky "Jump to" bar (round 4) |
 | card_numbers | Numbers / Three numbers: the one customers call, the one TextBack texts from, and your own mobile. | card title / subtitle (round-3 fix: the old subtitle moved to the business number's hint) |
-| business_line | Your business number / This is the number customers call. TextBack never changes it. Calls you don't answer forward from here to the texting number. | label / hint (m31's sentence lives here since round 3) |
+| business_line | Your business number / This is the number customers call. TextBack never changes it. Typing it here doesn't change your phone service; TextBack uses it to check forwarding. | label / hint (m31's sentence lives here since round 3; round 4 says why the field is editable) |
 | business_line_errors | Enter your business number as 10 digits, area code first, or leave it blank. / Your business number and the texting number can't be the same. | errors |
 | texting_number | Texting number / Set up by FluxWorks. It can't be changed here. / Not assigned yet. FluxWorks sets this up for you. | read-only row / note under it, exactly this / when no number is on the account |
 | owner_mobile | Your mobile / Sign-in codes come to this number. If you change it, we text a code to the new number and nothing changes until you enter it. | label / hint |
 | owner_mobile_error | Enter your mobile as 10 digits, area code first. | error under the field; the page also shows an error summary (multi-field form) |
 | phone_error_summary | Not saved. 1 thing needs a change: | error summary heading on Phone, one link per field |
 | phone_unsaved | 1 change: [field label] / [N] changes | the header save bar while unsaved (every width; round 3), repeated in flow at the end of the form |
-| phone_toast | Saved. You changed “[field label]”. / Checks start again because the business number changed. | toast naming what changed / added when the business number changed and was set before (m15) |
+| phone_toast | Saved. You changed “[field label]”. / You ticked “[check]”. / You unticked “[check]”. / Saved. You ticked “[check]”. / Checks start again because the business number changed. | toast naming what changed; a manual check reads as recorded, never "changed" (round 4) / added when the business number changed and was set before (m15) |
 | owner_mobile_status | This is the number that signs you in. / Save to text a code to [new number]. | status line: unchanged / changed |
-| help_number | Number in the HELP reply / Shown when a customer texts HELP. Leave blank to show [texting number]. Customers are never transferred to it; the assistant handles the texting. | label (tagged Optional) / hint |
+| help_number | The number customers get when they text HELP / Shown when a customer texts HELP. Leave blank to show [texting number]. Customers are never transferred to it; TextBack handles the texting. | label (tagged Optional) / hint (round 4: the label in plain words) |
 | help_number_error | Enter the phone number as 10 digits, area code first, or leave it blank. | error; US numbers only, 10 digits with an optional +1 (m20) |
 | phone_save | Save / Saved. / Code sent to [new number]. Your mobile changes after you enter it. | primary / toast / toast on the confirm step after a new mobile (m34) |
 
@@ -389,9 +396,9 @@ replies, so the thread can never show a step-back or a time reading the product 
 
 | key | text | where |
 |---|---|---|
-| nav | Home / Messages / Schedule / Calendar / Phone / Account | bottom nav on phones (Account behind the business name), sidebar on desktop with Account last; accessible name "Pages" |
-| header | TextBack / [business name] / Account | product name / wraps to two lines, never cut short / menu trigger behind the business name |
-| menu | Signed in as [owner mobile] / Account / Sign out / current page | account menu; on the Account page the business-name trigger is marked current (hidden text "current page") |
+| nav | Home / Messages / Schedule / Calendar / Phone / Account | bottom nav on phones (Account is the header button), sidebar on desktop with Account last; accessible name "Pages". Below 1024 px the bottom nav steps aside while scrolling down and comes back on scroll up, at the top, at the end and on focus (round 4) |
+| header | TextBack / [business name] / Account | product name / small, under TextBack, wraps, never cut short / the header button on phones (person icon and the word; current page on Account, highlighted like an active tab); round 4 retired the business-name menu: "Signed in as" and Sign out are on the Account page |
+| section_grid | On this page | accessible name of the wrapped grid of one-tap section buttons at the top of Messages, Schedule and Phone & business (round 4) |
 | foot | TextBack by FluxWorks | sidebar foot |
 | skip_link | Skip to content | first focusable |
 | toast_dismiss | Dismiss | toast close, accessible name |
@@ -466,3 +473,14 @@ The rows above already carry the new wording. The rules behind the changes:
   For example: tree removal, trimming or stump grinding."
 - Sample values (P5): Tree trimming, 412 Maple St, Charlotte, Dana Whitfield, Thursday at 10.
 - Every successful save answers with a redirect and a one-time notice (M1); a rejected save answers in place.
+
+## Round 4 (2026-10-26, final panel round 3 deductions)
+
+- Rows edited: messages_jump, step_questions, step_booking, step_no_reply, step_steps_back, followup_2, handoff_ack,
+  rail_divider_steps_back, rail_more, schedule_intro, card_hours, hours_hint, card_quiet, card_reminders,
+  hours_applies, calendar_intro, cal_not_connected, cal_picker, cal_toast_picked, help_number, business_line,
+  phone_toast, nav, header.
+- Rows added: branches, schedule_sections, phone_sections, rename_stale, section_grid, home_upcoming, cal_upcoming. Row retired: menu.
+- Owner-facing copy says TextBack where it said "the assistant"; "Number in the HELP reply" is "The number customers
+  get when they text HELP"; "retried texts" is "texts TextBack sends again". Customer texts are unchanged (they are
+  the owner's to edit; the defaults keep "the scheduling assistant for [business name]").

@@ -4,13 +4,13 @@
     Not connected: Home's words, why connecting matters, then Connect (with what Google will ask), Text
     FluxWorks support, or the sentence naming who sets it up. No state is a dead end. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, field_error, button, node, state_pill %}
+{% from "client/_macros.html.j2" import icon, csrf_input, field_error, button, node, state_pill, upcoming_list %}
 {% set ok = card.connected %}
 {% set kind = card.node %}
 {% block content %}
 <div class=page-head>
   <h1>Calendar</h1>
-  <p class=lead>The assistant offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation.</p>
+  <p class=lead>TextBack offers only times that are free on this calendar, and adds every booking to it before the customer gets a confirmation.</p>
 </div>
 {% if page_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ page_error }}</p></div></div>{% endif %}
 <ol class=spine>
@@ -57,6 +57,12 @@
     </details>
     {% elif picker_error %}<div class="notice notice--danger" role=alert>{{ icon("circle-alert", "notice__icon") }}<div class=notice__body><p class=notice__text>{{ picker_error }}</p></div></div>{% endif %}
   {% endcall %}
+  {% if upcoming is defined %}
+  {% call node("icon", "calendar", attrs="id=booked") %}
+    <div class=node__head><h2 tabindex=-1>{{ upcoming_title }}</h2></div>
+    {{ upcoming_list(upcoming, upcoming_empty) }}
+  {% endcall %}
+  {% endif %}
   {% call node("icon", "clock", attrs="id=availability") %}
     <div class=node__head><h2 tabindex=-1 id=avail-title>{{ availability.title }}</h2>{% if calendar_example|default(false) %}<span class=extag>Example</span>{% endif %}<p class=node__blurb>{{ availability.intro }}</p></div>
     <section class=card aria-labelledby=avail-title data-availability>

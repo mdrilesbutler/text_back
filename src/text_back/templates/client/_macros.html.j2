@@ -148,3 +148,37 @@
 <{{ tag }} class="tpill tpill--{{ it.kind }}">{% if it.icon %}{{ icon(it.icon) }}{% endif %}{{ it.text }}</{{ tag }}>
 {%- endif -%}
 {%- endmacro %}
+
+{#- Sections at the top of a long page (round 4): a wrapped grid of 44px one-tap buttons (never a sideways row),
+    then the compact "Jump to" bar. With JavaScript the bar is a 0-height sticky strip that shows only once the
+    grid has scrolled away (it overlays, so the page never shifts); without it the bar sits in flow under the
+    grid and sticks. portal.js names the section on screen ("Jump to: Booking") and marks it in both.
+    sections: [(id, label)]; the page's html carries has-jump so scroll-padding counts the bar. -#}
+{% macro stepnav(sections) -%}
+<nav class=stepgrid aria-label="On this page" data-stepgrid><ul class=stepgrid__list>{% for sid, label in sections %}<li><a class=stepgrid__link href=#{{ sid }}>{{ label }}</a></li>{% endfor %}</ul></nav>
+<div class=jumpbar data-jumpbar>
+  <details class=jumpmenu data-jumpmenu>
+    <summary class=jumpmenu__summary><span class=jumpmenu__label data-lead="Jump to:">Jump to a section</span>{{ icon("chevron-down", "jumpmenu__chev") }}</summary>
+    <ul class=jumpmenu__list aria-label="On this page">{% for sid, label in sections %}<li><a class=jumpmenu__link href=#{{ sid }}{% if loop.first %} aria-current=location{% endif %}>{{ label }}</a></li>{% endfor %}</ul>
+  </details>
+</div>
+{%- endmacro %}
+
+
+{#- Coming up (round 4): the next bookings, soonest first (portal_status.upcoming). Home after "This week";
+    Calendar under the connection card while connected. rows: [{label, service, name, location, example}]. -#}
+{% macro upcoming_list(rows, empty) -%}
+{% if rows %}
+<ol class=upcoming data-upcoming>
+{% for row in rows %}
+  <li class=booking>
+    <p class="booking__when tnum">{{ row.label|nw }}</p>
+    <p class=booking__what><span class=booking__job>{{ row.service }}</span>{% if row.name %} · <span class=booking__name>{{ row.name }}</span>{% endif %}{% if row.example %} <span class=extag>Example</span>{% endif %}</p>
+    {% if row.location %}<p class=booking__where>{{ row.location }}</p>{% endif %}
+  </li>
+{% endfor %}
+</ol>
+{% else %}
+<div class=empty><p class=empty__body data-upcoming-empty>{{ empty }}</p></div>
+{% endif %}
+{%- endmacro %}

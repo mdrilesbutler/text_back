@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from text_back.client_settings import calendar_status
 from text_back.policy import format_contact_number
-from text_back.portal_dates import day, when
+from text_back.portal_dates import day, span, when
 from text_back.portal_forwarding import checklist
 from text_back.portal_registry import approval_words, texting_approval
 
@@ -256,3 +256,44 @@ def this_week(state, now: datetime) -> dict:
                      "last_label": when(entry["last_at"], tz_name, now, relative=False), "snippet": entry["snippet"]})
     return {"start": start, "since_label": day(start, tz_name), "counts": counts, "rows": rows,
             "example": bool(examples) and any(r["example"] for r in rows)}
+
+
+# --- Coming up (Home, and Calendar while connected) -------------------------------------------
+
+UPCOMING_TITLE = "Coming up"
+UPCOMING_EMPTY = "No bookings coming up."
+UPCOMING_CALENDAR_TITLE = "Booked on this calendar"
+UPCOMING_LIMIT = 8
+
+
+def upcoming(state, now: datetime, limit: int = UPCOMING_LIMIT) -> list[dict]:
+    """The next appointments (start >= now, soonest first, at most ``limit``), each with its full date and time
+    range (the stored end, else start + the appointment length), the job, the customer's name (else "…1234"),
+    the address and the Example tag when the preview harness flags the caller."""
+    store = state.store
+    tz_name = getattr(state, "timezone_name", "UTC") or "UTC"
+    minutes = int(getattr(state, "appointment_duration_minutes", 60) or 60)
+    examples = set(getattr(state, "preview_example_phones", ()) or ())
+    floor = (now.astimezone(timezone.utc) - timedelta(days=1)).isoformat()  # text-sorted narrowing; exact check below
+    with store.lock:
+        found = store.conn.execute(
+            "SELECT conversation_id, caller, start, end, location, service FROM appointments WHERE start >= ?",
+            (floor,)).fetchall()
+    rows = []
+    for conversation_id, caller, start_text, end_text, location, service in found:
+        start = _parse(start_text)
+        if start is None or start < now:
+            continue
+        end = _parse(end_text) if end_text else None
+        if end is None or end <= start:
+            end = start + timedelta(minutes=minutes)
+        with store.lock:
+            name_row = store.conn.execute(
+                "SELECT value FROM conversation_fields WHERE phone=? AND field='name'", (caller,)).fetchone()
+        name = (name_row[0] if name_row else "").strip()
+        digits = re.sub(r"\D", "", caller or "")
+        rows.append({"start": start, "end": end, "label": span(start, end, tz_name, now),
+                     "service": (service or "").strip(), "name": name or (f"…{digits[-4:]}" if digits else ""),
+                     "location": (location or "").strip(), "phone": caller, "example": caller in examples})
+    rows.sort(key=lambda row: row["start"])
+    return rows[:limit]

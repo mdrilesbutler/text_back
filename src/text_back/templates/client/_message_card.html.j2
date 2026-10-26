@@ -33,7 +33,7 @@
       </div>
       {% if c.when %}<p class=msg__when>{{ c.when }}</p>{% endif %}
       {% if c.next_steps or c.destination %}
-      {{ rule_lines(c.rules) }}
+      {#- Round 4: the wording rule sits in the editor, like every other card's, so the card stays short. #}
       {% if c.next_steps %}
       <div class=next data-next>
         <p class=next__title>What happens next</p>
@@ -65,7 +65,7 @@
         <summary class=editor__summary aria-label="Edit wording: {{ c.title }}">Edit wording{{ icon("chevron-down", "editor__chev") }}</summary>
         <div class=editor__body>
           {% if c.error %}{{ field_error("e-" ~ c.key, c.error) }}{% endif %}
-          {% if not (c.next_steps or c.destination) %}{{ rule_lines(c.rules) }}{% endif %}
+          {{ rule_lines(c.rules) }}
           <label class=vh for=w-{{ c.key }}>Wording: {{ c.title }}</label>
           <textarea class=textarea id=w-{{ c.key }} name={{ c.key }} maxlength={{ max_chars }} rows=3 spellcheck=true autocapitalize=sentences enterkeyhint=done aria-describedby="h-{{ c.key }}{{ ' e-' ~ c.key if c.error else '' }}"{% if c.error %} aria-invalid=true{% endif %}>{{ c.value }}</textarea>
           {% if c.chips %}

@@ -14,7 +14,7 @@ def signed_in(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     client.app.state.business_number = TEXTING
-    return client, clock, csrf_of(client.get("/client/home").text)
+    return client, clock, csrf_of(client.get("/client/account").text)
 
 
 def form(csrf, **changes):
@@ -54,7 +54,7 @@ def test_one_form_holds_business_numbers_forwarding_and_the_checks_in_order(tmp_
 def test_one_save_writes_fields_and_ticks_and_names_what_changed(tmp_path, monkeypatch):
     client, clock, csrf = signed_in(tmp_path, monkeypatch)
     page = client.post("/client/phone", data=form(csrf, business_contact="980 555 0111", check_answered_no_text="1")).text
-    assert slot(page) == "Saved. You changed “Number in the HELP reply”, “An answered call sent no text”."
+    assert slot(page) == "Saved. You changed “The number customers get when they text HELP”. You ticked “An answered call sent no text”."
     assert re.search(r'class="node node--manual" data-check=3', page)
     assert client.app.state.business_contact == "(980) 555-0111"
     page = client.post("/client/phone", data=form(csrf, business_contact="980 555 0111", check_answered_no_text="1")).text

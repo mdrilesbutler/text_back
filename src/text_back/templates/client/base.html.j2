@@ -1,27 +1,21 @@
-{#- Signed-in shell (candidate C, mockup d1). Header: TextBack, then the business name as the Account menu
-    trigger (wraps to two lines, never cut short; on a phone the open menu pushes the page down). Nav: five
-    tabs, a bottom bar on phones and a sticky sidebar with Account on desktop. While a form has unsaved
-    changes the header becomes that form's save bar at every width (`topsave` from the server, or portal.js
-    for a form marked data-track-changes data-topsave); the bottom nav and the desktop sidebar stay. The in-flow #notice slot
-    (role=status) sits between the header and the page's h1; every save notice renders there (never a
+{#- Signed-in shell (candidate C, mockup d1; round 4). Header: the TextBack mark with the business name under it
+    (small, wraps, never cut short) and, on the right, the Account button (person icon and the word, aria-current
+    on the Account page, where Sign out lives). Nav: five tabs, a bottom bar on phones (portal.js moves it aside
+    while scrolling down) and a sticky sidebar with Account on desktop. While a form has unsaved changes the
+    header becomes that form's save bar at every width (`topsave` from the server, or portal.js for a form
+    marked data-track-changes data-topsave); the bottom nav and the desktop sidebar stay. The in-flow #notice
+    slot (role=status) sits between the header and the page's h1; every save notice renders there (never a
     floating toast) and an error never does. -#}
 {% extends "client/_document.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, topsave_bar, dismiss_button %}
+{% from "client/_macros.html.j2" import icon, topsave_bar, dismiss_button %}
 {% set nav_icons = {"home": "house", "messages": "message-square", "schedule": "clock", "calendar": "calendar", "phone": "phone"} %}
 {% set on_account = nav_active == "account" %}
 {% block body_attrs %} data-page={{ nav_active or "expired" }}{% endblock %}
 {% block body %}
 <div class=shell>
   {% if topsave %}<header class="topbar topbar--dirty" data-topbar>{% else %}<header class=topbar data-topbar>{% endif %}
-    <a class=brand href=/client/home>{{ icon("phone", "brand__icon") }}TextBack</a>
-    <details class=menu data-menu>
-      <summary class="menu__trigger{{ ' menu__trigger--current' if on_account else '' }}"><span class=menu__biz>{{ business_name }}</span>{{ icon("chevron-down", "menu__chev") }}<span class=vh>Account{{ ', current page' if on_account else '' }}</span></summary>
-      <div class=menu__panel>
-        <p class=menu__who>Signed in as {{ signed_in_with|nw }}</p>
-        <a class=menu__item href=/client/account{% if on_account %} aria-current=page{% endif %}>{{ icon("user-round") }}Account</a>
-        <form method=post action=/client/logout>{{ csrf_input(csrf) }}<button type=submit class=menu__item>{{ icon("arrow-left") }}Sign out</button></form>
-      </div>
-    </details>
+    <a class=brand href=/client/home><span class=brand__mark>{{ icon("phone", "brand__icon") }}TextBack</span><span class=brand__biz>{{ business_name }}</span></a>
+    <a class=acct href=/client/account{% if on_account %} aria-current=page{% endif %}><span class=acct__icon>{{ icon("user-round") }}</span><span class=acct__label>Account</span></a>
     {% if topsave %}{{ topsave_bar(topsave) }}{% endif %}
   </header>
   <main class=page id=main tabindex=-1>
@@ -37,7 +31,7 @@
   {% for id, label in nav %}
     <a class=nav__item href=/client/{{ id }}{% if nav_active == id %} aria-current=page{% endif %}><span class=nav__icon>{{ icon(nav_icons[id]) }}</span><span>{{ label }}</span></a>
   {% endfor %}
-    {#- Account sits in the sidebar on desktop; on a phone it lives behind the business name. #}
+    {#- Account sits in the sidebar on desktop; on a phone it is the header's Account button. #}
     <a class="nav__item nav__item--wide" href=/client/account{% if on_account %} aria-current=page{% endif %}><span class=nav__icon>{{ icon("user-round") }}</span><span>Account</span></a>
     <p class=nav__foot>TextBack by FluxWorks</p>
   </nav>

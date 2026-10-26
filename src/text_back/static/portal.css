@@ -2041,21 +2041,121 @@
 
   /* Round-3 fix 2: the desktop example rail. Its scrolled thread fades over its last 32px, so the bubble at the
      bottom edge reads as running under the fade, never as cut; scroll-padding keeps a bubble brought into view
-     clear of it. "Scroll for the rest" sits in the fade while more of the thread is below (portal.js). */
-  .rail__more { display: none; }
+     clear of it. (Round 4: the hint that more is below is a line under the frame, see the end of this file.) */
   @media (min-width: 1024px) {
     .phone__screen { position: relative; }
     .phone__log { padding-bottom: 3rem; scroll-padding-block: 16px 3rem;
       -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); }
-    .phone__screen:has(.phone__log[data-more]) .rail__more { display: flex; }
-    .rail__more { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); align-items: center; gap: 4px; margin: 0;
-      padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); pointer-events: none;
-      font: var(--fw-semibold) var(--fs-caption)/1rem var(--font-body); color: var(--text-muted); white-space: nowrap; }
-    .rail__more .icon { font-size: 14px; }
   }
-  @container msglayout (width < 50rem) { .rail .rail__more { display: none; } }
 
   /* Round-3 fix 5: with JavaScript the minutes field (under the chips, in DOM and focus order) shows only
      while Custom is chosen; without JavaScript both show. */
   :where(.js) #rule-duration:has(#dur-custom:not(:checked)) > .inline-field:not(:focus-within) { display: none; }
+}
+
+/* ======================================================================== Round-4 fixes (final panel round 3)
+   The header's Account button, the section grid and the "Jump to" bar that takes over once it scrolls away, the
+   Messages branch disclosures and a narrower spine on phones, the tab bar that steps aside while scrolling down,
+   short labels that never strand a word, one focus ring on a field with an error, and the example rail's line under
+   the frame. */
+@layer app {
+  /* c2: TextBack with the business name under it (small, wraps, never cut short); Account on the right. */
+  .topbar .brand { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+    gap: 0; padding-block: 4px; }
+  .brand__mark { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .brand__biz { display: block; max-width: 100%; padding-left: calc(var(--icon-lg) + var(--space-2));
+    font: var(--fw-medium) 0.8125rem/1rem var(--font-body); color: var(--text-muted); overflow-wrap: break-word; text-wrap: balance; }
+  .acct { flex: none; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    min-width: var(--tap); min-height: var(--tap); padding: 2px 4px; border-radius: var(--radius-md); color: var(--text-muted);
+    font: var(--fw-medium) 0.75rem/0.875rem var(--font-body); text-decoration: none; }
+  .acct__icon { display: grid; place-items: center; width: 2.75rem; height: 1.625rem; border-radius: var(--radius-full);
+    font-size: 1.375rem; transition: background-color var(--dur-fast) var(--ease-out); }
+  .acct[aria-current="page"] { color: var(--accent); font-weight: 600; }
+  .acct[aria-current="page"] .acct__icon { background: var(--accent-tint); box-shadow: inset 0 0 0 1px var(--accent-line); }
+  @media (hover: hover) { .acct:not([aria-current="page"]):hover { color: var(--text-ink); } .acct:not([aria-current="page"]):hover .acct__icon { background: var(--sunken); } }
+  .acct:active .acct__icon { background: var(--line); }
+  .acct:focus-visible { outline-offset: -2px; }
+
+  /* c2: the sections as one-tap buttons, wrapped (2 or 3 a row on a phone), never a sideways row. */
+  .stepgrid { margin: 0 0 var(--space-6); max-width: var(--measure); }
+  .stepgrid__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+  .stepgrid__list:has(> li:nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stepgrid__link { display: flex; align-items: center; justify-content: center; min-height: var(--tap); height: 100%; padding: 4px var(--space-2);
+    border: 1px solid var(--line-input); border-radius: var(--radius-md); background: var(--bg); color: var(--text-ink);
+    font: var(--fw-semibold) var(--fs-small)/1.125rem var(--font-body); text-align: center; text-decoration: none; text-wrap: balance; overflow-wrap: anywhere; }
+  .stepgrid__link[aria-current="location"] { border-color: var(--accent-fill); background: var(--accent-tint); color: var(--accent); }
+  @media (hover: hover) { .stepgrid__link:not([aria-current="location"]):hover { background: var(--sunken); } }
+  .stepgrid__link:focus-visible { outline-offset: 1px; }
+  .jumpbar + form { display: block; margin-top: 0; }
+  .jumpmenu__list { max-height: calc(100dvh - var(--header-h) - var(--jump-h) - 1rem); overflow-y: auto; }
+
+  /* c2: Messages: each step's branch texts in one disclosure under the main path. */
+  .branches { min-width: 0; border: 1px dashed var(--line-input); border-radius: var(--radius-md); background: var(--bg); }
+  .branches__summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: var(--tap);
+    padding: var(--space-2) var(--space-3); border-radius: inherit; list-style: none; cursor: pointer; }
+  .branches__summary::-webkit-details-marker { display: none; }
+  .branches__text { display: grid; gap: 2px; min-width: 0; }
+  .branches__head { font: var(--fw-semibold) var(--fs-label)/var(--lh-label) var(--font-body); color: var(--accent); }
+  .branches__titles { font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--text-muted); text-wrap: pretty; }
+  .branches__chev { flex: none; font-size: var(--icon-md); color: var(--accent); transition: transform var(--dur-base) var(--ease-standard); }
+  .branches[open] > .branches__summary .branches__chev { transform: rotate(180deg); }
+  @media (hover: hover) { .branches__summary:hover .branches__head { text-decoration: underline; text-underline-offset: 3px; } }
+  .branches__cards { display: grid; gap: var(--card-gap); min-width: 0; padding: 0 var(--space-2) var(--space-2); }
+  .branches .qset--branch { margin-top: 0; border-radius: var(--radius-md); border-top-style: solid; }
+  @media (prefers-reduced-motion: reduce) { .branches__chev, .acct__icon { transition: none; } }
+
+  /* c2: calendar link labels in a bubble are words, not buttons (spans; the link shows on tap in the real text). */
+  span.sms__linkbtn { min-height: 0; padding-block: 4px; }
+
+  /* c1: short labels and hints never leave one word alone on a line. */
+  :is(.switch-row__text, .field__label, .field-help, .choice__name, .msg__when, .node__blurb, .applies, .default, .check__ev, .setup__detail, .caller__text, .pill-radio, .msg__rule) { text-wrap: pretty; }
+
+  /* One ring on a field with an error: the focus outline takes the error colour and sits on the border. */
+  :is(.input, .textarea)[aria-invalid="true"]:is(:focus, .is-focus) { outline-color: var(--danger-fg); outline-offset: 0; }
+  .check__title { gap: var(--space-3); }
+  .btn__text { display: inline; }
+
+  /* e2: under the desktop rail's frame while more of the thread is below; never over a bubble. */
+  .rail__more { display: none; margin: 0; font-size: var(--fs-caption); line-height: var(--lh-caption); color: var(--text-muted); text-align: center; }
+  @container msglayout (width < 50rem) { .rail .rail__more { display: none; } }
+
+  /* Coming up: the next bookings, one hairline row each (Home after This week; Calendar while connected). */
+  .upcoming { display: grid; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  .booking { display: grid; gap: 2px; padding: var(--space-3) 0; border-bottom: 1px solid var(--line); min-width: 0; }
+  .booking__when { font-weight: 600; color: var(--text-ink); }
+  .booking__what { font-size: var(--fs-small); line-height: var(--lh-small); color: var(--text-ink); overflow-wrap: anywhere; }
+  .booking__what .extag { margin-left: var(--space-1); vertical-align: 2px; }
+  .booking__where { font-size: var(--fs-small); line-height: var(--lh-small); color: var(--text-muted); overflow-wrap: anywhere; }
+
+  @media (max-width: 1023.98px) {
+    /* c2: the header save bar replaces TextBack and Account while a form has unsaved changes. */
+    .topbar--dirty > .acct { display: none; }
+    /* c2: the "Jump to" bar: a 0-height sticky strip under the header, so showing it never moves the page. */
+    .jumpbar { position: sticky; top: var(--header-h); z-index: var(--z-sticky); height: 0; margin: 0 calc(-1 * var(--gutter)); }
+    .jumpbar .jumpmenu { display: block; position: absolute; inset: 0 0 auto 0; margin: 0; background: var(--bg); box-shadow: 0 1px 0 var(--line); }
+    :where(.no-js) .jumpbar { height: auto; }
+    :where(.no-js) .jumpbar .jumpmenu { position: relative; }
+    /* c1: the tab bar steps aside while scrolling down (portal.js); every page ends with its height plus 24 px. */
+    .nav { transition: transform var(--dur-base) var(--ease-standard); will-change: transform; }
+    .nav[data-away] { transform: translateY(calc(100% + 2px)); }
+    .page { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .nav { transition: none; } }
+  @media (max-width: 639.98px) {
+    /* c2: a narrower spine on phones (node column and gap 32 px), so the cards get the width. */
+    :root { --spine-col: 1.5rem; --spine-gap: 0.5rem; --node: 1.5rem; }
+    .spine { gap: var(--space-6); }
+    .msg__receipt { flex-direction: row; justify-content: flex-end; }   /* "STOP line added for you · 1 text …" wraps as one line */
+    .msg__sep { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+    .msg__head { margin-bottom: var(--space-2); }
+    .node__body { gap: var(--space-2); }
+    .node__dot .icon { font-size: 0.8125rem; }
+  }
+  @media (min-width: 1024px) {
+    .acct { display: none; }       /* the sidebar has Account */
+    .jumpbar { display: none; }
+    .stepgrid__list { display: flex; flex-wrap: wrap; }
+    .stepgrid__link { padding-inline: 14px; border-radius: var(--radius-full); font-weight: 500; }
+    .rail:has(.phone__log[data-more]) .rail__more { display: block; }
+  }
 }

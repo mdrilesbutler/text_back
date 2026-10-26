@@ -80,7 +80,7 @@ PILL_NO_REPLY, PILL_STILL_NO_REPLY = "No reply", "Still no reply"
 PILL_STOPS = "Texts stop here"
 PILL_NO_BOOKING = "No booking was made"
 PILL_BOOKED, PILL_BOOKED_TEST = "Booked · on your calendar", "Booked · on the test calendar"
-DIVIDER_STEPS_BACK = "The assistant steps back here"
+DIVIDER_STEPS_BACK = "TextBack steps back here"
 PILL_DETAILS_SENT = "Customer's details sent to {label}"
 
 SAVEBAR_NOJS = "Saves every text at once"
@@ -127,9 +127,9 @@ MESSAGES: dict[str, tuple[str, str]] = {
     "booking_error": ("When the calendar failed",
                       "Sent if the appointment couldn't be added to your calendar. It tells the customer no booking was made."),
     "followup_1": ("First reminder", "Sent {delay} after the first text if there's no reply."),
-    "followup_2": ("Last reminder", "Sent {delay} after the first reminder. After this the assistant stops texting."),
-    # The step is "When the assistant steps back"; its card has a title of its own (banned words rule out "hand-off").
-    "handoff_ack": ("Steps-back text", "Sent when the customer asks for the owner or the assistant can't help."),
+    "followup_2": ("Last reminder", "Sent {delay} after the first reminder. After this TextBack stops texting."),
+    # The step is "When TextBack steps back"; its card has a title of its own (banned words rule out "hand-off").
+    "handoff_ack": ("Steps-back text", "Sent when the customer asks for the owner or TextBack can't help."),
     "handoff_ack_safety": ("When someone may be in danger", "Sent when a text mentions danger."),
     "opt_in": ("Reply to START", "Sent when a customer texts START."),
     "help": ("Reply to HELP", "Sent when a customer texts HELP. The number it shows is set on the Phone page."),
@@ -157,15 +157,15 @@ TRIGGERS = {
 STEPS: tuple[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...]], ...] = (
     ("missed_call", "Missed call", "A call goes unanswered. Within a minute the caller gets this text.", "phone",
      ("intro",), ()),
-    ("questions", "Questions", "Asked one at a time, in this order. The assistant moves on only once it has an answer.",
+    ("questions", "Questions", "Asked one at a time, in this order. TextBack moves on only once it has an answer.",
      "circle-help", ("prompt_service", "prompt_location", "prompt_preferred_time", "preferred_time_reprompt", "prompt_name"),
      ("prompt_phone", "phone_reprompt", "prompt_email", "email_reprompt")),
-    ("booking", "Booking", "Once it has the answers, the assistant checks your calendar and books a free time.",
+    ("booking", "Booking", "Once it has the answers, TextBack checks your calendar and books a free time.",
      "calendar", ("slot_unavailable", "booking_confirmation", "booking_error"), ()),
-    ("no_reply", "No reply", "If the customer goes quiet, the assistant sends two reminders. Then the texting stops.",
+    ("no_reply", "No reply", "If the customer goes quiet, TextBack sends two reminders. Then the texting stops.",
      "bell", ("followup_1", "followup_2"), ()),
-    ("steps_back", "When the assistant steps back",
-     "When a text needs a person, the assistant stops scheduling and passes the customer's details on.",
+    ("steps_back", "When TextBack steps back",
+     "When a text needs a person, TextBack stops scheduling and passes the customer's details on.",
      "user-round", ("handoff_ack", "handoff_ack_safety"), ()),
 )
 KEYWORDS = ("any_time", "START, HELP and STOP", "Required by phone companies. Most businesses never change these.",
@@ -174,7 +174,11 @@ JUMP = (("missed_call", "Missed call"), ("questions", "Questions"), ("booking", 
         ("steps_back", "Steps back"))
 BRANCH_OF = {"preferred_time_reprompt": "prompt_preferred_time", "phone_reprompt": "prompt_phone",
              "email_reprompt": "prompt_email"}
-BRANCH_KEYS = frozenset(BRANCH_OF) | {"slot_unavailable", "booking_error"}
+BRANCH_KEYS = frozenset(BRANCH_OF) | {"slot_unavailable", "booking_error", "handoff_ack_safety"}
+# Round 4: each step's branch texts sit in one disclosure under its main path (deck branches).
+BRANCH_SUMMARY = {"questions": "If the answer is unclear", "booking": "If the time is taken or the calendar fails",
+                  "steps_back": "If a text mentions danger"}
+BRANCH_SEP = " · "
 
 FIELD_KEYS: tuple[str, ...] = tuple(key for *_, keys, optional in (*STEPS, KEYWORDS) for key in (*keys, *optional))
 OPTIONAL_QUESTIONS = {"prompt_phone": ("phone", "Also ask for the best phone number"),
@@ -476,7 +480,7 @@ def change_summary(old: dict[str, str], new: dict[str, str], old_asked: set[str]
 # --- config-driven lines ---------------------------------------------------------------------
 
 def _channel(state) -> str:
-    """chat | log | off: where the customer's details go when the assistant steps back."""
+    """chat | log | off: where the customer's details go when TextBack steps back."""
     transport = getattr(state, "delivery_transport", None)
     channel = getattr(transport, "channel_name", "disabled")
     destination = str(getattr(state, "handoff_destination", "") or "")
@@ -560,9 +564,18 @@ class Step:
     heading: str
     blurb: str
     glyph: str
-    cards: tuple[Card, ...]
-    optional: tuple[Card, ...]
+    cards: tuple[Card, ...]       # the main path, always open
+    optional: tuple[Card, ...]    # optional questions (main path, behind their switches)
     has_error: bool = False
+    branches: tuple[Card, ...] = ()  # re-asks, time taken, calendar failed: one disclosure
+    branch_label: str = ""
+    branch_count: str = ""        # "1 text" / "3 texts": the branch texts a customer can get now
+    branch_titles: str = ""       # their titles, " · " between
+    branch_open: bool = False     # holds a customized, unsaved or rejected text
+
+
+def texts_word(n: int) -> str:
+    return f"{n} text{'s' if n != 1 else ''}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -680,12 +693,17 @@ def page_view(state, now: datetime, *, values: dict[str, str] | None = None, ask
         )
 
     def step(sid, heading, blurb, glyph, keys, optional) -> Step:
-        return Step(sid, heading, blurb, glyph, tuple(card(k) for k in keys), tuple(card(k) for k in optional),
-                    has_error=bad_key in (*keys, *optional))
+        branches = tuple(card(k) for k in (*keys, *optional) if k in BRANCH_KEYS)
+        live = [c for c in branches if not c.hidden or c.error]
+        return Step(sid, heading, blurb, glyph, tuple(card(k) for k in keys if k not in BRANCH_KEYS),
+                    tuple(card(k) for k in optional if k not in BRANCH_KEYS), has_error=bad_key in (*keys, *optional),
+                    branches=branches, branch_label=BRANCH_SUMMARY.get(sid, ""), branch_count=texts_word(len(live)),
+                    branch_titles=BRANCH_SEP.join(c.title for c in live),
+                    branch_open=any(c.saved_custom or c.dirty or c.error for c in live))
 
     steps = tuple(step(*row) for row in STEPS)
     keywords = step(*KEYWORDS)
-    every = [c for st in (*steps, keywords) for c in (*st.cards, *st.optional)]
+    every = [c for st in (*steps, keywords) for c in (*st.cards, *st.optional, *st.branches)]
     dirty = [c for c in every if c.dirty]
     texts = [c for c in every if c.text_dirty]
     switches = [c for c in every if c.optional and c.asked != c.asked_saved]

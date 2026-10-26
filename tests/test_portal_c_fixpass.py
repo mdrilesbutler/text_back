@@ -30,7 +30,7 @@ BUSINESS_LINE = "+17045550123"
 def signed_in(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    return client, telecom, clock, path, csrf_of(client.get("/client/home").text)
+    return client, telecom, clock, path, csrf_of(client.get("/client/account").text)
 
 
 def text(response) -> str:
@@ -325,7 +325,7 @@ def test_m10_m15_the_save_notices_say_what_the_rule_notes_say(tmp_path, monkeypa
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     hours = text(client.post("/client/schedule", data=schedule_form(csrf, hours_mode="set", open_mon="1",
                                                                      mon_open="08:00", mon_close="17:00")))
-    assert slot(hours) == ("Saved. You changed “Working hours”. Applies right away to times the assistant offers. "
+    assert slot(hours) == ("Saved. You changed “Working hours”. Applies right away to times TextBack offers. "
                            "Bookings already made stay as they are.")
     assert "mid-conversation" not in slot(hours)
     client.post("/client/phone", data=phone_form(csrf, business_line="704 555 0123"))
@@ -440,7 +440,7 @@ def test_finish_items_with_markup(tmp_path, monkeypatch):
     assert 'aria-label="Insert Business name"' in messages and 'aria-label="Edit wording: Question 4: the name"' in messages
     assert "STOP line added for you<span class=msg__sep> · </span>" in messages
     assert "<title>Messages · Oak &amp; Pine Tree Care · TextBack</title>" in messages
-    assert pm.MESSAGES["handoff_ack"][0] == "Steps-back text" and "When the assistant steps back" in messages
+    assert pm.MESSAGES["handoff_ack"][0] == "Steps-back text" and "When TextBack steps back" in messages
     shell = messages.split("<main", 1)
     assert shell[0].index("<a class=skip") < shell[0].index("<header") and "<nav class=nav" in shell[1].split("</main>", 1)[1]
     account = text(client.get("/client/account"))

@@ -228,7 +228,7 @@ SCENARIOS: dict[str, Scenario] = {
         name="booked", label="A customer books", script=_BOOKING_LINES, needs=_BOOKING_NEEDS,
     ),
     "unclear": Scenario(
-        name="unclear", label="A reply the assistant cannot use",
+        name="unclear", label="A reply TextBack cannot use",
         script=("Tree trimming", "412 Maple St, Charlotte", "Sometime next week", "Thursday at 10", "Dana Whitfield",
                 "Use my work phone", "YES", "alex at example", "dana@example.com"),
         needs=(None, None, None, None, None, "phone", "phone", "email", "email"),

@@ -113,7 +113,7 @@ def test_every_signed_in_page_and_its_states(tmp_path, monkeypatch):
     app.state.business_number = "+19805550100"
     for url in ("/client/home", "/client/messages", "/client/schedule", "/client/calendar", "/client/phone", "/client/account"):
         assert_clean(client.get(url), url)
-    csrf = csrf_of(client.get("/client/home").text)
+    csrf = csrf_of(client.get("/client/account").text)
 
     # Messages: a save, then a rejected save of each kind the deck words.
     assert_clean(client.post("/client/messages", data={"csrf": csrf, "intro": "Oak here, sorry we missed you. What do you need?",

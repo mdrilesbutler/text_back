@@ -131,7 +131,7 @@ def test_not_connected_has_connect_or_a_contact_action_never_a_dead_end(tmp_path
     card = pc.status_card(state)
     assert card["state_word"] == "Not connected" and card["title"] == "No calendar yet"
     assert card["body"] == "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see."
-    assert card["why"] == ("Connect the Google account that owns your business calendar, so the assistant offers your "
+    assert card["why"] == ("Connect the Google account that owns your business calendar, so TextBack offers your "
                            "real free times and books onto your calendar.")
     assert card["buttons"] == [{"label": "Connect Google Calendar", "action": "connect", "kind": "primary",
                                 "busy_label": "Opening Google…"}]
@@ -170,7 +170,7 @@ def test_connected_state_names_the_calendar_and_offers_reconnect(tmp_path, monke
 
     context = pc.page_context(state)
     picker = context["picker"]
-    assert picker["legend"] == "Which calendar should the assistant use?"
+    assert picker["legend"] == "Which calendar should TextBack use?"
     assert picker["hint"] == "Free times are checked on this calendar and new appointments are added to it."
     assert [(c["id"], c["name"], c["in_use"], c["main"]) for c in picker["choices"]] == [
         ("owner@example.test", "Personal", False, True), ("jobs@group.calendar.google.com", "Tree jobs", True, False)]

@@ -37,7 +37,7 @@ def test_every_message_is_shown_once_in_conversation_order():
     assert sorted(FIELD_KEYS) == sorted(k for k in DEFAULT_TEMPLATES if k != "fields")
     assert len(set(FIELD_KEYS)) == len(FIELD_KEYS) == 21
     assert [step[1] for step in STEPS] == ["Missed call", "Questions", "Booking", "No reply",
-                                           "When the assistant steps back"]
+                                           "When TextBack steps back"]
     assert KEYWORDS[1] == "START, HELP and STOP"
     questions = [*STEPS[1][4], *STEPS[1][5]]
     assert questions[:3] == ["prompt_service", "prompt_location", "prompt_preferred_time"]
@@ -63,7 +63,7 @@ def test_jump_chips_are_the_five_step_headings_and_keywords_start_closed(tmp_pat
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     page = client.get("/client/messages").text
-    jump = re.search(r'<nav class=jump aria-label="On this page">.*?</nav>', page, re.S).group(0)
+    jump = re.search(r'<nav class=stepgrid aria-label="On this page" data-stepgrid>.*?</nav>', page, re.S).group(0)
     assert re.findall(r"href=(#\w+)(?: aria-current=location)?>([^<]+)<", jump) == [
         ("#missed_call", "Missed call"), ("#questions", "Questions"), ("#booking", "Booking"),
         ("#no_reply", "No reply"), ("#steps_back", "Steps back")]

@@ -34,7 +34,7 @@ def test_connected_card_names_the_account_opens_the_picker_and_reconnects_by_lin
     assert "Bookings go here: Tree jobs. Connected as owner@example.test." in html.unescape(card)
     picker = re.search(r"<details class=picker id=picker>.*?</details>", card, re.S).group(0)
     assert '<summary class="btn btn--secondary picker__summary">Use a different calendar</summary>' in picker
-    assert "Which calendar should the assistant use?" in picker and 'name=calendar_id value="jobs@group.calendar.google.com" checked' in picker
+    assert "Which calendar should TextBack use?" in picker and 'name=calendar_id value="jobs@group.calendar.google.com" checked' in picker
     reconnect = re.search(r"<form method=post action=/client/calendar data-connect class=status__link>.*?</form>", card, re.S).group(0)
     assert "<button type=submit class=linkbtn" in reconnect and "Reconnect Google Calendar" in reconnect
     assert "<details class=picker id=picker open>" in render(state, picker_error=pc.PICKER_ERROR)  # an error opens it

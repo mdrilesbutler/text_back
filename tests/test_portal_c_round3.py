@@ -17,7 +17,7 @@ ROUND3 = CSS[CSS.index("/* Round-3 fix 1:"):]
 def signed_in(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    return client, csrf_of(client.get("/client/home").text)
+    return client, csrf_of(client.get("/client/account").text)
 
 
 def _media(block: str, query: str) -> str:
@@ -62,13 +62,13 @@ def test_the_example_rail_fades_its_bottom_edge_and_says_when_more_is_below(tmp_
     page = client.get("/client/messages").text
     rail = re.search(r"<section class=rail id=example .*?</section>", page, re.S).group(0)
     hint = re.search(r"<p class=rail__more [^>]*>.*?</p>", rail, re.S).group(0)
-    assert "aria-hidden=true" in hint and "data-rail-more" in hint and hint.endswith("Scroll for the rest</p>")
-    # The hint sits in the phone screen beside the scrolled log, not inside it.
+    # Round 4: a plain line under the frame (test_portal_c_round4 pins its words and place), never a pill over a bubble.
+    assert "data-rail-more" in hint and "Scroll for the rest" not in rail
     assert rail.index("data-rail-log") < rail.index("data-rail-more")
     wide = _media(ROUND3[ROUND3.index("Round-3 fix 2"):], "min-width: 1024px")
     assert "calc(100% - 32px), transparent" in wide and "scroll-padding-block: 16px 3rem" in wide
-    assert ".phone__screen:has(.phone__log[data-more]) .rail__more { display: flex; }" in wide
-    assert ".rail__more { display: none; }" in ROUND3  # without JavaScript (no data-more) and on phones
+    assert ".phone__screen:has(.phone__log[data-more]) .rail__more" not in ROUND3
+    assert ".rail__more { display: none;" in ROUND3  # without JavaScript (no data-more) and on phones
     assert "log.toggleAttribute('data-more'" in JS and "log.scrollHeight - log.clientHeight - log.scrollTop > 16" in JS
 
 

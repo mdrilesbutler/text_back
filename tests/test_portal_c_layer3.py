@@ -15,7 +15,7 @@ TEMPLATES = Path(__file__).resolve().parents[1] / "src" / "text_back" / "templat
 def signed_in(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    return client, csrf_of(client.get("/client/home").text)
+    return client, csrf_of(client.get("/client/account").text)
 
 
 def form(csrf, **changes):

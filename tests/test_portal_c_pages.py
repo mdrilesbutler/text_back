@@ -26,7 +26,7 @@ def text_of(response) -> str:
 def signed_in(tmp_path, monkeypatch):
     client, telecom, clock, path = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
-    return client, telecom, clock, path, csrf_of(client.get("/client/home").text)
+    return client, telecom, clock, path, csrf_of(client.get("/client/account").text)
 
 
 def missed(state, sid, caller, at, forwarded_from=""):
@@ -143,10 +143,10 @@ def test_the_steps_back_destination_comes_from_config(tmp_path, monkeypatch):
     client.app.state.delivery_transport = Chat()
     client.app.state.handoff_destination = "operator-chat"
     page = text_of(client.get("/client/messages"))
-    card = re.search(r'<article class="qset" id=card-handoff_ack_safety .*?</article>', page, re.S).group(0)
+    card = re.search(r'<article class="qset[^"]*" id=card-handoff_ack_safety .*?</article>', page, re.S).group(0)
     assert "What happens next" in card and DESTINATION_OFF not in page
     rail = thread(page, "safety")
-    assert "The assistant steps back here" in rail and "Customer's details sent to FluxWorks" in rail
+    assert "TextBack steps back here" in rail and "Customer's details sent to FluxWorks" in rail
 
 
 def test_save_notice_names_the_change_in_the_slot_under_the_header(tmp_path, monkeypatch):
@@ -266,7 +266,7 @@ def test_rename_offer_updates_the_texts_that_still_say_the_old_name(tmp_path, mo
     saved = text_of(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak and Pine", "owner_mobile": OWNER}))
     assert "2 texts still say “Oak & Pine Tree Care”. Update them to the new name?" in saved and "Leave them" in saved
     assert "Saved. You changed “Business name”." in saved and saved.count("data-notice>") == 1  # one notice
-    assert "<span class=menu__biz>Oak and Pine</span>" in saved  # the header shows the new name
+    assert "<span class=brand__biz>Oak and Pine</span>" in saved  # the header shows the new name
     assert client.get("/client/phone").text.count("data-rename-offer") == 1  # offered until answered
     done = text_of(client.post("/client/phone/rename-texts", data={"csrf": csrf, "action": "update"}))
     assert "Updated 2 texts." in done and "data-rename-offer" not in done

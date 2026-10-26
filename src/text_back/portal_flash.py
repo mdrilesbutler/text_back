@@ -87,9 +87,12 @@ def flash_text(state, notice_id: str, params: dict) -> str | None:
         return portal_scheduling.saved_text(_keys(params, "rules", portal_scheduling.LABELS))
     if notice_id == "phone_saved":
         checks = params.get("checks") if isinstance(params.get("checks"), list) else []
+        from text_back import portal_forwarding
+        ticks = portal_forwarding.manual_ticks(state.store)
         return portal_phone.saved_text(_keys(params, "fields", portal_phone.LABELS),
                                        [n for n in checks if isinstance(n, int) and n in portal_phone.MANUAL_CHECKS],
-                                       checks_reset=params.get("reset") is True)
+                                       checks_reset=params.get("reset") is True,
+                                       ticked={n: bool(ticks.get(key)) for n, key in portal_phone.MANUAL_CHECKS.items()})
     if notice_id == "mobile_code_sent":
         pending = portal_phone.pending_mobile(state)
         return portal_phone.CODE_SENT.format(n=format_contact_number(pending)) if pending else None

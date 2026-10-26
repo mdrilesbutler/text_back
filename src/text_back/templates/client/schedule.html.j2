@@ -5,7 +5,7 @@
     the 1 AM warning and the one-tap Mon–Fri hours; both live without JavaScript through :has(). The save
     bar rests in flow; while something changed the phone header becomes the save bar. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon, csrf_input, field_error, node %}
+{% from "client/_macros.html.j2" import icon, csrf_input, field_error, node, stepnav %}
 {% from "client/_form_errors.html.j2" import field_summary %}
 {#- Reset: with JavaScript it puts the rule back in place and waits for Save (m11); without it the button posts
     the whole form and saves, and says so. Hidden while the rule is at its default. -#}
@@ -23,9 +23,10 @@
 {% set quiet_on = not values.no_quiet_hours %}
 <div class=page-head>
   <h1>Schedule</h1>
-  <p class=lead>The timing rules the assistant follows when it books. Reset puts a rule back to its default.</p>
+  <p class=lead>The timing rules TextBack follows when it books. Reset puts a rule back to its default.</p>
 </div>
 {% if summary %}{{ field_summary(summary) }}{% endif %}
+{{ stepnav((("appointments", "Appointments"), ("working-hours", "Working hours"), ("quiet_hours", "Quiet hours"), ("reminders", "Reminders"))) }}
 <form method=post action=/client/schedule id=schedule-form novalidate data-track-changes data-topsave data-changed-one="1 rule changed" data-changed-many="{n} rules changed" data-save-label=Save{% if dirty %} data-dirty-initial{% endif %}>
   {{ csrf_input(csrf) }}
   <button type=submit class=vh tabindex=-1 aria-hidden=true name=save value=1></button>
@@ -60,7 +61,7 @@
     </div>
   {% endcall %}
   {% call node("icon", "sun", attrs="id=working-hours") %}
-    <div class=node__head><h2 tabindex=-1>Working hours</h2><p class=node__blurb>When the assistant may book a job.</p></div>
+    <div class=node__head><h2 tabindex=-1>Working hours</h2><p class=node__blurb>When TextBack may book a job.</p></div>
     <div class="card card--form hours-card" data-change-label="Working hours" id=rule-hours>
       {% if hours_warning %}<p class="notice notice--warning" data-hours-corrupt>{{ hours_warning }}</p>{% endif %}
       <fieldset class=choice-list id=hours_mode>
@@ -77,7 +78,7 @@
         {{ icon("triangle-alert", "notice__icon") }}
         <div class=notice__body>
           <p class=notice__text>{{ any_time_warning_text }}</p>
-          <div class=actions><button type=submit class="btn btn--secondary" name=suggest_hours value=1 formaction="/client/schedule#working-hours" data-suggest-hours>{{ any_time_button|nw }}</button></div>
+          <div class=actions><button type=submit class="btn btn--secondary" name=suggest_hours value=1 formaction="/client/schedule#working-hours" data-suggest-hours><span class=btn__text>{{ any_time_button|nw }}</span></button></div>
           <p class=field-help>{{ any_time_note|nw }}</p>
         </div>
       </div>
@@ -122,7 +123,7 @@
     </div>
   {% endcall %}
   {% call node("icon", "bell", attrs="id=reminders") %}
-    <div class=node__head><h2 tabindex=-1>Reminders</h2><p class=node__blurb>Two reminders when a customer never replies to the first text. After that the assistant stops texting.</p></div>
+    <div class=node__head><h2 tabindex=-1>Reminders</h2><p class=node__blurb>Two reminders when a customer never replies to the first text. After that TextBack stops texting.</p></div>
     <div class="card card--form">
       {% for key, options in (("followup_delay_1", delay1_options), ("followup_delay_2", delay2_options), ("followup_expiry_minutes", expiry_options)) if not (key == "followup_delay_2" and reminder_count == 1) %}
       <div class="field field--rem" id=rule-{{ key }} data-change-label="{{ labels[key] }}">

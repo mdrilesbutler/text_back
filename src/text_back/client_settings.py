@@ -204,7 +204,9 @@ def _home_page(request: Request, state, session):
     example_note = portal_status.EXAMPLE_NOTE if any(i.get("example") for i in first_line) else ""
     return render(request, "client/home.html.j2", **shell(state, session, title="Home", nav="home"),
                   headline=portal_status.headline(first_line), headline_node=portal_status.headline_kind(first_line),
-                  example_note=example_note, setup=items, week=portal_status.this_week(state, now), stepped_back=portal_status.STATUS_STEPPED_BACK)
+                  example_note=example_note, setup=items, week=portal_status.this_week(state, now), stepped_back=portal_status.STATUS_STEPPED_BACK,
+                  upcoming=portal_status.upcoming(state, now), upcoming_title=portal_status.UPCOMING_TITLE,
+                  upcoming_empty=portal_status.UPCOMING_EMPTY)
 
 
 def portal_messages_discarded() -> str:
@@ -230,7 +232,7 @@ def _schedule_page(request: Request, state, session, *, values=None, errors=None
                  if portal_scheduling.LABELS[k] in rules]
         dirty = {"changed": changed, "names": names}
         page["topsave"] = {"form": "schedule-form", "changed": changed, "save": "Save", "names": names}
-    return render(request, "client/schedule.html.j2", **page, **context, dirty=dirty,
+    return render(request, "client/schedule.html.j2", **page, **context, dirty=dirty, has_jump=True,
                   summary=error_summary(errors or {}, portal_scheduling.FIELD_ORDER), unsaved=unsaved)
 
 
@@ -291,8 +293,14 @@ def _calendar_page(request: Request, state, session, *, result=None, notice: str
                    picker_error: str = ""):
     from text_back import portal_calendar
 
+    from text_back import portal_status
+
     context = portal_calendar.page_context(state, result)
     support = str(getattr(state, "support_contact", "") or "").strip()
+    # While connected, the bookings coming up on this calendar sit under the connection card (round 4).
+    if context["card"].get("connected"):
+        context.update(upcoming=portal_status.upcoming(state, _now(state)), upcoming_title=portal_status.UPCOMING_CALENDAR_TITLE,
+                       upcoming_empty=portal_status.UPCOMING_EMPTY)
     return render(request, "client/calendar.html.j2", **shell(state, session, title="Calendar", nav="calendar", notice=notice),
                   **context, page_error=error, picker_error=picker_error, support_contact=support,
                   calendar_example="calendar" in (getattr(state, "preview_example_setup", None) or ()))
@@ -346,7 +354,8 @@ def _phone_page(request: Request, state, session, *, values=None, errors=None, n
     page["tb_data"] = {"gsm": portal_messages.GSM_BASIC, "ext": portal_messages.GSM_EXTENDED}
     return render(request, "client/phone.html.j2", **page, name_symbol=portal_phone.name_symbol_line(preview_name),
                   name_symbol_template=portal_phone.NAME_SYMBOL,
-                  **context, display=display, page_error=page_error, rename_offer=rename, dirty=dirty,
+                  **context, display=display, page_error=page_error, rename_offer=rename, dirty=dirty, has_jump=True,
+                  rename_stale=portal_phone.RENAME_STALE.format(old=rename["old_name"]) if rename else "",
                   title_text=portal_phone.TITLE, values_saved_mobile=format_contact_number(getattr(state, "owner_mobile", "") or ""),
                   name_preview=body, name_suffix=suffix,
                   name_template=portal_messages.to_display(templates["intro"]),

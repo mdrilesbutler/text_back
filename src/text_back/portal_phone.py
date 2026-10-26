@@ -32,7 +32,7 @@ LABELS = {
     "business_line": "Your business number",
     "text_back_number": "Texting number",
     "owner_mobile": "Your mobile",
-    "business_contact": "Number in the HELP reply",
+    "business_contact": "The number customers get when they text HELP",
     "carrier": "Your carrier",
 }
 ERR_NAME = f"Enter a business name of 1 to {NAME_MAX} characters."
@@ -78,6 +78,8 @@ FORWARDING_INTRO = ("Forward the calls you don't answer to your texting number. 
 FORWARD_ALL_WARNING = ("Only forward busy and unanswered calls. Forwarding every call stops answered calls "
                        "from reaching you.")
 RENAME_ACCEPT, RENAME_ACCEPT_ONE = "Update them", "Update it"
+# Under the first-text preview while the rename offer is open and the first text keeps the old name (round 4).
+RENAME_STALE = "This text still says “{old}”. Update it above."
 RENAME_DECLINE, RENAME_DECLINE_ONE = "Leave them", "Leave it"
 CONFIRM_INTRO = ("We texted a six-digit code to {n}. Enter it to move sign-in to that number. It expires in "
                  "ten minutes; until then codes still go to your current mobile.")
@@ -434,9 +436,21 @@ def saved_notice(labels: list[str]) -> str:
     return SAVED_CHANGED.format(labels="”, “".join(labels)) if labels else SAVED
 
 
-def saved_text(fields: list[str], checks: list[int], *, checks_reset: bool = False) -> str:
-    """The Phone save notice from keys (portal_flash); a new business number says the checks start again."""
-    notice = saved_notice([LABELS[key] for key in fields] + [portal_forwarding.LABELS[n] for n in checks])
+# A manual check is recorded, not changed (round 4): "You ticked “An answered call sent no text”."
+TICKED, UNTICKED = "You ticked “{labels}”.", "You unticked “{labels}”."
+
+
+def saved_text(fields: list[str], checks: list[int], *, checks_reset: bool = False,
+               ticked: dict[int, bool] | None = None) -> str:
+    """The Phone save notice from keys (portal_flash): the fields changed, then the checks ticked or unticked
+    (``ticked``: each check's state now); a new business number says the checks start again."""
+    ticked = ticked or {}
+    parts = [SAVED_CHANGED.format(labels="”, “".join(LABELS[key] for key in fields))] if fields else []
+    for word, on in ((TICKED, True), (UNTICKED, False)):
+        names = [portal_forwarding.LABELS[n] for n in checks if bool(ticked.get(n)) == on]
+        if names:
+            parts.append(word.format(labels="”, “".join(names)) if parts else "Saved. " + word.format(labels="”, “".join(names)))
+    notice = " ".join(parts) if parts else SAVED
     return f"{notice} {CHECKS_RESET}" if checks_reset else notice
 
 
@@ -500,11 +514,11 @@ def page_context(state, values: dict | None = None, errors: dict | None = None, 
         "intro": INTRO,
         "hints": {
             "business_name": "Used in the texts that name your business, like the first text and the booking confirmation.",
-            "business_line": ("This is the number customers call. TextBack never changes it. Calls you don't answer "
-                              "forward from here to the texting number."),
+            "business_line": ("This is the number customers call. TextBack never changes it. Typing it here doesn't "
+                              "change your phone service; TextBack uses it to check forwarding."),
             "owner_mobile": ("Sign-in codes come to this number. If you change it, we text a code to the new "
                              "number and nothing changes until you enter it."),
             "business_contact": (f"Shown when a customer texts HELP. Leave blank to show {formatted or 'the texting number'}. "
-                                 "Customers are never transferred to it; the assistant handles the texting."),
+                                 "Customers are never transferred to it; TextBack handles the texting."),
         },
     }

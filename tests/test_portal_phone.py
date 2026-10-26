@@ -354,4 +354,4 @@ def test_owner_facing_strings_carry_no_vendor_or_repository_names():
     from text_back import portal_forwarding
     assert portal_forwarding.EVIDENCE_NOTE == "Checks 1, 2 and 4 tick from calls TextBack recorded."
     assert portal_phone.SAVED == "Saved."
-    assert portal_phone.LABELS["business_contact"] == "Number in the HELP reply"
+    assert portal_phone.LABELS["business_contact"] == "The number customers get when they text HELP"
