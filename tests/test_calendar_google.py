@@ -348,3 +348,30 @@ def test_booking_end_to_end_confirms_only_with_event_id():
     events = [e["event_type"] for e in store.list_outcome_events("+15551112222")]
     assert "calendar.event_created" in events
     assert "appointment.confirmed" in events
+
+
+def test_busy_intervals_returns_utc_pairs_from_one_freebusy_call():
+    provider, transport = _provider(_freebusy([
+        {"start": "2026-08-20T15:30:00Z", "end": "2026-08-20T16:30:00Z"},
+        {"start": "2026-08-21T09:00:00-04:00", "end": "2026-08-21T10:00:00-04:00"},
+    ]))
+    busy = provider.busy_intervals(START, START + timedelta(days=14))
+    assert busy == [
+        (datetime(2026, 8, 20, 15, 30, tzinfo=timezone.utc), datetime(2026, 8, 20, 16, 30, tzinfo=timezone.utc)),
+        (datetime(2026, 8, 21, 13, 0, tzinfo=timezone.utc), datetime(2026, 8, 21, 14, 0, tzinfo=timezone.utc)),
+    ]
+    assert all(s.tzinfo is timezone.utc for s, _ in busy) and len(transport.requests) == 1
+    body = json.loads(transport.requests[0].body)
+    assert body["timeMin"] == "2026-08-20T15:00:00Z" and body["timeMax"] == "2026-09-03T15:00:00Z"
+
+
+@pytest.mark.parametrize("busy", [
+    [{"start": "not a time", "end": "2026-08-20T16:30:00Z"}],
+    [{"start": "2026-08-20T15:30:00", "end": "2026-08-20T16:30:00Z"}],  # naive
+    [{"end": "2026-08-20T16:30:00Z"}],
+    ["2026-08-20T15:30:00Z"],
+])
+def test_busy_intervals_fails_closed_on_malformed_entries(busy):
+    provider, _ = _provider(_freebusy(busy))
+    with pytest.raises(CalendarProviderError):
+        provider.busy_intervals(START, END)

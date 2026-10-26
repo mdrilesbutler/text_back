@@ -1,0 +1,26 @@
+{#- The HTML document every portal page shares. No inline style, no inline executable script (CSP). -#}
+<!doctype html>
+<html lang=en class=no-js{% if theme %} data-theme={{ theme }}{% endif %}>
+<head>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name=color-scheme content="light dark">
+<meta name=theme-color media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name=theme-color media="(prefers-color-scheme: dark)" content="#0c0a09">
+<meta name=robots content=noindex>
+<meta name=format-detection content="telephone=no">
+<title>{{ title }} · TextBack</title>
+<link rel=preload href=/client/static/fonts/source-sans-3-var-latin.woff2 as=font type=font/woff2 crossorigin>
+<link rel=preload href=/client/static/fonts/archivo-600-latin.woff2 as=font type=font/woff2 crossorigin>
+<link rel=stylesheet href="/client/static/portal.css?v={{ asset_v }}">
+<script type=module src="/client/static/portal.js?v={{ asset_v }}"></script>
+</head>
+<body>
+{% include "client/_icons.svg.j2" %}
+<a class=skip href=#main>Skip to content</a>
+{% block body %}{% endblock %}
+<div class=toast-region data-toast-region></div>
+<div class=vh id=announcer aria-live=polite></div>
+{% block data %}{% endblock %}
+</body>
+</html>

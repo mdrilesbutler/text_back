@@ -1,0 +1,10 @@
+{#- Answer to a POST whose CSRF token no longer matches (status 400). Nothing was saved. -#}
+{% extends "client/base.html.j2" %}
+{% from "client/_macros.html.j2" import icon, page_head %}
+{% block page_class %}expired{% endblock %}
+{% block content %}
+<div class="page__body expired">
+  {{ page_head("This page expired", "Reload the page and try again. Your changes were not saved.") }}
+  <div class=actions><a class="btn btn--primary btn--block-phone" href="{{ reload_url }}">{{ icon("refresh-cw") }}Reload</a></div>
+</div>
+{% endblock %}

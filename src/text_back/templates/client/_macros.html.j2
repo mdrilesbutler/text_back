@@ -1,0 +1,117 @@
+{#- Primitives shared by every portal page. Imported macros do not see the page context: pass every value.
+    Attribute quoting: closed-set single tokens unquoted, anything with spaces or owner/Google data double-quoted,
+    CSRF always the literal name=csrf value='…' (tests parse exactly that). -#}
+
+{% macro icon(name, cls="") -%}
+<svg class="icon{{ (' ' ~ cls) if cls else '' }}" aria-hidden=true focusable=false><use href="#i-{{ name }}"/></svg>
+{%- endmacro %}
+
+{% macro csrf_input(token) -%}
+<input type=hidden name=csrf value='{{ token }}'>
+{%- endmacro %}
+
+{% macro button(label, variant="primary", type="submit", size="", block="", icon_name="", name="", value="", loading="", hook="", hidden=False, form="") -%}
+<button type={{ type }} class="btn btn--{{ variant }}{{ (' btn--' ~ size) if size else '' }}{{ (' btn--' ~ block) if block else '' }}"{% if form %} form={{ form }}{% endif %}{% if name %} name={{ name }} value={{ value }}{% endif %}{% if loading %} data-loading="{{ loading }}"{% endif %}{% if hook %} {{ hook }}{% endif %}{% if hidden %} hidden{% endif %}>{% if icon_name %}{{ icon(icon_name) }}{% endif %}{{ label }}</button>
+{%- endmacro %}
+
+{% macro pill(variant, icon_name, word, hook="", hidden=False) -%}
+<span class="pill pill--{{ variant }}"{% if hook %} {{ hook }}{% endif %}{% if hidden %} hidden{% endif %}>{{ icon(icon_name) }}{{ word }}</span>
+{%- endmacro %}
+
+{% macro notice(kind, text, title="", hook="") -%}
+{% set icons = {"info": "info", "warning": "triangle-alert", "danger": "circle-alert", "success": "circle-check"} %}
+<div class="notice notice--{{ kind }}" role={{ "alert" if kind == "danger" else "status" }}{% if hook %} {{ hook }}{% endif %}>
+  {{ icon(icons[kind], "notice__icon") }}
+  <div class=notice__body>{% if title %}<p class=notice__title>{{ title }}</p>{% endif %}<p class=notice__text>{{ text }}</p></div>
+</div>
+{%- endmacro %}
+
+{#- A toast floats once JS moves it into the region (JS drops role=status there: the announcer speaks it). -#}
+{% macro toast(text, kind="success", detail="") -%}
+<div class="notice notice--{{ kind }} toast" role=status data-toast data-kind={{ kind }}>
+  {{ icon("circle-check" if kind == "success" else "info", "notice__icon") }}
+  <p class=notice__text>{{ text }}{% if detail %} <span class=notice__detail>{{ detail }}</span>{% endif %}</p>
+  <button type=button class="icon-btn toast__close" data-toast-close hidden>{{ icon("x") }}<span class=vh>Dismiss</span></button>
+</div>
+{%- endmacro %}
+
+{% macro field_error(id, text) -%}
+<p class=field-error id={{ id }}>{{ icon("circle-alert") }}<span>{{ text }}</span></p>
+{%- endmacro %}
+
+{% macro otp(id="code", error="", help_id="", value="", autofocus=True, idp="") -%}
+{% set describedby = [help_id, (idp ~ id ~ "-error") if error else ""]|select|join(" ") %}
+<div class=otp data-otp data-filled={{ value|length }}>
+  <input id={{ idp }}{{ id }} name=code class=otp__input inputmode=numeric autocomplete=one-time-code pattern="[0-9]{6}" maxlength=6 required title="Six digits"{% if autofocus %} autofocus{% endif %} spellcheck=false autocapitalize=off autocorrect=off{% if value %} value="{{ value }}"{% endif %}{% if error %} aria-invalid=true{% endif %}{% if describedby %} aria-describedby="{{ describedby }}"{% endif %}>
+  <span class=otp__cells aria-hidden=true><i></i><i></i><i></i><i></i><i></i><i></i></span>
+</div>
+{% if error %}{{ field_error(idp ~ id ~ "-error", error) }}{% endif %}
+{%- endmacro %}
+
+{#- bare=True: the toggle alone (in a card head); the label text stays for assistive tech. -#}
+{% macro switch(field, label, on, saved_on, idp="", bare=False) -%}
+<label class="switch-row{% if bare %} switch-row--bare{% endif %}" for={{ idp }}ask_{{ field }}><span class="{{ 'vh' if bare else 'switch-row__text' }}">{{ label }}</span><input type=checkbox role=switch class=switch id={{ idp }}ask_{{ field }} name=ask_{{ field }} value=1{% if on %} checked{% endif %} data-saved-checked={{ 1 if saved_on else 0 }}></label>
+{%- endmacro %}
+
+{#- Calendar status: pill, title, one sentence, the calendar in use when connected, then the next step
+    (the caller: the Connect form when it is the primary action, or a note). -#}
+{#- meta=False: a picker below names the calendar in use, so the meta line is left out; screen readers still
+    hear the name before "this calendar" in the detail. -#}
+{% macro status_block(s, idp="", meta=True) -%}
+<section class=status data-status={{ s.kind }} aria-labelledby={{ idp }}status-title>
+  {{ pill(s.pill_variant, s.pill_icon, s.pill_word) }}
+  <h2 class=status__title id={{ idp }}status-title>{{ s.title }}</h2>
+  {% if s.calendar and not meta %}<p class=vh>Google Calendar is connected and uses <strong>{{ s.calendar }}</strong>.</p>{% endif %}
+  <p class=status__detail>{{ s.detail }}</p>
+  {% if s.calendar and meta %}<dl class=status__meta><dt>Calendar</dt><dd><strong>{{ s.calendar }}</strong></dd></dl>{% endif %}
+  {% if caller is defined %}<div class=status__next>{{ caller() }}</div>{% endif %}
+</section>
+{%- endmacro %}
+
+{% macro stepper() -%}
+<ol class=stepper aria-label="Change your mobile" data-stepper>
+  <li class="stepper__step stepper__step--done"><span class=stepper__dot>{{ icon("check") }}</span><span class=stepper__label><span class=vh>Done: </span>Details saved</span></li>
+  <li class="stepper__step stepper__step--current" aria-current=step><span class="stepper__dot tnum">2</span><span class=stepper__label>Confirm number</span></li>
+</ol>
+{%- endmacro %}
+
+{#- jump: ((href, label), ...) drawn as a one-line row of link chips that scrolls inside itself. -#}
+{% macro page_head(title, lead, meta="", jump=()) -%}
+<header class=page-head>
+  <h1>{{ title }}</h1>
+  {% if lead %}<p class=lead>{{ lead }}</p>{% endif %}
+  {% if meta %}<p class=page-head__meta>{{ icon("info") }}<span>{{ meta }}</span></p>{% endif %}
+  {% if jump %}<nav class=jump aria-label="Jump to"><ul class=jump__list>{% for href, label in jump %}<li><a class=jump__link href={{ href }}>{{ label }}</a></li>{% endfor %}</ul></nav>{% endif %}
+</header>
+{%- endmacro %}
+
+{% macro savebar(initial) -%}
+<div class=savebar data-savebar data-state=nojs data-initial={{ initial }}>
+  <p class="savebar__status tnum" data-savebar-status>Saves every message at once</p>
+  <div class=savebar__actions>
+    <button type=button class="btn btn--ghost" data-show-error hidden>Show</button>
+    <button type=button class="btn btn--danger-ghost" data-discard hidden>Discard</button>
+    <button type=submit class="btn btn--primary" name=save value=1 data-save data-loading="Saving…" aria-keyshortcuts="Control+S Meta+S">Save changes</button>
+  </div>
+</div>
+{%- endmacro %}
+
+{#- A TextBack bubble's text: URLs in span.sms__link (they may break anywhere), and the opt-out line added
+    for the owner in span.sms__suffix. portal.js draws the same nodes. -#}
+{% macro bubble_text(body, suffix="") -%}
+{{ body|url_runs }}{% if suffix %} <span class=sms__suffix>{{ suffix }}</span>{% endif %}
+{%- endmacro %}
+
+{#- One row of a conversation: a bubble, a thread pill or the hand-off divider. tag="li" in the rail;
+    badge=False drops the role badges (a card preview with only one speaker). -#}
+{% macro thread_item(it, tag="div", hide=False, badge=True) -%}
+{%- if it.kind == "customer" -%}
+<{{ tag }} class="sms sms--customer"{% if it.ask %} data-ask={{ it.ask }}{% endif %}{% if hide %} hidden{% endif %}>{% if badge %}<span class=sms__badge>Customer</span>{% endif %}<p class=sms__bubble>{{ it.text }}</p></{{ tag }}>
+{%- elif it.kind == "textback" -%}
+<{{ tag }} class="sms sms--textback"{% if it.ask %} data-ask={{ it.ask }}{% endif %}{% if hide %} hidden{% endif %}>{% if badge %}<span class=sms__badge>TextBack</span>{% endif %}<p class=sms__bubble data-preview={{ it.key }}>{{ bubble_text(it.text, it.suffix) }}</p></{{ tag }}>
+{%- elif it.kind == "handoff" -%}
+<{{ tag }} class=handoff>{{ it.text }}</{{ tag }}>
+{%- else -%}
+<{{ tag }} class="tpill tpill--{{ it.kind }}">{% if it.icon %}{{ icon(it.icon) }}{% endif %}{{ it.text }}</{{ tag }}>
+{%- endif -%}
+{%- endmacro %}

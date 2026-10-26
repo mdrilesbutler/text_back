@@ -5,6 +5,7 @@ description = "Missed-call recovery and scheduling assistant (local core)"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+  "jinja2>=3.1",
   "fastapi>=0.115",
   "httpx>=0.28",
   "pydantic-settings>=2.6",

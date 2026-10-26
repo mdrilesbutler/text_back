@@ -1,0 +1,17 @@
+{% extends "client/auth.html.j2" %}
+{% from "client/_macros.html.j2" import field_error, button %}
+{% block content %}
+<header class=auth__head>
+  <p class="eyebrow eyebrow--accent">Scheduling assistant settings</p>
+  <h1>{{ business_name }}</h1>
+  <p class=lead>Enter the business mobile on file and we'll text you a sign-in code. No password to remember.</p>
+</header>
+<form method=post action=/client/login class=auth__form>
+  <div class=field>
+    <label class=field__label for=mobile>Business mobile</label>
+    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="704 555 0123"{% if error %} aria-invalid=true aria-describedby=mobile-error autofocus{% endif %}>
+    {% if error %}{{ field_error("mobile-error", error) }}{% endif %}
+  </div>
+  {{ button("Text me a code", size="lg", block="block", loading="Sending code…") }}
+</form>
+{% endblock %}

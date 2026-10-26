@@ -1,0 +1,15 @@
+Fonts in this folder are self-hosted so the /client pages load nothing from
+another host. Both are licensed under the SIL Open Font License 1.1
+(https://openfontlicense.org).
+
+archivo-600-latin.woff2
+  Archivo SemiBold (600). Copyright 2020 The Archivo Project Authors
+  (https://github.com/Omnibus-Type/Archivo).
+
+source-sans-3-var-latin.woff2
+  Source Sans 3, variable weight axis limited to 400-600.
+  (c) 2023 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+
+Both files start from the Google Fonts Latin subsets used by the FluxWorks
+site. They were subset again to Basic Latin, Latin-1 and common punctuation
+with fontTools (pyftsubset, varLib.instancer). No outlines were changed.
