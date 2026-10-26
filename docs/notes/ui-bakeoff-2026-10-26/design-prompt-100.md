@@ -30,28 +30,120 @@ Some deductions came from the preview harness rather than the design: tailnet UR
 callers, and a sign-in placeholder that doesn't match. A rebuild can still lose those points unless
 the harness is fixed too, so the prompt covers it.
 
-## How to use it
+## How it runs
 
-Run it from `main` once Michael has named the winner and it has shipped (CLAUDE.md NEXT: changes come
-after the winner, from main). The prompt is written to reach the same end state from either base:
-- **If A ships:** most of the work is porting B's three pages and fixing the shared defects.
-- **If B ships:** most of the work is the language and honesty rules.
+This is CLAUDE.md NEXT as of 2026-10-26. A new session reads NEXT and runs Part 1 below; Part 2 is
+the target. The result is a third candidate, **C**, on branch `ui/compare-c`. It is fenced exactly
+like A and B: no PR to main, no merge, no deploy. Michael then compares A, B and C and names the
+winner, and only the winner ships. That keeps the 2026-10-26 rule that nothing from a compare branch
+reaches main before he picks.
 
-Its acceptance test is the same three-judge panel, run on the new portal against the one that
-shipped.
+Honest limit: getting three LLM judges to give 5 on all ten criteria is a target, not a promise. The
+loop stops after three rounds and reports what is left.
 
 ---
 
 ```text
-Build the TextBack client portal (/client) that scores 5 on every criterion of the bake-off rubric in
-docs/notes/ui-bakeoff-2026-10-26/judge-prompt.md. Read that rubric, the three scorecards in
-docs/notes/ui-bakeoff-2026-10-26/judges/, and docs/notes/ui-bakeoff-2026-10-26.md before you design
-anything. Every requirement below comes from a point a judge took off. Work from main in a branch;
-deliver through the normal CLAUDE.md path (PR, independent review, canon/review, merge, deploy),
-one PR per layer: (1) shell + Home + Account, (2) Messages, (3) Scheduling, (4) Phone & forwarding,
-(5) Calendar, (6) preview harness + evidence + judge run. Use the fluxworks-design skill for every
-visual decision (light, plain, one green accent, Archivo + Source Sans). Product name on screen:
-TextBack. The owner is non-technical, on a phone, between jobs.
+TEXTBACK /client — CANDIDATE C, THE 100-POINT PORTAL
+Goal: find the design that scores 5 on all ten criteria of the bake-off rubric from all three judges,
+prove it on mockups BEFORE writing app code, then build it. Every requirement in Part 2 comes from a
+point a judge took off. Read first, in this order: docs/notes/ui-bakeoff-2026-10-26/judge-prompt.md
+(the rubric), judges/{claude,grok,codex}.md (with judges/label-key.json to know which letter was A),
+docs/notes/ui-bakeoff-2026-10-26.md (walkthrough, diff review, defects), then this file.
+
+FENCE (overrides the CLAUDE.md delivery rule for this item only)
+- Work in a new worktree: git worktree add ../text_back-ui-c -b ui/compare-c main, with its own .venv.
+  You may copy code from origin/ui/compare-a and origin/ui/compare-b INTO ui/compare-c (A's Messages
+  page and visual system; B's Scheduling, Phone and Home pages and their backend). Never merge either
+  compare branch, never open a PR from ui/compare-c, never deploy, never edit runtime config or
+  credentials. Push ui/compare-c to origin as a plain branch when done.
+- The only main-bound change is a small docs PR updating CLAUDE.md STATE/NEXT at the end.
+- No LLM API keys, ever. Judges and agents run on CLI subscription logins (claude, grok, codex) with
+  every *_API_KEY unset. If the Claude CLI's default model refuses (out of credits), add --model opus.
+
+PART 1 — PROCESS
+
+Step 0. Skills first. Run
+  python3 ~/.agents/skills/recommend-skills/scripts/recommend_skills.py "design and build a 100-point client portal" --limit 8
+and follow the CORE matches. Then superpowers:brainstorming (constrained by Part 2; do not re-open
+LOCKED items) and superpowers:writing-plans. Load fluxworks-design before any visual decision. Use
+superpowers:test-driven-development during the build and superpowers:verification-before-completion
+before calling any step done.
+
+Step 1. Research, in parallel subagents (one Agent call each, all in the same message). Each writes
+docs/notes/portal-c/research/<topic>.md with source links. No invented facts: anything not found is
+marked unknown.
+  a. competitive-analyst: owner-facing settings and setup screens of the missed-call and
+     field-service tools in docs/COMPETITOR-MATRIX.md, plus Jobber, Housecall Pro, Podium, Hatch,
+     Numa and GoHighLevel's missed-call text-back. Use the tavily and firecrawl plugins and WebSearch
+     for docs, help-center screenshots and public demos; use the playwright plugin on public pages
+     only (no sign-ups, no forms, no logins). Extract how they show "is it working", setup
+     checklists, message editors, forwarding setup and plain-language patterns. Note what to copy and
+     what to avoid.
+  b. ux-researcher: evidence-based patterns for non-technical owners on phones. Sources: the GOV.UK
+     Design System (task list, check answers, plain English, error messages), NN/g and Baymard on
+     mobile forms, sticky actions, toasts vs inline confirmation, and SMS-preview editors. Map each
+     finding to a rubric criterion (a1–e2).
+  c. accessibility-tester (with the accessibility-compliance and wcag-audit-patterns skills): the
+     WCAG 2.2 AA bar for this portal at 390 px. Cover target size, focus, contrast, error
+     identification, status messages (role=status) and reduced motion.
+  d. Copy, using design:ux-copy plus the ai-writing-auditor agent: rewrite every visible string in A
+     and B to the Part 2 word rules. Output docs/notes/portal-c/copy-deck.md, page by page: every
+     label, hint, toast, empty state and error. Check it against the LOCKED customer-copy rules and
+     tests/test_no_live_human_copy.py.
+  Then knowledge-synthesizer merges a–d into docs/notes/portal-c/research/SUMMARY.md: the top 15
+  decisions, each tied to a rubric criterion and a source.
+
+Step 2. Design to 100 on mockups (no app code yet).
+  - ui-designer (with the frontend-design, fluxworks-design, design:design-system,
+    interaction-design, responsive-design and visual-design-foundations skills) produces TWO
+    directions as static HTML mockups of every page and state in Part 2. Both are built from one
+    fixture file so the content is identical, in docs/notes/portal-c/mockups/{d1,d2}/. Use the copy
+    deck verbatim.
+  - Capture both at 1280x900 and 390x844@2 with scroll captures (adapt
+    docs/notes/ui-bakeoff-2026-10-26/tools/walk.py), including every state listed in Step 4.
+  - Critique before judging: run design:design-critique, design:accessibility-review and the
+    anti-ui-slop-reviewer agent on both directions, and fix what they find.
+  - Judge with the unchanged blind panel (tools/build_packs.py and tools/run_judges.sh, adapted to
+    take any two folders): d1 vs A's screenshots and d2 vs A's. Keep the judge prompt identical to
+    judge-prompt.md and never tell a judge which portal is new.
+  - Loop: for every criterion under 5, open the files that judge cited, fix the mockup and re-judge.
+    Combine d1 and d2 where the scores show each wins somewhere. At most three rounds. The winning
+    mockup and its scorecards go in docs/notes/portal-c/design/. This is "the design that gets a 100".
+
+Step 3. Build it on ui/compare-c, one commit per layer, tests first:
+(1) shell, nav, Home, Account; (2) Messages; (3) Schedule; (4) Phone & forwarding; (5) Calendar;
+(6) preview harness. Port from A and B where Part 2 says so; otherwise build to the mockup. Agents per
+layer: fastapi-developer for routes, data and policy hooks; frontend-developer for templates and CSS;
+test-automator for the banned-word render test and the evidence-matching checklist tests. After each
+layer, run the reviewer agent (or the code-review skill) on the diff, fix its findings, and get
+.venv/bin/pytest tests/ green.
+
+Step 4. Verify the real build.
+  - Start C's preview on the tailnet the way A and B run: port 8766, stub telecom, temp database,
+    codes at /preview/code, sign in with 980 555 0123, limit 3 codes per 15 minutes. Run it from a
+    scratchpad and never touch 8000, 8443, 8765 or 8003.
+  - Walk every page at both widths. Capture the Account page, an open edit-wording panel, the
+    working-hours editor, carrier codes, every save toast at phone width, the unsaved-changes bar, an
+    invalid phone number error, and both calendar states.
+  - Save smoke on a private localhost copy (adapt tools/smoke.py): every form persists after reload.
+  - ui-ux-tester walks the six owner jobs end to end at phone width; accessibility-tester and
+    anti-ui-slop-reviewer run on the live preview. Fix and re-walk.
+  - Final panel, blind, same rubric: C vs A and C vs B (two runs, three judges each). Up to three fix
+    rounds for anything under 5.
+
+Step 5. Stop and report.
+  - Commit evidence to ui/compare-c under docs/notes/ui-compare-c/. Keep the PNGs few and small; the
+    full set stays reproducible from the tools. Push the branch.
+  - Docs PR to main (CLAUDE.md only). STATE gains the C line (branch, sha, preview URL, scores). NEXT
+    becomes "Michael names the winner among A, B, C; ship it", with the deferred items unchanged.
+    Review it with canon_review.sh, merge it, and end on clean main.
+  - Tell Michael: the C preview URL, per-judge scores for C vs A and C vs B, what still scored under 5
+    and why, and anything that needs his decision (link domain, hand-off destination). No menus.
+
+PART 2 — TARGET (what a 5 on every criterion requires)
+
+Product name on screen: TextBack. The owner is non-technical, on a phone, between jobs.
 
 ## Never break (LOCKED in CLAUDE.md)
 - The texting number is read-only in the portal. Show it with "Set up by FluxWorks. It can't be
@@ -62,7 +154,8 @@ TextBack. The owner is non-technical, on a phone, between jobs.
   editable but the word STOP stays and cannot be removed.
 - No booking is claimed without a calendar event ID. Business specifics live in config/client_settings,
   never in code.
-- Do not touch deploy/textback-designer/, docs/demo/, credentials, 443 or 8443 outside the deploy step.
+- Do not touch deploy/textback-designer/, docs/demo/, credentials, the live service (127.0.0.1:8000,
+  private 443, public 8443) or the A and B previews (8765, 8003).
 
 ## Pages (all six owner jobs, findable in one tap)
 Phone: bottom nav with Home, Messages, Schedule, Calendar, Phone; Account (with Sign out) behind the
@@ -149,16 +242,7 @@ shaped public base URL. Seed dates are computed relative to today. Registration 
 evidence and calendar state are seeded consistently with each other. The sign-in placeholder and
 the owner mobile agree with the Account page.
 
-## Evidence and acceptance
-1. Run docs/notes/ui-bakeoff-2026-10-26/tools/walk.py (update PAGES) at 1280×900 and 390×844@2,
-   scroll captures. Also capture the states judges said they could not see: Account page, an open
-   "Edit wording" panel, the working-hours editor, carrier codes, every save toast at phone width,
-   the unsaved-changes bar, an invalid phone number error, and both calendar states.
-2. Run the same three-judge blind panel (tools/build_packs.py + tools/run_judges.sh; CLI logins
-   only, every *_API_KEY unset, never an API key) on the new portal against the one now on main.
-3. Target: 5 from all three judges on all ten criteria. For any criterion under 5, open the files
-   that judge cited, fix the cause, and rerun, at most three rounds. Report the final scorecards
-   and every remaining deduction as either a design fix still owed or a harness or evidence limit.
-   Keep the panel blind: never tell a judge which portal is new.
-4. .venv/bin/pytest tests/ green, canon check clean, /client verified on 8443 after deploy.
+## Evidence the judges must see
+Capture every state in Step 4. Judges lowered their confidence for states they could not see:
+the account menu, opened editors, the hours grid and carrier codes.
 ```
