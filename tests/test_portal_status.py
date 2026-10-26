@@ -73,3 +73,16 @@ def test_week_counts_and_rows_share_one_window(tmp_path):
 def test_empty_week_has_zero_counts_and_no_rows(tmp_path):
     week = this_week(_app(tmp_path).state, NOW)
     assert set(week["counts"].values()) == {0} and week["rows"] == []
+
+
+def test_bookings_on_the_stub_calendar_say_test_calendar_and_examples_are_tagged(tmp_path):
+    state = _app(tmp_path).state
+    _missed(state, "CA-1", "+19805550141", NOW - timedelta(hours=5))
+    state.store.save_appointment(conversation_id="+19805550141", event_id="evt-1", caller="+19805550141",
+                                 start=(NOW + timedelta(days=2)).isoformat(), location="12 Elm St", service="trim")
+    week = this_week(state, NOW)
+    assert week["rows"][0]["status"] == "Booked on test calendar"
+    assert week["rows"][0]["example"] is False and week["example"] is False
+    state.preview_example_phones = {"+19805550141"}
+    week = this_week(state, NOW)
+    assert week["rows"][0]["example"] is True and week["example"] is True

@@ -24,6 +24,7 @@ SNIPPET_MAX = 60
 STATUS_STOPPED = "Asked us to stop"
 STATUS_STEPPED_BACK = "Assistant stepped back"
 STATUS_BOOKED = "Booked"
+STATUS_BOOKED_TEST = "Booked on test calendar"
 STATUS_NO_REPLY = "No reply"
 STATUS_WAITING = "Waiting for a reply"
 STATUS_TEXTING = "Texting"
@@ -96,7 +97,7 @@ def headline(items: list[dict]) -> str:
     return "Working: missed calls get a text within a minute."
 
 
-def caller_status(store, phone: str) -> str:
+def caller_status(store, phone: str, *, test_calendar: bool = False) -> str:
     with store.lock:
         conn = store.conn
         if conn.execute("SELECT 1 FROM contacts WHERE phone=? AND opted_out=1", (phone,)).fetchone():
@@ -104,7 +105,7 @@ def caller_status(store, phone: str) -> str:
         if conn.execute("SELECT 1 FROM handoffs WHERE phone=? AND status='active'", (phone,)).fetchone():
             return STATUS_STEPPED_BACK
         if conn.execute("SELECT 1 FROM appointments WHERE conversation_id=?", (phone,)).fetchone():
-            return STATUS_BOOKED
+            return STATUS_BOOKED_TEST if test_calendar else STATUS_BOOKED
         types = {row[0] for row in conn.execute("SELECT DISTINCT event_type FROM outcome_events WHERE lead_id=?", (phone,))}
         expired = conn.execute("SELECT 1 FROM followups WHERE phone=? AND status='expired'", (phone,)).fetchone()
     if expired or "lead.expired" in types:
@@ -163,12 +164,17 @@ def this_week(state, now: datetime) -> dict:
             text = ""
         touch(phone, at, text)
     counts["customers_texted"] = len(texted)
+    # Preview harnesses mark their seeded callers; production never sets these, so nothing is tagged there.
+    examples = set(getattr(state, "preview_example_phones", ()) or ())
+    test_calendar = getattr(getattr(state, "calendar", None), "provider_name", "stub") == "stub"
     rows = []
     for phone, entry in sorted(activity.items(), key=lambda item: item[1]["last_at"], reverse=True):
         with store.lock:
             name_row = store.conn.execute("SELECT value FROM conversation_fields WHERE phone=? AND field='name'", (phone,)).fetchone()
         name = (name_row[0] if name_row else "").strip()
         rows.append({"phone": phone, "name": name, "display": name or format_contact_number(phone),
-                     "status": caller_status(store, phone), "last_at": entry["last_at"],
+                     "status": caller_status(store, phone, test_calendar=test_calendar),
+                     "example": phone in examples, "last_at": entry["last_at"],
                      "last_label": when(entry["last_at"], tz_name, now), "snippet": entry["snippet"]})
-    return {"start": start, "since_label": day(start, tz_name), "counts": counts, "rows": rows}
+    return {"start": start, "since_label": day(start, tz_name), "counts": counts, "rows": rows,
+            "example": bool(examples) and any(r["example"] for r in rows)}
