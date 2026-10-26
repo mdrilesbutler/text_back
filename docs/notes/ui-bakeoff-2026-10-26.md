@@ -127,11 +127,11 @@ Real in A:
 - **FIX, stale state:** the registration card and the trial-tag decision read the `*-response.json` files, which are written only at submit time. `registration.py`'s status steps never rewrite them, so the card freezes and the "[SignalWire Free Trial]" preview never clears.
 - **FIX, fake data:** `/client/styleguide` renders invented customers, 555 numbers and the hard-coded `https://hermes-cloud.tailefb1a4.ts.net:8443` to any signed-in client.
 - **FIX, production break:** `appointments` stores no end time. Once Scheduling changes the length, every calendar link sent before the change shows the wrong end time.
+- **FIX, booking safety:** the working-hours check runs before `find_event` recovery on the retry path. If the owner narrows the hours while a booking retry is pending, the retry is refused even though the calendar event already exists, leaving an orphaned event and a customer with no confirmation. Run recovery first.
 - **FIX, SMS copy:** an out-of-hours request gets "That time is unavailable" without being told the hours, so a weekend-only customer can loop.
 - **NOTE:** "Remember" stretches a session to 30 days, and the checkbox is pre-ticked by one global default. That is weaker than main's 12-hour cap.
 - **NOTE:** "Verify" on the business number only checks the format.
 - **NOTE:** Home reads every ledger row on each load.
-- **NOTE:** the hours check runs before `find_event` recovery, so narrowing the hours mid-retry can orphan an event.
 
 Real in B:
 - Scheduling settings are validated and applied live.
@@ -162,6 +162,17 @@ Michael leaned B on 2026-10-21. If coverage matters more to him than the rubric'
 2. Fix the hand-off sample and the "Question 1" timing. Replace "you get a lead" with what actually happens.
 3. Make Sign out visible outside the account menu, and keep the desktop nav sticky.
 4. Put `/client/styleguide` behind a dev flag. Delete `/client/business/keep`.
+
+## Before B ships (if Michael names B)
+
+All of B's FIX items above, in the ship PR, each with a test:
+1. Texting number read-only (locked number-swap rule).
+2. Forwarding check list ticks only from evidence of a forwarded call.
+3. `find_event` recovery before the working-hours check, so no orphaned calendar events.
+4. Store each appointment's end time so links sent before a length change stay right.
+5. Registration card and trial-tag preview from live status, not submit-time files.
+6. `/client/styleguide` behind a dev flag; out-of-hours SMS states the hours.
+7. Then A's plain-language and honesty fixes: no vendor names or `{tokens}` on screen, label sample data.
 
 ## Files
 
