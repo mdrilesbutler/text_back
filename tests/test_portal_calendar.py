@@ -124,25 +124,27 @@ def test_every_user_facing_string_is_in_the_copy_deck():
 # --- the state card ------------------------------------------------------------------
 
 def test_not_connected_has_connect_or_a_contact_action_never_a_dead_end(tmp_path, monkeypatch):
-    # (1) The Google web client is configured: one sentence on why it matters, then Connect.
+    # (1) The Google web client is configured: Home's words, one sentence on why it matters, then Connect.
     state = build(tmp_path, monkeypatch)
     monkeypatch.setattr(client_settings, "calendar_status",
                         lambda s: {"provider": "google", "status": "none", "calendar_id": "", "can_connect": True})
     card = pc.status_card(state)
     assert card["state_word"] == "Not connected" and card["title"] == "No calendar yet"
-    assert card["body"] == ("Without a calendar the assistant can't check free times or book jobs. "
-                            "Connect the Google account that owns your business calendar.")
+    assert card["body"] == "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see."
+    assert card["why"] == ("Connect the Google account that owns your business calendar, so the assistant offers your "
+                           "real free times and books onto your calendar.")
     assert card["buttons"] == [{"label": "Connect Google Calendar", "action": "connect", "kind": "primary",
                                 "busy_label": "Opening Google…"}]
     monkeypatch.undo()
 
-    # (2) No web client, but a support contact: the body names FluxWorks and a text action is offered.
+    # (2) No web client, but a support contact: the second paragraph names FluxWorks and a text action is offered.
     state = build(tmp_path, monkeypatch, support=SUPPORT)
     assert state.support_contact == SUPPORT
     card = pc.status_card(state)
     assert card["state_word"] == "Not connected" and card["title"] == "No calendar yet"
-    assert "Connecting from this page isn't set up for your account yet." in card["body"]
-    assert "FluxWorks sets this up for you." in card["body"]
+    assert card["why"].startswith("To book onto your own calendar, it has to be connected.")
+    assert "Connecting from this page isn't set up for your account yet." in card["why"]
+    assert "FluxWorks sets this up for you." in card["why"]
     assert card["buttons"] == [{"label": "Text FluxWorks support", "href": f"sms:{SUPPORT}", "kind": "secondary"}]
 
     # (3) Neither: no button, but the body still names the next step.
@@ -150,20 +152,20 @@ def test_not_connected_has_connect_or_a_contact_action_never_a_dead_end(tmp_path
     assert state.support_contact == ""
     card = pc.status_card(state)
     assert card["buttons"] == []
-    assert card["body"].endswith("FluxWorks sets this up for you.")
+    assert card["why"].endswith("FluxWorks sets this up for you.")
     assert "sms:" not in json.dumps(card)
 
 
-def test_connected_state_names_the_calendar_and_offers_change(tmp_path, monkeypatch):
+def test_connected_state_names_the_calendar_and_offers_reconnect(tmp_path, monkeypatch):
     state, _, _ = google_state(tmp_path, monkeypatch)
     remember(state)
     card = pc.status_card(state)
     assert card["state_word"] == "Connected" and card["title"] == "Google Calendar"
-    assert card["body"] == "Bookings go here: Tree jobs. Connected as owner@example.test."
+    # No "Connected as": the account's address is not stored. The picker replaces "Use a different calendar".
+    assert card["body"] == "Bookings go here: Tree jobs."
     assert card["calendar_name"] == "Tree jobs"
-    assert labels(card) == ["Use a different calendar", "Reconnect Google Calendar"]
-    assert card["buttons"][0]["action"] == "pick" and card["buttons"][1]["action"] == "connect"
-    assert all(button["kind"] == "secondary" for button in card["buttons"])
+    assert labels(card) == ["Reconnect Google Calendar"]
+    assert card["buttons"][0]["action"] == "connect" and card["buttons"][0]["kind"] == "secondary"
 
     context = pc.page_context(state)
     picker = context["picker"]
@@ -363,10 +365,3 @@ def test_page_context_combines_the_cards_the_picker_and_the_consent_note(tmp_pat
     assert context["picker"] is None
     assert context["consent_note"] == pc.CONSENT_NOTE
     assert "(1) You pick the Google account that owns your business calendar." in context["consent_note"]
-
-
-def test_connected_card_names_the_account_from_the_main_calendar(monkeypatch):
-    from text_back import portal_calendar as pc
-    state = type("S", (), {})()
-    monkeypatch.setattr(pc, "connected_account", lambda st: "owner@example.com")
-    assert "Connected as owner@example.com." in pc.BODY_CONNECTED_AS.format(name="Jobs", account=pc.connected_account(state))

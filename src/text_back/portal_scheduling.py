@@ -11,8 +11,8 @@ the owner changed on the page is lost.
 
 Only controls the engine reads are shown: duration -> booking/calendar links,
 time zone -> preferred-time parsing, quiet hours/delays/expiry -> follow-ups,
-working hours -> booking.book_appointment. The save confirmation (``SAVED``)
-is pinned to that behaviour by tests/test_portal_scheduling.py.
+working hours -> booking.book_appointment. The save confirmation (``SAVED``,
+built by ``saved_notice``) is pinned to that behaviour by tests/test_portal_scheduling.py.
 """
 from __future__ import annotations
 
@@ -68,7 +68,9 @@ ERR_TIMES = "Pick times from the list."
 ERR_QUIET = "Pick quiet hours from the list."
 ERR_REMINDERS = "Reminder delays must be between 5 minutes and 14 days."
 ERR_EXPIRY = "The waiting time must be between 1 hour and 30 days."
-SAVED = "Saved. Applies now, including customers mid-conversation; reminders already scheduled keep their time."
+# The save notice names only the rules that changed (deck schedule_toast); "Saved." when none did.
+SAVED = "Saved. You changed “{rules}”. It applies now, including customers mid-conversation."
+SAVED_NOTHING = "Saved."
 CORRUPT_HOURS = "Your saved working hours couldn't be read, so every time counts as open until you save again."
 ANY_TIME_WARNING = "Customers can be offered times like 1 AM. Set your hours."
 ANY_TIME_BUTTON = "Use Mon–Fri, 8 AM–5 PM"
@@ -368,6 +370,30 @@ def save(state, settings: dict, now: datetime) -> str | None:
             state.store.set_setting(key, value, now=now)
     cs.apply_scheduling(state)
     return None
+
+
+# Rule label -> the current_values() keys that make it up, in page order.
+_RULE_KEYS = (
+    ("appointment_duration_minutes", ("appointment_duration_minutes",)),
+    ("timezone", ("timezone",)),
+    ("working_hours", ("hours_mode", "hours")),
+    ("quiet_hours", ("quiet_hours_start", "quiet_hours_end")),
+    ("followup_delay_1", ("followup_delay_1",)),
+    ("followup_delay_2", ("followup_delay_2",)),
+    ("followup_expiry_minutes", ("followup_expiry_minutes",)),
+)
+
+
+def changed_rules(before: dict, after: dict) -> list[str]:
+    """The labels of the rules whose saved value differs, in page order (both from current_values())."""
+    if before.get("hours_mode") == after.get("hours_mode") == "any":
+        before, after = dict(before, hours=None), dict(after, hours=None)  # the grid is not in force
+    return [LABELS[rule] for rule, keys in _RULE_KEYS if any(before.get(k) != after.get(k) for k in keys)]
+
+
+def saved_notice(before: dict, after: dict) -> str:
+    rules = changed_rules(before, after)
+    return SAVED.format(rules="”, “".join(rules)) if rules else SAVED_NOTHING
 
 
 def reset_form(form, group: str, state) -> dict | None:

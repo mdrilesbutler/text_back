@@ -85,8 +85,8 @@ def test_network_notice_applies_unless_approved():
 
 
 @pytest.mark.parametrize(("state", "word", "sentences"), [
-    ("approved", "Done", 1), ("waiting", "Waiting on phone companies", 1),
-    ("not_started", "Not started", 1), ("needs_attention", "Needs you", 2), ("unknown", "Couldn't check", 2),
+    ("approved", "Done", 1), ("waiting", "Waiting on phone companies", 3),
+    ("not_started", "Not started", 2), ("needs_attention", "Needs you", 2), ("unknown", "Couldn't check", 2),
 ])
 def test_approval_words_are_plain(state, word, sentences):
     words = approval_words({"state": state, "checked_at": None, "source": "registry"})

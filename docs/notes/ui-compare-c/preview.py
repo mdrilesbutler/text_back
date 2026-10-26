@@ -73,6 +73,8 @@ store = state.store
 
 EXAMPLES = {"+19805550141": "Dana Whitfield", "+19805550177": "Marcus Lee", "+19805550192": "Priya Natarajan"}
 state.preview_example_phones = set(EXAMPLES)
+# The forwarding checks and the texting approval on Home come from the seeded calls and settings below.
+state.preview_example_setup = {"forwarding", "approval"}
 
 
 def seed() -> None:
@@ -91,6 +93,16 @@ def seed() -> None:
     store.set_setting("business_contact", "(704) 555-0123", now=now)
     store.set_setting("carrier", "verizon", now=now)
     store.set_setting("texting_approval_state", "waiting", now=now)
+    # One other signed-in device, so Account shows "Another device · last used …" (tagged Example).
+    import secrets
+    device = secrets.token_hex(32)
+    used = (local - timedelta(days=3)).replace(hour=17, minute=30, second=0, microsecond=0).astimezone(timezone.utc)
+    with store.transaction():
+        store.conn.execute(
+            "INSERT INTO client_sessions(token_hash,csrf,phone,expires_at,created_at,pending,remember,last_used_at) "
+            "VALUES(?,?,?,?,?,0,1,?)", (device, secrets.token_urlsafe(24), OWNER, (now + timedelta(days=27)).isoformat(),
+                                       (used - timedelta(hours=2)).isoformat(), used.isoformat()))
+    store.set_setting("preview_example_session", device, now=now)
     store.set_setting("working_hours", json.dumps({d: {"open": "08:00", "close": "17:00"} for d in ("mon", "tue", "wed", "thu", "fri")}), now=now)
 
     def step(t: datetime, kind: str, **params) -> None:
@@ -124,6 +136,7 @@ def seed() -> None:
 
 
 seed()
+state.preview_example_sessions = {store.setting("preview_example_session")} - {None}
 
 PAGE = """<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1"><meta name=robots content=noindex>

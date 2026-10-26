@@ -184,6 +184,9 @@ class Store:
         columns = {row[1] for row in self.conn.execute("PRAGMA table_info(client_sessions)")}
         if "remember" not in columns:
             self.conn.execute("ALTER TABLE client_sessions ADD COLUMN remember INTEGER NOT NULL DEFAULT 0")
+        # When each signed-in session last opened a page (Account: "Another device · last used …").
+        if "last_used_at" not in columns:
+            self.conn.execute("ALTER TABLE client_sessions ADD COLUMN last_used_at TEXT")
         # Every sign-in request, for any number, so the "three codes in 15 minutes" notice
         # reads the same whether or not the number is on file.
         self.conn.execute("""CREATE TABLE IF NOT EXISTS client_login_requests (

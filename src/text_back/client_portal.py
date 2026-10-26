@@ -41,6 +41,7 @@ DAY_WINDOW = timedelta(hours=24)
 PENDING_SESSION_MAX_AGE = timedelta(days=1)
 SIGN_IN = "sign-in"
 SESSION_TTL = timedelta(hours=12)
+LAST_USED_EVERY = timedelta(minutes=5)  # how stale "last used" may get before a request refreshes it
 REMEMBER_TTL = timedelta(days=30)
 SESSION_COOKIE = "text_back_client"
 PENDING_COOKIE = "text_back_client_login"
@@ -48,12 +49,14 @@ HOME = "/client/home"
 LOGIN = "/client/login"
 
 # --- words (copy deck sections 1, 2, 8, 9; verbatim) ---------------------------------------
-MOBILE_ERROR = "Enter your mobile as 10 digits, like 704 555 0123."
+MOBILE_ERROR = "Enter your mobile as 10 digits, area code first."
 RATE_LIMITED = "We've sent three codes in the last 15 minutes. Wait a few minutes, then try again."
 CODE_FAILURE = "That code isn't right, or it has expired. Check the text or send a new code."
 SESSION_ENDED = "You were signed out. Sign in again to continue."
 SIGNED_OUT_EVERYWHERE = "Signed out everywhere."
 LOGIN_NOTICES = {"ended": SESSION_ENDED, "everywhere": SIGNED_OUT_EVERYWHERE}
+# The notice style on the sign-in page: a finished action reads as success, the rest as information.
+NOTICE_KINDS = {SIGNED_OUT_EVERYWHERE: "success"}
 REMEMBER_ON = "On. This phone stays signed in for 30 days."
 REMEMBER_OFF = "Off. This phone signs out after 12 hours."
 SAVED = "Saved."
@@ -110,7 +113,17 @@ def _session(state, request: Request):
         row = state.store.conn.execute(
             "SELECT * FROM client_sessions WHERE token_hash=? AND pending=0 AND expires_at>?", (_mac(state, token), now.isoformat())
         ).fetchone()
-    return dict(row) if row else None
+    if row is None:
+        return None
+    session = dict(row)
+    # "Another device · last used …" on Account: refreshed at most every few minutes, never on every request.
+    last = session.get("last_used_at")
+    if not last or datetime.fromisoformat(last) <= now - LAST_USED_EVERY:
+        with state.store.transaction():
+            state.store.conn.execute("UPDATE client_sessions SET last_used_at=? WHERE token_hash=?",
+                                     (now.isoformat(), session["token_hash"]))
+        session["last_used_at"] = now.isoformat()
+    return session
 
 
 def require_session(state, request: Request) -> dict:
@@ -140,6 +153,9 @@ def shell(state, session, *, title: str, nav: str | None, notice: str = "") -> d
         "tz": getattr(state, "timezone_name", "UTC") or "UTC",
         "now": _now(state),
         "tb_data": None,
+        # Set by a page answering with unsaved values (a no-JS round trip): {"form": id, "changed": "1 rule changed",
+        # "save": "Save", "names": [(href, label)]}. Below 1024 px the header then becomes the save bar.
+        "topsave": None,
     }
 
 
@@ -151,8 +167,10 @@ def _set_session_cookie(response, state, token: str, remember: bool) -> None:
 
 # --- sign in -------------------------------------------------------------------
 
-def _login_form(request: Request, state, *, error: str = "", notice: str = "") -> HTMLResponse:
-    return render(request, "client/login.html.j2", title="Sign in", error=error, notice=notice)
+def _login_form(request: Request, state, *, error: str = "", notice: str = "", typed: str = "") -> HTMLResponse:
+    # typed: what the owner entered, kept in the field only beside its error (never on any other answer).
+    return render(request, "client/login.html.j2", title="Sign in", business_name=state.business_name, error=error,
+                  notice=notice, notice_kind=NOTICE_KINDS.get(notice, "info"), typed=typed[:24])
 
 
 def _verify_form(request: Request, state, *, error: str = "") -> HTMLResponse:
@@ -248,15 +266,21 @@ def account_view(state, session, *, confirm_everywhere: bool = False) -> dict:
     now = _now(state)
     with state.store.lock:
         rows = state.store.conn.execute(
-            "SELECT token_hash, created_at FROM client_sessions WHERE pending=0 AND expires_at>? ORDER BY created_at DESC",
-            (now.isoformat(),)).fetchall()
-    others = [{"signed_in": datetime.fromisoformat(row["created_at"])} for row in rows
-              if row["token_hash"] != session["token_hash"]]
+            "SELECT token_hash, created_at, last_used_at FROM client_sessions WHERE pending=0 AND expires_at>? "
+            "ORDER BY coalesce(last_used_at, created_at) DESC", (now.isoformat(),)).fetchall()
+    # Preview harnesses flag the device rows they seeded; production never sets this.
+    examples = set(getattr(state, "preview_example_sessions", ()) or ())
+    others = [{"signed_in": datetime.fromisoformat(row["created_at"]),
+               "last_used": datetime.fromisoformat(row["last_used_at"] or row["created_at"]),
+               "example": row["token_hash"] in examples}
+              for row in rows if row["token_hash"] != session["token_hash"]]
     remember = bool(session.get("remember"))
     return {
         "signed_in_as": format_contact_number(session["phone"]),
         "this_device": {"signed_in": datetime.fromisoformat(session["created_at"]),
-                        "until": datetime.fromisoformat(session["expires_at"])},
+                        "until": datetime.fromisoformat(session["expires_at"]),
+                        # A 12-hour session ends today or tomorrow: then the time matters, not only the day.
+                        "until_today": datetime.fromisoformat(session["expires_at"]) - now < timedelta(days=1)},
         "other_devices": others,
         "remember": remember,
         "remember_status": REMEMBER_ON if remember else REMEMBER_OFF,
@@ -347,9 +371,10 @@ def install_routes(app):
     @app.post("/client/login", include_in_schema=False)
     async def login(request: Request):
         form = await request.form()
-        mobile = normalize_mobile(str(form.get("mobile", "") or ""))
+        typed = str(form.get("mobile", "") or "")
+        mobile = normalize_mobile(typed)
         if mobile is None:
-            return _login_form(request, state, error=MOBILE_ERROR)
+            return _login_form(request, state, error=MOBILE_ERROR, typed=typed.strip())
         pending = await run_in_threadpool(_request_login, state, mobile, _now(state))
         if pending is None:
             return _login_form(request, state, notice=RATE_LIMITED)

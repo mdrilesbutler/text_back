@@ -41,6 +41,18 @@ def section(page, cls):
     return re.search(rf"<section class={cls} .*?</section>", page, re.S).group(0)
 
 
+def node(page, hook):
+    """One node of Home's spine, by its data- hook (data-week, data-callers, data-setup=<key>)."""
+    return re.search(rf"<li class=\"node node--\w+\" {hook}>.*?\n</li>", page, re.S).group(0)
+
+
+def slot_text(page):
+    """The words in the in-flow notice slot (empty when it holds no notice)."""
+    match = re.search(r"<div class=status-slot id=notice role=status>(?:<div class=\"notice [^\"]*\" data-notice>.*?"
+                      r"<p class=notice__text>(.*?)</p>)?", page, re.S)
+    return html.unescape(match.group(1) or "")
+
+
 def thread(page, scenario):
     return re.search(rf"<ol class=thread data-scenario={scenario} .*?</ol>", page, re.S).group(0)
 
@@ -57,14 +69,14 @@ def test_home_shows_counts_and_rows_from_the_same_window_with_full_dates(tmp_pat
     missed(state, "CA-2", "+19805550142", clock[0] - timedelta(minutes=30))
     sign_in(client, telecom)  # the 12-hour session ended while the clock moved on
     page = client.get("/client/home").text
-    week = section(page, "week")
-    assert "Since Mon, Oct 19. The counts and the list below cover the same days." in html.unescape(week)
+    week = node(page, "data-week")
+    assert "Since Mon, Oct 19. The counts and the list below cover the same days." in re.sub(r"<[^>]+>", "", html.unescape(week))
     assert re.search(r"data-count=missed_calls><dt>Missed calls</dt><dd class=tnum>2</dd>", week)
     assert re.search(r"data-count=customers_texted><dt>Customers texted</dt><dd class=tnum>2</dd>", week)
-    callers = section(page, "callers")
-    rows = re.findall(r"<tr data-caller>.*?</tr>", callers, re.S)
+    callers = node(page, "data-callers")
+    rows = [re.sub(r"<[^>]+>", "", row) for row in re.findall(r"<li class=caller>.*?</li>", callers, re.S)]
     assert len(rows) == 2  # the same window as the counts
-    assert "(980) 555-0142" in rows[0] and "Today, 2:30 PM" in rows[0]
+    assert "(980) 555-0142" in rows[0] and "Wed, Oct 21, 2:30 PM" in rows[0]  # a full date, never "Today"
     assert "(980) 555-0141" in rows[1] and "Mon, Oct 19, 10:00 AM" in rows[1]  # a full date from a datetime
     assert "(980) 555-0199" not in page
     assert "Waiting for a reply" in rows[0]
@@ -74,10 +86,9 @@ def test_home_empty_week_and_setup_cards_go_to_the_fix(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     client.app.state.store.set_setting("texting_approval_state", "waiting")
     page = text_of(client.get("/client/home"))
-    assert '<p class=home__status data-status-line>Not working yet: 2 steps left.</p>' in page
+    assert '<p class=status-line data-status-line>Not working yet: 2 steps left.</p>' in page
     assert "No callers this week. They appear here after the next missed call." in page
-    cards = dict(re.findall(r"<li class=setup-card data-setup=(\w+) .*?</li>", page, re.S) and
-                 [(m.group(1), m.group(0)) for m in re.finditer(r"<li class=setup-card data-setup=(\w+) .*?</li>", page, re.S)])
+    cards = {key: node(page, f"data-setup={key}") for key in ("calendar", "forwarding", "approval")}
     assert "href=/client/calendar>" in cards["calendar"] and "Needs you" in cards["calendar"]
     assert "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see." in cards["calendar"]
     assert "href=/client/phone>Finish forwarding</a>" in cards["forwarding"]
@@ -133,8 +144,7 @@ def test_the_steps_back_destination_comes_from_config(tmp_path, monkeypatch):
 def test_save_notice_names_the_change_in_the_slot_under_the_header(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     saved = client.post("/client/messages", data={"csrf": csrf, "prompt_location": "Where is the job?", "ask_phone": "1"}).text
-    slot = re.search(r"<div class=notice-slot id=notice role=status>(.*?)</div>", saved, re.S).group(1)
-    assert "Saved. You changed “Question 2: the address”, “Best phone number switched on”." in html.unescape(slot)
+    assert slot_text(saved) == "Saved. You changed “Question 2: the address”, “Best phone number switched on”."
     assert saved.index("id=notice") < saved.index("<h1>Your messages</h1>")
     back = client.post("/client/messages", data={"csrf": csrf, "ask_phone": "1"}).text
     assert "Saved. Back to standard wording: “Question 2: the address”." in html.unescape(back)
@@ -178,8 +188,7 @@ def test_schedule_save_shows_the_pinned_confirmation_and_persists(tmp_path, monk
     page = client.get("/client/schedule").text
     assert re.search(r"id=dur-60 value=60 checked>", page) and not re.search(r"id=dur-custom value=custom checked", page)
     saved = client.post("/client/schedule", data=schedule_form(csrf, appointment_duration_minutes="90"))
-    slot = re.search(r"<div class=notice-slot id=notice role=status>(.*?)</div>", saved.text, re.S).group(1)
-    assert SCHEDULE_SAVED in html.unescape(slot)
+    assert slot_text(saved.text) == SCHEDULE_SAVED.format(rules="Appointment length")
     state = client.app.state
     assert state.appointment_duration_minutes == 90 and state.store.setting("appointment_duration_minutes") == "90"
     page = client.get("/client/schedule").text

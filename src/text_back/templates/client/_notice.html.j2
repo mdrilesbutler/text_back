@@ -1,0 +1,5 @@
+{#- One notice inside the role=status slot: no role of its own, no timer. The close button is shown by
+    portal.js (without JavaScript it could do nothing, so it stays hidden). notice_kind defaults to success. -#}
+{% from "client/_macros.html.j2" import icon %}
+{% set kind = notice_kind|default("success") %}
+<div class="notice notice--{{ kind }} toast" data-notice>{{ icon({"success": "circle-check", "info": "info", "warning": "triangle-alert"}[kind], "notice__icon") }}<div class=notice__body><p class=notice__text>{{ notice }}</p></div><button type=button class="icon-btn toast__action" data-notice-dismiss hidden>{{ icon("x") }}<span class=vh>Dismiss</span></button></div>

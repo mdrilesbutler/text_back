@@ -15,11 +15,10 @@
 <link rel=stylesheet href="/client/static/portal.css?v={{ asset_v }}">
 <script type=module src="/client/static/portal.js?v={{ asset_v }}"></script>
 </head>
-<body>
+<body{% block body_attrs %}{% endblock %}>
 {% include "client/_icons.svg.j2" %}
 <a class=skip href=#main>Skip to content</a>
 {% block body %}{% endblock %}
-<div class=toast-region data-toast-region></div>
 <div class=vh id=announcer aria-live=polite></div>
 {% block data %}{% endblock %}
 </body>

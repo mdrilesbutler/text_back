@@ -16,7 +16,8 @@ const COPY = {
   clean: 'No unsaved changes', saved: 'Saved just now', notSaved: 'Not saved',
   notSavedLong: n => (n ? `Not saved · ${plural(n, 'unsaved change')}` : 'Not saved'),
   unsavedShort: n => `${n} unsaved`, unsavedLong: n => plural(n, 'unsaved change'),
-  saving: 'Saving…', discarded: 'Changes discarded.', undo: 'Undo', dismiss: 'Dismiss',
+  saving: 'Saving…', discarded: 'Changes discarded.', dismiss: 'Dismiss', unsaved: 'Unsaved changes',
+  discard: 'Discard', save: 'Save', showChanged: 'Show what changed',
   restored: label => `Standard wording restored for ${label}.`, limit: (n, max) => `${n} of ${max} characters`,
   count: (n, k) => `${plural(k, 'text')} · ${n} characters`,  // = client_portal.count_label
   bill: (k, symbol) => `Billed as ${k} texts. ` +  // = client_portal.bill_label
@@ -99,7 +100,7 @@ function initMenu() {
     menu.open = false;
     if (refocus) summary.focus();
   };
-  document.addEventListener('keydown', e => {  // registered before the toasts' Escape: an open menu wins
+  document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || !menu.open) return;
     e.stopImmediatePropagation();
     close(menu.contains(document.activeElement));
@@ -111,78 +112,184 @@ function initMenu() {
   });
 }
 
-// ---------------------------------------------------------------- toasts
-const region = $('[data-toast-region]');
-let currentToast = null;
+// ---------------------------------------------------------------- notices (in flow, never floating)
+// Every notice lives in the #notice slot between the header and the h1. The slot is role=status, so
+// writing into it is announced; a notice never carries a role of its own and never times out.
+const slot = $('#notice');
 
-function dismissToast(t, instant = false) {
-  if (!t || t.gone) return;
-  t.gone = true;
-  clearTimeout(t.timer);
-  if (currentToast === t) currentToast = null;
-  const hadFocus = t.el.contains(document.activeElement);
-  const remove = () => t.el.remove();
-  if (instant || REDUCED.matches) remove();
-  else {
-    t.el.dataset.leaving = '';
-    t.el.addEventListener('transitionend', remove, { once: true });
-    setTimeout(remove, 400);
-  }
-  if (hadFocus) (t.returnFocus || $('#main'))?.focus();
+function dismissNotice(node) {
+  const hadFocus = node.contains(document.activeElement);
+  node.remove();
+  if (hadFocus) $('#main')?.focus();
 }
 
-// Float a toast element: one at a time, 6 s (8 s with an action), paused while hovered or focused.
-// A floated toast has no role: the announcer speaks it once (the server's role=status is for JS off).
-function floatToast(node, { ms = 6000, returnFocus = null } = {}) {
-  if (!region) return null;
-  dismissToast(currentToast, true);
-  const t = { el: node, timer: 0, returnFocus };
-  node.removeAttribute('role');
-  node.classList.add('toast--floating');
-  region.append(node);
-  const close = $('[data-toast-close]', node);
+function wireNotice(node) {
+  const close = $('[data-notice-dismiss]', node);
+  if (!close) return;
   close.hidden = false;
-  close.addEventListener('click', () => dismissToast(t));
-  const run = delay => { clearTimeout(t.timer); t.timer = setTimeout(() => dismissToast(t), delay); };
-  const pause = () => clearTimeout(t.timer);
-  node.addEventListener('mouseenter', pause);
-  node.addEventListener('mouseleave', () => { if (!node.contains(document.activeElement)) run(3000); });
-  node.addEventListener('focusin', pause);
-  node.addEventListener('focusout', e => { if (!node.contains(e.relatedTarget)) run(3000); });
-  run(ms);
-  currentToast = t;
-  announce($('.notice__text', node)?.textContent || '');
-  return t;
+  close.addEventListener('click', () => dismissNotice(node));
 }
 
-function toast(text, { kind = 'success', action = null, ms = 6000, returnFocus = null } = {}) {
+function notify(text, kind = 'success') {
+  if (!slot) return;
   const node = el('div', `notice notice--${kind} toast`);
-  Object.assign(node.dataset, { toast: '', kind });
-  node.append(icon(kind === 'success' ? 'circle-check' : 'info', 'notice__icon'), el('p', 'notice__text', text));
-  let button = null;
-  if (action) {
-    button = el('button', 'btn btn--ghost toast__action', action.label);
-    button.type = 'button';
-    node.append(button);
-  }
-  const close = el('button', 'icon-btn toast__close');
+  node.dataset.notice = '';
+  const body = el('div', 'notice__body');
+  body.append(el('p', 'notice__text', text));
+  const close = el('button', 'icon-btn toast__action');
   close.type = 'button';
-  close.dataset.toastClose = '';
+  close.dataset.noticeDismiss = '';
   close.append(icon('x'), el('span', 'vh', COPY.dismiss));
-  node.append(close);
-  const t = floatToast(node, { ms, returnFocus });
-  if (button && t) {
-    button.addEventListener('click', () => { dismissToast(t, true); action.run(); });
-    button.focus();
-  }
-  return t;
+  node.append(icon(kind === 'success' ? 'circle-check' : 'info', 'notice__icon'), body, close);
+  slot.replaceChildren(node);
+  wireNotice(node);
 }
 
-function initToasts() {
-  if (!region) return;
-  // Escape dismisses the current toast from anywhere (the menu's handler runs first and stops it when open).
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && currentToast) dismissToast(currentToast); });
-  for (const node of $$('main [data-toast]')) floatToast(node);
+function initNotices() {
+  for (const node of $$('[data-notice]', slot || document)) wireNotice(node);
+}
+
+// ---------------------------------------------------------------- jump chips (Messages)
+// The chip of the step on screen is marked current and kept in view inside its scrolling row.
+function initJump() {
+  const list = $('.jump__list');
+  if (!list || !('IntersectionObserver' in window)) return;
+  const chips = {};
+  for (const a of $$("a[href^='#']", list)) chips[a.getAttribute('href').slice(1)] = a;
+  const steps = Object.keys(chips).map(id => document.getElementById(id)).filter(Boolean);
+  const visible = {};
+  const mark = () => {
+    const current = steps.find(s => visible[s.id])?.id;
+    if (!current) return;
+    for (const [id, chip] of Object.entries(chips)) {
+      if (id === current) chip.setAttribute('aria-current', 'location');
+      else chip.removeAttribute('aria-current');
+    }
+    const chip = chips[current];
+    const bar = list.parentElement;
+    if (chip.offsetLeft < bar.scrollLeft || chip.offsetLeft + chip.offsetWidth > bar.scrollLeft + bar.clientWidth) {
+      bar.scrollLeft = chip.offsetLeft - 16;
+    }
+  };
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) visible[e.target.id] = e.isIntersecting;
+    mark();
+  }, { rootMargin: '-120px 0px -55% 0px' });
+  for (const s of steps) io.observe(s);
+}
+
+// ---------------------------------------------------------------- unsaved changes (one form at a time)
+// A form marked data-track-changes compares every named control with what the page loaded. Its resting Save
+// ([data-rest-save], aria-disabled so it still posts without JS) turns on while something differs and the line
+// beside it says so. A form also marked data-topsave turns the header into its save bar below 1024 px: what
+// changed (links to [data-change-label] holders), Discard and Save. Count words come from the form:
+// data-changed-one ("1 rule changed") and data-changed-many ("{n} rules changed"); default "Unsaved changes".
+// A header the server already drew (data-topsave-server, a no-JS round trip) is left alone; its Discard
+// reloads the saved page.
+const fieldValue = el => (el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value);
+
+// A switch whose line underneath states its position (data-note-on / data-note-off) keeps that line true.
+function initSwitchNotes() {
+  for (const sw of $$('[data-note-on][data-note-off]')) {
+    const note = document.getElementById(sw.getAttribute('aria-describedby'));
+    if (note) sw.addEventListener('change', () => { note.textContent = sw.checked ? sw.dataset.noteOn : sw.dataset.noteOff; });
+  }
+}
+
+function initChangeTracking() {
+  const topbar = $('[data-topbar]');
+  const server = $('[data-topsave-server]');
+  if (server) {
+    $('[data-topsave-discard]', server)?.addEventListener('click', e => { e.preventDefault(); location.assign(location.pathname); });
+  }
+  for (const form of $$('form[data-track-changes]')) {
+    const controls = () => [...form.elements].filter(el => el.name && el.type !== 'hidden' && el.type !== 'submit'
+      && el.type !== 'button' && el.name !== 'csrf');
+    const baseline = new Map(controls().map(el => [el, fieldValue(el)]));
+    const save = $(`[data-rest-save][form="${form.id}"]`) || $('[data-rest-save]', form);
+    const status = save && $('[data-rest-status]', save.parentElement);
+    const restText = status?.textContent || '';
+    let submitting = false;
+    let bar = null;
+
+    const changes = () => {
+      const groups = new Map();
+      for (const el of controls()) {
+        if (!baseline.has(el) || fieldValue(el) === baseline.get(el)) continue;
+        const holder = el.closest('[data-change-label]');
+        const key = holder || el.name;
+        if (!groups.has(key)) groups.set(key, holder ? [holder.id ? `#${holder.id}` : '', holder.dataset.changeLabel] : null);
+      }
+      return [...groups.values()];
+    };
+    const countText = n => (n === 1 && form.dataset.changedOne) ? form.dataset.changedOne
+      : (form.dataset.changedMany ? form.dataset.changedMany.replace('{n}', String(n)) : COPY.unsaved);
+
+    function drawBar(list) {
+      if (!bar) {
+        bar = el('div', 'topsave');
+        const details = el('details', 'topsave__changes');
+        const summary = el('summary', 'topsave__summary');
+        summary.append(el('span', 'topsave__count'), el('span', 'vh', `. ${COPY.showChanged}`), icon('chevron-down', 'topsave__chev'));
+        details.append(summary, el('ul', 'topsave__list'));
+        const actions = el('div', 'topsave__actions');
+        const discard = el('button', 'btn btn--ghost', COPY.discard);
+        discard.type = 'button';
+        discard.addEventListener('click', () => {
+          const moved = [...baseline.keys()].filter(field => fieldValue(field) !== baseline.get(field));
+          form.reset();
+          for (const field of moved) {
+            const value = baseline.get(field);
+            if (field.type === 'checkbox' || field.type === 'radio') field.checked = value; else field.value = value;
+            field.dispatchEvent(new Event('change', { bubbles: true }));  // dependants (notes, previews) follow
+          }
+          update();
+          notify(COPY.discarded);
+          $('#main')?.focus();
+        });
+        const submit = el('button', 'btn btn--primary', form.dataset.saveLabel || save?.textContent.trim() || COPY.save);
+        submit.type = 'submit';
+        submit.setAttribute('form', form.id);
+        actions.append(discard, submit);
+        bar.append(details, actions);
+        topbar.append(bar);
+      }
+      $('.topsave__count', bar).textContent = countText(list.length);
+      $('.topsave__list', bar).replaceChildren(...list.filter(Boolean).map(([href, label]) => {
+        const li = el('li');
+        const a = el('a', '', label);
+        a.href = href || '#main';
+        a.addEventListener('click', () => { $('.topsave__changes', bar).open = false; });
+        li.append(a);
+        return li;
+      }));
+    }
+
+    function update() {
+      const list = changes();
+      const dirty = list.length > 0;
+      if (save) save.setAttribute('aria-disabled', String(!dirty));
+      if (status) status.textContent = dirty ? COPY.unsaved : restText;
+      if (topbar && !server && 'topsave' in form.dataset) {
+        if (dirty) drawBar(list);
+        topbar.classList.toggle('topbar--dirty', dirty);
+        if (!dirty && bar) { bar.remove(); bar = null; }
+      }
+      form.toggleAttribute('data-dirty', dirty);
+    }
+
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+    form.addEventListener('submit', () => { submitting = true; });
+    if ('topsave' in form.dataset) {
+      addEventListener('beforeunload', e => {
+        if (submitting || !form.hasAttribute('data-dirty')) return;
+        e.preventDefault();
+        e.returnValue = '';
+      });
+    }
+    update();
+  }
 }
 
 // ---------------------------------------------------------------- submit guard and loading labels
@@ -438,7 +545,7 @@ function initSavebar(form) {
     const idle = state === 'clean' || state === 'saved';
     save.setAttribute('aria-disabled', String(idle || state === 'saving'));
     discard.hidden = state !== 'dirty';
-    show.hidden = state !== 'error';
+    if (show) show.hidden = state !== 'error';  // C's Messages bar has no Show button
     const [ic, short, long] = {
       clean: ['circle-check', COPY.clean, COPY.clean],
       saved: ['circle-check', COPY.saved, COPY.saved],
@@ -475,25 +582,18 @@ function initSavebar(form) {
   }
 
   discard.addEventListener('click', () => {
-    const snapshot = { texts: cards.map(c => area(c).value), checks: switches.map(s => s.checked) };
     cards.forEach(c => { area(c).value = c.dataset.saved; });
     switches.forEach(s => { s.checked = s.dataset.savedChecked === '1'; });
     api.renderAll();
     clearErrors();
     count = 0;
     state = 'clean';
-    paint(false);  // the toast below does the announcing
-    const undo = () => {
-      cards.forEach((c, i) => { area(c).value = snapshot.texts[i]; });
-      switches.forEach((s, i) => { s.checked = snapshot.checks[i]; });
-      api.renderAll();
-      update();
-      save.focus();
-    };
-    toast(COPY.discarded, { ms: 8000, returnFocus: save, action: { label: COPY.undo, run: undo } });
+    paint(false);  // the notice below does the announcing (the slot is role=status)
+    notify(COPY.discarded);
+    save.focus();  // Discard hides itself; focus stays on the bar
   });
 
-  show.addEventListener('click', () => {
+  show?.addEventListener('click', () => {
     const target = errorField || $('#error-summary [data-error-link]');
     if (target?.tagName === 'TEXTAREA') focusField(target);
     else $('#error-summary')?.focus();
@@ -604,17 +704,8 @@ function initPicker(form = $('[data-picker]'), save = form && $('[data-picker-sa
   if (save) { form.addEventListener('change', sync); sync(); }
 }
 
-// ---------------------------------------------------------------- styleguide demos (/client/styleguide only)
-function initStyleguide() {
-  for (const b of $$('[data-demo-toast]')) b.addEventListener('click', () => toast(b.dataset.demoToast, { returnFocus: b }));
-  for (const b of $$('[data-demo-motion]')) b.addEventListener('click', () => {
-    b.setAttribute('aria-pressed', String(document.getElementById(b.getAttribute('aria-controls')).toggleAttribute('data-run')));
-  });
-  if ($('[data-demo-toast]')) for (const chips of $$('[data-chips]')) chips.hidden = false;  // the card specimens' chips
-}
-
 // ---------------------------------------------------------------- start
-for (const init of [initTheme, initMenu, initToasts, initForms, initTel, initOtp, initPicker, initStyleguide]) init();
+for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initChangeTracking, initForms, initTel, initOtp, initPicker]) init();
 const messagesForm = $('#messages');
 if (messagesForm) {
   const bar = initSavebar(messagesForm);

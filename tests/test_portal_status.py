@@ -66,7 +66,7 @@ def test_week_counts_and_rows_share_one_window(tmp_path):
     assert week["since_label"] == "Mon, Oct 26"
     assert week["counts"] == {"missed_calls": 2, "customers_texted": 2, "booked": 0, "stepped_back": 0}
     assert [r["phone"] for r in week["rows"]] == ["+19805550177", "+19805550141"]
-    assert week["rows"][1]["last_label"] == "Today, 9:40 AM"
+    assert week["rows"][1]["last_label"] == "Mon, Oct 26, 9:40 AM"  # always a full date, never "Today"
     assert week["rows"][0]["status"] == "Waiting for a reply" and week["rows"][1]["status"] == "Waiting for a reply"
     assert all(r["phone"] != "+19805550199" for r in week["rows"])
 

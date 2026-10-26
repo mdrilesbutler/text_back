@@ -51,9 +51,9 @@ def test_sign_in_label_is_your_mobile_number_with_a_neutral_placeholder_and_no_p
     assert 'placeholder="10 digits"' in field and "value=" not in field
     shown = visible(page)
     assert "0123" not in shown and "555" not in shown  # no real or sample number anywhere on the public page
-    assert "<h1>Sign in</h1>" in page and "Owner settings" in page
+    assert "<h1>Oak &amp; Pine Tree Care</h1>" in page and "Sign in to TextBack" in page and "Owner settings" not in page
     bad = html.unescape(client.post("/client/login", data={"mobile": "12"}).text)
-    assert "Enter your mobile as 10 digits, like 704 555 0123." in bad
+    assert "Enter your mobile as 10 digits, area code first." in bad
 
 
 def test_landing_is_home_and_every_nav_item_resolves(tmp_path, monkeypatch):
@@ -66,16 +66,17 @@ def test_landing_is_home_and_every_nav_item_resolves(tmp_path, monkeypatch):
     assert client.get("/client", follow_redirects=False).headers["location"] == "/client/home"
     assert client.get("/client/login", follow_redirects=False).headers["location"] == "/client/home"
     home = client.get("/client/home").text
-    nav = re.search(r"<nav class=nav aria-label=Settings>.*?</nav>", home, re.S).group(0)
+    nav = re.search(r"<nav class=nav aria-label=Pages>.*?</nav>", home, re.S).group(0)
     tabs = re.findall(r'<a class=nav__item href=(/client/\w+)( aria-current=page)?>', nav)
     assert [href for href, _ in tabs] == list(NAV)
-    assert [label for label in re.findall(r"<span class=nav__label>([^<]+)</span>", nav)][:5] == [
+    assert [label for label in re.findall(r"</span><span>([^<]+)</span></a>", nav)][:5] == [
         "Home", "Messages", "Schedule", "Calendar", "Phone"]
     for url in PAGES:
         page = client.get(url)
         assert page.status_code == 200, url
         current = re.findall(r"href=(/client/\w+) aria-current=page", page.text)
-        assert current == ([url] if url in NAV else ["/client/account"]), url
+        # On Account both the sidebar link and the menu's Account item are marked (mockup d1).
+        assert current == ([url] if url in NAV else ["/client/account", "/client/account"]), url
     # The old Business tab lands on Phone; its state-changing GET is gone.
     assert client.get("/client/business", follow_redirects=False).headers["location"] == "/client/phone"
     assert client.get("/client/business/keep").status_code in (404, 405)
@@ -129,12 +130,12 @@ def test_header_business_name_wraps_and_is_the_account_menu(tmp_path, monkeypatc
     client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine's Tree Care of the Carolinas, Inc.",
                                        "owner_mobile": OWNER})
     page = client.get("/client/home").text
-    header = re.search(r"<header class=topbar>.*?</header>", page, re.S).group(0)
-    trigger = re.search(r"<summary class=menu__trigger>.*?</summary>", header, re.S).group(0)
-    assert "<span class=brand-name>Oak &amp; Pine&#39;s Tree Care of the Carolinas, Inc.</span>" in trigger
-    assert "<span class=vh> Account</span>" in trigger
+    header = re.search(r"<header class=topbar data-topbar>.*?</header>", page, re.S).group(0)
+    trigger = re.search(r"<summary class=\"menu__trigger\">.*?</summary>", header, re.S).group(0)
+    assert "<span class=menu__biz>Oak &amp; Pine&#39;s Tree Care of the Carolinas, Inc.</span>" in trigger
+    assert "<span class=vh>Account</span>" in trigger
     assert "ellipsis" not in header and "truncate" not in header and "text-overflow" not in header
-    assert "Signed in with <span class=nowrap>(980) 555-0123</span>" in header and "href=/client/account>" in header
+    assert "Signed in as <span class=nw>(980) 555-0123</span>" in header and "href=/client/account>" in header
 
 
 def test_notice_slot_sits_between_the_header_and_the_h1_on_every_page(tmp_path, monkeypatch):
@@ -142,22 +143,24 @@ def test_notice_slot_sits_between_the_header_and_the_h1_on_every_page(tmp_path, 
     sign_in(client, telecom)
     for url in PAGES:
         page = client.get(url).text
-        slot = page.index("<div class=notice-slot id=notice role=status>")
+        slot = page.index("<div class=status-slot id=notice role=status>")
         assert page.index("</header>") < slot < page.index("<h1"), url
         assert "data-toast" not in page.split("<main", 1)[1].split("</main>", 1)[0], url  # no floating toast in the page
     csrf = csrf_of(page)
     saved = client.post("/client/account/remember", data={"csrf": csrf, "remember": "1"}).text
-    assert re.search(r"<div class=notice-slot id=notice role=status><p class=notice-slot__text>Saved\.</p>", saved)
+    assert re.search(r"<div class=status-slot id=notice role=status><div class=\"notice notice--success toast\" data-notice>"
+                     r".*?<p class=notice__text>Saved\.</p>", saved, re.S)
 
 
 def test_account_page_has_sign_out_everywhere_and_remember(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     sign_in(client, telecom)
     page = html.unescape(client.get("/client/account").text)
+    shown = re.sub(r"<[^>]+>", "", page)  # dates and times sit in no-wrap spans
     assert "<h1>Account</h1>" in page and "Signed in as" in page and "(980) 555-0123" in page
     assert "Remember this phone for 30 days" in page and "Off. This phone signs out after 12 hours." in page
     assert "Only this phone is signed in." in page and "Sign out everywhere" in page
-    assert "This phone · signed in Mon, Oct 19 · stays signed in until Tue, Oct 20" in page
+    assert "This phone · signed in Mon, Oct 19, 3:00 PM · stays signed in until Tue, Oct 20, 3:00 AM" in shown
 
 
 def test_remember_toggles_expiry(tmp_path, monkeypatch):
@@ -195,7 +198,7 @@ def test_signout_everywhere_kills_other_sessions_after_an_inline_confirm(tmp_pat
     sign_in(client, telecom)
     sign_in(other, telecom)
     page = html.unescape(client.get("/client/account").text)
-    assert "Another device · signed in Mon, Oct 19" in page and "Only this phone is signed in." not in page
+    assert "Another device · last used Mon, Oct 19, 3:00 PM" in re.sub(r"<[^>]+>", "", page) and "Only this phone is signed in." not in page
     csrf = csrf_of(page)
     ask = html.unescape(client.post("/client/account/signout-everywhere", data={"csrf": csrf}).text)
     assert "Sign out of every device? You'll need a new code on each one." in ask and "Stay signed in" in ask
@@ -236,7 +239,7 @@ def test_every_visible_form_control_has_a_name_and_lives_in_a_form(tmp_path, mon
     csrf = csrf_of(pages[-1])
     pages.append(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "owner_mobile": "980 555 0199"}).text)
     for page in pages:
-        body = page.split("<body>", 1)[1]
+        body = re.split(r"<body[^>]*>", page, maxsplit=1)[1]
         depth, pos = 0, 0
         for match in re.finditer(r"<(/?)(form|input|select|textarea|button)\b([^>]*)>", body):
             closing, tag, attrs = match.groups()
@@ -248,6 +251,10 @@ def test_every_visible_form_control_has_a_name_and_lives_in_a_form(tmp_path, mon
             js_only = tag == "button" and "type=button" in attrs and re.search(r"\shidden\b", attrs)
             if js_only:
                 continue  # progressive enhancement: hidden until portal.js wires it up
+            owner = re.search(r"\sform=(\S+?)[\s>]", attrs + ">")
+            if tag == "button" and owner:
+                assert f"id={owner.group(1)}" in body, attrs  # posts the form it names (the header save bar)
+                continue
             assert depth == 1, (tag, attrs[:120])
             if tag != "button" or "name=" in attrs:
                 assert "name=" in attrs, (tag, attrs[:120])

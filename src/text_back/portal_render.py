@@ -52,6 +52,21 @@ def url_runs(text: str) -> Markup:
 
 ENV.filters["url_runs"] = url_runs
 
+# Kept on one line wherever they sit in a sentence (mockup d1 round 3): phone numbers, dates, clock times.
+_NOWRAP = re.compile(
+    r"(\(\d{3}\) \d{3}-\d{4}"
+    r"|\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)(?:day|sday|nesday|rsday|urday)?, (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}\b"
+    r"|\b\d{1,2}:\d{2}(?:\s?[AP]M)?(?: [A-Z]{3}\b)?)")
+
+
+def nw(text: str) -> Markup:
+    """Escape ``text`` and wrap every (980) 555-0123, "Mon, Oct 26" and "9:12 AM" in span.nw (no line break inside)."""
+    return Markup("").join(Markup("<span class=nw>{}</span>").format(part) if index % 2 else escape(part)
+                           for index, part in enumerate(_NOWRAP.split(str(text))) if part)
+
+
+ENV.filters["nw"] = nw
+
 # The add-to-calendar links in a TextBack bubble: a short label on screen, the full link in title.
 LINK_LABELS = {"g": "Add to Google Calendar ›", "o": "Add to Outlook ›", "i": "Add to iCal ›", "": "Calendar links page ›"}
 _CAL_LINK = re.compile(r"(?:\b(?:Google|Outlook|iCal) )?(https?://\S+?/a/[\w-]+?(?:/([goi]))?)(?=[\s.,;!?]*(?:\s|$))")
@@ -73,9 +88,9 @@ def sms_links(text: str) -> Markup:
 ENV.filters["sms_links"] = sms_links
 
 
-def _when(value, tz_name: str, now=None) -> str:
+def _when(value, tz_name: str, now=None, relative: bool = True) -> str:
     from text_back.portal_dates import when
-    return when(value, tz_name, now)
+    return when(value, tz_name, now, relative=relative)
 
 
 def _day(value, tz_name: str) -> str:

@@ -89,18 +89,34 @@ def _deck_section(title: str) -> list[str]:
 def test_every_user_facing_string_is_in_the_copy_deck():
     deck = _deck_section("5. Schedule")
     bracketed = [re.sub(r"\[[^\]]*\]", "{}", cell) for cell in deck]
-    for text in (ps.SAVED, ps.CORRUPT_HOURS, ps.ANY_TIME_WARNING, ps.ANY_TIME_BUTTON, ps.ERR_DURATION, ps.ERR_TIMEZONE,
+    for text in (ps.CORRUPT_HOURS, ps.ANY_TIME_WARNING, ps.ANY_TIME_BUTTON, ps.ERR_DURATION, ps.ERR_TIMEZONE,
                  ps.ERR_MODE, ps.ERR_NO_DAYS, ps.ERR_TIMES, ps.ERR_QUIET, ps.ERR_REMINDERS, ps.ERR_EXPIRY,
                  *ps.HOURS_HINTS.values(), *ps.CONSEQUENCES.values(), *ps.LABELS.values()):
         assert text in deck, text
-    assert ps.SAVED == ("Saved. Applies now, including customers mid-conversation; "
-                        "reminders already scheduled keep their time.")
+    # The save notice names what changed (deck schedule_toast); "reminders already scheduled keep their time"
+    # now sits on the Reminders card (reminder_consequence), pinned below like every other claim.
+    assert ps.SAVED == "Saved. You changed “{rules}”. It applies now, including customers mid-conversation."
+    assert re.sub(r"\{rules\}", "{}", ps.SAVED) in bracketed and ps.SAVED_NOTHING == "Saved."
     for banned in ("nudge", "Nudge", "give-up", "Give-up", "Close the lead"):
         for text in (ps.ERR_REMINDERS, ps.ERR_EXPIRY, *ps.LABELS.values(), *ps.CONSEQUENCES.values()):
             assert banned not in text
     # Errors with a day or a number filled in follow the deck's bracketed shapes.
     assert "{}: opening time must be before closing time." in bracketed
     assert "{}: the hours are shorter than one appointment ({} minutes)." in bracketed
+
+
+def test_save_notice_names_only_the_rules_that_changed(tmp_path, monkeypatch):
+    state, _, _ = build(tmp_path, monkeypatch)
+    before = ps.current_values(state)
+    assert ps.saved_notice(before, ps.current_values(state)) == "Saved."
+    saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00"))
+    assert ps.saved_notice(before, ps.current_values(state)) == (
+        "Saved. You changed “Appointment length”, “Time zone”, “Quiet hours”. It applies now, including customers "
+        "mid-conversation.")  # valid_form() also moves the zone from the UTC default to New York
+    again = ps.current_values(state)
+    saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00",
+                            hours_mode="set"))
+    assert ps.changed_rules(again, ps.current_values(state)) == ["Working hours"]
 
 
 # --- defaults and the page context --------------------------------------------------

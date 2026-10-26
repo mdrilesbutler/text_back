@@ -17,12 +17,14 @@ def _clock(local: datetime) -> str:
     return local.strftime("%I:%M %p").lstrip("0")
 
 
-def when(value: datetime | str, tz_name: str, now: datetime | None = None) -> str:
-    """'Fri, Oct 23, 2:40 PM'; 'Today, 2:40 PM' on the same local day; adds the year when it differs."""
+def when(value: datetime | str, tz_name: str, now: datetime | None = None, *, relative: bool = True) -> str:
+    """'Fri, Oct 23, 2:40 PM'; 'Today, 2:40 PM' on the same local day; adds the year when it differs.
+
+    relative=False never says "Today": Home's "Last activity" and Account's device rows are always a full date."""
     local = _local(value, tz_name)
     if now is not None:
         today = _local(now, tz_name)
-        if local.date() == today.date():
+        if relative and local.date() == today.date():
             return f"Today, {_clock(local)}"
         if local.year != today.year:
             return f"{local.strftime('%a, %b')} {local.day}, {local.year}, {_clock(local)}"

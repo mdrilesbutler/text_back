@@ -101,12 +101,15 @@ def network_notice_applies(state, now: datetime) -> bool:
     return texting_approval(state, now)["state"] != "approved"
 
 
+# Copy deck home_approval_detail / home_approval_failed / home_approval_unknown (verbatim).
 _WORDS: dict[str, tuple[str, str]] = {
-    "approved": ("Done", "The phone companies have approved your business for texting."),
+    "approved": ("Done", "Texts go out with no network notice."),
     "waiting": ("Waiting on phone companies",
-                "Your texting approval is with the phone companies and texts still go out with a short network notice until it clears."),
+                "FluxWorks has filed your business for texting approval. Until it clears, each text starts with a "
+                "short network notice. Nothing for you to do."),
     "not_started": ("Not started",
-                    "Texting approval has not been requested yet and texts still go out with a short network notice."),
+                    "FluxWorks hasn't filed for texting approval yet. Until then each text starts with a short "
+                    "network notice."),
     "needs_attention": ("Needs you",
                         "Phone companies turned down the texting approval. FluxWorks is fixing it; "
                         "text FluxWorks support if texts aren't going out."),

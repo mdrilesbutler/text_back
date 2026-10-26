@@ -1,17 +1,20 @@
-{#- Sign in. The label is "Your mobile number", the placeholder is neutral and nothing is prefilled. -#}
+{#- Sign in (deck section 1). The heading names the business; the label is "Your mobile number", the
+    placeholder is neutral and nothing is prefilled. One inline error under the field (no summary on a
+    one-field form), with focus on the field, which keeps what was typed so it can be fixed. -#}
 {% extends "client/auth.html.j2" %}
 {% from "client/_macros.html.j2" import field_error, button %}
+{% set step = 1 %}
 {% block content %}
-<header class=auth__head>
-  <p class="eyebrow eyebrow--accent">Owner settings</p>
-  <h1>Sign in</h1>
+<div class=status-slot id=notice role=status>{% if notice %}{% include "client/_notice.html.j2" %}{% endif %}</div>
+<div class=auth__head>
+  <h1>{{ business_name }}</h1>
+  <p class=auth__sub>Sign in to TextBack</p>
   <p class=lead id=mobile-help>Enter your mobile number. We text a six-digit code to the mobile on file for this business. No password.</p>
-</header>
-<div class=notice-slot id=notice role=status>{% if notice %}<p class=notice-slot__text>{{ notice }}</p>{% endif %}</div>
+</div>
 <form method=post action=/client/login class=auth__form>
   <div class=field>
     <label class=field__label for=mobile>Your mobile number</label>
-    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="10 digits" aria-describedby="mobile-help{{ ' mobile-error' if error else '' }}"{% if error %} aria-invalid=true autofocus{% endif %}>
+    <input id=mobile name=mobile class="input input--tel tnum" type=tel autocomplete=tel inputmode=tel required maxlength=24 placeholder="10 digits"{% if error and typed %} value="{{ typed }}"{% endif %} aria-describedby="mobile-help{{ ' mobile-error' if error else '' }}"{% if error %} aria-invalid=true autofocus{% endif %}>
     {% if error %}{{ field_error("mobile-error", error) }}{% endif %}
   </div>
   {{ button("Text me a code", size="lg", block="block", loading="Sending…") }}

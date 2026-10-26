@@ -15,6 +15,7 @@
     <p class=status__word>{{ card.state_word }}</p>
     <h2 class=status__title id=status-title>{{ card.title }}</h2>
     <p class=status__detail>{{ card.body }}</p>
+    {% if card.why %}<p class=status__detail data-why>{{ card.why }}</p>{% endif %}
     {% if card.buttons %}
     <div class=status__next>
     {% for b in card.buttons %}

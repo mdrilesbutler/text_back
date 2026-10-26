@@ -18,7 +18,7 @@ from text_back.portal_forwarding import checklist
 from text_back.portal_registry import approval_words, texting_approval
 
 E164 = re.compile(r"^\+\d{8,15}$")
-SNIPPET_MAX = 60
+SNIPPET_MAX = 160  # one plain text; Home shows the last text whole, wrapping, not cut at a column
 
 # Caller status words, first match wins (copy deck home_caller_status).
 STATUS_STOPPED = "Asked us to stop"
@@ -83,7 +83,29 @@ def setup_items(state, now: datetime) -> list[dict]:
     approval = approval_words(texting_approval(state, now))
     items.append(dict(key="approval", title="Texting approval", state_word=approval["state_word"],
                       detail=approval["detail"], action_label=None, action_href=None))
+    # Preview harnesses name the cards whose status comes from seeded data; production never sets this.
+    examples = set(getattr(state, "preview_example_setup", ()) or ())
+    for item in items:
+        item["example"] = item["key"] in examples
     return items
+
+
+# The spine node a state word draws (one glyph per fact; the word sits in a pill beside it).
+NODE_DONE, NODE_NEEDS, NODE_WAITING = "done", "needs", "waiting"
+
+
+def node_kind(state_word: str) -> str:
+    """Done -> filled tick; Needs you -> amber "!"; anything else (waiting on the phone companies, not
+    started, couldn't check) -> clock, the same reading the first line gives it."""
+    return {"Done": NODE_DONE, "Needs you": NODE_NEEDS}.get(state_word, NODE_WAITING)
+
+
+def headline_kind(items: list[dict]) -> str:
+    """The node beside the first line: needs if any card needs the owner, done if all are done, else waiting."""
+    kinds = {node_kind(i["state_word"]) for i in items}
+    if NODE_NEEDS in kinds:
+        return NODE_NEEDS
+    return NODE_DONE if kinds <= {NODE_DONE} else NODE_WAITING
 
 
 def headline(items: list[dict]) -> str:
@@ -121,7 +143,10 @@ def caller_status(store, phone: str, *, test_calendar: bool = False) -> str:
 
 def _snippet(text: str) -> str:
     flat = " ".join(str(text or "").split())
-    return flat if len(flat) <= SNIPPET_MAX else flat[: SNIPPET_MAX - 1].rstrip() + "…"
+    if len(flat) <= SNIPPET_MAX:
+        return flat
+    cut = flat[: SNIPPET_MAX - 1]
+    return (cut.rsplit(" ", 1)[0] if " " in cut else cut).rstrip(" ,;:") + "…"  # never mid-word
 
 
 def this_week(state, now: datetime) -> dict:
@@ -162,11 +187,7 @@ def this_week(state, now: datetime) -> dict:
         if event_type in wanted:
             counts[wanted[event_type]] += 1
         touch(phone, at)
-    for phone, body, created_at in outbound:
-        at = _parse(created_at)
-        if at is None or not (start <= at <= now):
-            continue
-        texted.add(phone); touch(phone, at, body)
+    # Inbound before outbound: a reply stamped the same instant as the text it answers is the later one.
     for phone, params_json, received_at in inbound:
         at = _parse(received_at)
         if at is None or not (start <= at <= now):
@@ -176,6 +197,11 @@ def this_week(state, now: datetime) -> dict:
         except ValueError:
             text = ""
         touch(phone, at, text)
+    for phone, body, created_at in outbound:
+        at = _parse(created_at)
+        if at is None or not (start <= at <= now):
+            continue
+        texted.add(phone); touch(phone, at, body)
     counts["customers_texted"] = len(texted)
     # Preview harnesses mark their seeded callers; production never sets these, so nothing is tagged there.
     examples = set(getattr(state, "preview_example_phones", ()) or ())
@@ -188,6 +214,6 @@ def this_week(state, now: datetime) -> dict:
         rows.append({"phone": phone, "name": name, "display": name or format_contact_number(phone),
                      "status": caller_status(store, phone, test_calendar=test_calendar),
                      "example": phone in examples, "last_at": entry["last_at"],
-                     "last_label": when(entry["last_at"], tz_name, now), "snippet": entry["snippet"]})
+                     "last_label": when(entry["last_at"], tz_name, now, relative=False), "snippet": entry["snippet"]})
     return {"start": start, "since_label": day(start, tz_name), "counts": counts, "rows": rows,
             "example": bool(examples) and any(r["example"] for r in rows)}

@@ -1,52 +1,56 @@
-{#- Home: the computed status sentence, the three setup cards, then this week. The counts and the caller
-    rows come from one window (portal_status.this_week), so a zero never sits above rows. Every date goes
-    through the `when` / `day` filters. -#}
+{#- Home (mockup d1): the computed first line on the spine, the three setup cards (one glyph on the node,
+    one word in the pill), then this week. The counts and the caller rows come from one window
+    (portal_status.this_week), so a zero never sits above rows. "Example" tags appear only where the
+    preview harness flags seeded data (state.preview_example_phones / preview_example_setup). Every date
+    goes through the `when` / `day` filters, and Last activity is always a full date. -#}
 {% extends "client/base.html.j2" %}
-{% from "client/_macros.html.j2" import icon %}
-{% block page_class %}home{% endblock %}
+{% from "client/_macros.html.j2" import icon, node, state_pill %}
 {% block content %}
-<header class=page-head>
-  <h1>Home</h1>
-  <p class=home__status data-status-line>{{ headline }}</p>
-</header>
-<div class=page__body>
-  <section class=setup aria-labelledby=setup-title>
-    <h2 id=setup-title>Setup</h2>
-    <ul class=setup__list>
-    {% for item in setup %}
-      <li class=setup-card data-setup={{ item.key }} data-state="{{ item.state_word }}">
-        <h3 class=setup-card__title>{{ item.title }}</h3>
-        <p class=setup-card__state>{{ item.state_word }}</p>
-        <p class=setup-card__detail>{{ item.detail }}</p>
-        {% if item.action_href %}<a class="btn {{ 'btn--primary' if item.state_word == 'Needs you' else 'btn--secondary' }}" href={{ item.action_href }}>{{ item.action_label }}</a>{% endif %}
+<div class=page-head><h1>Home</h1></div>
+<ol class=spine>
+  {% call node(headline_node, cls="node--status") %}
+    <p class=status-line data-status-line>{{ headline }}</p>
+  {% endcall %}
+  {% call node("icon", "sliders-horizontal", attrs="data-setup-head") %}
+    <div class=node__head><h2>Setup</h2></div>
+  {% endcall %}
+  {% for item in setup %}
+  {% call node(item.node, attrs="data-setup=" ~ item.key) %}
+    <div class="setup setup--{{ item.node }}">
+      <div class=setup__head><h3 class=setup__title>{{ item.title }}</h3>{{ state_pill(item.node, item.state_word) }}{% if item.example %}<span class=extag>Example</span>{% endif %}</div>
+      <p class=setup__detail>{{ item.detail|nw }}</p>
+      {% if item.action_href %}<a class="btn btn--secondary setup__btn" href={{ item.action_href }}>{{ item.action_label }}</a>{% endif %}
+    </div>
+  {% endcall %}
+  {% endfor %}
+  {% call node("icon", "calendar", attrs="data-week") %}
+    <div class=node__head>
+      <div class=node__title><h2>This week</h2>{% if week.example %}<span class=extag>Example numbers</span>{% endif %}</div>
+      <p class=node__blurb>Since {{ week.start|day(tz)|nw }}. The counts and the list below cover the same days.</p>
+    </div>
+    <dl class=counts>
+      <div class=counts__item data-count=missed_calls><dt>Missed calls</dt><dd class=tnum>{{ week.counts.missed_calls }}</dd></div>
+      <div class=counts__item data-count=customers_texted><dt>Customers texted</dt><dd class=tnum>{{ week.counts.customers_texted }}</dd></div>
+      <div class=counts__item data-count=booked><dt>Booked</dt><dd class=tnum>{{ week.counts.booked }}</dd></div>
+      <div class=counts__item data-count=stepped_back><dt>Stepped back</dt><dd class=tnum>{{ week.counts.stepped_back }}</dd></div>
+    </dl>
+  {% endcall %}
+  {% call node("icon", "user-round", attrs="data-callers") %}
+    <div class=node__head><h2>This week's callers</h2></div>
+    {% if week.rows %}
+    <ol class=callers>
+    {% for row in week.rows %}
+      <li class=caller>
+        <p class=caller__who><span class=caller__name>{{ row.display|nw }}</span>{% if row.example %} <span class=extag>Example</span>{% endif %}</p>
+        <p class=caller__status>{{ row.status }}</p>
+        <p class=caller__when><span class=caller__k>Last activity</span> <span class=tnum>{{ row.last_at|when(tz, now, relative=False)|nw }}</span></p>
+        <p class=caller__text><span class=caller__k>Last text</span> {{ row.snippet }}</p>
       </li>
     {% endfor %}
-    </ul>
-  </section>
-  <section class=week aria-labelledby=week-title>
-    <h2 id=week-title>This week</h2>
-    <p class=week__caption>Since {{ week.start|day(tz) }}. The counts and the list below cover the same days.</p>
-    <dl class=week__counts>
-      <div class=count data-count=missed_calls><dt>Missed calls</dt><dd class=tnum>{{ week.counts.missed_calls }}</dd></div>
-      <div class=count data-count=customers_texted><dt>Customers texted</dt><dd class=tnum>{{ week.counts.customers_texted }}</dd></div>
-      <div class=count data-count=booked><dt>Booked</dt><dd class=tnum>{{ week.counts.booked }}</dd></div>
-      <div class=count data-count=stepped_back><dt>Assistant stepped back</dt><dd class=tnum>{{ week.counts.stepped_back }}</dd></div>
-    </dl>
-  </section>
-  <section class=callers aria-labelledby=callers-title>
-    <h2 id=callers-title>This week's callers</h2>
-    {% if week.rows %}
-    <table class=callers__table>
-      <thead><tr><th scope=col>Customer</th><th scope=col>Status</th><th scope=col>Last activity</th><th scope=col>Last text</th></tr></thead>
-      <tbody>
-      {% for row in week.rows %}
-        <tr data-caller><td>{{ row.display }}</td><td><span class=status-pill>{{ row.status }}</span></td><td class=tnum>{{ row.last_at|when(tz, now) }}</td><td>{{ row.snippet }}</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    </ol>
     {% else %}
-    <p class=empty__body data-empty>No callers this week. They appear here after the next missed call.</p>
+    <div class=empty><p class=empty__body data-empty>No callers this week. They appear here after the next missed call.</p></div>
     {% endif %}
-  </section>
-</div>
+  {% endcall %}
+</ol>
 {% endblock %}

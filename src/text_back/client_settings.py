@@ -194,8 +194,12 @@ def _home_page(request: Request, state, session):
 
     now = _now(state)
     items = portal_status.setup_items(state, now)
+    for item in items:
+        item["node"] = portal_status.node_kind(item["state_word"])
+        item.setdefault("example", False)
     return render(request, "client/home.html.j2", **shell(state, session, title="Home", nav="home"),
-                  headline=portal_status.headline(items), setup=items, week=portal_status.this_week(state, now))
+                  headline=portal_status.headline(items), headline_node=portal_status.headline_kind(items),
+                  setup=items, week=portal_status.this_week(state, now))
 
 
 def _schedule_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", unsaved=False):
@@ -231,10 +235,12 @@ def _save_schedule(request: Request, state, session, form):
     values, errors = portal_scheduling.parse_form(form, state)
     if errors:
         return _schedule_page(request, state, session, values=values, errors=errors)
+    before = portal_scheduling.current_values(state)
     problem = portal_scheduling.save(state, values["_settings"], _now(state))
     if problem:
         return _schedule_page(request, state, session, values=values, errors={"followup_delay_1": problem})
-    return _schedule_page(request, state, session, notice=portal_scheduling.SAVED)
+    return _schedule_page(request, state, session,
+                          notice=portal_scheduling.saved_notice(before, portal_scheduling.current_values(state)))
 
 
 def _calendar_page(request: Request, state, session, *, result=None, notice: str = "", error: str = "",

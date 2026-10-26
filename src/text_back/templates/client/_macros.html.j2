@@ -6,6 +6,41 @@
 <svg class="icon{{ (' ' ~ cls) if cls else '' }}" aria-hidden=true focusable=false><use href="#i-{{ name }}"/></svg>
 {%- endmacro %}
 
+{#- A node on the spine (mockup d1). State nodes draw the status: done (filled tick), needs (amber "!"),
+    waiting (clock), todo (plain ring), manual (dashed ring, tick). Section nodes (kind="icon") only label a
+    section with a decorative ring around `glyph`. `attrs` is a pre-rendered attribute string. -#}
+{% macro node(kind, glyph="", attrs="", cls="") -%}
+<li class="node node--{{ kind }}{{ (' ' ~ cls) if cls else '' }}"{% if attrs %} {{ attrs }}{% endif %}>
+  <span class=node__dot aria-hidden=true>
+    {%- if kind == "icon" %}{{ icon(glyph) }}{% elif kind in ("done", "manual") %}{{ icon("check") }}{% elif kind == "waiting" %}{{ icon("clock") }}{% elif kind == "needs" %}<b class=node__bang>!</b>{% endif -%}
+  </span>
+  <div class=node__body>
+    {{ caller() }}
+  </div>
+</li>
+{%- endmacro %}
+
+{#- The word beside a state node, in a pill with no glyph of its own (the node draws it). -#}
+{% macro state_pill(kind, word) -%}
+<span class="pill state state--{{ kind }}{{ ' pill--success' if kind == 'done' else (' pill--warning' if kind == 'needs' else '') }}">{{ word }}</span>
+{%- endmacro %}
+
+{#- The phone header as the save bar (mockup d1 round 3): what changed (a disclosure listing links to each
+    changed item), Discard and Save, both posting the page's form through form=. portal.js draws the same
+    nodes for a form marked data-topsave. t: {"form", "changed", "save", "names": [(href, label)]}. -#}
+{% macro topsave_bar(t) -%}
+<div class=topsave data-topsave-server>
+  <details class=topsave__changes>
+    <summary class=topsave__summary><span class=topsave__count>{{ t.changed }}</span><span class=vh>. Show what changed</span>{{ icon("chevron-down", "topsave__chev") }}</summary>
+    <ul class=topsave__list>{% for href, label in t.names %}<li><a href="{{ href }}">{{ label }}</a></li>{% endfor %}</ul>
+  </details>
+  <div class=topsave__actions>
+    <button type=submit class="btn btn--ghost" name=discard value=1 form={{ t.form }} formnovalidate data-topsave-discard>Discard</button>
+    <button type=submit class="btn btn--primary" form={{ t.form }}>{{ t.save }}</button>
+  </div>
+</div>
+{%- endmacro %}
+
 {% macro csrf_input(token) -%}
 <input type=hidden name=csrf value='{{ token }}'>
 {%- endmacro %}

@@ -32,13 +32,15 @@ HORIZON_DAYS = 14
 WORD_CONNECTED = "Connected"
 TITLE_GOOGLE = "Google Calendar"
 BODY_CONNECTED = "Bookings go here: {name}."
-BODY_CONNECTED_AS = "Bookings go here: {name}. Connected as {account}."
-BTN_CHANGE = "Use a different calendar"
 BTN_RECONNECT = "Reconnect Google Calendar"
 WORD_NOT_CONNECTED = "Not connected"
 TITLE_NOT_CONNECTED = "No calendar yet"
-BODY_NOT_CONNECTED = ("Without a calendar the assistant can't check free times or book jobs. "
-                      "Connect the Google account that owns your business calendar.")
+# Same words as Home's Calendar card; then why connecting matters (with Connect) or who sets it up (without).
+BODY_NOT_CONNECTED = "No calendar of yours yet. Until you connect one, bookings go on a test calendar you can't see."
+WHY_CONNECT = ("Connect the Google account that owns your business calendar, so the assistant offers your real "
+               "free times and books onto your calendar.")
+BODY_NO_WEB = ("To book onto your own calendar, it has to be connected. Connecting from this page isn't set up "
+               "for your account yet. FluxWorks sets this up for you.")
 BTN_CONNECT = "Connect Google Calendar"
 BTN_CONNECT_BUSY = "Opening Google…"
 BODY_NO_CONNECT = "Connecting from this page isn't set up for your account yet. FluxWorks sets this up for you."
@@ -50,8 +52,8 @@ WORD_UNREADABLE = "Couldn't be read"
 BODY_UNREADABLE = "TextBack couldn't read the calendar connection. Bookings are paused until you reconnect."
 CONSENT_NOTE = ("What Google will ask: (1) You pick the Google account that owns your business calendar. "
                 "(2) Google asks you to let TextBack see and edit your calendars. "
-                "(3) TextBack only checks free times and adds appointments. TextBack sees your calendars only. "
-                "(4) Afterwards you choose which calendar it uses.")
+                "TextBack uses this only to find free times and add bookings. "
+                "(3) Afterwards you choose which calendar it uses.")
 PICKER_LEGEND = "Which calendar should the assistant use?"
 PICKER_HINT = "Free times are checked on this calendar and new appointments are added to it."
 PICKER_MAIN = "(main calendar)"
@@ -74,8 +76,8 @@ AVAIL_UNREACHABLE = "Couldn't reach Google Calendar. Try again in a minute."
 AVAIL_RECONNECT_FIRST = "Reconnect the calendar first."
 
 DECK_STRINGS: tuple[str, ...] = (
-    WORD_CONNECTED, TITLE_GOOGLE, BODY_CONNECTED, BODY_CONNECTED_AS, BTN_CHANGE, BTN_RECONNECT,
-    WORD_NOT_CONNECTED, TITLE_NOT_CONNECTED, BODY_NOT_CONNECTED, BTN_CONNECT, BTN_CONNECT_BUSY,
+    WORD_CONNECTED, TITLE_GOOGLE, BODY_CONNECTED, BTN_RECONNECT,
+    WORD_NOT_CONNECTED, TITLE_NOT_CONNECTED, BODY_NOT_CONNECTED, WHY_CONNECT, BODY_NO_WEB, BTN_CONNECT, BTN_CONNECT_BUSY,
     BODY_NO_CONNECT, BTN_SUPPORT, WORD_RECONNECT, BODY_RECONNECT,
     WORD_UNREADABLE, BODY_UNREADABLE, CONSENT_NOTE,
     PICKER_LEGEND, PICKER_HINT, PICKER_MAIN, PICKER_PILL, PICKER_BUTTON, PICKER_ERROR, PICKER_ONLY,
@@ -138,22 +140,13 @@ def calendar_name(state, view: dict | None = None) -> str:
     return current or PROVIDER_NAMES.get(view["provider"], view["provider"].title())
 
 
-def connected_account(state) -> str:
-    """The connected Google account: the id of its main (primary) calendar, which Google sets to the
-    account's address. Empty when the picker list has not been fetched yet."""
-    for entry in _settings().calendar_choices(state):
-        if entry.get("primary") and "@" in str(entry.get("id", "")):
-            return str(entry["id"])
-    return ""
-
-
 def status_card(state) -> dict:
     """state_word / title / body / buttons for the connection card. Every state has a next step."""
     view = _settings().calendar_status(state)
     provider, status, can_connect = view["provider"], view["status"], bool(view["can_connect"])
     name = calendar_name(state, view)
     card = {"provider": provider, "status": status, "can_connect": can_connect, "calendar_name": name,
-            "connected": status in ("ready", "managed"), "state_word": "", "title": "", "body": "", "buttons": [],
+            "connected": status in ("ready", "managed"), "state_word": "", "title": "", "body": "", "why": "", "buttons": [],
             "kind": "ok"}
 
     def not_connected_next_step(body: str, label: str, kind: str) -> None:
@@ -166,12 +159,10 @@ def status_card(state) -> dict:
             card["buttons"] = _support_button(state)
 
     if status == "ready":
-        account = connected_account(state)
-        body = BODY_CONNECTED_AS.format(name=name, account=account) if account else BODY_CONNECTED.format(name=name)
-        card.update(state_word=WORD_CONNECTED, title=TITLE_GOOGLE, body=body, account=account)
-        card["buttons"] = [{"label": BTN_CHANGE, "action": "pick", "kind": "secondary"}]
+        # No "Connected as": the account's address is not stored. The picker below replaces "Use a different calendar".
+        card.update(state_word=WORD_CONNECTED, title=TITLE_GOOGLE, body=BODY_CONNECTED.format(name=name))
         if can_connect:
-            card["buttons"].append(_connect_button(BTN_RECONNECT, "secondary"))
+            card["buttons"] = [_connect_button(BTN_RECONNECT, "secondary")]
     elif status == "reauth_required":
         card.update(state_word=WORD_RECONNECT, title=TITLE_GOOGLE, kind="err")
         not_connected_next_step(BODY_RECONNECT, BTN_RECONNECT, "primary")
@@ -179,12 +170,11 @@ def status_card(state) -> dict:
         card.update(state_word=WORD_UNREADABLE, title=TITLE_GOOGLE, kind="err")
         not_connected_next_step(BODY_UNREADABLE, BTN_RECONNECT, "primary")
     elif status == "none":
-        card.update(state_word=WORD_NOT_CONNECTED, title=TITLE_NOT_CONNECTED, kind="warn")
+        card.update(state_word=WORD_NOT_CONNECTED, title=TITLE_NOT_CONNECTED, kind="warn", body=BODY_NOT_CONNECTED)
         if can_connect:
-            not_connected_next_step(BODY_NOT_CONNECTED, BTN_CONNECT, "primary")
+            card.update(why=WHY_CONNECT, buttons=[_connect_button(BTN_CONNECT, "primary")])
         else:
-            card["body"] = BODY_NO_CONNECT
-            card["buttons"] = _support_button(state)
+            card.update(why=BODY_NO_WEB, buttons=_support_button(state))
     else:  # managed: a provider FluxWorks configured in the environment
         card.update(state_word=WORD_CONNECTED, title=PROVIDER_NAMES.get(provider, provider.title()),
                     body=f"{BODY_CONNECTED.format(name=name)} {BODY_MANAGED}")

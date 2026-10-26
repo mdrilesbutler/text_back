@@ -1,12 +1,14 @@
-{#- Byte-identical for an unknown number and a wrong code. Never render any part of a phone number here. -#}
+{#- Enter code (deck section 2). Byte-identical for an unknown number and a wrong code. Never render any
+    part of a phone number here. -#}
 {% extends "client/auth.html.j2" %}
 {% from "client/_macros.html.j2" import otp, button %}
+{% set step = 2 %}
 {% block content %}
-<header class=auth__head>
-  <p class="eyebrow eyebrow--accent">{{ business_name }}</p>
+<div class=auth__head>
+  <p class=eyebrow>{{ business_name }}</p>
   <h1>Check your phone</h1>
   <p class=lead id=code-help>Enter the six-digit code we just texted. It expires in ten minutes.</p>
-</header>
+</div>
 <form method=post action=/client/verify class=auth__form>
   <div class=field>
     <label class=field__label for=code>Sign-in code</label>
