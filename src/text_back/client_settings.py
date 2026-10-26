@@ -199,7 +199,13 @@ def _home_page(request: Request, state, session):
         item.setdefault("example", False)
     return render(request, "client/home.html.j2", **shell(state, session, title="Home", nav="home"),
                   headline=portal_status.headline(items), headline_node=portal_status.headline_kind(items),
+                  headline_example=portal_status.headline_example(items),
                   setup=items, week=portal_status.this_week(state, now))
+
+
+def portal_messages_discarded() -> str:
+    from text_back.portal_messages import DISCARDED
+    return DISCARDED
 
 
 def _schedule_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", unsaved=False):
@@ -208,15 +214,38 @@ def _schedule_page(request: Request, state, session, *, values=None, errors=None
     values = values if values is not None else portal_scheduling.current_values(state)
     context = portal_scheduling.page_context(state, values, errors)
     title = "Not saved · Schedule" if errors else "Schedule"
-    return render(request, "client/schedule.html.j2", **shell(state, session, title=title, nav="schedule", notice=notice),
-                  **context, summary=error_summary(errors or {}, portal_scheduling.FIELD_ORDER), unsaved=unsaved)
+    page = shell(state, session, title=title, nav="schedule", notice=notice)
+    # Answered with values that are not saved (a rejected save, or the one-tap hours): the save bar is up.
+    dirty = None
+    if errors or unsaved:
+        saved_values = portal_scheduling.current_values(state)
+        rules = portal_scheduling.changed_rules(saved_values, values) or ([portal_scheduling.LABELS["working_hours"]] if unsaved else [])
+        count = (portal_scheduling.CHANGED_ONE if len(rules) == 1 else portal_scheduling.CHANGED_MANY.format(n=len(rules)))
+        changed = f"Not saved · {count}" if errors else count
+        names = [(f"#{portal_scheduling.ANCHORS[k]}", portal_scheduling.LABELS[k]) for k in portal_scheduling.LABELS
+                 if portal_scheduling.LABELS[k] in rules]
+        dirty = {"changed": changed, "names": names}
+        page["topsave"] = {"form": "schedule-form", "changed": changed, "save": "Save", "names": names}
+    return render(request, "client/schedule.html.j2", **page, **context, dirty=dirty,
+                  summary=error_summary(errors or {}, portal_scheduling.FIELD_ORDER), unsaved=unsaved)
 
 
 def _save_schedule(request: Request, state, session, form):
     from text_back import portal_scheduling
 
-    # The length chips are radios; "Custom" (or no chip) means the number typed beside them.
+    if str(form.get("discard", "") or "") == "1":
+        # Discard without JavaScript: back to what is saved; nothing is written.
+        return _schedule_page(request, state, session, notice=portal_messages_discarded())
+    # The length chips are radios beside a number field. Without JavaScript they can disagree: a number
+    # the owner changed (it differs from the one the page showed) wins; otherwise the chip does, and
+    # "Custom" (or no chip) means the number.
     form = {key: form.get(key) for key in form.keys()}
+    typed, shown = str(form.get("appointment_duration_custom") or "").strip(), str(form.get("appointment_duration_shown") or "")
+    if shown and typed and typed != shown:
+        form["appointment_duration_minutes"] = "custom"
+    # The quiet-hours switch (on = quiet hours apply) stands for the old "No quiet hours" box.
+    if str(form.get("quiet_switch") or "") == "1":
+        form["no_quiet_hours"] = "" if form.get("quiet_on") else "1"
     if str(form.get("appointment_duration_minutes") or "custom") == "custom":
         form["appointment_duration_minutes"] = form.get("appointment_duration_custom", "")
     reset = str(form.get("reset", "") or "")
@@ -253,11 +282,19 @@ def _calendar_page(request: Request, state, session, *, result=None, notice: str
                   **context, page_error=error, picker_error=picker_error, support_contact=support)
 
 
-def _phone_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", page_error: str = ""):
-    from text_back import portal_messages, portal_phone
+def _phone_page(request: Request, state, session, *, values=None, errors=None, notice: str = "", page_error: str = "",
+                ticks=None):
+    from text_back import portal_forwarding, portal_messages, portal_phone
 
     now = _now(state)
     context = portal_phone.page_context(state, values, errors, now=now)
+    if ticks is not None:  # a rejected save keeps the ticks as posted
+        for row in context["check_rows"]:
+            key = portal_phone.MANUAL_CHECKS.get(row["n"])
+            if key:
+                row["ticked"] = bool(ticks.get(key))
+    for row in context["check_rows"]:
+        row.setdefault("ticked", row["state"] == portal_forwarding.YOU_CHECKED)
     current = state.messages.current()
     preview_name = (context["values"].get("business_name") or state.business_name).strip() or state.business_name
     sample = {**portal_messages.preview_values(state, now), "business_name": preview_name}
@@ -273,10 +310,26 @@ def _phone_page(request: Request, state, session, *, values=None, errors=None, n
     for key in ("business_line", "owner_mobile"):
         if display[key].startswith("+") and not (errors or {}).get(key):
             display[key] = format_contact_number(display[key])
-    title = "Not saved · Phone" if errors else "Phone"
-    return render(request, "client/phone.html.j2", **shell(state, session, title=title, nav="phone", notice=notice),
-                  **context, display=display, page_error=page_error, rename_offer=rename,
-                  name_preview=portal_messages.preview_text("intro", templates, sample),
+    title = f"Not saved · {portal_phone.TITLE}" if errors else portal_phone.TITLE
+    page = shell(state, session, title=title, nav="phone", notice=notice)
+    # The rename offer rides in the one notice under the header (with the save it followed, if any).
+    if rename:
+        page["notice"] = notice or ""
+        page["notice_offer"] = rename
+    dirty = None
+    if errors:
+        labels = portal_phone.changed_labels(portal_phone.current_values(state), dict(context["values"]),
+                                             portal_forwarding.manual_ticks(state.store), ticks or {})
+        count = portal_phone.CHANGED_ONE if len(labels) == 1 else portal_phone.CHANGED_MANY.format(n=max(1, len(labels)))
+        anchors = {portal_phone.LABELS[k]: f"#{k}" for k in portal_phone.LABELS}
+        names = [(anchors.get(label, "#checks"), label) for label in labels]
+        dirty = {"changed": f"Not saved · {count}", "names": names}
+        page["topsave"] = {"form": "phone-form", "changed": dirty["changed"], "save": "Save", "names": names}
+    body, suffix = portal_messages.preview_parts("intro", templates, sample)
+    return render(request, "client/phone.html.j2", **page,
+                  **context, display=display, page_error=page_error, rename_offer=rename, dirty=dirty,
+                  title_text=portal_phone.TITLE, values_saved_mobile=format_contact_number(getattr(state, "owner_mobile", "") or ""),
+                  name_preview=body, name_suffix=suffix,
                   name_template=portal_messages.to_display(templates["intro"]),
                   summary=error_summary(errors or {}, portal_phone.FIELD_ORDER))
 
@@ -302,19 +355,34 @@ def _saved_overrides(state) -> dict[str, str]:
 def _save_phone(request: Request, state, session, form):
     from text_back import portal_phone
 
+    from text_back import portal_forwarding, portal_messages
+
     now = _now(state)
+    if str(form.get("discard", "") or "") == "1":
+        # Discard without JavaScript (after a rejected save): back to what is saved; nothing is written.
+        return _phone_page(request, state, session, notice=portal_messages.DISCARDED)
     submitted = portal_phone.read_form(form)  # the texting number is not a field: a posted one is ignored
     values, errors = portal_phone.validate(submitted, state)
+    # The manual checks post with the page's one Save (the form carries them as check_<key>).
+    with_checks = str(form.get("checks_in_form", "") or "") == "1"
+    ticks = {key: str(form.get(f"check_{key}", "") or "") == "1" for key in portal_phone.MANUAL_CHECKS.values()}
     if errors:
         shown = dict(submitted)
-        return _phone_page(request, state, session, values=shown, errors=errors)
+        return _phone_page(request, state, session, values=shown, errors=errors, ticks=ticks if with_checks else None)
+    before = portal_phone.current_values(state)
+    ticks_before = {k: bool(v) for k, v in portal_forwarding.manual_ticks(state.store).items()}
     old_name = state.business_name
     pending = portal_phone.save(state, values, now)
+    if with_checks:
+        portal_phone.save_checklist(state, form, now)
     if old_name != values["business_name"] and portal_phone.texts_with_old_name(_saved_overrides(state), old_name):
         state.store.set_setting(RENAME_FROM_KEY, old_name, now=now)
+    after = dict(portal_phone.current_values(state), owner_mobile=values["owner_mobile"])
+    ticks_after = {k: bool(v) for k, v in portal_forwarding.manual_ticks(state.store).items()}
     if pending:
         return _confirm_page(request, state, session, notice=portal_phone.SAVED_CONFIRM_MOBILE)
-    return _phone_page(request, state, session, notice=portal_phone.SAVED)
+    notice = portal_phone.saved_notice(portal_phone.changed_labels(before, after, ticks_before, ticks_after))
+    return _phone_page(request, state, session, notice=notice)
 
 
 def _rename_texts(request: Request, state, session, form):

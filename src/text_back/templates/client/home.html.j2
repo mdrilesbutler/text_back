@@ -9,7 +9,7 @@
 <div class=page-head><h1>Home</h1></div>
 <ol class=spine>
   {% call node(headline_node, cls="node--status") %}
-    <p class=status-line data-status-line>{{ headline }}</p>
+    <p class=status-line data-status-line>{{ headline }}{% if headline_example %} <span class=extag>Example</span>{% endif %}</p>
   {% endcall %}
   {% call node("icon", "sliders-horizontal", attrs="data-setup-head") %}
     <div class=node__head><h2>Setup</h2></div>

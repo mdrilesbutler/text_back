@@ -22,6 +22,10 @@ const COPY = {
     ? `The \u201c${symbol}\u201d symbol makes each text hold only 70 characters. ${plain ? `Use \u201c${plain}\u201d instead.` : 'Use a plain letter instead.'}`
     : 'Customers still see one message.'),
   fix: (symbol, plain) => `Replace ${symbol} with ${plain}`,
+  whereName: 'Your business name', whereStop: 'Your opt-out line',
+  billWhere: (k, where, symbol) => `Billed as ${k} texts. ${where} has a ${symbol}, which makes each text hold only 70 characters.`,
+  copied: 'Copied', copyCode: 'Copy',  // deck code_copy
+  mobileSame: 'This is the number that signs you in.', mobileChanged: n => `Save to text a code to ${n}.`,  // deck owner_mobile_status
 };
 
 // ---------------------------------------------------------------- helpers
@@ -145,8 +149,16 @@ function notify(text, kind = 'success') {
   wireNotice(node);
 }
 
+// A notice the server rendered is already in the live region when the page loads, so screen readers would
+// not announce it: take it out and put it back on the next frame.
 function initNotices() {
-  for (const node of $$('[data-notice]', slot || document)) wireNotice(node);
+  for (const node of $$('[data-notice]', slot || document)) {
+    wireNotice(node);
+    if (node.parentElement === slot) {
+      node.remove();
+      requestAnimationFrame(() => slot.append(node));
+    }
+  }
 }
 
 // ---------------------------------------------------------------- jump to a step (Messages)
@@ -283,6 +295,10 @@ function initChangeTracking() {
       savebar.classList.toggle('savebar--on', dirty);
       savebar.dataset.state = dirty ? 'dirty' : 'clean';
       if (discardButton) discardButton.hidden = !dirty;
+      // The status line is a live region: rewrite it only when its words change, so it speaks once per change.
+      const drawn = dirty ? `${countText(list.length)}|${list.filter(Boolean).map(x => x.join('>')).join(',')}` : 'clean';
+      if (savebar.dataset.drawn === drawn) return;
+      savebar.dataset.drawn = drawn;
       const line = $('[data-savebar-status]', savebar);
       if (!dirty) { line.textContent = line.dataset.clean || restText; return; }
       const names = el('span', 'savebar__names', ': ');
@@ -311,7 +327,7 @@ function initChangeTracking() {
 
     form.addEventListener('input', update);
     form.addEventListener('change', update);
-    form.addEventListener('submit', () => { submitting = true; });
+    form.addEventListener('submit', e => { if (!e.defaultPrevented) submitting = true; });
     if ('topsave' in form.dataset) {
       addEventListener('beforeunload', e => {
         if (submitting || !form.hasAttribute('data-dirty')) return;
@@ -393,23 +409,33 @@ const PLAIN = { '—': '-', '–': '-', '“': '"', '”': '"', '‘': "'", '’
 // = portal_messages.NOTICE_MODEL: the network notice's length (24 characters, two of them billed twice).
 const NOTICE_MODEL = `[${'a'.repeat(21)}] `;
 
-// = portal_messages.sms_parts: (characters, texts, plain GSM). Code points, like Python's len().
+// = portal_messages.sms_parts: (characters, texts, plain GSM). Plain texts count code points (Python's len());
+// UCS-2 texts count UTF-16 units, as the network does: text.length, so an emoji takes two.
 function parts(text) {
   const chars = [...text];
   if (chars.every(c => GSM.has(c))) {
     const units = chars.reduce((n, c) => n + (EXT.has(c) ? 2 : 1), 0);
     return [chars.length, units <= 160 ? 1 : Math.ceil(units / 153), true];
   }
-  return [chars.length, chars.length <= 70 ? 1 : Math.ceil(chars.length / 67), false];
+  const n = text.length;
+  return [n, n <= 70 ? 1 : Math.ceil(n / 67), false];
 }
 
 // = portal_render.split_links: calendar links come out of the words and show as labels (never a raw link).
-const CAL_LINK = /(?:\b(?:Google|Outlook|iCal) )?(https?:\/\/\S+?\/a\/[\w-]+?(?:\/([goi]))?)(?=[\s.,;!?]*(?:\s|$))/g;
+// Only TextBack's own links: the public base URL, /a/<rowid>-<12 hex>, then /g, /o, /i or nothing.
+// The base comes from the sample's own calendar link (DATA.sample.google_link), so the page data carries no other URL.
+const LINK_BASE = (DATA.sample?.google_link || '').replace(/\/a\/.*$/, '');
+const BASE_RE = LINK_BASE.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+const CAL_LINK = new RegExp(`(?:\\b(?:Google|Outlook|iCal) )?(${BASE_RE}/a/\\d+-[0-9a-f]{12}(?:/([goi]))?)(?![\\w/-])`, 'g');
 const LINK_LABELS = { g: 'Add to Google Calendar ›', o: 'Add to Outlook ›', i: 'Add to iCal ›', '': 'Calendar links page ›' };
 function splitLinks(text) {
-  const links = [...text.matchAll(CAL_LINK)].map(m => [LINK_LABELS[m[2] || ''], m[1]]);
-  if (!links.length) return [text, links];
-  return [norm(text.replace(CAL_LINK, ' ').replace(/\s*\bAdd to calendar:\s*/gi, ' ')), links];
+  if (!BASE_RE) return [text, []];
+  const matches = [...text.matchAll(CAL_LINK)];
+  if (!matches.length) return [text, []];
+  const links = matches.map(m => [LINK_LABELS[m[2] || ''], m[1]]);
+  const head = text.slice(0, matches[0].index).replace(/\bAdd to calendar:\s*$/i, '');
+  const body = head + text.slice(matches[0].index).replace(CAL_LINK, ' ');
+  return [norm(body).replace(/\s+([.,;!?])/g, '$1'), links];
 }
 
 // = the bubble macro: words (URLs in span.sms__link), the opt-out line in span.sms__suffix, links as labels.
@@ -432,7 +458,10 @@ function drawBubble(p, body, tail, links) {
 // = portal_messages.fill: str.format_map with unknown names kept; anything Python would refuse leaves the text as typed.
 // Inserts are shown as [Label] (never braces); DATA.labels maps each label to its placeholder name.
 const LABELS = DATA.labels || { 'Business name': 'business_name' };
-const tokens = t => t.replace(/\[([^\]]+)\]/g, (m, label) => (Object.hasOwn(LABELS, label) ? `{${LABELS[label]}}` : m));
+// Labels match whatever the case and spacing, like the server (portal_messages._LABEL_KEYS).
+const labelKey = label => label.toLowerCase().split(/\s+/).filter(Boolean).join(' ');
+const LABEL_KEYS = Object.fromEntries(Object.entries(LABELS).map(([label, name]) => [labelKey(label), name]));
+const tokens = t => t.replace(/\[([^\]]+)\]/g, (m, label) => (Object.hasOwn(LABEL_KEYS, labelKey(label)) ? `{${LABEL_KEYS[labelKey(label)]}}` : m));
 
 // The invite sentence follows the email question's switch, as the booking code does.
 function sampleValues() {
@@ -483,14 +512,21 @@ function initCards(form) {
     const notice = Boolean(DATA.notice) && key !== 'opt_out_suffix';
     const [n, k, plain] = parts(notice ? NOTICE_MODEL + preview : preview);
     for (const c of $$('[data-count]', card)) c.textContent = COPY.count(n, k, notice);
-    const symbol = plain ? '' : [...preview].find(ch => !GSM.has(ch)) || '';
+    // = portal_messages.bill_info: the fix only changes the card's own wording; a symbol from the business
+    // name or the opt-out line is named where it is, with no button.
+    const firstSymbol = text => [...text].find(ch => !GSM.has(ch)) || '';
+    const own = plain ? '' : firstSymbol(t.replace(/\[[^\]]*\]/g, ''));
+    const elsewhere = plain || own ? null : [[COPY.whereName, sampleValues().business_name || ''], [COPY.whereStop, tail]]
+      .map(([where, text]) => [where, firstSymbol(text)]).find(([, sym]) => sym);
     const bill = $('[data-bill]', card);
     bill.hidden = k < 2;
-    $('[data-bill-text]', bill).textContent = k < 2 ? '' : COPY.bill(k, symbol, PLAIN[symbol]);
+    $('[data-bill-text]', bill).textContent = k < 2 ? '' : (elsewhere ? COPY.billWhere(k, ...elsewhere)
+      : COPY.bill(k, own || (plain ? '' : firstSymbol(preview)), PLAIN[own || firstSymbol(preview)]));
     const fix = $('[data-fix]', bill);
     if (fix) {
-      fix.hidden = k < 2 || !PLAIN[symbol];
-      $('[data-fix-label]', fix).textContent = PLAIN[symbol] ? COPY.fix(symbol, PLAIN[symbol]) : '';
+      fix.hidden = k < 2 || !PLAIN[own];
+      $('[data-fix-label]', fix).textContent = PLAIN[own] ? COPY.fix(own, PLAIN[own]) : '';
+      fix.dataset.symbol = PLAIN[own] ? own : '';
     }
     $('[data-link-note]', card).hidden = !links.length;
     const added = $('[data-optout-note]', card);
@@ -527,6 +563,21 @@ function initCards(form) {
     if (sw.id === 'ask_email' && byKey.booking_confirmation) render(byKey.booking_confirmation);
   });
   form.addEventListener('click', e => {
+    // "Replace — with -": local like Reset (undoable through Discard); without JS it posts fix=<key> and saves.
+    const fix = e.target.closest('[data-fix]');
+    if (fix) {
+      e.preventDefault();
+      const card = fix.closest('article[data-card]');
+      const ta = area(card);
+      const symbol = fix.dataset.symbol;
+      if (!symbol || !PLAIN[symbol]) return;
+      ta.value = (ta.value || card.dataset.default).split(symbol).join(PLAIN[symbol]);
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      const details = ta.closest('details');
+      if (details && !details.open) details.open = true;
+      focusField(ta);
+      return;
+    }
     const reset = e.target.closest('[data-reset]');
     if (reset) {
       e.preventDefault();  // local and undoable through Discard; without JS it posts reset=<key> (Reset and save)
@@ -623,15 +674,85 @@ function initRail(form) {
   });
 }
 
+// ---------------------------------------------------------------- Schedule: length chips and the one-tap hours
+// The number field and the chips follow each other (a chip sets the number; a typed number checks its chip
+// or Custom). "Use Mon–Fri, 8 AM–5 PM" fills the grid here instead of posting; it still needs Save.
+function initSchedule() {
+  const number = $('[data-duration-number]');
+  if (number) {
+    const chips = $$('[data-duration-chip]');
+    number.addEventListener('input', () => {
+      const match = chips.find(c => c.value === number.value.trim());
+      (match || chips.find(c => c.value === 'custom')).checked = true;
+    });
+    for (const chip of chips) chip.addEventListener('change', () => {
+      if (chip.checked && chip.value !== 'custom') {
+        number.value = chip.value;
+        number.dispatchEvent(new Event('change', { bubbles: true }));
+      } else if (chip.checked) focusField(number);
+    });
+  }
+  const suggest = $('[data-suggest-hours]');
+  if (!suggest) return;
+  suggest.addEventListener('click', e => {
+    e.preventDefault();
+    const set = $('[name="hours_mode"][value="set"]');
+    set.checked = true;
+    set.dispatchEvent(new Event('change', { bubbles: true }));
+    for (const row of $$('.hrow[data-day]')) {
+      const day = row.dataset.day;
+      const weekday = !['sat', 'sun'].includes(day);
+      const sw = $('.switch', row);
+      sw.checked = weekday;
+      sw.dispatchEvent(new Event('change', { bubbles: true }));
+      if (!weekday) continue;
+      const [open, close] = [$(`[name="${day}_open"]`, row), $(`[name="${day}_close"]`, row)];
+      open.value = '08:00'; close.value = '17:00';
+      open.dispatchEvent(new Event('change', { bubbles: true }));
+      close.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    $('#hours h2')?.focus();
+  });
+}
+
 // ---------------------------------------------------------------- business name preview
 function initNamePreview() {
   const bubble = $('[data-name-preview]');
   const input = $('#business_name');
   if (!bubble || !input) return;
   const { template, suffix, savedName } = bubble.dataset;
+  const who = $('[data-name-who]');
   input.addEventListener('input', () => {
     const name = input.value.trim() || savedName;
-    bubble.textContent = norm(fill(template, { business_name: name }) + (suffix ? ` ${suffix}` : ''));
+    drawBubble(bubble, norm(fill(template, { business_name: name })), suffix || '', []);
+    if (who) who.textContent = name;
+  });
+}
+
+// ---------------------------------------------------------------- Phone: copy a code, the mobile status line
+const COPIED_MS = 2000;
+function initPhone() {
+  for (const button of $$('[data-copy]')) {
+    button.hidden = !navigator.clipboard;
+    button.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(button.dataset.copy); } catch { return; }
+      const label = $('[data-copy-label]', button);
+      label.textContent = COPY.copied;
+      announce(COPY.copied);
+      setTimeout(() => { label.textContent = COPY.copyCode; }, COPIED_MS);
+    });
+  }
+  const mobile = $('#owner_mobile');
+  const status = $('[data-mobile-status]');
+  if (!mobile || !status) return;
+  const fmt = v => {
+    let d = v.replace(/\D/g, '');
+    if (d.length === 11 && d[0] === '1') d = d.slice(1);
+    return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : '';
+  };
+  mobile.addEventListener('input', () => {
+    const now = fmt(mobile.value);
+    status.textContent = !now || now === mobile.dataset.savedMobile ? COPY.mobileSame : COPY.mobileChanged(now);
   });
 }
 
@@ -644,7 +765,8 @@ function initPicker(form = $('[data-picker]'), save = form && $('[data-picker-sa
 // ---------------------------------------------------------------- start
 const messagesForm = $('#messages-form');
 initCards(messagesForm);  // before the tracker, so a restored draft is drawn before it is counted
-for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initChangeTracking, initForms, initTel, initOtp, initPicker]) init();
+for (const init of [initTheme, initMenu, initNotices, initJump, initSwitchNotes, initSchedule, initChangeTracking, initForms, initTel, initOtp, initPicker]) init();
 initRail(messagesForm);
 initErrorFocus();
 initNamePreview();
+initPhone();

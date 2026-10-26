@@ -62,15 +62,6 @@
 </div>
 {%- endmacro %}
 
-{#- A toast floats once JS moves it into the region (JS drops role=status there: the announcer speaks it). -#}
-{% macro toast(text, kind="success", detail="") -%}
-<div class="notice notice--{{ kind }} toast" role=status data-toast data-kind={{ kind }}>
-  {{ icon("circle-check" if kind == "success" else "info", "notice__icon") }}
-  <p class=notice__text>{{ text }}{% if detail %} <span class=notice__detail>{{ detail }}</span>{% endif %}</p>
-  <button type=button class="icon-btn toast__close" data-toast-close hidden>{{ icon("x") }}<span class=vh>Dismiss</span></button>
-</div>
-{%- endmacro %}
-
 {% macro field_error(id, text) -%}
 <p class=field-error id={{ id }}>{{ icon("circle-alert") }}<span>{{ text }}</span></p>
 {%- endmacro %}

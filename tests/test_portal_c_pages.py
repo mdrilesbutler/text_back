@@ -1,6 +1,7 @@
 """Candidate C pages: Home truth, the Messages example conversation and notices, Schedule saves,
 Phone (read-only texting number, rename offer, checks, mobile two-step) and Calendar next steps."""
 import html
+from pathlib import Path
 import json
 import re
 from datetime import timedelta
@@ -117,7 +118,7 @@ def test_the_example_conversation_is_the_real_product_output_with_the_saved_text
         for b in expected:
             if b.side != "textback":
                 continue
-            words, links = split_links(b.text)
+            words, links = split_links(b.text, str(state.public_base_url))
             wanted.append((b.key or "", str(url_runs(words)), "" if links else " hidden",
                            "".join(f'<li><span class=sms__linkbtn title="{html.escape(url, quote=True)}">{label}</span></li>'
                                    for label, url in links)))
@@ -193,13 +194,13 @@ def schedule_form(csrf, **changes):
 def test_schedule_save_shows_the_pinned_confirmation_and_persists(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     page = client.get("/client/schedule").text
-    assert re.search(r"id=dur-60 value=60 checked>", page) and not re.search(r"id=dur-custom value=custom checked", page)
+    assert re.search(r"id=dur-60 value=60 checked[ >]", page) and not re.search(r"id=dur-custom value=custom checked", page)
     saved = client.post("/client/schedule", data=schedule_form(csrf, appointment_duration_minutes="90"))
     assert slot_text(saved.text) == SCHEDULE_SAVED.format(rules="Appointment length")
     state = client.app.state
     assert state.appointment_duration_minutes == 90 and state.store.setting("appointment_duration_minutes") == "90"
     page = client.get("/client/schedule").text
-    assert re.search(r"id=dur-90 value=90 checked>", page)
+    assert re.search(r"id=dur-90 value=90 checked[ >]", page)
     custom = client.post("/client/schedule", data=schedule_form(csrf, appointment_duration_minutes="custom",
                                                                appointment_duration_custom="75")).text
     assert state.appointment_duration_minutes == 75
@@ -222,12 +223,16 @@ def test_any_time_shows_the_warning_and_the_one_tap_hours_save_nothing(tmp_path,
     filled = client.post("/client/schedule", data=schedule_form(csrf, suggest_hours="1")).text
     assert client.app.state.store.setting("working_hours") is None  # filled in, not saved
     assert "name=hours_mode value=set checked" in filled and "id=open_mon name=open_mon value=1" in filled
-    assert re.search(r'id=open_mon name=open_mon value=1 aria-label="Open on Monday" checked', filled)
-    assert not re.search(r'id=open_sun name=open_sun value=1 aria-label="Open on Sunday" checked', filled)
-    assert "Unsaved changes" in filled
+    assert re.search(r"id=open_mon name=open_mon value=1 checked>", filled)
+    assert not re.search(r"id=open_sun name=open_sun value=1 checked>", filled)
+    assert "<span class=topsave__count>1 rule changed</span>" in filled and "data-dirty-initial" in filled
     client.post("/client/schedule", data=schedule_form(csrf, hours_mode="set", open_mon="1", mon_open="08:00", mon_close="17:00"))
     assert json.loads(client.app.state.store.setting("working_hours"))["mon"] == {"open": "08:00", "close": "17:00"}
-    assert "Customers can be offered times like 1 AM" not in text_of(client.get("/client/schedule"))
+    # Set hours are saved: the warning (shown by CSS only while "Any day, any time" is chosen) is off.
+    after = client.get("/client/schedule").text
+    assert "name=hours_mode value=set checked>" in after and "name=hours_mode value=any checked>" not in after
+    assert ".hours-card:has([name=\"hours_mode\"][value=\"set\"]:checked) :is(.any-warning" in \
+        (Path(__file__).resolve().parents[1] / "src/text_back/static/portal.css").read_text()
 
 
 # --- Phone ------------------------------------------------------------------------------
@@ -237,16 +242,18 @@ def test_phone_texting_number_is_read_only_text_and_posting_it_changes_nothing(t
     state = client.app.state
     state.business_number = TEXTING
     page = text_of(client.get("/client/phone"))
-    block = re.search(r"<div class=field data-texting-number>.*?</div>", page, re.S).group(0)
+    block = re.search(r"<div class=ro data-texting-number>.*?</div>", page, re.S).group(0)
     assert "(980) 555-0100" in block and "Set up by FluxWorks. It can't be changed here." in block
     assert "<input" not in block and "name=text_back_number" not in page and "name=texting_number" not in page
     client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care", "owner_mobile": OWNER,
                                        "text_back_number": "+19805550999", "texting_number": "+19805550999"})
     assert state.business_number == TEXTING and state.store.setting("text_back_number") is None
-    assert "**61*19805550100#" not in page  # no codes before a carrier is picked
+    # No carrier picked: the "pick your carrier" line shows and no carrier is checked (CSS shows the codes on a pick).
+    assert "data-codes-none>Pick your carrier to see the codes.</p>" in page and "name=carrier id=carrier-verizon value=verizon checked" not in page
     with_codes = text_of(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care",
                                                             "owner_mobile": OWNER, "carrier": "verizon"}))
-    assert "*719805550100" in with_codes and "Covers busy and no answer." in with_codes
+    assert 'data-copy="*719805550100"' in with_codes and "*71 980 555 0100" in with_codes  # dialled vs read
+    assert "Covers busy and no answer." in with_codes and "id=carrier-verizon value=verizon checked>" in with_codes
 
 
 def test_rename_offer_updates_the_texts_that_still_say_the_old_name(tmp_path, monkeypatch):
@@ -254,7 +261,9 @@ def test_rename_offer_updates_the_texts_that_still_say_the_old_name(tmp_path, mo
     client.post("/client/messages", data={"csrf": csrf, "prompt_name": "Oak & Pine Tree Care needs your name.",
                                           "intro": "Oak & Pine Tree Care missed you. What do you need?"})
     saved = text_of(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak and Pine", "owner_mobile": OWNER}))
-    assert 'Update 2 texts that still say "Oak & Pine Tree Care"' in saved and "Leave them" in saved
+    assert "2 texts still say “Oak & Pine Tree Care”. Update them to the new name?" in saved and "Leave them" in saved
+    assert "Saved. You changed “Business name”." in saved and saved.count("data-notice>") == 1  # one notice
+    assert "<span class=menu__biz>Oak and Pine</span>" in saved  # the header shows the new name
     assert client.get("/client/phone").text.count("data-rename-offer") == 1  # offered until answered
     done = text_of(client.post("/client/phone/rename-texts", data={"csrf": csrf, "action": "update"}))
     assert "Updated 2 texts." in done and "data-rename-offer" not in done
@@ -271,13 +280,13 @@ def test_checklist_ticks_persist_and_never_look_like_evidence(tmp_path, monkeypa
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     saved = text_of(client.post("/client/phone/checks", data={"csrf": csrf, "check_answered_no_text": "1"}))
     assert "Checks saved." in saved
-    step3 = re.search(r'<li class="check check--you_checked" data-check=3>.*?</li>', saved, re.S).group(0)
-    assert "You checked this" in step3 and "checked>" in step3
+    step3 = re.search(r'<li class="node node--manual" data-check=3>.*?\n</li>', saved, re.S).group(0)
+    assert "You checked this" in step3 and "checked>" in step3 and "I checked this" in step3
     page = text_of(client.get("/client/phone"))
-    assert "1 of 5 done" in page and re.search(r'class="check check--you_checked" data-check=3', page)
-    assert re.search(r'class="check check--not_yet" data-check=1', page)
+    assert "1 of 5 done" in page and re.search(r'class="node node--manual" data-check=3', page)
+    assert re.search(r'class="node node--todo" data-check=1', page)
     client.post("/client/phone/checks", data={"csrf": csrf})
-    assert re.search(r'class="check check--not_yet" data-check=3', client.get("/client/phone").text)
+    assert re.search(r'class="node node--todo" data-check=3', client.get("/client/phone").text)
 
 
 def test_forwarded_call_ticks_the_evidence_checks_on_the_page(tmp_path, monkeypatch):
@@ -287,18 +296,18 @@ def test_forwarded_call_ticks_the_evidence_checks_on_the_page(tmp_path, monkeypa
     client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "owner_mobile": OWNER,
                                        "business_line": "980 555 0177"})
     missed(state, "CA-direct", "+19805550141", clock[0] - timedelta(hours=1))  # straight to the texting number
-    assert re.search(r'class="check check--not_yet" data-check=1', client.get("/client/phone").text)
+    assert re.search(r'class="node node--todo" data-check=1', client.get("/client/phone").text)
     missed(state, "CA-fwd", "+19805550142", clock[0] - timedelta(minutes=10), forwarded_from=BUSINESS_LINE)
     page = client.get("/client/phone").text
     for n in (1, 2, 4):
-        assert re.search(rf'class="check check--done" data-check={n}', page), n
+        assert re.search(rf'class="node node--done" data-check={n}', page), n
 
 
 def test_owner_mobile_change_is_two_steps_and_keep_is_a_post(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     step = text_of(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak", "owner_mobile": "980 555 0199"}))
     assert "<h1>Confirm your new mobile</h1>" in step and "Saved. Now confirm your new mobile." in step
-    assert "We texted a six-digit code to (980) 555-0199." in step
+    assert "We texted a six-digit code to (980) 555-0199." in re.sub(r"<[^>]+>", "", step)  # the number sits in a no-wrap span
     assert "action=/client/phone/keep" in step and "Keep my current mobile" in step
     before = len([m for m in telecom.outbound if m.kind == "login_code"])
     client.post("/client/phone/confirm", data={"csrf": csrf, "action": "resend"})
@@ -315,15 +324,15 @@ def test_owner_mobile_change_is_two_steps_and_keep_is_a_post(tmp_path, monkeypat
 def test_calendar_not_connected_is_never_a_dead_end(tmp_path, monkeypatch):
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     page = text_of(client.get("/client/calendar"))
-    status = re.search(r"<section class=\"status.*?</section>", page, re.S).group(0)
+    status = re.search(r'<li class="node node--\w+" id=connection>.*?\n</li>', page, re.S).group(0)
     assert "No calendar yet" in status and "FluxWorks sets this up for you." in status  # who does the next step
     client.app.state.support_contact = "+19805550111"
-    status = re.search(r"<section class=\"status.*?</section>", text_of(client.get("/client/calendar")), re.S).group(0)
+    status = re.search(r'<li class="node node--\w+" id=connection>.*?\n</li>', text_of(client.get("/client/calendar")), re.S).group(0)
     assert 'href="sms:+19805550111" data-support>Text FluxWorks support</a>' in status
     view = {"provider": "google", "status": "none", "calendar_id": "", "can_connect": True}
     monkeypatch.setattr(client_settings, "calendar_status", lambda state: dict(view))
     monkeypatch.setattr(portal_status, "calendar_status", lambda state: dict(view))
-    status = re.search(r"<section class=\"status.*?</section>", text_of(client.get("/client/calendar")), re.S).group(0)
+    status = re.search(r'<li class="node node--\w+" id=connection>.*?\n</li>', text_of(client.get("/client/calendar")), re.S).group(0)
     assert "<input type=hidden name=action value=connect>" in status and "Connect Google Calendar" in status
 
 
@@ -331,7 +340,7 @@ def test_calendar_check_lists_free_times_inside_working_hours_on_the_test_calend
     client, telecom, clock, path, csrf = signed_in(tmp_path, monkeypatch)
     client.post("/client/schedule", data=schedule_form(csrf, hours_mode="set", open_tue="1", tue_open="09:00", tue_close="12:00"))
     result = text_of(client.post("/client/calendar", data={"csrf": csrf, "action": "check"}))
-    card = re.search(r"<section class=card aria-labelledby=avail-title data-availability>.*?</section>", result, re.S).group(0)
+    card = re.search(r'<li class="node node--icon" id=availability>.*?\n</li>', result, re.S).group(0)
     assert "Test calendar, not yours" in card and "These times are not from your calendar." in card
-    slots = re.findall(r"<li class=tnum>([^<]+)</li>", card)
-    assert slots == ["Tue, Oct 20, 9:00 AM", "Tue, Oct 20, 9:30 AM", "Tue, Oct 20, 10:00 AM"]
+    slots = [re.sub(r"<[^>]+>", "", li) for li in re.findall(r'<li class="slot tnum">(.*?)</li>', card)]
+    assert slots == ["Tue, Oct 20 · 9:00–10:00 AM", "Tue, Oct 20 · 9:30–10:30 AM", "Tue, Oct 20 · 10:00–11:00 AM"]

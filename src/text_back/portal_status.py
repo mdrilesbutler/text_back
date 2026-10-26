@@ -74,8 +74,10 @@ def setup_items(state, now: datetime) -> list[dict]:
     checks = checklist(state, now)
     if checks["all_done"]:
         first = next(s for s in checks["steps"] if s["n"] == 1)
+        tz = getattr(state, "timezone_name", "UTC") or "UTC"
         items.append(dict(key="forwarding", title="Call forwarding", state_word="Done",
-                          detail=first["evidence"], action_label="Open Phone", action_href="/client/phone"))
+                          detail=f"A forwarded call reached TextBack on {when(first['at'], tz, now, relative=False)}.",
+                          action_label="Open Phone", action_href="/client/phone"))
     else:
         items.append(dict(key="forwarding", title="Call forwarding", state_word="Needs you",
                           detail=f"{checks['done_count']} of {checks['total']} checks done.",
@@ -98,6 +100,14 @@ def node_kind(state_word: str) -> str:
     """Done -> filled tick; Needs you -> amber "!"; anything else (waiting on the phone companies, not
     started, couldn't check) -> clock, the same reading the first line gives it."""
     return {"Done": NODE_DONE, "Needs you": NODE_NEEDS}.get(state_word, NODE_WAITING)
+
+
+def headline_example(items: list[dict]) -> bool:
+    """True when the first line's count rests on a setup card the preview harness flagged as example data:
+    the "Needs you" cards when any, otherwise the cards that are not Done, otherwise all of them."""
+    needs = [i for i in items if i["state_word"] == "Needs you"]
+    counted = needs or [i for i in items if i["state_word"] != "Done"] or items
+    return any(i.get("example") for i in counted)
 
 
 def headline_kind(items: list[dict]) -> str:

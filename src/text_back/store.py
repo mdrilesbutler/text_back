@@ -180,7 +180,7 @@ class Store:
         self.conn.execute("""CREATE TABLE IF NOT EXISTS client_sessions (
             token_hash TEXT PRIMARY KEY, csrf TEXT NOT NULL, phone TEXT NOT NULL,
             expires_at TEXT NOT NULL, created_at TEXT NOT NULL, pending INTEGER NOT NULL DEFAULT 0)""")
-        # Sessions created before "Remember this phone for 30 days" lack the remember flag.
+        # Sessions created before "Remember this device for 30 days" lack the remember flag.
         columns = {row[1] for row in self.conn.execute("PRAGMA table_info(client_sessions)")}
         if "remember" not in columns:
             self.conn.execute("ALTER TABLE client_sessions ADD COLUMN remember INTEGER NOT NULL DEFAULT 0")

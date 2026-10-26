@@ -5,7 +5,7 @@ or the saved owner mobile); if it matches, a six-digit code is texted to that nu
 nothing else. A code lives ten minutes and allows five guesses; three sign-in requests per
 number per 15 minutes and ten per rolling 24 hours, counted for ANY number so the notice never
 reveals which number is on file. Every code carries its purpose ("sign-in" or "new mobile")
-and is only accepted for it, and /client/verify only ever signs in the owner's number. A session lasts 12 hours, or 30 days when the owner ticks "Remember this phone".
+and is only accepted for it, and /client/verify only ever signs in the owner's number. A session lasts 12 hours, or 30 days when the owner ticks "Remember this device".
 
 Every page is server-rendered from templates/client through portal_render.render(): one
 stylesheet, one ES module, a strict CSP, CSRF on every POST, and pages that work with
@@ -57,8 +57,8 @@ SIGNED_OUT_EVERYWHERE = "Signed out everywhere."
 LOGIN_NOTICES = {"ended": SESSION_ENDED, "everywhere": SIGNED_OUT_EVERYWHERE}
 # The notice style on the sign-in page: a finished action reads as success, the rest as information.
 NOTICE_KINDS = {SIGNED_OUT_EVERYWHERE: "success"}
-REMEMBER_ON = "On. This phone stays signed in for 30 days."
-REMEMBER_OFF = "Off. This phone signs out after 12 hours."
+REMEMBER_ON = "On. This device stays signed in for 30 days."
+REMEMBER_OFF = "Off. This device signs out after 12 hours."
 SAVED = "Saved."
 
 NAV: tuple[tuple[str, str], ...] = (("home", "Home"), ("messages", "Messages"), ("schedule", "Schedule"),
@@ -289,6 +289,7 @@ def account_view(state, session, *, confirm_everywhere: bool = False) -> dict:
         "other_devices": others,
         "remember": remember,
         "remember_status": REMEMBER_ON if remember else REMEMBER_OFF,
+        "remember_on": REMEMBER_ON, "remember_off": REMEMBER_OFF,
         "confirm_everywhere": confirm_everywhere,
     }
 
@@ -326,6 +327,9 @@ def _save_messages(request: Request, state, session, form):
         # Discard without JavaScript (after a rejected save): back to what is saved; nothing is written.
         return _messages_page(request, state, session, notice=portal_messages.DISCARDED)
     submitted, overrides, asked = portal_messages.read_form(form)
+    unknown = portal_messages.unknown_insert(submitted)
+    if unknown:  # a [ … ] that is no insert: refused like any rejected save, nothing is written
+        return _messages_page(request, state, session, error=unknown, values=submitted, asked=asked)
     with MESSAGE_FILE_LOCK:  # one portal writer at a time: read, write, re-read as a unit
         before = state.messages.current()
         try:

@@ -1,5 +1,5 @@
 {#- Account (mockup d1): who is signed in, the remembered devices from the session table with
-    "Remember this phone" in the same card, then Sign out and Sign out everywhere. Sign out everywhere
+    "Remember this device" in the same card, then Sign out and Sign out everywhere. Sign out everywhere
     confirms in place (a disclosure, never a modal); without JavaScript the first POST opens it. -#}
 {% extends "client/base.html.j2" %}
 {% from "client/_macros.html.j2" import icon, csrf_input, button, node %}
@@ -14,11 +14,11 @@
     <form method=post action=/client/account/remember class=card id=account-form aria-labelledby=devices-title data-track-changes>
       {{ csrf_input(csrf) }}
       <ul class=devices>
-        <li class="device device--current" data-device=this>{{ icon("smartphone") }}<span class=tnum>{{ ("This phone · signed in " ~ this_device.signed_in|when(tz, now, relative=False) ~ " · stays signed in until " ~ (this_device.until|when(tz, now, relative=False) if this_device.until_today else this_device.until|day(tz)))|nw }}</span></li>
+        <li class="device device--current" data-device=this>{{ icon("smartphone") }}<span class=tnum>{{ ("This device · signed in " ~ this_device.signed_in|when(tz, now, relative=False) ~ " · stays signed in until " ~ (this_device.until|when(tz, now, relative=False) if this_device.until_today else this_device.until|day(tz)))|nw }}</span></li>
         {% for d in other_devices %}<li class=device data-device=other>{{ icon("smartphone") }}<span class=tnum>{{ ("Another device · last used " ~ d.last_used|when(tz, now, relative=False))|nw }}{% if d.example %} <span class=extag>Example</span>{% endif %}</span></li>{% endfor %}
       </ul>
-      {% if not other_devices %}<p class=field-help>Only this phone is signed in.</p>{% endif %}
-      <label class=switch-row for=remember><span class=switch-row__text>Remember this phone for 30 days</span><input type=checkbox role=switch class=switch id=remember name=remember value=1{% if remember %} checked{% endif %} aria-describedby=remember-status data-note-on="On. This phone stays signed in for 30 days." data-note-off="Off. This phone signs out after 12 hours."></label>
+      {% if not other_devices %}<p class=field-help>Only this device is signed in.</p>{% endif %}
+      <label class=switch-row for=remember><span class=switch-row__text>Remember this device for 30 days</span><input type=checkbox role=switch class=switch id=remember name=remember value=1{% if remember %} checked{% endif %} aria-describedby=remember-status data-note-on="{{ remember_on }}" data-note-off="{{ remember_off }}"></label>
       <p class=field-help id=remember-status data-remember-status>{{ remember_status }}</p>
       {#- Resting Save: visibly off (aria-disabled, so it still posts without JS); the first edit turns it on. #}
       <div class="actions actions--rest"><button type=submit class="btn btn--primary" form=account-form aria-disabled=true data-loading="Saving…" data-rest-save>Save</button><span class=savebar__rest data-rest-status>No unsaved changes</span></div>

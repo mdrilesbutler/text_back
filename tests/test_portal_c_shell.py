@@ -119,7 +119,7 @@ def test_every_post_form_carries_the_csrf_token(tmp_path, monkeypatch):
         assert re.findall(r"<form method=get action=(\S+)", page) in ([], ["/client/messages#example"])
         assert not re.search(r"<form(?! method=(?:post|get) )", page)
     assert {"/client/logout", "/client/messages", "/client/schedule", "/client/calendar", "/client/phone",
-            "/client/phone/checks", "/client/phone/confirm", "/client/phone/keep", "/client/account/remember",
+            "/client/phone/confirm", "/client/phone/keep", "/client/account/remember",
             "/client/account/signout-everywhere"} <= actions
 
 
@@ -158,9 +158,9 @@ def test_account_page_has_sign_out_everywhere_and_remember(tmp_path, monkeypatch
     page = html.unescape(client.get("/client/account").text)
     shown = re.sub(r"<[^>]+>", "", page)  # dates and times sit in no-wrap spans
     assert "<h1>Account</h1>" in page and "Signed in as" in page and "(980) 555-0123" in page
-    assert "Remember this phone for 30 days" in page and "Off. This phone signs out after 12 hours." in page
-    assert "Only this phone is signed in." in page and "Sign out everywhere" in page
-    assert "This phone · signed in Mon, Oct 19, 3:00 PM · stays signed in until Tue, Oct 20, 3:00 AM" in shown
+    assert "Remember this device for 30 days" in page and "Off. This device signs out after 12 hours." in page
+    assert "Only this device is signed in." in page and "Sign out everywhere" in page
+    assert "This device · signed in Mon, Oct 19, 3:00 PM · stays signed in until Tue, Oct 20, 3:00 AM" in shown
 
 
 def test_remember_toggles_expiry(tmp_path, monkeypatch):
@@ -168,14 +168,14 @@ def test_remember_toggles_expiry(tmp_path, monkeypatch):
     sign_in(client, telecom)
     csrf = csrf_of(client.get("/client/account").text)
     on = client.post("/client/account/remember", data={"csrf": csrf, "remember": "1"})
-    assert "On. This phone stays signed in for 30 days." in html.unescape(on.text)
+    assert "On. This device stays signed in for 30 days." in html.unescape(on.text)
     assert "max-age=2592000" in on.headers["set-cookie"].lower()
     row = client.app.state.store.conn.execute("SELECT remember, expires_at FROM client_sessions WHERE pending=0").fetchone()
     assert row["remember"] == 1 and datetime.fromisoformat(row["expires_at"]) == clock[0] + timedelta(days=30)
     clock[0] += timedelta(hours=13)
     assert client.get("/client/home").status_code == 200  # past the 12-hour session, still signed in
     off = client.post("/client/account/remember", data={"csrf": csrf})
-    assert "Off. This phone signs out after 12 hours." in html.unescape(off.text)
+    assert "Off. This device signs out after 12 hours." in html.unescape(off.text)
     clock[0] += timedelta(hours=13)
     assert client.get("/client/home", follow_redirects=False).headers["location"].startswith("/client/login")
 
@@ -184,7 +184,7 @@ def test_remember_at_sign_in_keeps_the_phone_for_30_days(tmp_path, monkeypatch):
     client, telecom, clock, _ = make(tmp_path, monkeypatch)
     client.post("/client/login", data={"mobile": OWNER}, follow_redirects=False)
     verify = client.get("/client/verify").text
-    assert "Remember this phone for 30 days" in verify and "name=remember value=1" in verify
+    assert "Remember this device for 30 days" in verify and "name=remember value=1" in verify
     code, _ = code_from(telecom)
     response = client.post("/client/verify", data={"code": code, "remember": "1"}, follow_redirects=False)
     assert response.headers["location"] == "/client/home" and "max-age=2592000" in response.headers["set-cookie"].lower()
@@ -198,7 +198,7 @@ def test_signout_everywhere_kills_other_sessions_after_an_inline_confirm(tmp_pat
     sign_in(client, telecom)
     sign_in(other, telecom)
     page = html.unescape(client.get("/client/account").text)
-    assert "Another device · last used Mon, Oct 19, 3:00 PM" in re.sub(r"<[^>]+>", "", page) and "Only this phone is signed in." not in page
+    assert "Another device · last used Mon, Oct 19, 3:00 PM" in re.sub(r"<[^>]+>", "", page) and "Only this device is signed in." not in page
     csrf = csrf_of(page)
     ask = html.unescape(client.post("/client/account/signout-everywhere", data={"csrf": csrf}).text)
     assert "Sign out of every device? You'll need a new code on each one." in ask and "Stay signed in" in ask

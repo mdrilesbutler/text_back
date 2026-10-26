@@ -227,7 +227,7 @@ def test_account_lists_this_phone_and_other_devices_with_their_last_use(tmp_path
     assert "<li class=\"device device--current\" data-device=this>" in devices
     devices = re.sub(r"<[^>]+>", "", devices)
     # A 12-hour session ends within a day, so its end carries the time as well as the day.
-    assert "This phone · signed in Mon, Oct 19, 3:20 PM · stays signed in until Tue, Oct 20, 3:20 AM" in devices
+    assert "This device · signed in Mon, Oct 19, 3:20 PM · stays signed in until Tue, Oct 20, 3:20 AM" in devices
     assert "Another device · last used Mon, Oct 19, 3:00 PM" in devices
     clock[0] += timedelta(hours=2)
     assert other.get("/client/home").status_code == 200  # the other device is used again
@@ -277,7 +277,7 @@ def test_account_save_rests_until_something_changes(tmp_path, monkeypatch):
     assert re.search(r'<button type=submit class="btn btn--primary" form=account-form aria-disabled=true[^>]*>Save</button>', form)
     assert "<span class=savebar__rest data-rest-status>No unsaved changes</span>" in form
     remembered = client.post("/client/account/remember", data={"csrf": csrf_of(page), "remember": "1"})
-    assert "On. This phone stays signed in for 30 days." in html.unescape(remembered.text)  # still posts without JS
+    assert "On. This device stays signed in for 30 days." in html.unescape(remembered.text)  # still posts without JS
     devices = re.sub(r"<[^>]+>", "", re.search(r"<ul class=devices>.*?</ul>", remembered.text, re.S).group(0))
     assert "stays signed in until Wed, Nov 18" in html.unescape(devices) and "Nov 18," not in html.unescape(devices)
 

@@ -71,6 +71,8 @@ ERR_EXPIRY = "The waiting time must be between 1 hour and 30 days."
 # The save notice names only the rules that changed (deck schedule_toast); "Saved." when none did.
 SAVED = "Saved. You changed “{rules}”. It applies now, including customers mid-conversation."
 SAVED_NOTHING = "Saved."
+# Added when a reminder delay is among the changed rules (pinned by test_saved_reminder_delays_*).
+SAVED_REMINDERS = "; reminders already scheduled keep their time."
 CORRUPT_HOURS = "Your saved working hours couldn't be read, so every time counts as open until you save again."
 ANY_TIME_WARNING = "Customers can be offered times like 1 AM. Set your hours."
 ANY_TIME_BUTTON = "Use Mon–Fri, 8 AM–5 PM"
@@ -88,6 +90,19 @@ LABELS = {
     "followup_delay_2": "Send the last reminder after another",
     "followup_expiry_minutes": "Stop waiting for a reply after",
 }
+# Under each rule BEFORE saving (deck *_applies). Each claim is pinned to engine behaviour in
+# tests/test_portal_scheduling.py (test_save_confirmation_matches_live_behaviour, *_timezone_*, *_quiet_*, *_hours_*).
+APPLIES = {
+    "appointment_duration_minutes": "Applies right away, including customers mid-conversation.",
+    "timezone": "Applies right away to the times in texts.",
+    "working_hours": "Applies right away to times the assistant offers. Bookings already made stay as they are.",
+    "quiet_hours": "Applies right away to reminders not yet sent.",
+}
+ANY_TIME_NOTE = "Sets Mon–Fri, 8 AM–5 PM below. Tap Save to keep it."
+QUIET_LEGEND, QUIET_AND, QUIET_SWITCH, QUIET_OFF = "Hold reminders between", "and", "Quiet hours", "Off. Texts may go out at any hour."
+DAY_WORDS = ("Open", "Closed")
+CHANGED_ONE, CHANGED_MANY = "1 rule changed", "{n} rules changed"
+
 # What changing each rule does, by field; working hours depend on the mode (HOURS_HINTS).
 CONSEQUENCES = {
     "appointment_duration_minutes": "Used for new bookings. 15 to 480 minutes, in steps of 5.",
@@ -98,6 +113,11 @@ CONSEQUENCES = {
     "followup_delay_2": "A reminder that is already scheduled keeps its time. Later reminders use the new delays.",
     "followup_expiry_minutes": 'Counted from the last reminder. The customer is marked "No reply" on Home.',
 }
+
+# Rule -> the element id its changed-item link points at (the header save bar and the desktop bar).
+ANCHORS = {"appointment_duration_minutes": "rule-duration", "timezone": "rule-timezone", "working_hours": "hours",
+           "quiet_hours": "quiet_hours", "followup_delay_1": "rule-followup_delay_1",
+           "followup_delay_2": "rule-followup_delay_2", "followup_expiry_minutes": "rule-followup_expiry_minutes"}
 
 # Page order, used to pick the "first reason" for the top flash.
 FIELD_ORDER = ("appointment_duration_minutes", "timezone", "hours_mode", "hours",
@@ -393,7 +413,12 @@ def changed_rules(before: dict, after: dict) -> list[str]:
 
 def saved_notice(before: dict, after: dict) -> str:
     rules = changed_rules(before, after)
-    return SAVED.format(rules="”, “".join(rules)) if rules else SAVED_NOTHING
+    if not rules:
+        return SAVED_NOTHING
+    notice = SAVED.format(rules="”, “".join(rules))
+    if {LABELS["followup_delay_1"], LABELS["followup_delay_2"]} & set(rules):
+        notice = notice[:-1] + SAVED_REMINDERS
+    return notice
 
 
 def reset_form(form, group: str, state) -> dict | None:
@@ -457,6 +482,8 @@ def page_context(state, values: dict, errors: dict | None = None) -> dict:
         "suggested_hours": {day: (dict(window) if window else None) for day, window in SUGGESTED_HOURS.items()},
         "raw_defaults": raw,
         "hours_hints": HOURS_HINTS,
+        "applies": APPLIES,
+        "any_time_note": ANY_TIME_NOTE,
     }
 
 

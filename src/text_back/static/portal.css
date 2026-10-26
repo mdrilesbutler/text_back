@@ -694,24 +694,10 @@
   .error-summary .notice__body { gap: var(--space-2); }
   .error-summary:focus-visible { outline-color: var(--danger-fg); outline-offset: var(--focus-off); }
 
-  /* ---- toast (inline without JS; floats in the region once JS moves it there) ---- */
+  /* ---- toast: an in-flow notice with a close button (never floating) ---- */
   .toast { grid-template-columns: 20px minmax(0, 1fr) auto; }
-  .toast-region {
-    position: fixed; z-index: var(--z-toast);
-    top: calc(env(safe-area-inset-top) + var(--header-h) + var(--space-2)); left: var(--gutter); right: var(--gutter);
-    display: grid; justify-items: stretch; pointer-events: none;
-  }
-  .toast--floating {
-    pointer-events: auto; align-items: center; padding: var(--space-3) var(--space-2) var(--space-3) var(--space-4);
-    background: var(--raised); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-bar);
-    animation: tb-toast-in var(--dur-slow) var(--ease-out);
-  }
   .toast { grid-auto-flow: column; grid-auto-columns: auto; }
-  .toast--floating { transition: opacity var(--dur-base) var(--ease-in), transform var(--dur-base) var(--ease-in); }
-  .toast--floating[data-leaving] { opacity: 0; transform: translateY(-8px); }
   .toast__action { min-height: var(--tap); }
-  @keyframes tb-toast-in { from { opacity: 0; transform: translateY(-8px); } }
-  @media (min-width: 1024px) { .toast-region { left: auto; right: var(--space-6); width: 25rem; } }
 
   /* ---- account menu ---- */
   .menu { position: relative; flex: none; margin-left: auto; }
@@ -1260,7 +1246,6 @@
 
   /* Components drawn in place: no stickiness, no popover offset, no entrance animation. */
   .sg-panel .savebar { position: static; margin-top: 0; animation: none; }
-  .sg-panel .toast--floating { animation: none; }
   .sg-menu { position: static; width: min(18rem, 100%); animation: none; }
   .sg-panel .rail { position: static; display: block; max-height: none; margin-top: 0; padding-top: 0; border-top: 0; }
   .sg-panel .phone__log { flex: none; height: 26rem; overflow-y: auto; overscroll-behavior: contain; }
@@ -1322,7 +1307,6 @@
     }
     .spin { animation: none; }
     .skeleton { background-image: none; }
-    .toast--floating[data-leaving] { transform: none; }
   }
 }
 
@@ -1821,4 +1805,48 @@
     .phone__log { padding-bottom: 3.5rem; scroll-padding-bottom: 3.5rem; }
     .rail { max-height: calc(100dvh - var(--header-h) - 2rem); }
   }
+}
+@layer app {
+  /* Schedule: the working-hours mode, day switches and the quiet-hours switch show their parts live
+     (no JavaScript) through :has(); every field still posts. */
+  .hours-card:has([name="hours_mode"][value="any"]:checked) :is(.hours, .hint--set) { display: none; }
+  .hours-card:has([name="hours_mode"][value="set"]:checked) :is(.any-warning, .hint--any) { display: none; }
+  .hrow:has(.switch:not(:checked)) { grid-template-columns: minmax(0, 1fr); }
+  .hrow:has(.switch:not(:checked)) :is(.hrow__times, .hrow__word--on) { display: none; }
+  .hrow:has(.switch:checked) .hrow__word--off { display: none; }
+  .quiet-card:has(#quiet_on:not(:checked)) .quiet-times { display: none; }
+  .quiet-card:has(#quiet_on:checked) .quiet-off { display: none; }
+  .any-warning .notice__body { display: grid; gap: var(--space-2); }
+  .card--form .field-error { margin-top: var(--space-1); }
+}
+@layer app {
+  /* Phone: the chosen carrier's codes show live (no JavaScript); none until a carrier is picked. */
+  .codes-wrap { display: none; }
+  .carrier-card:has(#carrier-verizon:checked) [data-codes="verizon"],
+  .carrier-card:has(#carrier-tmobile:checked) [data-codes="tmobile"],
+  .carrier-card:has(#carrier-att:checked) [data-codes="att"],
+  .carrier-card:has(#carrier-cricket:checked) [data-codes="cricket"],
+  .carrier-card:has(#carrier-other:checked) [data-codes="other"] { display: grid; }
+  .carrier-card:has([name="carrier"]:checked) [data-codes-none] { display: none; }
+  /* The evidence note lines up with the cards, not the spine. */
+  .spine__label--foot { column-gap: var(--spine-gap); }
+  .spine__label--foot > * { grid-column: 2; }
+  .check .switch-row { margin-top: var(--space-1); }
+}
+@layer app {
+  /* Calendar: Reconnect is a post styled as a link; "Use a different calendar" opens the picker in place. */
+  .linkbtn { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0; border: 0; background: none;
+    color: var(--accent); font: var(--fw-semibold) var(--fs-small)/var(--lh-small) var(--font-body);
+    text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .status__link { justify-self: start; }
+  .picker { display: grid; gap: var(--space-3); }
+  .picker__summary { justify-self: start; list-style: none; }
+  .picker__summary::-webkit-details-marker { display: none; }
+  .picker[open] .picker__summary { --_bg: var(--sunken); }
+  .card.status { display: grid; gap: var(--space-3); }
+  .steps-list { margin: 0; padding: 0; list-style: none; }
+}
+@layer app {
+  /* Replace is local with JavaScript (like Reset); without it the button saves and says so. */
+  :where(.js) .msg__fix-nojs, :where(.no-js) .msg__fix-js { display: none; }
 }

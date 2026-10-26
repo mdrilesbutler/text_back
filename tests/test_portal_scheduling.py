@@ -89,7 +89,8 @@ def _deck_section(title: str) -> list[str]:
 def test_every_user_facing_string_is_in_the_copy_deck():
     deck = _deck_section("5. Schedule")
     bracketed = [re.sub(r"\[[^\]]*\]", "{}", cell) for cell in deck]
-    for text in (ps.CORRUPT_HOURS, ps.ANY_TIME_WARNING, ps.ANY_TIME_BUTTON, ps.ERR_DURATION, ps.ERR_TIMEZONE,
+    for text in (*ps.APPLIES.values(), ps.ANY_TIME_NOTE, ps.QUIET_LEGEND, ps.QUIET_OFF, *ps.DAY_WORDS,
+                 ps.CORRUPT_HOURS, ps.ANY_TIME_WARNING, ps.ANY_TIME_BUTTON, ps.ERR_DURATION, ps.ERR_TIMEZONE,
                  ps.ERR_MODE, ps.ERR_NO_DAYS, ps.ERR_TIMES, ps.ERR_QUIET, ps.ERR_REMINDERS, ps.ERR_EXPIRY,
                  *ps.HOURS_HINTS.values(), *ps.CONSEQUENCES.values(), *ps.LABELS.values()):
         assert text in deck, text
@@ -117,6 +118,14 @@ def test_save_notice_names_only_the_rules_that_changed(tmp_path, monkeypatch):
     saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00",
                             hours_mode="set"))
     assert ps.changed_rules(again, ps.current_values(state)) == ["Working hours"]
+    # A reminder delay among the changes: the notice says scheduled reminders keep their time
+    # (pinned to the engine by test_save_confirmation_matches_live_behaviour).
+    before = ps.current_values(state)
+    saved(state, valid_form(appointment_duration_minutes="90", quiet_hours_start="22:00", quiet_hours_end="06:00",
+                            hours_mode="set", followup_delay_1="240"))
+    assert ps.saved_notice(before, ps.current_values(state)) == (
+        "Saved. You changed “If there's no reply, send a reminder after”. It applies now, including customers "
+        "mid-conversation; reminders already scheduled keep their time.")
 
 
 # --- defaults and the page context --------------------------------------------------
@@ -295,6 +304,33 @@ def test_saved_timezone_changes_how_a_preferred_time_is_read(tmp_path, monkeypat
     event = state.calendar.events[result["event_id"]]
     assert event["start"].utcoffset() == timedelta(hours=-5)  # CDT, not UTC
     assert "2:00 PM CDT" in telecom.outbound[-1].body
+
+
+def test_saved_hours_leave_bookings_already_made_as_they_are(tmp_path, monkeypatch):
+    """APPLIES["working_hours"]: "Bookings already made stay as they are"."""
+    state, telecom, _ = build(tmp_path, monkeypatch)
+    saturday = datetime(2026, 10, 24, 14, 0, tzinfo=timezone.utc)
+    book_appointment(calendar=state.calendar, store=state.store, telecom=telecom, caller=CALLER,
+                     business_number=state.business_number, service="tree removal", location="12 Oak St",
+                     customer_name="Dana", business_name=state.business_name, timezone_name="America/New_York",
+                     start=saturday, duration_minutes=60, conversation_id=CALLER, now=NOW)
+    booked = dict(state.store.appointment_by_conversation(CALLER))
+    saved(state, valid_form(hours_mode="set"))  # Saturday is now closed
+    assert dict(state.store.appointment_by_conversation(CALLER)) == booked
+    assert booked["event_id"] in state.calendar.events
+
+
+def test_saved_quiet_hours_hold_a_reminder_scheduled_before_the_save(tmp_path, monkeypatch):
+    """APPLIES["quiet_hours"]: "Applies right away to reminders not yet sent"."""
+    state, telecom, _ = build(tmp_path, monkeypatch)
+    intro_at = datetime(2026, 10, 20, 15, 30, tzinfo=timezone.utc)  # 11:30 EDT; first reminder due 13:30 EDT
+    schedule_followup_sequence(store=state.store, policy=state.followup_policy, phone=CALLER, call_sid="CA-pre", now=intro_at)
+    saved(state, valid_form(quiet_hours_start="13:00", quiet_hours_end="14:00"))  # after it was scheduled
+    actions = run_due_followups(store=state.store, telecom=telecom, policy=state.followup_policy,
+                                business_name=state.business_name, business_number=state.business_number,
+                                now=intro_at + timedelta(minutes=120))
+    assert [a["action"] for a in actions] == ["followup_deferred"]
+    assert not [m for m in telecom.outbound if m.kind == "followup"]
 
 
 def test_set_hours_are_enforced_on_the_next_booking(tmp_path, monkeypatch):
