@@ -68,6 +68,9 @@ class Store:
             )
             """
         )
+        # Appointments booked before the Schedule page lack their own end time (guarded migration).
+        if "end" not in {row[1] for row in self.conn.execute("PRAGMA table_info(appointments)")}:
+            self.conn.execute("ALTER TABLE appointments ADD COLUMN end TEXT")
         self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS handoffs (
@@ -307,15 +310,16 @@ class Store:
         start: str,
         location: str,
         service: str,
+        end: str | None = None,
     ) -> None:
         now = datetime.now(timezone.utc).isoformat()
         self.conn.execute(
             """
             INSERT INTO appointments
-                (conversation_id, event_id, caller, start, location, service, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (conversation_id, event_id, caller, start, end, location, service, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (conversation_id, event_id, caller, start, location, service, now),
+            (conversation_id, event_id, caller, start, end, location, service, now),
         )
         self._commit()
 

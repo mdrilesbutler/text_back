@@ -240,6 +240,7 @@ def create_app(
         from_number: str = Form(alias="From"),
         to_number: str = Form(alias="To"),
         direction: str = Form(default="", alias="Direction"),
+        forwarded_from: str = Form(default="", alias="ForwardedFrom"),
         x_twilio_signature: str | None = Header(default=None, alias="X-Twilio-Signature"),
         x_signalwire_signature: str | None = Header(
             default=None, alias="X-SignalWire-Signature"
@@ -272,7 +273,8 @@ def create_app(
                 content = empty_response()
             return Response(content=content, media_type='application/xml')
         result = await asyncio.to_thread(submit_event, state=app.state, kind='voice',
-            params=dict(call_sid=call_sid, call_status=call_status, from_number=from_number, to_number=to_number))
+            params=dict(call_sid=call_sid, call_status=call_status, from_number=from_number, to_number=to_number,
+                        forwarded_from=forwarded_from))
         result.update({"call_sid": call_sid, "call_status": call_status, "direction": direction})
         if request.app.state.telecom.provider_name == "signalwire":
             content = (

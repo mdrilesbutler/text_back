@@ -57,6 +57,7 @@ def handle_voice_event(
     followup_policy: FollowupPolicy | None = None,
     now: datetime | None = None,
     messages: MessageSet | None = None,
+    forwarded_from: str = "",
 ) -> dict:
     # "managed": our number is the client's own number, so only a terminal
     # unanswered status (no-answer/busy/failed/canceled) is a missed call.
@@ -72,7 +73,9 @@ def handle_voice_event(
         occurred_at=(now or datetime.now(timezone.utc)).isoformat(),
         idempotency_key=f"call:{call_sid}:missed",
         evidence_id=call_sid,
-        metadata={"wiring_mode": wiring_mode},
+        # ForwardedFrom is the line the carrier forwarded this call from (empty on a direct call).
+        # The owner portal's forwarding checks tick only from this evidence.
+        metadata={"wiring_mode": wiring_mode, "forwarded_from": forwarded_from or ""},
     )
     if store.is_opted_out(from_number):
         return {"accepted": True, "action": "suppressed", "reason": "opted_out"}

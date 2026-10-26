@@ -108,7 +108,8 @@ def install_routes(app):
         appointment = dict(row)
         start = _utc(appointment["start"])
         appointment["start_utc"] = start
-        appointment["end_utc"] = start + timedelta(minutes=state.appointment_duration_minutes)
+        stored_end = appointment.get("end")
+        appointment["end_utc"] = _utc(stored_end) if stored_end else start + timedelta(minutes=state.appointment_duration_minutes)
         appointment["summary"] = f"{state.business_name}: {appointment['service']}"
         appointment["description"] = f"Booked by text with {state.business_name}'s scheduling assistant."
         return appointment
