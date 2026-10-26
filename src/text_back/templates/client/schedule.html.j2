@@ -93,7 +93,7 @@
   <section class="card card--form" aria-labelledby=reminders-title>
     <h2 class=card__title id=reminders-title>Reminders</h2>
     <p class=card__sub>Two reminders when a customer never replies to the first text. After that the assistant stops texting.</p>
-    {% for key, options in (("followup_delay_1", delay1_options), ("followup_delay_2", delay2_options), ("followup_expiry_minutes", expiry_options)) %}
+    {% for key, options in (("followup_delay_1", delay1_options), ("followup_delay_2", delay2_options), ("followup_expiry_minutes", expiry_options)) if not (key == "followup_delay_2" and reminder_count == 1) %}
     <div class=field>
       <label class=field__label for={{ key }}>{{ labels[key] }}</label>
       <span class=select><select class=select__input id={{ key }} name={{ key }}{% if key == "followup_expiry_minutes" %} aria-describedby=expiry-hint{% endif %}>{{ opts(options, values[key]) }}</select></span>

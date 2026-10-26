@@ -1,7 +1,15 @@
 """No plumbing words, no braces and no hosts on any /client screen, in every state the fixtures reach.
 
 The scan reads what an owner can see or hear: text nodes (hidden ones included, so a state JS reveals is
-covered too) plus aria-label and placeholder values. Scripts, styles and the icon sprite are dropped.
+covered too), aria-label, title and placeholder values, and every string value inside a
+<script type="application/json"> block (the data the page script renders). Other scripts, styles and the
+icon sprite are dropped. In the JSON, the ``gsm`` and ``ext`` character tables are skipped: they are
+alphabets for the length counter (the extended one holds braces), never words on screen.
+
+One designed exception: a TextBack calendar link (``<base>/a/<ref>`` and its ``/g`` ``/o`` ``/i``
+forms) is allowed in a title= value and in the JSON sample, because copy deck row ``link_labels``
+says "the full link shows on tap". It is read as the words "calendar link". Any other URL or host
+in those places still fails.
 """
 import html
 import json
@@ -19,13 +27,39 @@ BANNED = ("SignalWire", "text_back", "campaign", "brand", "10DLC", "registration
 HOSTS = re.compile(r"ts\.net|localhost|127\.0\.0\.1|://|(?<!\d):8\d|:8443|:8765|:8003|:8766", re.I)
 
 
+JSON_SKIP = {"gsm", "ext"}
+CALENDAR_LINK = re.compile(r"https?://\S+?/a/[\w-]+(?:/[goi])?(?![\w/-])")
+
+
+def _designed_links(text: str) -> str:
+    return CALENDAR_LINK.sub("calendar link", text)
+ATTRIBUTE = re.compile(r"""(?<![\w-])(?:aria-label|placeholder|title)=(?:"([^"]*)"|'([^']*)'|([^\s>"']+))""")
+JSON_BLOCK = re.compile(r"""(?is)<script\b[^>]*\btype=["']?application/json["']?[^>]*>(.*?)</script>""")
+
+
+def _json_strings(value, key=None):
+    if key in JSON_SKIP:
+        return
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from _json_strings(v, k)
+    elif isinstance(value, list):
+        for v in value:
+            yield from _json_strings(v)
+
+
 def visible(page: str) -> str:
-    """The words on screen and the words a screen reader speaks."""
-    spoken = " ".join(html.unescape(v) for v in re.findall(r'(?:aria-label|placeholder)="([^"]*)"', page))
+    """The words on screen, the words a screen reader speaks and the words the page script renders."""
+    spoken = " ".join(_designed_links(html.unescape(next(g for g in m.groups() if g is not None)))
+                      for m in ATTRIBUTE.finditer(page))
+    data = " ".join(_designed_links(text) for block in JSON_BLOCK.findall(page)
+                    for text in _json_strings(json.loads(html.unescape(block))))
     page = re.sub(r"(?is)<(script|style|svg)\b.*?</\1>", " ", page)
     page = re.sub(r"(?s)<!--.*?-->", " ", page)
     page = re.sub(r"(?s)<[^>]+>", " ", page)
-    return " ".join((html.unescape(page) + " " + spoken).split())
+    return " ".join((html.unescape(page) + " " + spoken + " " + data).split())
 
 
 def problems(page: str) -> list[str]:
@@ -47,6 +81,15 @@ def test_the_scan_catches_what_it_should():
     assert problems('<p>see https://hermes-cloud.tailefb1a4.ts.net:8443/a/1</p>')
     assert problems('<button aria-label="Copy the campaign code">x</button>') == ["campaign"]
     assert problems("<p>Leading the way at 8:00 AM</p><script>var lead = '{'</script><svg><path d='{'/></svg>") == []
+    assert problems('<a title="Open the webhook">x</a>') == ["webhook"]
+    assert problems("<a title='Your lead'>x</a>") == ["lead"]
+    assert problems('<script type=application/json id=tb-data>{"sample": [{"text": "Ask the provider"}]}</script>') == ["provider"]
+    assert problems('<script type=application/json>{"labels": {"x": "Hi {business_name}"}}</script>')[0].startswith("brace")
+    assert problems('<script type=application/json>{"gsm": "@{}", "ext": "{}[]~", "brand": "ok"}</script>') == []
+    assert problems('<span title="https://x.ts.net:8443/a/1-ab/g">Add to Google Calendar ›</span>') == []
+    assert problems('<span title="https://x.ts.net:8443/health">x</span>')
+    assert problems('<script type=application/json>{"sample": {"g": "https://x.ts.net:8443/a/1-ab/g"}}</script>') == []
+    assert problems('<script type=application/json>{"sample": {"u": "https://x.ts.net:8443/webhooks/sms"}}</script>')
 
 
 def test_signed_out_pages(tmp_path, monkeypatch):
@@ -173,3 +216,84 @@ def test_google_calendar_pages(tmp_path, monkeypatch):
 def clock_now():
     from test_client_settings import NOW
     return NOW
+
+
+# --- more states: real calls on Home, every approval state, a finished checklist, no texting number ----
+
+def _forwarded_week(app, telecom_cls=None):
+    """Seed Home through the real handlers: two forwarded missed calls, replies, and one booking."""
+    from datetime import timedelta
+
+    from text_back.calendar_stub import CalendarStub
+    from text_back.handlers import handle_sms_event, handle_voice_event
+    from text_back.handoff import FakeHandoffNotifier
+    from text_back.telecom import FakeTelecom
+
+    state = app.state
+    business, texting = "+19805550177", "+19805550100"
+    state.business_number = texting
+    state.store.set_setting("business_line", business)
+    now = state.now_provider()
+    calendar = CalendarStub()
+    for i, caller in enumerate(("+19805550141", "+19805550142")):
+        at = now - timedelta(hours=3 - i)
+        handle_voice_event(store=state.store, telecom=FakeTelecom(), call_sid=f"CA-w{i}", call_status="ringing",
+                           from_number=caller, to_number=texting, wiring_mode="forwarded", business_name="Oak",
+                           now=at, forwarded_from=business)
+    caller = "+19805550141"
+    replies = ("Trim two oaks", "12 Elm St, Charlotte", "tomorrow at 10am", "Pat Lee")
+    for n, body in enumerate(replies):
+        handle_sms_event(store=state.store, calendar=calendar, telecom=FakeTelecom(), handoff_notifier=FakeHandoffNotifier(),
+                         handoff_destination="ops", message_sid=f"SM-w{n}", from_number=caller, to_number=texting,
+                         body=body, business_name="Oak", timezone_name="America/New_York",
+                         appointment_duration_minutes=60, now=now - timedelta(hours=3) + timedelta(minutes=n + 1))
+    return state
+
+
+def test_home_with_recorded_forwarded_calls_and_caller_rows(tmp_path, monkeypatch):
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    sign_in(client, telecom)
+    state = _forwarded_week(client.app)
+    rows = portal_status.this_week(state, state.now_provider())["rows"]
+    assert len(rows) == 2 and any(r["status"].startswith("Booked") for r in rows), rows
+    assert_clean(client.get("/client/home"), "home with forwarded calls")
+    assert_clean(client.get("/client/phone"), "phone with forwarded calls")
+
+
+@pytest.mark.parametrize("approval", ["approved", "waiting", "not_started", "needs_attention", "unknown"])
+def test_home_and_messages_in_every_texting_approval_state(tmp_path, monkeypatch, approval):
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    sign_in(client, telecom)
+    client.app.state.store.set_setting("texting_approval_state", approval)
+    page = client.get("/client/home")
+    assert_clean(page, f"home {approval}")
+    from text_back.portal_registry import approval_words
+    assert approval_words({"state": approval})["state_word"] in html.unescape(page.text)
+    assert_clean(client.get("/client/messages"), f"messages {approval}")
+
+
+def test_phone_with_the_forwarding_checklist_all_done(tmp_path, monkeypatch):
+    from text_back.portal_forwarding import checklist, save_manual_ticks
+
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    sign_in(client, telecom)
+    state = _forwarded_week(client.app)
+    save_manual_ticks(state.store, {"answered_no_text": True, "deactivation_saved": True}, state.now_provider())
+    assert checklist(state, state.now_provider())["all_done"]
+    for carrier in ("", "verizon", "att"):
+        state.store.set_setting("carrier", carrier or None)
+        assert_clean(client.get("/client/phone"), f"phone all done {carrier}")
+    assert_clean(client.get("/client/home"), "home forwarding done")
+
+
+def test_pages_with_no_texting_number_assigned(tmp_path, monkeypatch):
+    client, telecom, clock, _ = make(tmp_path, monkeypatch)
+    sign_in(client, telecom)
+    client.app.state.business_number = ""
+    for url in ("/client/home", "/client/messages", "/client/schedule", "/client/calendar", "/client/phone", "/client/account"):
+        assert_clean(client.get(url), f"{url} no texting number")
+    csrf = csrf_of(client.get("/client/phone").text)
+    for carrier in ("verizon", "tmobile", "att", "cricket", "other"):
+        assert_clean(client.post("/client/phone", data={"csrf": csrf, "business_name": "Oak & Pine Tree Care", "owner_mobile": OWNER,
+                                                        "carrier": carrier, "business_line": "980 555 0177"}),
+                     f"phone no texting number {carrier}")

@@ -1,13 +1,14 @@
 """The five forwarding checks on the Phone page, ticked only from recorded evidence.
 
 Checks 1, 2 and 4 come from the most recent call the carrier forwarded from the business
-line (call.missed metadata.forwarded_from). A direct call to the texting number never ticks
+line (call.missed metadata.forwarded_from). Check 2 counts the first texts sent to that caller in
+the ten minutes after the call, across call_sids, so a number forwarded twice shows up. A direct call to the texting number never ticks
 them. Checks 3 and 5 are the owner's own ticks and always read "You checked this".
 """
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from text_back.portal_dates import when
 
@@ -50,20 +51,42 @@ def forwarded_call(store, business_line: str) -> dict | None:
     return None
 
 
-def texts_sent_for(store, call_sid: str) -> tuple[int, str | None]:
-    """How many texts went out for this call, and when the first did."""
+FIRST_TEXT_WINDOW = timedelta(minutes=10)
+
+
+def texts_sent_for(store, call: dict) -> tuple[int, str | None]:
+    """How many first texts went out to this call's caller in the 10 minutes after the call
+    (any call_sid, so a second leg of the same call counts), and when the first one did.
+
+    Reminders are not first texts and never count; a later call outside the window is a
+    separate call."""
+    start = _parse(call["at"])
+    if start is None:
+        return 0, None
+    end = start + FIRST_TEXT_WINDOW
     with store.lock:
-        sent = store.conn.execute(
-            "SELECT status FROM sms_outbox WHERE key=? ", (f"{call_sid}:intro",)).fetchone()
+        rows = store.conn.execute(
+            "SELECT key, created_at FROM sms_outbox WHERE kind='missed_call_intro' AND status='sent' AND phone=?",
+            (call["caller"],)).fetchall()
+        sent = sorted((at, row["key"]) for row in rows if (at := _parse(row["created_at"])) and start <= at <= end)
+        if not sent:
+            return 0, None
+        first_key = sent[0][1]
+        call_sid = first_key[: -len(":intro")] if first_key.endswith(":intro") else first_key
         initial = store.conn.execute(
             "SELECT occurred_at FROM outcome_events WHERE event_type='sms.initial_sent' AND idempotency_key=?",
             (f"call:{call_sid}:initial_sms",)).fetchone()
-        extra = store.conn.execute(
-            "SELECT count(*) FROM sms_outbox WHERE key LIKE ? AND key<>?",
-            (f"{call_sid}:%", f"{call_sid}:intro")).fetchone()[0]
-    if not (sent and sent["status"] == "sent" and initial):
-        return 0, None
-    return 1 + int(extra), initial["occurred_at"]
+    return len(sent), (initial["occurred_at"] if initial else sent[0][0].isoformat())
+
+
+def _parse(stamp: str | None) -> datetime | None:
+    if not stamp:
+        return None
+    try:
+        value = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
 
 
 def manual_ticks(store) -> dict:
@@ -97,11 +120,11 @@ def checklist(state, now: datetime) -> dict:
     steps = []
     if call:
         steps.append(step(1, DONE, f"A forwarded call came in {when(call['at'], tz, now)} from a caller ending {_last4(call['caller'])[1:]}."))
-        count, first_at = texts_sent_for(store, call["call_sid"])
+        count, first_at = texts_sent_for(store, call)
         if count == 1:
             steps.append(step(2, DONE, f"Sent {when(first_at, tz, now)}."))
         elif count > 1:
-            steps.append(step(2, NOT_YET, f"{count} texts went out for that call. Check your reminder settings."))
+            steps.append(step(2, NOT_YET, f"{count} texts went out for one call. Check that the number isn't forwarded twice."))
         else:
             steps.append(step(2, NOT_YET, "No text went out for that call yet."))
     else:

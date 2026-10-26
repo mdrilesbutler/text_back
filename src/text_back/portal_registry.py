@@ -1,25 +1,35 @@
 """Texting approval for the owner portal: is the business cleared to text?
 
 The state comes, in order, from the telecom's read-only registry lookup
-(cached on the app state for ten minutes), from a stored setting, or is
-unknown. Only the words in ``approval_words`` are meant for a screen; they
+(cached on the app state for ten minutes; a failed or unreadable lookup only for
+a minute), from a stored setting, or is unknown. A stage the phone companies
+turned down reads "needs_attention". Only the words in ``approval_words`` are meant for a screen; they
 never name a vendor or the approval paperwork.
 """
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
 CACHE_ATTR = "_texting_approval_cache"
 CACHE_TTL = timedelta(minutes=10)
+FAILURE_CACHE_TTL = timedelta(seconds=60)
 SETTING_KEY = "texting_approval_state"
-STATES = ("approved", "waiting", "not_started", "unknown")
+STATES = ("approved", "waiting", "not_started", "needs_attention", "unknown")
 
 _APPROVED_WORDS = frozenset({"approved", "complete", "completed", "active", "verified", "registered"})
 _WAITING_WORDS = frozenset({"pending", "in_review", "in-review", "submitted", "processing", "vetting",
                             "under_review", "review", "queued", "created"})
+_FAILED_WORDS = frozenset({"rejected", "failed", "denied", "suspended", "expired", "deactivated",
+                           "cancelled", "canceled"})
+
+
+def _turned_down(stage: str | None) -> bool:
+    """A stage word that is, or contains as a part (``vetting_failed``), a turned-down word."""
+    return bool(stage) and (stage in _FAILED_WORDS or any(part in _FAILED_WORDS for part in re.split(r"[^a-z]+", stage)))
 
 
 def _normalize(value) -> str | None:
@@ -34,6 +44,8 @@ def map_registry(registry: dict) -> str:
     stages = [_normalize(registry.get(stage)) for stage in ("brand", "campaign", "numbers")]
     if all(stage is None for stage in stages):
         return "not_started"
+    if any(_turned_down(stage) for stage in stages):
+        return "needs_attention"
     if all(stage in _APPROVED_WORDS for stage in stages):
         return "approved"
     if any(stage in _WAITING_WORDS for stage in stages):
@@ -48,7 +60,8 @@ def _cached(state, now: datetime) -> dict | None:
     if not cached:
         return None
     checked_at = cached["checked_at"]
-    if checked_at is None or now < checked_at or now - checked_at >= CACHE_TTL:
+    ttl = FAILURE_CACHE_TTL if cached.get("state") == "unknown" else CACHE_TTL
+    if checked_at is None or now < checked_at or now - checked_at >= ttl:
         return None
     return dict(cached)
 
@@ -56,7 +69,8 @@ def _cached(state, now: datetime) -> dict | None:
 def texting_approval(state, now: datetime) -> dict:
     """``{"state": ..., "checked_at": datetime | None, "source": ...}``.
 
-    Sources: ``registry`` (the telecom looked it up, result cached ten minutes),
+    Sources: ``registry`` (the telecom looked it up, result cached ten minutes, or 60
+    seconds when the lookup failed or returned words we do not know),
     ``setting`` (``store.setting("texting_approval_state")``), ``none``.
     """
     lookup = getattr(getattr(state, "telecom", None), "registry_status", None)
@@ -93,8 +107,10 @@ _WORDS: dict[str, tuple[str, str]] = {
                 "Your texting approval is with the phone companies and texts still go out with a short network notice until it clears."),
     "not_started": ("Not started",
                     "Texting approval has not been requested yet and texts still go out with a short network notice."),
-    "unknown": ("Waiting on phone companies",
-                "We could not check your texting approval just now and texts still go out with a short network notice until it is approved."),
+    "needs_attention": ("Needs you",
+                        "Phone companies turned down the texting approval. FluxWorks is fixing it; "
+                        "text FluxWorks support if texts aren't going out."),
+    "unknown": ("Couldn't check", "TextBack couldn't check texting approval just now. It will try again soon."),
 }
 
 

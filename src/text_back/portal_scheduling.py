@@ -188,6 +188,9 @@ def current_values(state) -> dict:
 
     d1, d2 = _split_delays(get("followup_delays_minutes"))
     dd1, dd2 = _split_delays(defaults["followup_delays_minutes"])
+    # The page edits the first two reminders only; the count is the running policy's, so a
+    # save never adds or drops one (1 -> only reminder 1; 3+ -> the rest are kept as they are).
+    policy_delays = [int(d) for d in state.followup_policy.delays_minutes]
     raw_hours = store.setting("working_hours")
     hours = wh.parse_working_hours(raw_hours)
     rows = {}
@@ -205,6 +208,8 @@ def current_values(state) -> dict:
         "hours_corrupt": wh.is_corrupt(raw_hours),
         "quiet_hours_start": qs, "quiet_hours_end": qe, "no_quiet_hours": qs == qe,
         "followup_delay_1": d1, "followup_delay_2": d2,
+        "reminder_count": max(1, len(policy_delays)),
+        "extra_delays": policy_delays[2:],
         "followup_expiry_minutes": get("followup_expiry_minutes"),
         # Control values for Reset (data-default); the display strings are under "defaults".
         "raw_defaults": {
@@ -308,7 +313,7 @@ def parse_form(form, state) -> tuple[dict, dict]:
 
     # Reminders and the waiting time
     delays = []
-    for name in ("followup_delay_1", "followup_delay_2"):
+    for name in ("followup_delay_1", "followup_delay_2")[: min(2, values["reminder_count"])]:
         raw = text(name)
         values[name] = raw
         try:
@@ -335,7 +340,7 @@ def parse_form(form, state) -> tuple[dict, dict]:
             "working_hours": hours_json,
             "quiet_hours_start": qs,
             "quiet_hours_end": qe,
-            "followup_delays_minutes": f"{delays[0]},{delays[1]}",
+            "followup_delays_minutes": ",".join(str(d) for d in [*delays, *values["extra_delays"]]),
             "followup_expiry_minutes": str(expiry),
         }
     return values, errors
@@ -415,6 +420,7 @@ def page_context(state, values: dict, errors: dict | None = None) -> dict:
         "duration_custom": custom,
         "day_rows": day_rows,
         "quiet_options": _time_options(QUIET_OPTIONS),
+        "reminder_count": values["reminder_count"],
         "delay1_options": _options(REMINDER1_PRESETS, values["followup_delay_1"], raw["followup_delay_1"]),
         "delay2_options": _options(REMINDER2_PRESETS, values["followup_delay_2"], raw["followup_delay_2"]),
         "expiry_options": _options(EXPIRY_PRESETS, values["followup_expiry_minutes"], raw["followup_expiry_minutes"]),

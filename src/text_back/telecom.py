@@ -93,26 +93,44 @@ class SignalWireTelecom:
         Three GETs (brands, campaigns, the campaign's numbers), never a POST:
         submitting is scripts/registration.py's job and costs money. Returns
         ``{"brand", "campaign", "numbers"}`` as lowercased registry words or
-        None when nothing is filed; the number reported is the configured
-        sender when it is listed. Raises TelecomError on any failure, redacted.
+        None when nothing is filed. The campaign reported is the one whose
+        numbers list the configured sender (the first campaign when none
+        does), the brand is that campaign's brand (else the first), and the
+        number is the sender's entry (else the campaign's first). Raises
+        TelecomError on any failure, redacted.
         """
+        sender = self.allowed_from_number
+
+        def is_sender(entry: dict) -> bool:
+            return (entry.get("phone_number") or {}).get("number") == sender
+
         request_client = self.client or httpx.Client()
         close_client = self.client is None
         try:
             brands = self._registry_get(request_client, "/brands")
             campaigns = self._registry_get(request_client, "/campaigns")
+            campaign: dict | None = None
             numbers: list[dict] = []
-            campaign_id = campaigns[0].get("id") if campaigns else None
-            if campaign_id:
-                numbers = self._registry_get(request_client, f"/campaigns/{campaign_id}/numbers")
+            fallback: tuple[dict, list[dict]] | None = None
+            for candidate in campaigns[:_REGISTRY_CAMPAIGN_SCAN]:
+                campaign_id = candidate.get("id")
+                listed = self._registry_get(request_client, f"/campaigns/{campaign_id}/numbers") if campaign_id else []
+                if fallback is None:
+                    fallback = (candidate, listed)
+                if any(is_sender(entry) for entry in listed):
+                    campaign, numbers = candidate, listed
+                    break
+            if campaign is None and campaigns:
+                campaign, numbers = fallback if fallback is not None else (campaigns[0], [])
         finally:
             if close_client:
                 request_client.close()
-        mine = [n for n in numbers if (n.get("phone_number") or {}).get("number") == self.allowed_from_number]
-        number = (mine or numbers or [{}])[0]
+        number = next((entry for entry in numbers if is_sender(entry)), numbers[0] if numbers else {})
+        brand_id = _brand_id(campaign) if campaign else None
+        brand = next((entry for entry in brands if brand_id and entry.get("id") == brand_id), brands[0] if brands else None)
         return {
-            "brand": _state_word(brands[0]) if brands else None,
-            "campaign": _state_word(campaigns[0]) if campaigns else None,
+            "brand": _state_word(brand) if brand else None,
+            "campaign": _state_word(campaign) if campaign else None,
             "numbers": _state_word(number) if numbers else None,
         }
 
@@ -177,6 +195,15 @@ class SignalWireTelecom:
         if not isinstance(message_id, str) or not message_id:
             raise AmbiguousSmsError("SignalWire SMS response did not include a message ID")
         return message_id
+
+
+# The owner portal looks at no more than this many campaigns for the sender's own one.
+_REGISTRY_CAMPAIGN_SCAN = 10
+
+
+def _brand_id(campaign: dict) -> str | None:
+    brand = campaign.get("brand")
+    return campaign.get("brand_id") or (brand.get("id") if isinstance(brand, dict) else None)
 
 
 def _state_word(record: dict) -> str | None:

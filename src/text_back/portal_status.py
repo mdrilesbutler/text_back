@@ -87,7 +87,11 @@ def setup_items(state, now: datetime) -> list[dict]:
 
 
 def headline(items: list[dict]) -> str:
-    """The first line of Home, from the setup cards only."""
+    """The first line of Home, from the setup cards only.
+
+    Every "Needs you" card (a turned-down texting approval included) is a step left; any other
+    card that is not Done ("Waiting on phone companies", "Not started", "Couldn't check") reads
+    as waiting on the phone companies."""
     needs_you = [i for i in items if i["state_word"] == "Needs you"]
     if needs_you:
         n = len(needs_you)
@@ -129,10 +133,19 @@ def this_week(state, now: datetime) -> dict:
     wanted = {"call.missed": "missed_calls", "calendar.event_created": "booked", "lead.handoff_requested": "stepped_back"}
     texted: set[str] = set()
     activity: dict[str, dict] = {}
+    # Stamps are written as datetime.isoformat() of an aware UTC time ("...+00:00"), which sorts
+    # as text in time order, so SQLite narrows each table to the window. The floor sits one day
+    # early so a stamp written with any other offset (at most 14 hours away) is still read; the
+    # exact [start, now] check below then decides, as before.
+    floor = (start.astimezone(timezone.utc) - timedelta(days=1)).isoformat()
     with store.lock:
-        events = store.conn.execute("SELECT lead_id, event_type, occurred_at FROM outcome_events").fetchall()
-        outbound = store.conn.execute("SELECT phone, body, created_at FROM sms_outbox WHERE status='sent' AND kind<>'login_code'").fetchall()
-        inbound = store.conn.execute("SELECT phone, params_json, received_at FROM inbound_jobs WHERE kind='sms'").fetchall()
+        events = store.conn.execute(
+            "SELECT lead_id, event_type, occurred_at FROM outcome_events WHERE occurred_at >= ?", (floor,)).fetchall()
+        outbound = store.conn.execute(
+            "SELECT phone, body, created_at FROM sms_outbox WHERE status='sent' AND kind<>'login_code' AND created_at >= ?",
+            (floor,)).fetchall()
+        inbound = store.conn.execute(
+            "SELECT phone, params_json, received_at FROM inbound_jobs WHERE kind='sms' AND received_at >= ?", (floor,)).fetchall()
 
     def touch(phone, at, text=""):
         if not phone or not E164.match(phone):

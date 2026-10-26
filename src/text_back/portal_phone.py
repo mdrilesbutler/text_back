@@ -235,15 +235,20 @@ def pending_mobile(state) -> str | None:
 
 
 def keep_current_mobile(state, now: datetime | None = None) -> None:
-    """'Keep my current mobile': drop the pending change; sign-in stays where it is."""
-    state.store.set_setting(PENDING_MOBILE_KEY, None, now=now)
+    """'Keep my current mobile': drop the pending change and the code texted to that number;
+    sign-in stays where it is."""
+    pending = pending_mobile(state)
+    with state.store.transaction():
+        if pending and pending != (getattr(state, "owner_mobile", "") or ""):
+            state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (pending,))
+        state.store.set_setting(PENDING_MOBILE_KEY, None, now=now)
 
 
 def confirm_new_mobile(state, code: str, now: datetime) -> str | None:
     """Move sign-in to the pending mobile when ``code`` is its live code. Returns the new
     mobile on success; None when nothing is pending or the code is wrong or expired."""
     pending = pending_mobile(state)
-    if not pending or not check_code(state, pending, code, now):
+    if not pending or not check_code(state, pending, code, now, purpose=CODE_PURPOSE):
         return None
     with state.store.transaction():
         state.store.set_setting("owner_mobile", pending, now=now)

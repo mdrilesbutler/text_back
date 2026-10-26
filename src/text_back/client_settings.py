@@ -313,23 +313,25 @@ def _save_phone(request: Request, state, session, form):
 
 def _rename_texts(request: Request, state, session, form):
     from text_back import portal_phone
-    from text_back.messages import MessageTemplateError, write_message_file
+    from text_back.messages import MESSAGE_FILE_LOCK, MessageTemplateError, write_message_file
 
     now = _now(state)
     old_name = state.store.setting(RENAME_FROM_KEY) or ""
     if str(form.get("action", "") or "") != "update" or not old_name:
         state.store.set_setting(RENAME_FROM_KEY, None, now=now)
         return _phone_page(request, state, session)
-    overrides = _saved_overrides(state)
-    keys = portal_phone.texts_with_old_name(overrides, old_name)
+    with MESSAGE_FILE_LOCK:  # same lock as Messages saves: read, write, re-read as a unit
+        overrides = _saved_overrides(state)
+        keys = portal_phone.texts_with_old_name(overrides, old_name)
+        if keys and state.messages.path is not None:
+            try:
+                write_message_file(state.messages.path, portal_phone.rename_in_texts(overrides, old_name, state.business_name))
+            except MessageTemplateError:
+                return _phone_page(request, state, session, page_error=ERROR_GENERIC)
+            state.messages.current()  # pick up the new file right away
     if not keys or state.messages.path is None:
         state.store.set_setting(RENAME_FROM_KEY, None, now=now)
         return _phone_page(request, state, session)
-    try:
-        write_message_file(state.messages.path, portal_phone.rename_in_texts(overrides, old_name, state.business_name))
-    except MessageTemplateError:
-        return _phone_page(request, state, session, page_error=ERROR_GENERIC)
-    state.messages.current()  # pick up the new file right away
     state.store.set_setting(RENAME_FROM_KEY, None, now=now)
     return _phone_page(request, state, session, notice=portal_phone.rename_done_text(len(keys)))
 

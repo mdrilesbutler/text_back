@@ -3,8 +3,9 @@
 Sign-in is passwordless. The owner enters the business mobile on file (TEXT_BACK_OWNER_MOBILE
 or the saved owner mobile); if it matches, a six-digit code is texted to that number and
 nothing else. A code lives ten minutes and allows five guesses; three sign-in requests per
-number per 15 minutes, counted for ANY number so the notice never reveals which number is on
-file. A session lasts 12 hours, or 30 days when the owner ticks "Remember this phone".
+number per 15 minutes and ten per rolling 24 hours, counted for ANY number so the notice never
+reveals which number is on file. Every code carries its purpose ("sign-in" or "new mobile")
+and is only accepted for it, and /client/verify only ever signs in the owner's number. A session lasts 12 hours, or 30 days when the owner ticks "Remember this phone".
 
 Every page is server-rendered from templates/client through portal_render.render(): one
 stylesheet, one ES module, a strict CSP, CSRF on every POST, and pages that work with
@@ -26,7 +27,7 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 
-from text_back.messages import MessageTemplateError, write_message_file
+from text_back.messages import MESSAGE_FILE_LOCK, MessageTemplateError, write_message_file
 from text_back.policy import format_contact_number
 from text_back.portal_render import mount_static, render
 from text_back.sms import enqueue_sms, run_due_sms
@@ -35,6 +36,10 @@ CODE_TTL = timedelta(minutes=10)
 CODE_ATTEMPTS = 5
 CODES_PER_WINDOW = 3
 CODE_WINDOW = timedelta(minutes=15)
+CODES_PER_DAY = 10
+DAY_WINDOW = timedelta(hours=24)
+PENDING_SESSION_MAX_AGE = timedelta(days=1)
+SIGN_IN = "sign-in"
 SESSION_TTL = timedelta(hours=12)
 REMEMBER_TTL = timedelta(days=30)
 SESSION_COOKIE = "text_back_client"
@@ -156,22 +161,24 @@ def _verify_form(request: Request, state, *, error: str = "") -> HTMLResponse:
     return render(request, "client/verify.html.j2", title="Check your phone", business_name=state.business_name, error=error)
 
 
-def send_code(state, mobile: str, now: datetime, *, purpose: str = "sign-in") -> None:
-    """Text a fresh six-digit code to ``mobile`` (at most three per 15 minutes per number)."""
+def send_code(state, mobile: str, now: datetime, *, purpose: str = SIGN_IN) -> None:
+    """Text a fresh six-digit ``purpose`` code to ``mobile`` (at most three per 15 minutes and
+    ten per rolling 24 hours per number). It replaces any earlier code for that number."""
     code = f"{secrets.randbelow(1_000_000):06d}"
     key = f"login:{mobile}:{secrets.token_hex(8)}"
     with state.store.transaction():
         # The outbox is the durable record of codes actually texted.
-        recent = state.store.conn.execute(
-            "SELECT count(*) FROM sms_outbox WHERE kind='login_code' AND phone=? AND created_at>?",
-            (mobile, (now - CODE_WINDOW).isoformat()),
-        ).fetchone()[0]
-        if recent >= CODES_PER_WINDOW:
+        def sent_since(window):
+            return state.store.conn.execute(
+                "SELECT count(*) FROM sms_outbox WHERE kind='login_code' AND phone=? AND created_at>?",
+                (mobile, (now - window).isoformat()),
+            ).fetchone()[0]
+        if sent_since(CODE_WINDOW) >= CODES_PER_WINDOW or sent_since(DAY_WINDOW) >= CODES_PER_DAY:
             return
         state.store.conn.execute("DELETE FROM client_login_codes WHERE phone=?", (mobile,))
         state.store.conn.execute(
-            "INSERT INTO client_login_codes(phone,code_hash,expires_at,attempts,created_at) VALUES(?,?,?,0,?)",
-            (mobile, _mac(state, code), (now + CODE_TTL).isoformat(), now.isoformat()),
+            "INSERT INTO client_login_codes(phone,code_hash,expires_at,attempts,created_at,purpose) VALUES(?,?,?,0,?,?)",
+            (mobile, _mac(state, code), (now + CODE_TTL).isoformat(), now.isoformat(), purpose),
         )
         enqueue_sms(
             store=state.store, key=key, to=mobile, from_number=state.business_number, now=now,
@@ -186,13 +193,15 @@ def send_code(state, mobile: str, now: datetime, *, purpose: str = "sign-in") ->
         )
 
 
-def check_code(state, phone: str, code: str, now: datetime) -> bool:
-    """True when ``code`` is the live code for ``phone``; the code is consumed on success.
-    Every failure (no code, expired, too many guesses, wrong digits) looks the same."""
+def check_code(state, phone: str, code: str, now: datetime, *, purpose: str) -> bool:
+    """True when ``code`` is the live ``purpose`` code for ``phone``; consumed on success.
+    Every failure (no code, another purpose's code, expired, too many guesses, wrong digits)
+    looks the same."""
     code = re.sub(r"\D", "", code or "")
     with state.store.transaction():
         row = state.store.conn.execute(
-            "SELECT * FROM client_login_codes WHERE phone=? AND expires_at>?", (phone, now.isoformat())
+            "SELECT * FROM client_login_codes WHERE phone=? AND purpose=? AND expires_at>?",
+            (phone, purpose, now.isoformat()),
         ).fetchone()
         if row is None or row["attempts"] >= CODE_ATTEMPTS:
             return False
@@ -207,13 +216,18 @@ def _request_login(state, mobile: str, now: datetime) -> str | None:
     """Record one sign-in request and text a code when ``mobile`` is on file.
 
     Returns the pending-login cookie value, or None when this number already asked three
-    times in 15 minutes (counted for every number, known or not)."""
+    times in 15 minutes or ten times in 24 hours (counted for every number, known or not).
+    Pending sign-ins older than a day are purged on every request."""
     with state.store.transaction():
         conn = state.store.conn
-        conn.execute("DELETE FROM client_login_requests WHERE created_at<=?", ((now - CODE_WINDOW).isoformat(),))
-        recent = conn.execute("SELECT count(*) FROM client_login_requests WHERE phone=? AND created_at>?",
-                              (mobile, (now - CODE_WINDOW).isoformat())).fetchone()[0]
-        if recent >= CODES_PER_WINDOW:
+        conn.execute("DELETE FROM client_login_requests WHERE created_at<=?", ((now - DAY_WINDOW).isoformat(),))
+        conn.execute("DELETE FROM client_sessions WHERE pending=1 AND created_at<?",
+                     ((now - PENDING_SESSION_MAX_AGE).isoformat(),))
+
+        def asked_since(window):
+            return conn.execute("SELECT count(*) FROM client_login_requests WHERE phone=? AND created_at>?",
+                                (mobile, (now - window).isoformat())).fetchone()[0]
+        if asked_since(CODE_WINDOW) >= CODES_PER_WINDOW or asked_since(DAY_WINDOW) >= CODES_PER_DAY:
             return None
         conn.execute("INSERT INTO client_login_requests(phone,created_at) VALUES(?,?)", (mobile, now.isoformat()))
     owner = getattr(state, "owner_mobile", "") or ""
@@ -279,12 +293,17 @@ def _save_messages(request: Request, state, session, form):
     if state.messages.path is None:
         return _messages_page(request, state, session)
     submitted, overrides, asked = portal_messages.read_form(form)
-    before = state.messages.current()
-    try:
-        write_message_file(state.messages.path, overrides)
-    except MessageTemplateError as exc:
-        return _messages_page(request, state, session, error=str(exc), values=submitted, asked=asked)
-    after = state.messages.current()  # pick up the new file right away
+    with MESSAGE_FILE_LOCK:  # one portal writer at a time: read, write, re-read as a unit
+        before = state.messages.current()
+        try:
+            write_message_file(state.messages.path, overrides)
+        except MessageTemplateError as exc:
+            error = str(exc)
+        else:
+            error = ""
+            after = state.messages.current()  # pick up the new file right away
+    if error:
+        return _messages_page(request, state, session, error=error, values=submitted, asked=asked)
     notice = portal_messages.change_summary(before.templates, after.templates, set(before.fields), set(after.fields))
     return _messages_page(request, state, session, notice=notice)
 
@@ -364,9 +383,15 @@ def install_routes(app):
         if not pending:
             return RedirectResponse(LOGIN, status_code=303)
         now = _now(state)
-        # One message for a wrong code, an expired code, too many guesses and a
-        # number that is not on file, so the page never confirms which number is.
-        if not check_code(state, pending["phone"], str(form.get("code", "") or ""), now):
+        # One message for a wrong code, an expired code, too many guesses, another
+        # purpose's code and a number that is not on file, so the page never confirms
+        # which number is. Only the owner's number can sign in, whatever code it holds
+        # (a "new mobile" code texted to a number the owner then kept is not a key).
+        # The code check runs either way, so both refusals take the same path.
+        owner = getattr(state, "owner_mobile", "") or ""
+        is_owner = bool(owner) and hmac.compare_digest(pending["phone"], owner)
+        code_ok = check_code(state, pending["phone"], str(form.get("code", "") or ""), now, purpose=SIGN_IN)
+        if not (code_ok and is_owner):
             return _verify_form(request, state, error=CODE_FAILURE)
         remember = str(form.get("remember", "") or "") == "1"
         token = secrets.token_urlsafe(32)

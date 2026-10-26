@@ -56,13 +56,38 @@ def test_forwarded_call_ticks_1_2_4_with_full_dates(tmp_path):
     assert result["done_count"] == 3
 
 
-def test_a_second_text_for_the_same_call_breaks_check_2(tmp_path):
+def test_a_direct_leg_and_a_forwarded_leg_to_the_same_caller_break_check_2(tmp_path):
+    # Forwarded twice (or forwarded plus a direct ring): two call_sids, two first texts, one caller.
     state = _state(tmp_path)
-    _call(state, "CA-fwd", forwarded_from=BUSINESS); _mark_sent(state, "CA-fwd")
+    fwd_at = NOW - timedelta(hours=1)
+    _call(state, "CA-fwd", forwarded_from=BUSINESS, at=fwd_at); _mark_sent(state, "CA-fwd", at=fwd_at)
+    _call(state, "CA-direct", at=fwd_at + timedelta(minutes=2)); _mark_sent(state, "CA-direct", at=fwd_at + timedelta(minutes=2))
+    step = checklist(state, NOW)["steps"][1]
+    assert (step["n"], step["state_word"]) == (2, "Not yet")
+    assert step["evidence"] == "2 texts went out for one call. Check that the number isn't forwarded twice."
+
+
+def test_reminders_and_a_later_call_do_not_break_check_2(tmp_path):
+    state = _state(tmp_path)
+    fwd_at = NOW - timedelta(hours=1)
+    _call(state, "CA-fwd", forwarded_from=BUSINESS, at=fwd_at); _mark_sent(state, "CA-fwd", at=fwd_at)
     with state.store.transaction():
         state.store.conn.execute("INSERT INTO sms_outbox(key,phone,from_number,body,kind,completion_json,status,next_attempt_at,created_at) "
-                                 "VALUES('CA-fwd:extra',?,?,?,'followup','{}','sent',?,?)", (CALLER, TEXTING, "again", NOW.isoformat(), NOW.isoformat()))
-    assert _words(checklist(state, NOW))[1] == (2, "Not yet")
+                                 "VALUES('CA-fwd:followup:1',?,?,?,'followup','{}','sent',?,?)",
+                                 (CALLER, TEXTING, "again", NOW.isoformat(), (fwd_at + timedelta(minutes=3)).isoformat()))
+    _call(state, "CA-later", at=fwd_at + timedelta(minutes=11)); _mark_sent(state, "CA-later", at=fwd_at + timedelta(minutes=11))
+    _call(state, "CA-other", caller="+19805550142", at=fwd_at + timedelta(minutes=1))
+    _mark_sent(state, "CA-other", at=fwd_at + timedelta(minutes=1))
+    assert _words(checklist(state, NOW))[1] == (2, "Done")
+
+
+def test_an_unsent_first_text_is_not_yet(tmp_path):
+    state = _state(tmp_path)
+    _call(state, "CA-fwd", forwarded_from=BUSINESS)
+    with state.store.transaction():
+        state.store.conn.execute("UPDATE sms_outbox SET status='dead_letter' WHERE key='CA-fwd:intro'")
+    step = checklist(state, NOW)["steps"][1]
+    assert step["state_word"] == "Not yet" and step["evidence"] == "No text went out for that call yet."
 
 
 def test_caller_id_check_fails_when_the_call_arrives_as_the_business_number(tmp_path):

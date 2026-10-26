@@ -21,6 +21,8 @@ import json
 import logging
 import os
 import re
+import tempfile
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from string import Formatter
@@ -274,15 +276,30 @@ def load_message_file(path: str | os.PathLike[str]) -> MessageSet:
     return MessageSet(validate_templates(data))
 
 
+# Owner-portal writers (Messages saves, the rename-texts offer) hold this around their
+# read-modify-write so two requests never interleave on the messages file.
+MESSAGE_FILE_LOCK = threading.Lock()
+
+
 def write_message_file(path: str | os.PathLike[str], templates: dict[str, str]) -> MessageSet:
-    """Validate, then atomically write only the keys that differ from the defaults."""
+    """Validate, then atomically write only the keys that differ from the defaults.
+
+    The new content goes to a uniquely named temp file in the same directory, then
+    os.replace swaps it in, so concurrent writers never share a temp name and a reader
+    always sees a whole file."""
     merged = validate_templates(templates)
     overrides = {k: v for k, v in merged.items() if v != DEFAULT_TEMPLATES[k]}
     target = Path(path)
-    tmp = target.with_name(target.name + ".tmp")
-    tmp.write_text(json.dumps(overrides, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.chmod(tmp, 0o600)
-    os.replace(tmp, target)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=target.parent, prefix=f".{target.name}.",
+                                     suffix=".tmp", delete=False) as handle:
+        tmp = Path(handle.name)
+    try:
+        os.chmod(tmp, 0o600)
+        tmp.write_text(json.dumps(overrides, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        os.replace(tmp, target)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
     return MessageSet(merged)
 
 

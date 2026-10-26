@@ -427,3 +427,55 @@ def test_humanize_minutes():
     assert ps.humanize_minutes(120) == "2 hours" and ps.humanize_minutes(90) == "1 hour 30 minutes"
     assert ps.humanize_minutes(1440) == "1 day" and ps.humanize_minutes(2880) == "2 days"
     assert ps.humanize_minutes(1) == "1 minute"
+
+
+# --- the reminder count is the policy's, never silently changed by a save -----------------
+
+def test_one_default_reminder_shows_and_saves_only_reminder_1(tmp_path, monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_FOLLOWUP_DELAYS_MINUTES", "120")
+    state, _, _ = build(tmp_path, monkeypatch)
+    assert state.followup_policy.delays_minutes == (120,)
+    values = ps.current_values(state)
+    assert values["reminder_count"] == 1
+    saved(state, valid_form(followup_delay_1="240", followup_delay_2="1440"))
+    assert state.followup_policy.delays_minutes == (240,)
+    assert state.store.setting("followup_delays_minutes") == "240"
+    page = ps.page_context(state, ps.current_values(state))
+    assert page["reminder_count"] == 1
+
+
+def test_one_reminder_ignores_a_bad_posted_second_delay(tmp_path, monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_FOLLOWUP_DELAYS_MINUTES", "120")
+    state, _, _ = build(tmp_path, monkeypatch)
+    form = valid_form(followup_delay_1="120")
+    form.pop("followup_delay_2")
+    saved(state, form)
+    assert state.followup_policy.delays_minutes == (120,)
+    assert state.store.setting("followup_delays_minutes") is None  # equal to the default: no row
+
+
+def test_three_reminders_keep_the_third_after_the_two_edited_ones(tmp_path, monkeypatch):
+    monkeypatch.setenv("TEXT_BACK_FOLLOWUP_DELAYS_MINUTES", "120,1440,2880")
+    monkeypatch.setenv("TEXT_BACK_FOLLOWUP_EXPIRY_MINUTES", "10080")
+    state, _, _ = build(tmp_path, monkeypatch)
+    assert ps.current_values(state)["reminder_count"] == 3
+    saved(state, valid_form(followup_delay_1="60", followup_delay_2="720", followup_expiry_minutes="10080"))
+    assert state.followup_policy.delays_minutes == (60, 720, 2880)
+    assert state.store.setting("followup_delays_minutes") == "60,720,2880"
+
+
+def test_two_reminders_are_unchanged(tmp_path, monkeypatch):
+    state, _, _ = build(tmp_path, monkeypatch)
+    assert ps.current_values(state)["reminder_count"] == 2
+    saved(state, valid_form(followup_delay_1="60", followup_delay_2="720"))
+    assert state.followup_policy.delays_minutes == (60, 720)
+
+
+def test_one_reminder_page_renders_without_the_second_field(tmp_path, monkeypatch):
+    from test_client_portal import make, sign_in
+
+    monkeypatch.setenv("TEXT_BACK_FOLLOWUP_DELAYS_MINUTES", "120")
+    client, telecom, _, _ = make(tmp_path, monkeypatch)
+    sign_in(client, telecom)
+    page = client.get("/client/schedule").text
+    assert "name=followup_delay_1" in page and "name=followup_delay_2" not in page

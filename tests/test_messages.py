@@ -174,3 +174,50 @@ def test_booking_retry_lane_uses_the_client_copy(tmp_path):
     run_once(app.state)
     bodies = [m.body for m in app.state.telecom.outbound if m.kind == "slot_unavailable"]
     assert bodies == ["That slot is gone. Another day and time?"]
+
+
+def test_two_writes_in_a_row_both_land_and_leave_no_temp_files(tmp_path):
+    path = tmp_path / "messages.json"
+    write_message_file(path, {**DEFAULT_TEMPLATES, "prompt_name": "And your name?"})
+    assert json.loads(path.read_text())["prompt_name"] == "And your name?"
+    write_message_file(path, {**DEFAULT_TEMPLATES, "prompt_name": "Who is this for?"})
+    assert json.loads(path.read_text())["prompt_name"] == "Who is this for?"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["messages.json"]
+    assert (path.stat().st_mode & 0o777) == 0o600
+
+
+def test_concurrent_writes_never_collide_on_one_temp_name(tmp_path):
+    import threading
+
+    path = tmp_path / "messages.json"
+    errors, names = [], [f"Name {i}?" for i in range(12)]
+
+    def write(name):
+        try:
+            write_message_file(path, {**DEFAULT_TEMPLATES, "prompt_name": name})
+        except Exception as exc:  # pragma: no cover - the failure being guarded against
+            errors.append(exc)
+
+    threads = [threading.Thread(target=write, args=(n,)) for n in names]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    assert json.loads(path.read_text())["prompt_name"] in names
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["messages.json"]
+
+
+def test_a_rejected_write_leaves_no_temp_file(tmp_path):
+    path = tmp_path / "messages.json"
+    with pytest.raises(MessageTemplateError):
+        write_message_file(path, {**DEFAULT_TEMPLATES, "intro": ""})
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_portal_message_writes_share_one_lock():
+    import threading
+
+    from text_back import messages
+
+    assert isinstance(messages.MESSAGE_FILE_LOCK, type(threading.Lock()))

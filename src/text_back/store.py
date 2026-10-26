@@ -171,7 +171,12 @@ class Store:
             key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)""")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS client_login_codes (
             phone TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at TEXT NOT NULL,
-            attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)""")
+            attempts INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL,
+            purpose TEXT NOT NULL DEFAULT 'sign-in')""")
+        # Codes from before purposes existed were all sign-in codes; a code is only ever
+        # accepted for the purpose it was texted for ('sign-in' or 'new mobile').
+        if "purpose" not in {row[1] for row in self.conn.execute("PRAGMA table_info(client_login_codes)")}:
+            self.conn.execute("ALTER TABLE client_login_codes ADD COLUMN purpose TEXT NOT NULL DEFAULT 'sign-in'")
         self.conn.execute("""CREATE TABLE IF NOT EXISTS client_sessions (
             token_hash TEXT PRIMARY KEY, csrf TEXT NOT NULL, phone TEXT NOT NULL,
             expires_at TEXT NOT NULL, created_at TEXT NOT NULL, pending INTEGER NOT NULL DEFAULT 0)""")

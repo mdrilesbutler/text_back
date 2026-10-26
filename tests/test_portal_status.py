@@ -1,5 +1,6 @@
 """Home truth: headline from setup state only; counts and rows share one window; full dates."""
 import json
+import re
 from datetime import datetime, timedelta, timezone
 
 from text_back.app import create_app
@@ -86,3 +87,31 @@ def test_bookings_on_the_stub_calendar_say_test_calendar_and_examples_are_tagged
     state.preview_example_phones = {"+19805550141"}
     week = this_week(state, NOW)
     assert week["rows"][0]["example"] is True and week["example"] is True
+
+
+def test_this_week_filters_by_the_window_in_sql(tmp_path):
+    state = _app(tmp_path).state
+    _missed(state, "CA-old", "+19805550199", NOW - timedelta(days=30))
+    _missed(state, "CA-1", "+19805550141", NOW - timedelta(hours=5), forwarded_from=BUSINESS)
+    seen = []
+    state.store.conn.set_trace_callback(seen.append)
+    try:
+        week = this_week(state, NOW)
+    finally:
+        state.store.conn.set_trace_callback(None)
+    scans = [q for q in seen if re.search(r"FROM (outcome_events|sms_outbox|inbound_jobs)\b", q) and "lead_id=" not in q]
+    assert scans, seen
+    for query in scans:
+        assert re.search(r"(occurred_at|created_at|received_at)\s*>=\s*'\d{4}-\d\d-\d\dT", query), query
+    assert [r["phone"] for r in week["rows"]] == ["+19805550141"]
+
+
+def test_this_week_still_counts_a_stamp_written_with_another_offset(tmp_path):
+    # Stamps are written as UTC isoformat today; one written with a far-west offset must still land.
+    state = _app(tmp_path).state
+    at = NOW - timedelta(hours=2)
+    stamp = at.astimezone(timezone(timedelta(hours=-12))).isoformat()
+    state.store.record_outcome(lead_id="+19805550160", event_type="call.missed", idempotency_key="call:CA-w:missed",
+                               evidence_id="CA-w", metadata={}, occurred_at=stamp)
+    week = this_week(state, NOW)
+    assert week["counts"]["missed_calls"] == 1 and [r["phone"] for r in week["rows"]] == ["+19805550160"]

@@ -84,14 +84,14 @@ def test_network_notice_applies_unless_approved():
     assert network_notice_applies(make_state(), NOW) is True
 
 
-@pytest.mark.parametrize(("state", "word"), [
-    ("approved", "Done"), ("waiting", "Waiting on phone companies"),
-    ("not_started", "Not started"), ("unknown", "Waiting on phone companies"),
+@pytest.mark.parametrize(("state", "word", "sentences"), [
+    ("approved", "Done", 1), ("waiting", "Waiting on phone companies", 1),
+    ("not_started", "Not started", 1), ("needs_attention", "Needs you", 2), ("unknown", "Couldn't check", 2),
 ])
-def test_approval_words_are_plain(state, word):
+def test_approval_words_are_plain(state, word, sentences):
     words = approval_words({"state": state, "checked_at": None, "source": "registry"})
     assert words["state_word"] == word
-    assert words["detail"].endswith(".") and ". " not in words["detail"], "one plain sentence"
+    assert words["detail"].endswith(".") and words["detail"].count(". ") == sentences - 1, "plain short sentences"
     lowered = (words["state_word"] + " " + words["detail"]).lower()
     assert not any(banned in lowered for banned in SCREEN_BANNED), words
     assert "{" not in lowered
@@ -145,3 +145,110 @@ def test_signalwire_registry_status_empty_listing_and_errors():
         telecom.registry_status()
     assert "secret" not in str(excinfo.value) and "HTTP 500" in str(excinfo.value)
     assert texting_approval(SimpleNamespace(telecom=telecom, store=Store(":memory:")), NOW)["state"] == "unknown"
+
+
+# --- F1: a turned-down approval needs the owner; a failed check says so -------------------
+
+FAILED_WORDS = ("rejected", "failed", "denied", "suspended", "expired", "deactivated", "cancelled", "canceled")
+
+
+@pytest.mark.parametrize("word", FAILED_WORDS + ("REJECTED", "Vetting_Failed"))
+@pytest.mark.parametrize("stage", ("brand", "campaign", "numbers"))
+def test_a_turned_down_stage_needs_attention(word, stage):
+    registry = {"brand": "approved", "campaign": "approved", "numbers": "complete"}
+    registry[stage] = word
+    result = texting_approval(make_state(RegistryTelecom(registry)), NOW)
+    assert result["state"] == "needs_attention"
+    words = approval_words(result)
+    assert words == {"state_word": "Needs you", "detail": (
+        "Phone companies turned down the texting approval. FluxWorks is fixing it; "
+        "text FluxWorks support if texts aren't going out.")}
+
+
+def test_turned_down_wins_over_waiting():
+    registry = {"brand": "pending", "campaign": "rejected", "numbers": None}
+    assert texting_approval(make_state(RegistryTelecom(registry)), NOW)["state"] == "needs_attention"
+
+
+def test_unknown_reads_couldnt_check():
+    words = approval_words({"state": "unknown", "checked_at": NOW, "source": "registry"})
+    assert words == {"state_word": "Couldn't check",
+                     "detail": "TextBack couldn't check texting approval just now. It will try again soon."}
+    assert texting_approval(make_state(RegistryTelecom({"brand": "zzz", "campaign": None, "numbers": None})), NOW)["state"] == "unknown"
+
+
+def test_a_stored_needs_attention_setting_is_honoured():
+    store = Store(":memory:")
+    store.set_setting("texting_approval_state", "needs_attention", now=NOW)
+    assert texting_approval(make_state(store=store), NOW)["state"] == "needs_attention"
+
+
+def test_a_failed_lookup_is_retried_after_a_minute_not_ten():
+    telecom = RegistryTelecom(error=TelecomError("boom"))
+    state = make_state(telecom)
+    assert texting_approval(state, NOW)["state"] == "unknown" and telecom.calls == 1
+    assert texting_approval(state, NOW + timedelta(seconds=59))["state"] == "unknown" and telecom.calls == 1
+    telecom.error, telecom.result = None, {"brand": "approved", "campaign": "approved", "numbers": "complete"}
+    assert texting_approval(state, NOW + timedelta(seconds=61))["state"] == "approved" and telecom.calls == 2
+    # A good answer is still kept for ten minutes.
+    assert texting_approval(state, NOW + timedelta(minutes=10))["state"] == "approved" and telecom.calls == 2
+
+
+def test_an_unknown_registry_word_is_not_cached_for_ten_minutes():
+    telecom = RegistryTelecom({"brand": "zzz", "campaign": None, "numbers": None})
+    state = make_state(telecom)
+    texting_approval(state, NOW)
+    texting_approval(state, NOW + timedelta(seconds=61))
+    assert telecom.calls == 2
+
+
+def test_headline_counts_needs_you_approval_as_a_step_and_couldnt_check_as_waiting():
+    from text_back.portal_status import headline
+
+    done = [dict(key="calendar", state_word="Done"), dict(key="forwarding", state_word="Done")]
+    assert headline(done + [dict(key="approval", state_word="Needs you")]) == "Not working yet: 1 step left."
+    assert headline(done + [dict(key="approval", state_word="Couldn't check")]) == \
+        "Set up on your side. Waiting on the phone companies to approve texting."
+
+
+def test_signalwire_registry_prefers_the_campaign_and_brand_of_the_configured_sender():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        assert request.method == "GET"
+        path = request.url.path
+        if path.endswith("/registry/beta/brands"):
+            return httpx.Response(200, json={"data": [{"id": "b1", "state": "APPROVED"}, {"id": "b2", "state": "PENDING"}]})
+        if path.endswith("/registry/beta/campaigns"):
+            return httpx.Response(200, json={"data": [{"id": "c1", "brand_id": "b1", "state": "APPROVED"},
+                                                      {"id": "c2", "brand_id": "b2", "state": "REJECTED"}]})
+        if path.endswith("/registry/beta/campaigns/c1/numbers"):
+            return httpx.Response(200, json={"data": [{"phone_number": {"number": "+15559990000"}, "state": "complete"}]})
+        if path.endswith("/registry/beta/campaigns/c2/numbers"):
+            return httpx.Response(200, json={"data": [{"phone_number": {"number": "+15551234567"}, "state": "pending"}]})
+        return httpx.Response(404, json={})
+
+    telecom = SignalWireTelecom(space_url="https://pilot.signalwire.com", project_id="p", api_token="t",
+                                allowed_from_number="+15551234567",
+                                client=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert telecom.registry_status() == {"brand": "pending", "campaign": "rejected", "numbers": "pending"}
+
+
+def test_signalwire_registry_falls_back_to_the_first_entries_when_the_sender_is_not_listed():
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.endswith("/registry/beta/brands"):
+            return httpx.Response(200, json={"data": [{"id": "b1", "state": "APPROVED"}, {"id": "b2", "state": "PENDING"}]})
+        if path.endswith("/registry/beta/campaigns"):
+            return httpx.Response(200, json={"data": [{"id": "c1", "brand_id": "b2", "state": "IN_REVIEW"},
+                                                      {"id": "c2", "brand_id": "b1", "state": "APPROVED"}]})
+        if "/numbers" in path:
+            return httpx.Response(200, json={"data": [{"phone_number": {"number": "+15559990000"}, "state": "complete"}]})
+        return httpx.Response(404, json={})
+
+    telecom = SignalWireTelecom(space_url="https://pilot.signalwire.com", project_id="p", api_token="t",
+                                allowed_from_number="+15551234567",
+                                client=httpx.Client(transport=httpx.MockTransport(handler)))
+    # First campaign, ITS brand (b2), and its first number entry.
+    assert telecom.registry_status() == {"brand": "pending", "campaign": "in_review", "numbers": "complete"}
